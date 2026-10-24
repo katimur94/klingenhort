@@ -1,0 +1,19 @@
+{
+  "name": "Klingenhort",
+  "short_name": "Klingenhort",
+  "description": "16-Bit Hack & Slash: Kombos, Spezialangriffe, Beute in fünf Seltenheiten und Bosse.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#110e17",
+  "theme_color": "#110e17",
+  "categories": ["games"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
