@@ -110,9 +110,11 @@ function randomItem(stage, minRar, o) {
   if (o.tier != null) tier = o.tier;
   const lootMul = DIFFS[P.diff].loot * (1 + ((P.st && P.st.m.loot) || 0));
   const r = Math.random() / Math.sqrt(lootMul);
-  let rar = r < .008 ? 4 : r < .048 ? 3 : r < .188 ? 2 : r < .548 ? 1 : 0; // Legendär 0,8 %, Episch 4 %, Selten 14 %, Magisch 36 %
+  const wl = typeof landeLuck === 'function' ? landeLuck() : 0; // Verlorene Lande (js/lande.js): eigene, bessere Seltenheiten – auch Mythisch
+  let rar = wl ? landeRar(r, wl) : r < .008 ? 4 : r < .048 ? 3 : r < .188 ? 2 : r < .548 ? 1 : 0; // Kampagne: Legendär 0,8 %, Episch 4 %, Selten 14 %, Magisch 36 %
   rar = Math.max(rar, minRar || 0);
-  const setChance = (o.setChance || 0) * lootMul;
+  if (rar === 6) return makeMythic(o.slot);
+  const setChance = (o.setChance || 0) * lootMul + (wl ? .003 * wl : 0);
   if (Math.random() < setChance) {
     const sid = Math.random() < .7 ? Object.keys(SETS).find(k => SETS[k].cls === P.cls) : 'drache';
     const S = SETS[sid], sslot = pick(['weapon', 'armor', 'helm']);
