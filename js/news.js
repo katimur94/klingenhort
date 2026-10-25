@@ -7,7 +7,7 @@
 
 const CHANGELOG = [
   {
-    v: '6.0.0', d: '2026-10-26', t: 'Die Verlorenen Lande', items: [
+    v: '6.0.0', d: '2026-10-25', t: 'Die Verlorenen Lande', items: [
       ['neu', 'Die Verlorenen Lande: Durch das Weltentor in deinem Versteck betrittst du eine riesige, jedes Mal neue Freiwelt. Die beste Beute des Spiels liegt hier – in Truhen, Verstecken, Erzadern und bei gefallenen Abenteurern, immer an anderen Orten.'],
       ['neu', 'Hohes Risiko: Was du findest, gehört dir erst, wenn du durch einen Ausgang entkommst. Stirbst du, ist alles verloren, was du angelegt und im Rucksack hast – du wachst im Versteck auf.'],
       ['neu', 'Dein Begleiter ist ein mystisches Wesen: Was in seiner Tasche liegt, bringt er dir beim Tod nach Hause. Danach ist er verletzt und braucht Ruhe.'],

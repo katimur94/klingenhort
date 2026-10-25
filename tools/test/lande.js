@@ -155,7 +155,7 @@ const HERO = (cls, lv) => {
       const of = (sl, r) => { let it; do it = lItem(r, 1); while (it.slot !== sl); return it; };
       const w0 = P.gear.weapon, found = of('weapon', 3); found.lw = LW.id; LW.pack.push({ t: 'item', it: w0 }); P.gear.weapon = found; LW.pack.push({ t: 'gold', n: 999 });
       const a0 = P.gear.armor; lBag(LW.pet).push({ t: 'item', it: a0 }); P.gear.armor = of('armor', 2); P.gear.armor.lw = LW.id;
-      saveChar(); persist(); return { w0: w0.uid, a0: a0.uid, found: found.uid };
+      LW.hurtT = -99; for (const e of enemies) e.dead = true; SAVE.meta.lande.cur.fight = false; saveChar(); persist(); return { w0: w0.uid, a0: a0.uid, found: found.uid };
     });
     await page.reload(); await page.waitForTimeout(1500);
     const rl2 = await page.evaluate(([ids, STANDIN_]) => {
@@ -165,6 +165,22 @@ const HERO = (cls, lv) => {
     }, [rl, STANDIN.toString()]);
     ok(rl2.cur && rl2.aband && rl2.weapon && rl2.gold, 'Neu laden mitten im Ausflug: Rucksack verloren, Waffe vom Aufbruch zurück');
     ok(rl2.armorNotDup, 'Neu laden: was in der Begleiter-Tasche lag, wird nicht verdoppelt');
+    // Neu laden mitten im Kampf zählt als Tod: Ausrüstung weg, Begleiter-Tasche gerettet, Begleiter verletzt
+    const fl = await page.evaluate(() => {
+      const PM = SAVE.meta.pets; if (PM.list[0]) { delete PM.list[0].hurt; PM.act = PM.list[0].id; }
+      lBegin(0); const w = P.gear.weapon, it = lItem(2, 1); if (LW.pet) lBag(LW.pet).push({ t: 'item', it }); LW.hurtT = T; LW.tick = 0; lTick(.01);
+      const M = SAVE.meta.lande, o = { fight: !!M.cur && M.cur.fight === true, w: w.uid, it: it.uid, d0: M.deaths, pet: LW.pet && LW.pet.id }; saveChar(); persist(); return o;
+    });
+    await page.reload(); await page.waitForTimeout(1500);
+    const fl2 = await page.evaluate(([o, STANDIN_]) => {
+      eval('(' + STANDIN_ + ')')(); activateChar(0);
+      const M = SAVE.meta.lande, p = SAVE.meta.pets.list.find(q => q.id === o.pet);
+      return { cur: M.cur === null, dead: M.deaths === o.d0 + 1, gear: P.gear.weapon.uid !== o.w && P.gear.weapon.tier === 0, bag: P.bag.some(i => i.uid === o.it), hurt: !!p && (typeof petIsHurt !== 'function' || petIsHurt(p)) };
+    }, [fl, STANDIN.toString()]);
+    ok(fl.fight && fl2.cur && fl2.dead && fl2.gear && fl2.bag && fl2.hurt, 'Neu laden mitten im Kampf zählt als Tod: Ausrüstung weg, Begleiter-Tasche gerettet, Begleiter verletzt' + (fl.fight && fl2.cur && fl2.dead && fl2.gear && fl2.bag && fl2.hurt ? '' : ' ' + JSON.stringify([fl, fl2])));
+    // Abbrechen geht nicht mitten im Kampf
+    const qa = await page.evaluate(() => { lBegin(0); LW.hurtT = T; ON.l_quit(); const blocked = /MITTEN IM KAMPF/.test(panel.textContent) && !panel.querySelector('[data-act="l_quitok"]') && landeActive(); ON.l_resume(); LW.hurtT = -99; for (const e of enemies) e.dead = true; enemies = []; ON.l_quit(); const free = !!panel.querySelector('[data-act="l_quitok"]'); ON.l_quitok(); return blocked && free && !landeActive(); });
+    ok(qa, 'Abbrechen: mitten im Kampf gesperrt, sonst möglich');
     // Ohne Begleiter: nichts überlebt
     const np = await page.evaluate(() => {
       SAVE.meta.pets.act = null; lBegin(0); return 1;
@@ -255,6 +271,7 @@ const HERO = (cls, lv) => {
     await page.evaluate(() => showPause()); await page.waitForTimeout(300);
     ok(await page.locator('[data-act="l_quit"]').count() === 1 && await inView('[data-act="l_inv"]') && !(await page.locator('[data-act="title"]').count()), pre + 'Pause: Rucksack und „Ausflug abbrechen“ statt Hauptmenü');
     await shot('09_pause');
+    await page.evaluate(() => { LW.hurtT = -99; for (const e of enemies) e.dead = true; enemies = []; });   // abbrechen geht nur außerhalb des Kampfes
     await tap('[data-act="l_quit"]'); await tap('[data-act="l_quitok"]');
     ok(await page.evaluate(() => G.type === 'versteck' && !landeActive() && SAVE.meta.lande.aband === 1 && P.bag.length >= 1), pre + 'Abbrechen: zurück im Versteck, Begleiter-Tasche geliefert');
     // Entkommen-Bildschirm

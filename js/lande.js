@@ -4,7 +4,8 @@
    Hängt sich über HOOK/ON (js/core.js) ins Spiel ein.
    Ein Ausflug: Weltentor → große Zufallskarte → Beute in den Rucksack → durch einen Ausgang entkommen.
    Tod: Ausrüstung und Rucksack sind verloren, nur die Begleiter-Tasche (petBagSize, p.bag) kommt mit heim.
-   Neu laden oder abbrechen: Rucksack verloren, der Held behält die Ausrüstung, mit der er losging.
+   Abbrechen (nur außerhalb des Kampfes) oder neu laden: Rucksack verloren, der Held behält die Ausrüstung, mit der er losging.
+   Neu laden mitten im Kampf zählt als Tod (M.cur.fight) – sonst könnte man jedem Tod entkommen.
    Spielstand: SAVE.meta.lande (Statistik, Ruf, Schlüssel, Weltstufen, Fundkiste, laufender Ausflug).
    Schnittstelle: landeLootHTML(entry), LANDE_TIER, landeLuck()/landeRar() (Seltenheit in randomItem), landeActive()
    Beute-Einträge: { t: 'item', it } | { t: 'mat', k, n } | { t: 'gem', k, n } | { t: 'part', k, n } | { t: 'egg', d } | { t: 'gold', n }
@@ -587,8 +588,16 @@ function lAbandon(why) {
 HOOK.activate.push(H => {
   try {
     if (!SAVE || !SAVE.meta.lande) return; const M = lMeta();
-    if (M.cur && M.cur.hero === H.id && !(LW && LW.on)) { M.aband++; lRestoreGear(M.cur); M.cur = null; LG.note = _t('Dein letzter Ausflug in die Verlorenen Lande wurde unterbrochen: Der Rucksack ist verloren, deine Ausrüstung vom Aufbruch hast du noch.'); }
+    let fell = null;
+    if (M.cur && M.cur.hero === H.id && !(LW && LW.on)) {
+      if (M.cur.fight) {
+        // mitten im Kampf verschwunden: zählt als Tod – Ausrüstung weg, nur die Begleiter-Tasche (unten) kommt heim
+        fell = M.cur; M.deaths++; P.gear = lBasicGear(); computeStats(); P.hp = P.st.hp; M.cur = null;
+        LG.note = _t('Dein letzter Ausflug endete mitten im Kampf – die Lande haben dich verschlungen. Ausrüstung und Rucksack sind verloren.');
+      } else { M.aband++; lRestoreGear(M.cur); M.cur = null; LG.note = _t('Dein letzter Ausflug in die Verlorenen Lande wurde unterbrochen: Der Rucksack ist verloren, deine Ausrüstung vom Aufbruch hast du noch.'); }
+    }
     const p = lPet(); if (p && Array.isArray(p.bag) && p.bag.length && !(LW && LW.on)) { const r = lDeliver(lPetBagTake(p)); if (r.n) LG.note = (LG.note ? LG.note + ' ' : '') + _t('Dein Begleiter hat noch Beute aus den Landen dabei – sie liegt jetzt bei dir.'); }
+    if (fell && p && typeof petHurt === 'function') { try { petHurt(p, 45 + (fell.ti | 0) * 15); } catch (_) { } }
     if (LG.note) { saveChar(); persist(); setTimeout(() => { if (LG.note) { toast(LG.note, '#e8b04a'); LG.note = null; } }, 900); }
   } catch (e) { console.error('Lande (activate):', e); }
 });
@@ -616,6 +625,7 @@ function lDie() {
   P.hp = 0; setState('dead'); deadT = 999; P.atkT = 0; P.spin = 0; P.leap = null; P.dash = null;
   burst(P.x, P.y, 8, '#b8302a', 30, 100); sfx('die'); $('bossbar').hidden = true; slowmo = 1.6; shake(6);
   P.stats.deaths++; stat('deaths'); LW.dead = 2.2; $('objective').textContent = '';
+  const M = lMeta(); if (M.cur) { M.cur.fight = 2; persist(); }
 }
 HOOK.die.push(h => { if (h || !LW || !LW.on) return h; lDie(); return true; });
 function lDeathScreen() {
@@ -865,6 +875,7 @@ function lTick(dt) {
   if (inRift && P.hp > P.st.hp * .1) P.hp = Math.max(P.st.hp * .1, P.hp - P.st.hp * .006 * dt);
   if (L.tick > 0) { lChannelTick(dt); return; }
   L.tick = .2;
+  if (M.cur) { const fight = lDanger(); if (!!M.cur.fight !== fight) { M.cur.fight = fight; persist(); } }
   lReveal();
   lSetStage(lStage(P.x, P.y));
   const bk = lBioAt(P.x, P.y); bg.b.key = LBIO[bk].amb; if (L.bk !== bk) { L.bk = bk; }
@@ -931,6 +942,12 @@ function lChannelTick(dt) {
   if (L.ch >= need) lExtract();
 }
 HOOK.hurt.push((d, src) => { if (LW && LW.on && d > 0) LW.hurtT = T; return d; });
+// Im Kampf: eben getroffen, ein Gegner ganz nah oder ein Boss in der Nähe – dann kein Abbrechen, und Neu laden zählt als Tod
+function lDanger() {
+  const L = LW; if (!L || !L.on) return false;
+  if (T - L.hurtT < 5) return true;
+  return enemies.some(e => !e.dead && e.st !== 'spawn' && Math.hypot(e.x - P.x, e.y - P.y) < (e.boss ? 360 : 150));
+}
 function lBossTick(B) {
   const L = LW;
   if (B.state === 'sleep') {
@@ -1340,7 +1357,9 @@ ON.l_drop = () => {
   LG.sel = null; LG.arm = null; sfx('wood'); persist(); lInv();
 };
 ON.l_scroll = () => { if (!LW.scrolls) return; LW.scrolls--; LW.exits.push(LW.add({ k: 'exit', t: 'rolle', x: P.x, y: P.y + 2, r: 0, ph: 0, open: true, solid: false })); toast(_t('Ein Rückweg öffnet sich unter deinen Füßen – bleib stehen!'), '#e8dcc0'); sfx('cast'); lResume(); };
-ON.l_quit = () => { setState('menu'); showOverlay(`<div class="center"><h2>${_t('AUSFLUG ABBRECHEN?')}</h2><p class="sub">${_t('Der Rucksack bleibt in den Landen. Du behältst die Ausrüstung, mit der du aufgebrochen bist, und alles in der Begleiter-Tasche.')}</p><div class="menu"><button class="btn red" data-act="l_quitok">${_t('Ja, abbrechen')}</button><button class="btn alt" data-act="l_resume">${_t('Weiter erkunden')}</button></div></div>`); };
+ON.l_quit = () => {
+  if (lDanger()) { setState('menu'); showOverlay(`<div class="center"><h2>${_t('MITTEN IM KAMPF!')}</h2><p class="sub">${_t('Abbrechen geht nur, wenn dich gerade nichts angreift. Lauf weg oder kämpfe!')}</p><div class="menu"><button class="btn" data-act="l_resume">${_t('Weiter')}</button></div></div>`); return; }
+  setState('menu'); showOverlay(`<div class="center"><h2>${_t('AUSFLUG ABBRECHEN?')}</h2><p class="sub">${_t('Der Rucksack bleibt in den Landen. Du behältst die Ausrüstung, mit der du aufgebrochen bist, und alles in der Begleiter-Tasche.')}</p><div class="menu"><button class="btn red" data-act="l_quitok">${_t('Ja, abbrechen')}</button><button class="btn alt" data-act="l_resume">${_t('Weiter erkunden')}</button></div></div>`); };
 ON.l_quitok = () => { const r = lAbandon('quit'); toast(r.lost.length ? _t('Ausflug abgebrochen – {n} Dinge sind verloren.', { n: r.lost.length }) : _t('Ausflug abgebrochen.'), '#ff8a5a'); enterHideout(); };
 ON.l_wake = () => { enterHideout(); };
 ON.l_home = () => { enterHideout(); };
@@ -1447,7 +1466,7 @@ function lGate(from) {
   const body = `<div class="ltier"><h3 style="margin-top:4px">${_t('WELTSTUFE')}</h3><div class="opts">${tiers}</div><p class="sub" style="margin-top:0">${esc(TT.d)} ${_t('Glück auf Legendär und Mythisch: ×{n}', { n: TT.luck.toLocaleString(LOCALE, { maximumFractionDigits: 1 }) })}</p></div>
   <h3>${_t('WAS DU RISKIERST · {n} GOLD', { n: fmt(gv) })}</h3>${gear.map(it => landeLootHTML({ t: 'item', it })).join('')}
   <h3>${_t('WAS ÜBERLEBT')}</h3>${petHTML}
-  <div class="lrules"><div style="--c:var(--blood)">${_t('Stirbst du, sind Ausrüstung und Rucksack verloren.')}</div><div style="--c:var(--moss)">${_t('Nur die Begleiter-Tasche kommt heim – dein Begleiter teleportiert mit dir zurück.')}</div><div style="--c:var(--gold)">${_t('Raus kommst du nur durch einen Ausgang: hineinstellen und warten.')}</div></div>
+  <div class="lrules"><div style="--c:var(--blood)">${_t('Stirbst du, sind Ausrüstung und Rucksack verloren.')}</div><div style="--c:var(--moss)">${_t('Nur die Begleiter-Tasche kommt heim – dein Begleiter teleportiert mit dir zurück.')}</div><div style="--c:var(--gold)">${_t('Raus kommst du nur durch einen Ausgang: hineinstellen und warten.')}</div><div style="--c:var(--blood)">${_t('Abbrechen geht nur außerhalb des Kampfes – wer mitten im Kampf das Spiel schließt, fällt.')}</div></div>
   <h3>${_t('RUF: {n}', { n: LREP[r].n.toLocaleUpperCase(LOCALE) })}</h3>${nx ? `<div class="lbar"><i style="width:${Math.round((M.rep - LREP[r].at) / (nx.at - LREP[r].at) * 100)}%"></i></div><p class="sub" style="margin-top:0">${_t('Noch {n} Ruf bis {r}: {d}', { n: nx.at - M.rep, r: nx.n, d: nx.d })}</p>` : ''}
   <div class="stats"><span>${_t('AUSFLÜGE {n}', { n: M.runs })}</span><span style="color:var(--moss)">${_t('ENTKOMMEN {n}', { n: M.ext })}</span><span style="color:var(--blood)">${_t('GEFALLEN {n}', { n: M.deaths })}</span><span style="color:var(--gold)">${_t('BESTE BEUTE {n}', { n: fmt(M.best) })}</span>${M.keys ? `<span>${_t('SCHLÜSSEL {n}', { n: M.keys })}</span>` : ''}</div>${box}
   <div class="menu foot"><button class="btn" data-act="l_go" ${lvOk && lTierOpen(sel) ? '' : 'disabled'}>${lvOk ? _t('Betreten: {n}', { n: esc(TT.n) }) : _t('Ab Level {n} – dir fehlen noch {m}', { n: TT.lv, m: TT.lv - P.lv })}</button></div>`;
