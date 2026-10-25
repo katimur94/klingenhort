@@ -19,14 +19,14 @@ function scorch(x, y, r) { if (!bg) return; const g = bg.c.getContext('2d'); g.f
 function banner(t, s) { const b = $('banner'); $('banTitle').textContent = t; $('banSub').textContent = s || ''; b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
 function toast(t, col) { const b = $('toast'); b.textContent = t; b.style.color = col || ''; b.classList.toggle('low', !$('ov').hidden); b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
 function explode(x, y, rad, dmg, src, opt) {
-  opt = opt || {};
-  fxAnim('boom', x, y - Math.min(rad, 34) * .3, { sc: Math.min(2, rad / 17), dur: .55 });
-  if (rad > 34) for (let k = 0; k < 4; k++) { const a = k / 4 * 6.283 + rnd(0, .8); fxAnim('boom', x + Math.cos(a) * rad * .55, y + Math.sin(a) * rad * .3 - 6, { sc: rnd(.9, 1.3), dur: rnd(.4, .6) }); }
-  fx.push({ k: 'boom', x, y, r: rad, life: .45, max: .45 });
-  rings.push({ x, y, r: 4, max: rad * 1.2, life: .35, max2: .35, col: opt.col || '#ffd27a' });
-  for (let i = 0; i < 22; i++) { const a = rnd(0, 6.28), v = rnd(30, 140); part(x, y, rnd(2, 10), Math.cos(a) * v, Math.sin(a) * v * .6, rnd(40, 120), pick(['#fff0a0', '#ffb03a', '#ff6a2a', '#e8402a']), rnd(.3, .7), Math.random() < .4 ? 2 : 1, 160, 1); }
+  opt = opt || {}; const sk = opt.sk; // sk: Aussehen des Meisterschafts-Rangs (js/mastery.js)
+  fxAnim('boom', x, y - Math.min(rad, 34) * .3, { sc: Math.min(2, rad / 17), dur: .55, sk });
+  if (rad > 34) for (let k = 0; k < 4; k++) { const a = k / 4 * 6.283 + rnd(0, .8); fxAnim('boom', x + Math.cos(a) * rad * .55, y + Math.sin(a) * rad * .3 - 6, { sc: rnd(.9, 1.3), dur: rnd(.4, .6), sk }); }
+  fx.push({ k: 'boom', x, y, r: rad, life: .45, max: .45, sk });
+  rings.push({ x, y, r: 4, max: rad * 1.2, life: .35, max2: .35, col: opt.col || (sk ? sk.col : '#ffd27a') });
+  for (let i = 0; i < 22; i++) { const a = rnd(0, 6.28), v = rnd(30, 140); part(x, y, rnd(2, 10), Math.cos(a) * v, Math.sin(a) * v * .6, rnd(40, 120), pick(sk ? sk.pal : ['#fff0a0', '#ffb03a', '#ff6a2a', '#e8402a']), rnd(.3, .7), Math.random() < .4 ? 2 : 1, 160, 1); }
   for (let i = 0; i < 10; i++) part(x + rnd(-8, 8), y + rnd(-4, 4), rnd(4, 14), rnd(-20, 20), rnd(-10, 10), rnd(10, 30), pick(['#3a3440', '#4a4450', '#2a2630']), rnd(.6, 1.1), 2, -6);
-  shake(Math.min(10, 3 + rad / 10)); hitStop = Math.max(hitStop, .05); sfx('boom'); flash = { a: .2, c: '255,200,120' }; scorch(x, y, rad);
+  shake(Math.min(10, 3 + rad / 10)); hitStop = Math.max(hitStop, .05); sfx('boom'); flash = { a: .2, c: sk ? sk.glow : '255,200,120' }; scorch(x, y, rad);
   if (dmg > 0) for (const e of enemies) { if (e.dead || e.st === 'spawn') continue; const d = Math.hypot(e.x - x, e.y - y); if (d < rad + e.r * e.sc) { const n = d || 1; hurtEnemy(e, Math.round(dmg * (src === 'e' ? .5 : 1) * (1 - d / (rad * 2.2))), (e.x - x) / n, (e.y - y) / n, 200, false, src !== 'p'); if (opt.burn && !e.dead) { e.burn = 3; e.burnDmg = Math.max(1, Math.round(dmg * .12)); } } }
   if (src !== 'p' && dmg > 0) { const d = Math.hypot(P.x - x, P.y - y); if (d < rad + P.r) hurtPlayer(dmg * (src === 'n' ? .5 : 1), { x, y }); }
   for (const o of obs) if ((o.k === 'crate' || o.k === 'xcrate') && !o.dead && Math.hypot(o.x - x, o.y - y) < rad + 6) setTimeout(() => { if (G) hitObs(o, 99, 0, 0, true); }, 80);
@@ -162,7 +162,7 @@ function drinkPotion(auto) {
 function weaponHit(e, w, mul, nx, ny, kbMul, forceCrit) {
   let crit = forceCrit || Math.random() < w.crit;
   let m = mul;
-  if (P.stealth > 0) { m *= 2 + mod('stealth'); crit = true; P.stealth = 0; burst(P.x, P.y, 8, '#3a3448', 12, 50); }
+  if (P.stealth > 0) { m *= (2 + mod('stealth')) * (1 + mod('r3Dmg')); crit = true; P.stealth = 0; burst(P.x, P.y, 8, '#3a3448', 12, 50); }
   const dmg = Math.round(hookVal('hit', w.dmg * m * rnd(.9, 1.1) * (crit ? w.critdmg : 1), e, w, crit));
   hurtEnemy(e, dmg, nx, ny, w.kb * (kbMul || 1), crit);
   hook('afterHit', e, w, dmg, crit);
@@ -219,46 +219,71 @@ function primaryRanged(w, fin) {
 }
 
 /* ---------- Fähigkeiten ---------- */
-function skillCd(i) { const id = CLASSES[P.cls].skills[i], S = SKILLS[id]; let cd = S.cd * (1 - P.st.cdr) * (mod('my_echo') ? .8 : 1); if (id === 'k2' && mod('k2Cdr')) cd *= 1 - mod('k2Cdr'); return cd; }
-function skillCost(i) { return Math.round(SKILLS[CLASSES[P.cls].skills[i]].cost * (mod('my_echo') ? .7 : 1)); }
+// mastCd/mastCost: Meisterschaft der Fähigkeit (js/mastery.js)
+function skillCd(i) { const id = CLASSES[P.cls].skills[i], S = SKILLS[id]; let cd = S.cd * (1 - P.st.cdr) * (mod('my_echo') ? .8 : 1) * mastCd(id); if (id === 'k2' && mod('k2Cdr')) cd *= 1 - mod('k2Cdr'); return cd; }
+function skillCost(i) { const id = CLASSES[P.cls].skills[i]; return Math.round(SKILLS[id].cost * (mod('my_echo') ? .7 : 1) * mastCost(id)); }
 function useSkill(i) {
   if (state !== 'play' || busy() || P.roll > 0) return;
   const id = CLASSES[P.cls].skills[i], S = SKILLS[id], cost = skillCost(i);
   if (P.cds[i] > 0) { sfx('deny'); return; }
   if (P.res < cost) { toast(_t('{res} reicht nicht', { res: CLASSES[P.cls].res.name })); sfx('deny'); return; }
-  const inp = readInput(), w = playerW();
-  hook('skill', id, w);
   if (id === 'a2' && traps.length >= 2 + mod('a2Max')) { toast(_t('Maximale Anzahl Fallen gelegt')); return; }
+  const inp = readInput(), w = playerW();
+  // ab hier gilt der Einsatz: Meisterschaft setzt Schaden und Aussehen (w.sk), w trägt beides zu allen Treffern
+  hook('skill', id, w); const sk = w.sk;
   P.res -= cost; P.cds[i] = skillCd(i); P.atkT = 0; buzz(8);
-  txt(P.x, P.y - 30, S.n, '#efe2bf');
+  txt(P.x, P.y - 30, S.n, sk ? sk.col : '#efe2bf');
   switch (id) {
-    case 'k1': { const a = autoAim(140, inp); P.aim = a; P.face = Math.cos(a) >= 0 ? 1 : -1; P.dash = { t: 0, dur: .22, dx: Math.cos(a), dy: Math.sin(a), hit: new Set(), kind: 'charge', sp: 470 }; sfx('lunge'); break; }
-    case 'k2': P.spin = 1.0 + mod('k2Dur'); P.spinTick = 0; sfx('swing2'); break;
-    case 'k3': P.wall = 3 + mod('k3Dur'); sfx('shield'); rings.push({ x: P.x, y: P.y, r: 4, max: 30, life: .3, max2: .3, col: '#8ecbff' }); break;
-    case 'm1': { const a = autoAim(220, inp); P.aim = a; P.face = Math.cos(a) >= 0 ? 1 : -1; fireProj({ k: 'fireball', fxn: 'fireball', ang: a, w, mul: 1.8 * (1 + mod('m1Dmg')), sp: 190, life: 1.1, r: 5, split: !!mod('m1Split') }); sfx('fire'); break; }
+    case 'k1': { const a = autoAim(140, inp); P.aim = a; P.face = Math.cos(a) >= 0 ? 1 : -1; P.dash = { t: 0, dur: .22 * (1 + mod('k1Wide') * .2), dx: Math.cos(a), dy: Math.sin(a), hit: new Set(), kind: 'charge', sp: 470, w, sk, wide: mod('k1Wide') * 6 }; sfx('lunge'); break; }
+    case 'k2': P.spin = 1.0 + mod('k2Dur'); P.spinTick = 0; P.spinW = w; P.spinSk = sk; sfx('swing2'); break;
+    case 'k3': {
+      P.wall = 3 + mod('k3Dur'); P.wallW = w; P.wallSk = sk; sfx('shield'); rings.push({ x: P.x, y: P.y, r: 4, max: 30, life: .3, max2: .3, col: sk ? sk.col : '#8ecbff' });
+      if (mod('k3Heal')) { const h = Math.round(P.st.hp * mod('k3Heal')); P.hp = Math.min(P.st.hp, P.hp + h); txt(P.x, P.y - 22, '+' + h, '#79c24e'); }
+      if (mod('k3Push')) { rings.push({ x: P.x, y: P.y, r: 4, max: 56, life: .35, max2: .35, col: sk ? sk.col2 : '#bfefff' }); for (const e of enemies) { if (e.st === 'spawn' || e.dead) continue; const dx = e.x - P.x, dy = e.y - P.y, d = Math.hypot(dx, dy) || 1; if (d < 50 + e.r * e.sc) weaponHit(e, w, .5, dx / d, dy / d, 3); } }
+      break;
+    }
+    case 'm1': { const a = autoAim(220, inp), n = 1 + mod('m1Twin'); P.aim = a; P.face = Math.cos(a) >= 0 ? 1 : -1; for (let k = 0; k < n; k++) fireProj({ k: 'fireball', fxn: 'fireball', ang: a + (k - (n - 1) / 2) * .16, w, mul: 1.8 * (1 + mod('m1Dmg')), sp: 190, life: 1.1, r: 5, split: !!mod('m1Split') }); sfx('fire'); break; }
     case 'm2': {
-      const R = 72; fxAnim('ring', P.x, P.y - 4, { sc: R / 22, dur: .5, add: true }); sfx('frost');
-      for (let k = 0; k < 14; k++) { const a = k / 14 * 6.283; fx.push({ k: 'shard', x: P.x, y: P.y, ang: a, life: .4, max: .4 }); }
+      const R = 72 * (1 + mod('m2Rad')); fxAnim('ring', P.x, P.y - 4, { sc: R / 22, dur: .5, add: true, sk }); sfx('frost');
+      for (let k = 0; k < 14; k++) { const a = k / 14 * 6.283; fx.push({ k: 'shard', x: P.x, y: P.y, ang: a, life: .4, max: .4, d: R * .97, sk }); }
       for (const e of enemies) { if (e.st === 'spawn') continue; const d = Math.hypot(e.x - P.x, e.y - P.y); if (d < R + e.r * e.sc) { weaponHit(e, w, 1.2 * (1 + mod('m2Dmg')), (e.x - P.x) / (d || 1), (e.y - P.y) / (d || 1), .5); if (!e.dead && !e.boss) e.freeze = 1.6 + mod('m2Freeze'); else if (!e.dead) e.chill = 2.5; } }
+      if (mod('m2Armor')) P.msFrost = T + 3;
       break;
     }
     case 'm3': {
       let from = { x: P.x, y: P.y - 8 }, t = nearestEnemy(170), mul = 1.4, hit = new Set(), pts = [[P.x, P.y - 10]];
-      const n = 3 + mod('m3Chain');
+      const n = 3 + mod('m3Chain'), jump = 80 * (1 + mod('m3Range')), keep = .85 + mod('m3Decay');
       for (let k = 0; k <= n && t; k++) {
-        hit.add(t); pts.push([t.x, t.y - 8 * t.sc]); fxAnim('bolt', t.x, t.y - 18, { dur: .4, add: true });
-        weaponHit(t, w, mul, (t.x - from.x) / 50, (t.y - from.y) / 50, .4); mul *= .85; from = t;
-        let nt = null, b = 80; for (const e of enemies) { if (hit.has(e) || e.st === 'spawn' || e.dead) continue; const d = Math.hypot(e.x - from.x, e.y - from.y); if (d < b) { b = d; nt = e; } } t = nt;
+        hit.add(t); pts.push([t.x, t.y - 8 * t.sc]); fxAnim('bolt', t.x, t.y - 18, { dur: .4, add: true, sk, sc: sk ? sk.sc : 1 });
+        weaponHit(t, w, mul, (t.x - from.x) / 50, (t.y - from.y) / 50, .4); if (mod('m3Stun') && !t.dead && !t.boss) t.stun = Math.max(t.stun, mod('m3Stun')); mul *= keep; from = t;
+        let nt = null, b = jump; for (const e of enemies) { if (hit.has(e) || e.st === 'spawn' || e.dead) continue; const d = Math.hypot(e.x - from.x, e.y - from.y); if (d < b) { b = d; nt = e; } } t = nt;
       }
-      if (pts.length > 1) fx.push({ k: 'zap', pts, life: .28, max: .28 }); else toast(_t('Kein Ziel in Reichweite'));
+      if (pts.length > 1) fx.push({ k: 'zap', pts, life: .28, max: .28, sk }); else toast(_t('Kein Ziel in Reichweite'));
       sfx('zap'); break;
     }
-    case 'r1': { const a = autoAim(160, inp); P.aim = a; P.face = Math.cos(a) >= 0 ? 1 : -1; P.dash = { t: 0, dur: .2, dx: Math.cos(a), dy: Math.sin(a), hit: new Set(), kind: 'shadow', sp: 560 }; sfx('lunge'); break; }
-    case 'r2': { P.poisonT = 6; const a = autoAim(160, inp), n = 5 + mod('r2Knives'); for (let k = 0; k < n; k++) fireProj({ k: 'knife', ang: a + (k - (n - 1) / 2) * .16, w: Object.assign({}, w, { poison: true }), mul: .7, sp: 280, life: .6 }); sfx('poison'); break; }
-    case 'r3': P.stealth = 3 + mod('stealth') / .3 * .5; sfx('smoke'); for (let k = 0; k < 30; k++) part(P.x + rnd(-14, 14), P.y + rnd(-8, 8), rnd(0, 14), rnd(-20, 20), rnd(-10, 10), rnd(5, 20), pick(['#4a4458', '#5a5468', '#3a3448']), rnd(.8, 1.4), 3, -4); break;
-    case 'a1': { const a = autoAim(210, inp), n = 7 + mod('a1Count'); for (let k = 0; k < n; k++) fireProj({ k: 'arrow', ang: a + (k - (n - 1) / 2) * .12, w, mul: .9, pierce: !!mod('pierce') }); sfx('bow'); shake(1.5); break; }
-    case 'a2': traps.push({ x: P.x, y: P.y + 2, armT: .5, life: 30 }); sfx('fuse'); break;
-    case 'a3': { const n = 1 + mod('a3Count'); for (let k = 0; k < n; k++) allies.push({ k: 'spirit', x: P.x, y: P.y, z: 14, ang: k * Math.PI, life: 15 + mod('a3Dur'), shotT: .4, seed: rnd(0, 9) }); sfx('heal'); break; }
+    case 'r1': { const a = autoAim(160, inp); P.aim = a; P.face = Math.cos(a) >= 0 ? 1 : -1; P.dash = { t: 0, dur: .2 * (1 + mod('r1Far')), dx: Math.cos(a), dy: Math.sin(a), hit: new Set(), kind: 'shadow', sp: 560, w, sk, wide: mod('r1Wide') * 6 }; sfx('lunge'); break; }
+    case 'r2': {
+      P.poisonT = 6; const a = autoAim(160, inp), n = 5 + mod('r2Knives'), pw = Object.assign({}, w, { poison: true }), mul = .7 * (1 + mod('r2Dmg')), pierce = !!mod('r2Pierce');
+      for (let k = 0; k < n; k++) fireProj({ k: 'knife', ang: a + (k - (n - 1) / 2) * .16, w: pw, mul, sp: 280, life: .6, pierce });
+      if (mod('r2Ring')) for (let k = 0; k < 8; k++) fireProj({ k: 'knife', ang: a + k / 8 * 6.283 + .39, w: pw, mul: mul * .7, sp: 240, life: .45, pierce });
+      sfx('poison'); break;
+    }
+    case 'r3': {
+      P.stealth = 3 + mod('stealth') / .3 * .5 + mod('r3Dur'); P.stealthSk = sk; sfx('smoke');
+      for (let k = 0; k < 30; k++) part(P.x + rnd(-14, 14), P.y + rnd(-8, 8), rnd(0, 14), rnd(-20, 20), rnd(-10, 10), rnd(5, 20), pick(sk ? [sk.pal[2], sk.pal[3], '#3a3448'] : ['#4a4458', '#5a5468', '#3a3448']), rnd(.8, 1.4), 3, -4);
+      if (mod('r3Blind')) for (const e of enemies) if (!e.dead && !e.boss && e.st !== 'spawn' && Math.hypot(e.x - P.x, e.y - P.y) < 56) e.stun = Math.max(e.stun, mod('r3Blind'));
+      if (mod('r3Heal')) { const h = Math.round(P.st.hp * mod('r3Heal')); P.hp = Math.min(P.st.hp, P.hp + h); txt(P.x, P.y - 22, '+' + h, '#79c24e'); }
+      break;
+    }
+    case 'a1': {
+      const a = autoAim(210, inp), n = 7 + mod('a1Count'), pierce = !!mod('pierce') || !!mod('a1Pierce'), mul = .9 * (1 + mod('a1Dmg'));
+      const fan = m => { for (let k = 0; k < n; k++) fireProj({ k: 'arrow', ang: a + (k - (n - 1) / 2) * .12, w, mul: m, pierce }); };
+      fan(mul); sfx('bow'); shake(1.5);
+      if (mod('a1Twice')) setTimeout(() => { if (G && state === 'play') { fan(mul * .5); sfx('bow'); } }, 250);
+      break;
+    }
+    case 'a2': traps.push({ x: P.x, y: P.y + 2, armT: .5, life: 30, w, sk }); sfx('fuse'); break;
+    case 'a3': { const n = 1 + mod('a3Count'); for (let k = 0; k < n; k++) allies.push({ k: 'spirit', x: P.x, y: P.y, z: 14, ang: k / n * 6.283, life: 15 + mod('a3Dur'), shotT: .4, healT: 3, seed: rnd(0, 9), w, sk }); sfx('heal'); break; }
   }
 }
 function doUlt() {
@@ -268,10 +293,10 @@ function doUlt() {
   const inp = readInput(), w = playerW(), id = CLASSES[P.cls].ult;
   hook('skill', id, w);
   txt(P.x, P.y - 34, SKILLS[id].n.toLocaleUpperCase(LOCALE) + '!', '#ffd24a', true);
-  if (id === 'ku') { const a = autoAim(160, inp), t = nearestEnemy(999), d = Math.min(70, t ? dist(t, P) : 70); P.leap = { t: 0, dur: .5, sx: P.x, sy: P.y, tx: clamp(P.x + Math.cos(a) * d, BD.x0, BD.x1), ty: clamp(P.y + Math.sin(a) * d, BD.y0, BD.y1) }; P.face = Math.cos(a) >= 0 ? 1 : -1; }
+  if (id === 'ku') { const a = autoAim(160, inp), t = nearestEnemy(999), d = Math.min(70, t ? dist(t, P) : 70); P.leap = { t: 0, dur: .5, sx: P.x, sy: P.y, tx: clamp(P.x + Math.cos(a) * d, BD.x0, BD.x1), ty: clamp(P.y + Math.sin(a) * d, BD.y0, BD.y1), w, sk: w.sk }; P.face = Math.cos(a) >= 0 ? 1 : -1; }
   else if (id === 'mu') { const n = 10 + mod('uCount'); for (let k = 0; k < n; k++) { const t = enemies.length ? pick(enemies) : null; const x = clamp((t ? t.x : P.x) + rnd(-30, 30), BD.x0, BD.x1), y = clamp((t ? t.y : P.y) + rnd(-20, 20), BD.y0, BD.y1); projs.push({ k: 'meteor', fxn: 'firebomb', x, y, tx: x, ty: y, h: 140, vx: 0, vy: 0, life: 9, max: 9, delay: k * .13, from: 'p', r: 0, w, hit: new Set() }); } }
-  else if (id === 'ru') { const n = 3 + mod('uCount'); for (let k = 0; k < n; k++) { const a = k / n * 6.283; allies.push({ k: 'clone', x: P.x + Math.cos(a) * 16, y: P.y + Math.sin(a) * 10, life: 7, atkT: 0, phase: 0, face: 1, seed: rnd(0, 9) }); burst(P.x + Math.cos(a) * 16, P.y + Math.sin(a) * 10, 8, '#3a3448', 10, 40); } }
-  else if (id === 'au') { P.volley = 3 + mod('uDur'); P.volleyT = 0; P.aim = autoAim(220, inp); P.face = Math.cos(P.aim) >= 0 ? 1 : -1; }
+  else if (id === 'ru') { const n = 3 + mod('uCount'); for (let k = 0; k < n; k++) { const a = k / n * 6.283; allies.push({ k: 'clone', x: P.x + Math.cos(a) * 16, y: P.y + Math.sin(a) * 10, life: 7 + mod('ruDur'), atkT: 0, phase: 0, face: 1, seed: rnd(0, 9), w, sk: w.sk }); burst(P.x + Math.cos(a) * 16, P.y + Math.sin(a) * 10, 8, w.sk ? w.sk.col : '#3a3448', 10, 40); } }
+  else if (id === 'au') { P.volley = 3 + mod('uDur'); P.volleyT = 0; P.volleyW = w; P.aim = autoAim(220, inp); P.face = Math.cos(P.aim) >= 0 ? 1 : -1; }
 }
 function hurtEnemy(e, dmg, nx, ny, kb, crit, noRage) {
   if (e.dead) return;
@@ -341,7 +366,7 @@ function hurtPlayer(dmg, src) {
   if (Math.random() < P.st.dodge) { txt(P.x, P.y - 24, _t('AUSGEWICHEN'), '#8ee6ea'); P.inv = .25; return; }
   if (src && src.t && src.affixes) { if (src.affixes.includes('frostig') || (src.def && src.def.frosty)) P.slowT = 2; if (src.affixes.includes('vampir')) src.hp = Math.min(src.maxHp, src.hp + dmg * .5); if (mod('chill')) src.chill = 2; }
   let d = hookVal('hurt', dmg * rnd(.9, 1.1) * 40 / (40 + P.st.def) * (1 - P.st.dr), src);
-  if (P.wall > 0) { d *= .3; fxAnim('shield', P.x, P.y - 12, { dur: .25, alpha: .5 }); }
+  if (P.wall > 0) { d *= .3 - mod('k3Dr'); fxAnim('shield', P.x, P.y - 12, { dur: .25, alpha: .5, sk: P.wallSk }); }
   const t = Math.max(1, Math.round(d));
   P.hp -= t; P.inv = .7; P.flash = .2; P.squash = .15; P.chain = 0; comboUI(); buzz(25);
   if (src && src.maxHp && !src.dead && mod('my_thorns')) hurtEnemy(src, dmg, (src.x - P.x) / 30, (src.y - P.y) / 30, 60, false, true);
@@ -377,25 +402,34 @@ function updPlayer(dt) {
   if (P.leap) {
     const L = P.leap; L.t += dt; const p = Math.min(1, L.t / L.dur);
     P.x = lerp(L.sx, L.tx, p); P.y = lerp(L.sy, L.ty, p); P.z = Math.sin(p * Math.PI) * 24; P.inv = .1; P.moving = false; P.rollA = p * Math.PI * 2 * P.face;
-    if (P.ghostT <= 0) { P.ghostT = .03; addGhost(); }
-    if (p >= 1) { P.leap = null; P.z = 0; P.rollA = 0; const w = playerW(), R = 58 * (1 + mod('uRad')); explode(P.x, P.y, R, w.dmg * 3 * (1 + mod('uDmg')), 'p'); fxAnim('ring', P.x, P.y - 4, { sc: R / 20, dur: .5, add: true }); for (let i = 0; i < 14; i++) part(P.x + rnd(-20, 20), P.y + rnd(-10, 10), 0, rnd(-60, 60), rnd(-30, 30), rnd(80, 160), '#6a5e52', rnd(.5, .9), 2); P.inv = .4; }
+    if (P.ghostT <= 0) { P.ghostT = .03; addGhost(L.sk && L.sk.col); }
+    if (p >= 1) {
+      P.leap = null; P.z = 0; P.rollA = 0; const w = L.w || playerW(), sk = L.sk, R = 58 * (1 + mod('uRad')), x = P.x, y = P.y;
+      explode(x, y, R, w.dmg * 3 * (1 + mod('uDmg')), 'p', { sk }); fxAnim('ring', x, y - 4, { sc: R / 20, dur: .5, add: true, sk }); for (let i = 0; i < 14; i++) part(x + rnd(-20, 20), y + rnd(-10, 10), 0, rnd(-60, 60), rnd(-30, 30), rnd(80, 160), sk ? sk.pal[3] : '#6a5e52', rnd(.5, .9), 2); P.inv = .4;
+      if (mod('uStun')) for (const e of enemies) if (!e.dead && !e.boss && Math.hypot(e.x - x, e.y - y) < R + e.r * e.sc) e.stun = Math.max(e.stun, mod('uStun'));
+      if (mod('uAfter')) setTimeout(() => { if (G && state === 'play') explode(x, y, R * 1.25, w.dmg * 1.5 * (1 + mod('uDmg')), 'p', { sk }); }, 400);
+    }
     P.turn = approach(P.turn, P.face, dt * 8); return;
   }
   if (P.dash) {
     const D = P.dash; D.t += dt;
     P.x = clamp(P.x + D.dx * D.sp * dt, BD.x0 + P.r, BD.x1 - P.r); P.y = clamp(P.y + D.dy * D.sp * dt, BD.y0, BD.y1); P.inv = .15; P.moving = true;
-    if (P.ghostT <= 0) { P.ghostT = .015; addGhost(D.kind === 'shadow' ? '#b892f4' : '#ffd27a'); }
-    const w = playerW();
+    const sk = D.sk, w = D.w || playerW();
+    if (P.ghostT <= 0) { P.ghostT = .015; addGhost(sk ? sk.col : D.kind === 'shadow' ? '#b892f4' : '#ffd27a'); }
     for (const e of enemies) {
       if (e.st === 'spawn' || D.hit.has(e)) continue;
-      if (Math.hypot(e.x - P.x, e.y - P.y) < e.r * e.sc + 14) {
+      if (Math.hypot(e.x - P.x, e.y - P.y) < e.r * e.sc + 14 + (D.wide || 0)) {
         D.hit.add(e);
-        if (D.kind === 'shadow') { weaponHit(e, w, 2.4, D.dx, D.dy, 1.5, true); spark(e.x, e.y - 8, Math.atan2(D.dy, D.dx), '#b892f4'); }
-        else { weaponHit(e, w, 1.5 * (1 + mod('k1Dmg')), D.dx, D.dy, 2); if (!e.dead && !e.boss) e.stun = .8 + mod('k1Stun'); spark(e.x, e.y - 8, 0, '#ffd27a'); }
+        if (D.kind === 'shadow') { weaponHit(e, w, 2.4 * (1 + mod('r1Dmg')), D.dx, D.dy, 1.5, true); spark(e.x, e.y - 8, Math.atan2(D.dy, D.dx), sk ? sk.col : '#b892f4'); }
+        else { weaponHit(e, w, 1.5 * (1 + mod('k1Dmg')), D.dx, D.dy, 2); if (!e.dead && !e.boss) e.stun = .8 + mod('k1Stun'); spark(e.x, e.y - 8, 0, sk ? sk.col : '#ffd27a'); }
       }
     }
     for (const o of obs) if (!o.dead && o.k !== 'col' && !D.hit.has(o) && Math.hypot(o.x - P.x, o.y - P.y) < o.r + 10) { D.hit.add(o); hitObs(o, 1, D.dx, D.dy); }
-    if (D.t >= D.dur) { P.dash = null; P.vx = D.dx * 60; P.vy = D.dy * 60; shake(3); }
+    if (D.t >= D.dur) {
+      P.dash = null; P.vx = D.dx * 60; P.vy = D.dy * 60; shake(3);
+      if (D.kind === 'charge' && mod('k1Wave')) explode(P.x, P.y, 30 * (1 + (mod('k1Wave') - 1) * .5), w.dmg * 1.2, 'p', { sk });
+      if (D.kind === 'shadow' && mod('r1Stealth')) { P.stealth = Math.max(P.stealth, mod('r1Stealth')); P.stealthSk = sk; burst(P.x, P.y, 8, sk ? sk.col : '#3a3448', 10, 40); }
+    }
     P.turn = approach(P.turn, P.face, dt * 8); return;
   }
   if (P.roll > 0) {
@@ -418,12 +452,13 @@ function updPlayer(dt) {
   P.turn = approach(P.turn, P.face, dt * 8);
   P.lean = P.roll > 0 ? 0 : -clamp(P.vx / 78, -1, 1) * .14;
   if (P.spin > 0) {
+    const sk = P.spinSk, K = 1 + mod('k2Rad'), R = 34 * K;
     P.spin -= dt; P.spinA += dt * 26 * P.face; P.inv = .05; P.spinTick -= dt;
-    if (P.spinTick <= 0) { P.spinTick = .13; const w = playerW(); for (const e of enemies) { if (e.st === 'spawn') continue; const dx = e.x - P.x, dy = e.y - P.y, d = Math.hypot(dx, dy) || 1; if (d < 34 + e.r * e.sc) weaponHit(e, w, .8 * (1 + mod('k2Dmg')), dx / d, dy / d, .8); } for (const o of obs) if (!o.dead && o.k !== 'col' && Math.hypot(o.x - P.x, o.y - P.y) < 34) hitObs(o, 1, 0, 0); sfx('swing'); }
-    if (Math.random() < .6) part(P.x + Math.cos(P.spinA) * 24, P.y + Math.sin(P.spinA) * 12, 8, 0, 0, 10, '#e8eef8', .25, 1, 0, 1);
-    if (Math.random() < .3) fx.push({ k: 'slash', x: P.x, y: P.y - 8, ang: P.spinA, flip: P.face < 0, sc: .7, life: .18, max: .18, col: TINT[P.gear.weapon.tier] || '#e8eef8', follow: true });
+    if (P.spinTick <= 0) { P.spinTick = .13; const w = P.spinW || playerW(); for (const e of enemies) { if (e.st === 'spawn') continue; const dx = e.x - P.x, dy = e.y - P.y, d = Math.hypot(dx, dy) || 1; if (d < R + e.r * e.sc) weaponHit(e, w, .8 * (1 + mod('k2Dmg')), dx / d, dy / d, .8); else if (mod('k2Pull') && !e.boss && !e.dead && d < R * 1.8) { e.x -= dx / d * 5; e.y -= dy / d * 5; } } for (const o of obs) if (!o.dead && o.k !== 'col' && Math.hypot(o.x - P.x, o.y - P.y) < R) hitObs(o, 1, 0, 0); sfx('swing'); }
+    if (Math.random() < .6) part(P.x + Math.cos(P.spinA) * 24 * K, P.y + Math.sin(P.spinA) * 12 * K, 8, 0, 0, 10, sk ? sk.col2 : '#e8eef8', .25, 1, 0, 1);
+    if (Math.random() < .3) fx.push({ k: 'slash', x: P.x, y: P.y - 8, ang: P.spinA, flip: P.face < 0, sc: .7 * (sk ? sk.sc : 1), life: .18, max: .18, col: sk ? sk.col : TINT[P.gear.weapon.tier] || '#e8eef8', follow: true });
   }
-  if (P.volley > 0) { P.volleyT -= dt; if (P.volleyT <= 0) { P.volleyT = .1; P.volley--; const w = playerW(); for (let i = -4; i <= 4; i++) fireProj({ k: 'arrow', ang: P.aim + i * .16 + rnd(-.03, .03), w, mul: 1.3 * (1 + mod('uDmg')), pierce: true }); sfx('bow'); shake(2); } }
+  if (P.volley > 0) { P.volleyT -= dt; if (P.volleyT <= 0) { P.volleyT = .1; P.volley--; const w = P.volleyW || playerW(), n = 4 + mod('auArrows'); for (let i = -n; i <= n; i++) fireProj({ k: 'arrow', ang: P.aim + i * .64 / n + rnd(-.03, .03), w, mul: 1.3 * (1 + mod('uDmg')), pierce: true }); sfx('bow'); shake(2); } }
   if (P.atkT > 0) {
     P.atkT -= dt; const w = playerW(), p = 1 - P.atkT / P.atkDur, fin = P.combo === 2;
     if (WT[w.type].ranged) { if (!P.struck && p >= .35) { P.struck = true; primaryRanged(w, fin); } }
@@ -445,17 +480,18 @@ function updAllies(dt) {
     if (a.k === 'spirit') {
       a.ang += dt * 1.6; const tx = P.x + Math.cos(a.ang) * 18, ty = P.y + Math.sin(a.ang) * 10 - 2;
       a.x = lerp(a.x, tx, 1 - Math.pow(.001, dt)); a.y = lerp(a.y, ty, 1 - Math.pow(.001, dt)); a.z = 14 + Math.sin(T * 4 + a.seed) * 2;
-      a.shotT -= dt; if (Math.random() < .3) part(a.x, a.y, a.z, 0, 0, 0, '#9be070', .4, 1, 0, 1);
-      if (a.shotT <= 0) { const t = nearestEnemy(170, a); if (t) { a.shotT = .6; const w = playerW(); fireProj({ k: 'plant', fxn: 'plant', x: a.x, y: a.y, ang: Math.atan2(t.y - a.y, t.x - a.x), w, mul: .5 * (1 + mod('a3Dmg')), sp: 210, life: 1, h: a.z }); } }
+      a.shotT -= dt; if (Math.random() < .3) part(a.x, a.y, a.z, 0, 0, 0, a.sk ? a.sk.col : '#9be070', .4, 1, 0, 1);
+      if (a.shotT <= 0) { const t = nearestEnemy(170, a); if (t) { a.shotT = .6 / (1 + mod('a3Fast')); fireProj({ k: 'plant', fxn: 'plant', x: a.x, y: a.y, ang: Math.atan2(t.y - a.y, t.x - a.x), w: a.w || playerW(), mul: .5 * (1 + mod('a3Dmg')), sp: 210, life: 1, h: a.z }); } }
+      if (mod('a3Heal') && state === 'play' && (a.healT -= dt) <= 0) { a.healT = 3; const h = Math.max(1, Math.round(P.st.hp * .02)); P.hp = Math.min(P.st.hp, P.hp + h); txt(P.x, P.y - 22, '+' + h, '#79c24e'); for (let i = 0; i < 6; i++) part(P.x + rnd(-5, 5), P.y, rnd(0, 12), 0, 0, rnd(20, 40), a.sk ? a.sk.col : '#9be070', rnd(.4, .7), 1, -10, 1); }
     } else if (a.k === 'clone') {
       const t = nearestEnemy(200, a); a.atkT -= dt;
       if (t) {
         const dx = t.x - a.x, dy = t.y - a.y, d = Math.hypot(dx, dy) || 1; a.face = dx >= 0 ? 1 : -1;
         if (d > 14) { a.x += dx / d * 110 * dt; a.y += dy / d * 110 * dt; a.phase += dt * 13; a.moving = true; } else a.moving = false;
-        if (d < 22 && a.atkT <= 0) { a.atkT = .35; weaponHit(t, playerW(), .6, dx / d, dy / d, .5); fx.push({ k: 'slash', x: a.x, y: a.y - 6, ang: Math.atan2(dy, dx), flip: Math.random() < .5, sc: .4, life: .18, max: .18, col: '#b892f4' }); }
+        if (d < 22 && a.atkT <= 0) { a.atkT = .35; const w = a.w || playerW(); w.poison = P.poisonT > 0; weaponHit(t, w, .6 * (1 + mod('ruDmg')), dx / d, dy / d, .5); fx.push({ k: 'slash', x: a.x, y: a.y - 6, ang: Math.atan2(dy, dx), flip: Math.random() < .5, sc: .4, life: .18, max: .18, col: a.sk ? a.sk.col : '#b892f4' }); }
       } else { a.moving = false; }
     }
-    if (a.life <= 0) burst(a.x, a.y, 8, a.k === 'clone' ? '#3a3448' : '#9be070', 10, 40);
+    if (a.life <= 0) { burst(a.x, a.y, 8, a.sk ? a.sk.col : a.k === 'clone' ? '#3a3448' : '#9be070', 10, 40); if (a.k === 'clone' && mod('ruBoom') && state === 'play') explode(a.x, a.y, 26, (a.w || playerW()).dmg * 1.2, 'p', { sk: a.sk }); }
   }
   allies = allies.filter(a => a.life > 0);
   for (const t of traps) {
@@ -463,9 +499,10 @@ function updAllies(dt) {
     if (t.armT <= 0) {
       const e = enemies.find(e => !e.dead && e.st !== 'spawn' && e.z < 6 && Math.hypot(e.x - t.x, e.y - t.y) < 14 + e.r * e.sc);
       if (e) {
-        t.life = 0; const w = playerW(), R = 34 * (1 + mod('a2Rad'));
-        explode(t.x, t.y, R, w.dmg * 2.2 * (1 + mod('a2Dmg')), 'p');
-        if (mod('a2Cluster')) for (let k = 0; k < 4; k++) { const a = k / 4 * 6.283 + .4; const x = t.x + Math.cos(a) * 26, y = t.y + Math.sin(a) * 16; setTimeout(() => { if (G && state === 'play') explode(x, y, 18, w.dmg * .9, 'p'); }, 200 + k * 90); }
+        t.life = 0; const w = t.w || playerW(), sk = t.sk, R = 34 * (1 + mod('a2Rad'));
+        explode(t.x, t.y, R, w.dmg * 2.2 * (1 + mod('a2Dmg')), 'p', { sk });
+        if (mod('a2Slow')) for (const o of enemies) if (!o.dead && Math.hypot(o.x - t.x, o.y - t.y) < R + o.r * o.sc) o.chill = Math.max(o.chill || 0, mod('a2Slow'));
+        if (mod('a2Cluster')) for (let k = 0; k < 4; k++) { const a = k / 4 * 6.283 + .4; const x = t.x + Math.cos(a) * 26, y = t.y + Math.sin(a) * 16; setTimeout(() => { if (G && state === 'play') explode(x, y, 18, w.dmg * .9, 'p', { sk }); }, 200 + k * 90); }
       }
     }
   }
@@ -672,7 +709,7 @@ function updProjs(dt) {
     if (p.k === 'meteor') {
       if (p.delay > 0) { p.delay -= dt; continue; }
       p.h -= 260 * dt; if (Math.random() < .7) part(p.x + rnd(-2, 2), p.y, p.h + 4, rnd(-10, 10), 0, 20, pick(['#ffb03a', '#ff6a2a']), .3, 1, 0, 1);
-      if (p.h <= 0) { p.life = 0; explode(p.x, p.y, 30, p.w.dmg * 2.4, 'p', { burn: true }); }
+      if (p.h <= 0) { p.life = 0; explode(p.x, p.y, 30 * (1 + mod('muRad')), p.w.dmg * 2.4 * (1 + mod('muDmg')), 'p', { burn: true, sk: p.w.sk }); }
       continue;
     }
     p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
@@ -696,7 +733,7 @@ function updProjs(dt) {
         }
       }
     } else if (state === 'play' && Math.hypot(P.x - p.x, P.y - p.y) < P.r + p.r) {
-      if (P.wall > 0 && mod('k3Reflect') && p.k !== 'fire') { p.from = 'p'; p.vx *= -1.2; p.vy *= -1.2; p.life = 1.5; p.hit = new Set(); p.w = playerW(); p.mul = 1.5; sfx('deflect'); continue; }
+      if (P.wall > 0 && mod('k3Reflect') && p.k !== 'fire') { p.from = 'p'; p.vx *= -1.2; p.vy *= -1.2; p.life = 1.5; p.hit = new Set(); p.w = P.wallW || playerW(); p.mul = 1.5; sfx('deflect'); continue; }
       hurtPlayer(p.dmg, p.src || p); if (p.slow) P.slowT = 1.5; p.life = 0; burst(p.x, p.y, p.h, p.k === 'fire' ? '#ff8a3a' : '#b07af0', 6, 40, 1);
     }
   }
@@ -705,7 +742,7 @@ function updProjs(dt) {
 function projHitEnd(p) {
   if (p.k !== 'fireball' || p.ended) return; p.ended = true;
   const R = 26 * (1 + mod('m1Rad'));
-  explode(p.x, p.y, R, p.w.dmg * p.mul, 'p', { burn: Math.random() < .3 + mod('burn') });
+  explode(p.x, p.y, R, p.w.dmg * p.mul, 'p', { burn: mod('m1Burn') > 0 || Math.random() < .3 + mod('burn'), sk: p.w.sk });
   if (p.split) for (let k = 0; k < 3; k++) { const a = k / 3 * 6.283 + rnd(0, 1); projs.push({ k: 'fireball', fxn: 'fireball', x: p.x, y: p.y, h: 8, vx: Math.cos(a) * 150, vy: Math.sin(a) * 150, life: .35, max: .35, from: 'p', r: 4, pierce: false, hit: new Set(), w: p.w, mul: p.mul * .45, split: false }); }
 }
 function spikeUp(s) { if (G && G.spikeRush > 0) return true; const c = (T + s.ph) % 3; return c > 2.15; }
