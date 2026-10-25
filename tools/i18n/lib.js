@@ -10,7 +10,7 @@ function langs() { return Object.keys(vm.runInNewContext(fs.readFileSync(R('js/i
 
 // Alle Texte: { text: ['datei:zeile', ...] }
 function extract() {
-  const keys = new Map(), add = (k, w) => { if (!keys.has(k)) keys.set(k, []); const a = keys.get(k); if (a.length < 4 && !a.includes(w)) a.push(w); };
+  const keys = new Map(), add = (k, w) => { if (!String(k).trim()) return; if (!keys.has(k)) keys.set(k, []); const a = keys.get(k); if (a.length < 4 && !a.includes(w)) a.push(w); };
   // 1. Spieldaten: translateData() mit Mitschrift ausführen
   const ctx = { console, navigator: { languages: ['de-DE'] }, localStorage: { getItem: () => null, setItem() { } }, document: { documentElement: {}, querySelectorAll: () => [] } };
   ctx.window = Object.assign({ __I18N_KEYS: 1 }, ctx); vm.createContext(ctx);

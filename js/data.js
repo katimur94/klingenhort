@@ -494,13 +494,13 @@ const NODE = {
   boss:{n:'Boss',icon:['s',16,428,32,36],c:'#c8463c',d:'Der Herrscher dieses Gebiets.'}
 };
 const SHRINES = [
-  {id:'wut',n:'Schrein der Wut',d:'+35 % Schaden für 3 Räume',buff:{dmg:.35},rooms:3},
-  {id:'stein',n:'Schrein des Steins',d:'+12 Verteidigung für 3 Räume',buff:{def:12},rooms:3},
-  {id:'gier',n:'Schrein der Gier',d:'+60 % Gold für 3 Räume',buff:{gold:.6},rooms:3},
-  {id:'eile',n:'Schrein der Eile',d:'+20 % Tempo, −20 % Abklingzeiten für 3 Räume',buff:{spd:.2,cdr:.2},rooms:3},
+  {id:'wut',n:'Schrein der Wut',bn:'Wut',d:'+35 % Schaden für 3 Räume',buff:{dmg:.35},rooms:3},
+  {id:'stein',n:'Schrein des Steins',bn:'Stein',d:'+12 Verteidigung für 3 Räume',buff:{def:12},rooms:3},
+  {id:'gier',n:'Schrein der Gier',bn:'Gier',d:'+60 % Gold für 3 Räume',buff:{gold:.6},rooms:3},
+  {id:'eile',n:'Schrein der Eile',bn:'Eile',d:'+20 % Tempo, −20 % Abklingzeiten für 3 Räume',buff:{spd:.2,cdr:.2},rooms:3},
   {id:'fluch',n:'Verfluchter Altar',d:'Gegner +50 % LP, aber doppelte Beute für 3 Räume',buff:{curse:1,loot:1},rooms:3},
   {id:'blut',n:'Blutaltar',d:'Sofort 30 % LP verlieren, +1 Talentpunkt',instant:'blood'},
-  {id:'ahnen',n:'Schrein der Ahnen',d:'+15 % Schaden und LP für 4 Räume',buff:{dmg:.15,hp:.15},rooms:4},
+  {id:'ahnen',n:'Schrein der Ahnen',bn:'Ahnen',d:'+15 % Schaden und LP für 4 Räume',buff:{dmg:.15,hp:.15},rooms:4},
   {id:'fortuna',n:'Schrein Fortunas',d:'Sofort 1 Glücksmünze',instant:'coin'}
 ];
 const EVENTS = [
@@ -545,10 +545,10 @@ const BUILD = {
 };
 const BUILDORDER = ['feuer','portal','spiegel','schmiede','alchemie','juwelier','lager','training','tempel','bibliothek','mine','garten'];
 const ELIXIRS = [
-  {id:'kraft',n:'Elixier der Kraft',d:'+30 % Schaden für 3 Räume',cost:{schleim:4,horn:1},gold:150,buff:{dmg:.3},rooms:3},
-  {id:'stein',n:'Elixier des Steins',d:'+15 Verteidigung, +10 % LP für 3 Räume',cost:{schleim:4,erz:6},gold:150,buff:{def:15,hp:.1},rooms:3},
-  {id:'glueck',n:'Elixier des Glücks',d:'+80 % Gold, mehr Beute für 3 Räume',cost:{schleim:4,kristall:2},gold:200,buff:{gold:.8,loot:.4},rooms:3},
-  {id:'wind',n:'Elixier des Windes',d:'+20 % Angriffs- und Lauftempo für 3 Räume',cost:{schleim:5,glut:1},gold:200,buff:{aspd:.2,spd:.2},rooms:3}
+  {id:'kraft',n:'Elixier der Kraft',bn:'Kraft',d:'+30 % Schaden für 3 Räume',cost:{schleim:4,horn:1},gold:150,buff:{dmg:.3},rooms:3},
+  {id:'stein',n:'Elixier des Steins',bn:'Stein',d:'+15 Verteidigung, +10 % LP für 3 Räume',cost:{schleim:4,erz:6},gold:150,buff:{def:15,hp:.1},rooms:3},
+  {id:'glueck',n:'Elixier des Glücks',bn:'Glück',d:'+80 % Gold, mehr Beute für 3 Räume',cost:{schleim:4,kristall:2},gold:200,buff:{gold:.8,loot:.4},rooms:3},
+  {id:'wind',n:'Elixier des Windes',bn:'Wind',d:'+20 % Angriffs- und Lauftempo für 3 Räume',cost:{schleim:5,glut:1},gold:200,buff:{aspd:.2,spd:.2},rooms:3}
 ];
 
 /* ---------- Glückstempel ---------- */

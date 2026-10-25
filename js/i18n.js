@@ -69,11 +69,11 @@ function translateData() {
   BIOMES.forEach(b => tr(b, 'name')); tr(HIDE_BIOME, 'name');
   for (const k in DIFFS) tr(DIFFS[k], 'n', 'd');
   for (const k in NODE) tr(NODE[k], 'n', 'd');
-  SHRINES.forEach(s => tr(s, 'n', 'd'));
+  SHRINES.forEach(s => tr(s, 'n', 'd', 'bn'));
   EVENTS.forEach(e => { tr(e, 'n', 'd'); e.opts.forEach(o => tr(o, 'n')); });
   RIDDLES.forEach(r => { tr(r, 'q'); arr(r.a); });
   for (const k in BUILD) { const B = BUILD[k]; tr(B, 'n', 'npc', 'd0'); if (Array.isArray(B.d)) arr(B.d); }
-  ELIXIRS.forEach(e => tr(e, 'n', 'd'));
+  ELIXIRS.forEach(e => tr(e, 'n', 'd', 'bn'));
   WHEEL.forEach(w => tr(w, 'n'));
   CHESTS.forEach(c => tr(c, 'n', 'd'));
   ACH.forEach(a => tr(a, 'n', 'd'));
