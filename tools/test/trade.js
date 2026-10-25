@@ -36,7 +36,7 @@ const PETS_MOCK = () => {
   const r = await A.evaluate(() => {
     const o = {};
     const c = newChar('knight', 'Alrik', 'normal', false); SAVE.chars.push(c); activateChar(0);
-    SAVE.meta.pets = { list: [], act: null, eggs: [], starter: true, hatched: 0 };
+    SAVE.meta.pets = { list: [], act: null, eggs: [], starter: true, hatched: 0, first: true, intro: true };
     const sw = makeItem({ slot: 'weapon', base: 'sword', form: 'saebel', tier: 4, rar: 4 }); sw.up = 7; sw.fz = 2; sw.gems = ['rubin:2']; sw.sockets = Math.max(1, sw.sockets); sw.el = 'feuer'; sw.mw = { klinge: 5, griff: 3 };
     P.bag.push(sw); saveChar();
     // 1) Hin und zurück
@@ -152,7 +152,7 @@ const PETS_MOCK = () => {
     localStorage.clear(); loadAll(); const c = newChar('ranger', 'Alrik', 'normal', false); SAVE.chars.push(c); activateChar(0);
     P.bag = [makeItem({ slot: 'weapon', base: 'bow', form: 'reflex', tier: 5, rar: 4 }), makeItem({ slot: 'armor', tier: 2, rar: 1 })]; P.bag[0].up = 6;
     P.mats = { erz: 40, mithril: 12 }; P.gems = { 'saphir:2': 2 }; P.gold = 5000; P.story = { a1: 1 };
-    SAVE.meta.pets = { list: [], act: null, eggs: [], starter: true, hatched: 0 }; petGive('drache', { nm: 'Funki', lv: 14, xp: 20, col: 2 }); petGive('eule', { nm: 'Eis', lv: 3, shiny: true }); eggGive('natter', true); SAVE.meta.pets.act = SAVE.meta.pets.list[0].id;
+    SAVE.meta.pets = { list: [], act: null, eggs: [], starter: true, hatched: 0, first: true, intro: true }; petGive('drache', { nm: 'Funki', lv: 14, xp: 20, col: 2 }); petGive('eule', { nm: 'Eis', lv: 3, shiny: true }); eggGive('natter', true); SAVE.meta.pets.act = SAVE.meta.pets.list[0].id;
     P.map = genMap(1); saveChar(); persist(); openMap();
   });
   await A.waitForTimeout(500);
@@ -170,7 +170,7 @@ const PETS_MOCK = () => {
   await tapA('[data-act="tr_done"]');
   ok((await h2(A)) === 'ALRIK', 'Fertig: zurück im Charakter');
 
-  await B.evaluate(() => { localStorage.clear(); loadAll(); for (const [cls, nm] of [['knight', 'Berta'], ['mage', 'Bodo']]) SAVE.chars.push(newChar(cls, nm, 'normal', false)); SAVE.active = -1; SAVE.meta.pets = { list: [], act: null, eggs: [], starter: true, hatched: 0 }; persist(); });
+  await B.evaluate(() => { localStorage.clear(); loadAll(); for (const [cls, nm] of [['knight', 'Berta'], ['mage', 'Bodo']]) SAVE.chars.push(newChar(cls, nm, 'normal', false)); SAVE.active = -1; SAVE.meta.pets = { list: [], act: null, eggs: [], starter: true, hatched: 0, first: true, intro: true }; persist(); });
   await B.goto('about:blank'); await B.goto(link); await B.waitForTimeout(1500);
   ok((await B.evaluate(() => location.hash)) === '' && (await B.evaluate(() => panel.textContent.includes('GESCHENK VON ALRIK'))), 'Link öffnet die Vorschau, der Code verschwindet aus der Adresszeile');
   await shot(B, 'b1_link_hero');
