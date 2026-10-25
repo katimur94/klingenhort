@@ -146,7 +146,7 @@ window.mtStep = (n, dt) => { for (let i = 0; i < n; i++) { flash.a = Math.max(0,
     const pips = await pg.evaluate(() => ['bS1', 'bS2', 'bS3', 'bUlt'].map(id => { const p = $(id).querySelector('.mpip'); return p ? p.textContent : ''; }).join(','));
     ok(pips === 'III,,VI,', 'Rang-Zeichen auf den Fähigkeits-Knöpfen: ' + pips);
     await pg.screenshot({ path: path.join(OUT, `hud-${W}x${H}.png`) });
-    await pg.evaluate(() => { hideOverlay(); openMap(); if (typeof DLG !== 'undefined' && DLG) DLG.skip(); });
+    await pg.evaluate(() => { if (SAVE.meta.pets) SAVE.meta.pets.starter = true; hideOverlay(); openMap(); if (typeof DLG !== 'undefined' && DLG) DLG.skip(); }); // Begleiter-Wahl schon erledigt
     await pg.waitForTimeout(400);
     const tap = async sel => { const el = pg.locator(sel).first(); await el.scrollIntoViewIfNeeded().catch(() => { }); await el.tap({ timeout: 4000 }); await pg.waitForTimeout(300); };
     await tap('[data-act="char"]'); await tap('[data-act="ctab"][data-id="tal"]');

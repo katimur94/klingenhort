@@ -8,7 +8,7 @@ const fs = require('fs');
 const [W, H, OUT] = [+process.argv[2] || 390, +process.argv[3] || 844, process.argv[4] || ''];
 const BASE = (process.env.BASE || 'http://localhost:8777/').replace(/\/?$/, '/');
 const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '  ok   ' : '  FAIL ') + msg); };
-// Ersatz für js/pets.js (Begleiter-Agent): gleiche Schnittstelle, damit der Tausch von Begleitern geprüft werden kann
+// Ersatz, falls js/pets.js fehlt (die echten Funktionen aus pets.js überschreiben ihn)
 const PETS_MOCK = () => {
   window.petExport = i => { const p = SAVE.meta.pets.list[i]; return p ? JSON.parse(JSON.stringify(p)) : null; };
   window.petImport = d => { const L = SAVE.meta.pets.list; if (L.length >= 12) return false; L.push(Object.assign({}, d, { id: uid() })); persist(); return true; };
@@ -36,7 +36,7 @@ const PETS_MOCK = () => {
   const r = await A.evaluate(() => {
     const o = {};
     const c = newChar('knight', 'Alrik', 'normal', false); SAVE.chars.push(c); activateChar(0);
-    SAVE.meta.pets = { list: [], act: -1, eggs: [] };
+    SAVE.meta.pets = { list: [], act: null, eggs: [], starter: true, hatched: 0 };
     const sw = makeItem({ slot: 'weapon', base: 'sword', form: 'saebel', tier: 4, rar: 4 }); sw.up = 7; sw.fz = 2; sw.gems = ['rubin:2']; sw.sockets = Math.max(1, sw.sockets); sw.el = 'feuer'; sw.mw = { klinge: 5, griff: 3 };
     P.bag.push(sw); saveChar();
     // 1) Hin und zurück
@@ -140,7 +140,7 @@ const PETS_MOCK = () => {
   ok(r.reward, 'Sammlerlohn: Glücksmünzen beim Sammelziel');
 
   /* ---------- alter Spielstand ---------- */
-  const old = await A.evaluate(() => { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); delete s.meta.trades; delete s.meta.looks; delete s.meta.lookRw; s.chars[0].gear.weapon.skin = 'kaputt'; s.chars[0].bag.push({ slot: 'weapon', base: 'sword', tier: 2, rar: 1, up: 0, aff: {}, sockets: 0, gems: [], uid: 'alt1' }); localStorage.setItem(SAVE_KEY, JSON.stringify(s)); return true; });
+  const old = await A.evaluate(() => { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s.meta.pets) s.meta.pets.starter = true; delete s.meta.trades; delete s.meta.looks; delete s.meta.lookRw; s.chars[0].gear.weapon.skin = 'kaputt'; s.chars[0].bag.push({ slot: 'weapon', base: 'sword', tier: 2, rar: 1, up: 0, aff: {}, sockets: 0, gems: [], uid: 'alt1' }); localStorage.setItem(SAVE_KEY, JSON.stringify(s)); return true; });
   await A.reload(); await A.waitForTimeout(1400);
   const ol = await A.evaluate(() => ({ t: Array.isArray(SAVE.meta.trades.got) && SAVE.meta.trades.deal.done.length === 0, looks: tmCount(), title: !!panel.querySelector('.logo'), pv: (() => { try { return !!heroPreviewURL(SAVE.chars[0]).url; } catch (e) { return false; } })() }));
   ok(old && ol.t && ol.looks >= 3 && ol.title && ol.pv, `alter Spielstand lädt: Tausch-Buch angelegt, ${ol.looks} Looks aus dem Besitz gesammelt`);
@@ -152,7 +152,7 @@ const PETS_MOCK = () => {
     localStorage.clear(); loadAll(); const c = newChar('ranger', 'Alrik', 'normal', false); SAVE.chars.push(c); activateChar(0);
     P.bag = [makeItem({ slot: 'weapon', base: 'bow', form: 'reflex', tier: 5, rar: 4 }), makeItem({ slot: 'armor', tier: 2, rar: 1 })]; P.bag[0].up = 6;
     P.mats = { erz: 40, mithril: 12 }; P.gems = { 'saphir:2': 2 }; P.gold = 5000; P.story = { a1: 1 };
-    SAVE.meta.pets = { list: [{ id: 'p1', sp: 'glutdrache', nm: 'Funki', lv: 14, xp: 20, col: 2, shiny: false }, { id: 'p2', sp: 'frosteule', nm: 'Eis', lv: 3, xp: 0, col: 0, shiny: true }], act: 0, eggs: [{ sp: 'giftnatter', need: 150, got: 40 }] };
+    SAVE.meta.pets = { list: [], act: null, eggs: [], starter: true, hatched: 0 }; petGive('drache', { nm: 'Funki', lv: 14, xp: 20, col: 2 }); petGive('eule', { nm: 'Eis', lv: 3, shiny: true }); eggGive('natter', true); SAVE.meta.pets.act = SAVE.meta.pets.list[0].id;
     P.map = genMap(1); saveChar(); persist(); openMap();
   });
   await A.waitForTimeout(500);
@@ -170,7 +170,7 @@ const PETS_MOCK = () => {
   await tapA('[data-act="tr_done"]');
   ok((await h2(A)) === 'ALRIK', 'Fertig: zurück im Charakter');
 
-  await B.evaluate(() => { localStorage.clear(); loadAll(); for (const [cls, nm] of [['knight', 'Berta'], ['mage', 'Bodo']]) SAVE.chars.push(newChar(cls, nm, 'normal', false)); SAVE.active = -1; SAVE.meta.pets = { list: [], act: -1, eggs: [] }; persist(); });
+  await B.evaluate(() => { localStorage.clear(); loadAll(); for (const [cls, nm] of [['knight', 'Berta'], ['mage', 'Bodo']]) SAVE.chars.push(newChar(cls, nm, 'normal', false)); SAVE.active = -1; SAVE.meta.pets = { list: [], act: null, eggs: [], starter: true, hatched: 0 }; persist(); });
   await B.goto('about:blank'); await B.goto(link); await B.waitForTimeout(1500);
   ok((await B.evaluate(() => location.hash)) === '' && (await B.evaluate(() => panel.textContent.includes('GESCHENK VON ALRIK'))), 'Link öffnet die Vorschau, der Code verschwindet aus der Adresszeile');
   await shot(B, 'b1_link_hero');
@@ -236,14 +236,14 @@ const PETS_MOCK = () => {
   await shot(A, 'a5_pets');
   await tapA('[data-act="tr_ask"][data-id="p:0"]'); await tapA('[data-act="tr_send"]');
   const pcode = await A.evaluate(() => { const v = $('trOut').value; return v.slice(v.indexOf('KH5-')); });
-  ok(await A.evaluate(() => SAVE.meta.pets.list.length === 1 && SAVE.meta.pets.list[0].nm === 'Eis' && SAVE.meta.pets.act === -1), 'Begleiter verschenkt: aus der Liste von A');
+  ok(await A.evaluate(() => SAVE.meta.pets.list.length === 1 && SAVE.meta.pets.list[0].nm === 'Eis'), 'Begleiter verschenkt: aus der Liste von A');
   await B.evaluate(() => { TRD.res = null; trShow(); }); await B.locator('#trIn').fill(pcode); await tapB('[data-act="tr_check"]');
   ok(await B.evaluate(() => panel.textContent.includes('Funki')), 'Vorschau zeigt den Begleiter');
   await tapB('[data-act="tr_take"]');
-  ok(await B.evaluate(() => SAVE.meta.pets.list.some(p => p.nm === 'Funki' && p.lv === 14 && p.sp === 'glutdrache')), 'B hat den Begleiter Funki (Level 14)');
+  ok(await B.evaluate(() => SAVE.meta.pets.list.some(p => p.nm === 'Funki' && p.lv === 14 && p.sp === 'drache')), 'B hat den Begleiter Funki (Level 14)');
   await tapA('[data-act="tr_done"]'); await tapA('[data-act="tr_ask"][data-id="e:0"]'); await tapA('[data-act="tr_send"]');
   const ecode = await A.evaluate(() => { const v = $('trOut').value; return v.slice(v.indexOf('KH5-')); });
-  ok(await B.evaluate(c => { const p = trParse(c).p; return trAccept(p) === 'ok' && SAVE.meta.pets.eggs.some(e => e.sp === 'giftnatter'); }, ecode), 'Ei verschenkt und angekommen');
+  ok(await B.evaluate(c => { const p = trParse(c).p; return trAccept(p) === 'ok' && SAVE.meta.pets.eggs.some(e => e.sp === 'natter'); }, ecode), 'Ei verschenkt und angekommen');
   ok(await B.evaluate(c => { const f = window.petImport; window.petImport = undefined; const p = trParse(c).p; p.id = 'neuneu000000'; const r = trAccept(p); window.petImport = f; return r === 'pets' && !SAVE.meta.trades.got.includes('neuneu000000'); }, pcode), 'ohne Begleiter-System: Begleiter-Code bleibt gültig');
 
   /* ---------- Bildschirme antippen: Händlerin, Spiegel, Aussehen ---------- */

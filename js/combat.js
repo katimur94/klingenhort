@@ -164,7 +164,7 @@ function weaponHit(e, w, mul, nx, ny, kbMul, forceCrit) {
   let m = mul;
   if (P.stealth > 0) { m *= (2 + mod('stealth')) * (1 + mod('r3Dmg')); crit = true; P.stealth = 0; burst(P.x, P.y, 8, '#3a3448', 12, 50); }
   const dmg = Math.round(hookVal('hit', w.dmg * m * rnd(.9, 1.1) * (crit ? w.critdmg : 1), e, w, crit));
-  hurtEnemy(e, dmg, nx, ny, w.kb * (kbMul || 1), crit);
+  hurtEnemy(e, dmg, nx, ny, w.kb * (kbMul || 1), crit, !!w.pet); // Begleiter-Treffer füllen weder Wut noch Kombo
   hook('afterHit', e, w, dmg, crit);
   if (w.leech && state === 'play') P.hp = Math.min(P.st.hp, P.hp + dmg * w.leech);
   if (crit && mod('my_fireburst') && (P.fbT || 0) < T) { P.fbT = T + .35; const x = e.x, y = e.y; explode(x, y, 26, w.dmg * .9, 'p', { burn: true, w }); }

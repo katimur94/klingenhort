@@ -7,6 +7,19 @@
 
 const CHANGELOG = [
   {
+    v: '5.0.0', d: '2026-10-25', t: 'Meisterwerk', items: [
+      ['neu', 'Begleiter: Glutdrache, Geisterkatze, Goldkäfer, Frosteule, Giftnatter und Sturmfunke kämpfen an deiner Seite, sammeln Beute ein und wachsen mit dir – von Level 1 bis 100, in sechs Entwicklungsstufen bis zur mythischen Form.'],
+      ['neu', 'Jeder bekommt einen Begleiter geschenkt. Weitere schlüpfen aus Eiern von Bossen und aus der Drachentruhe – in vielen Farben und als seltene schillernde Exemplare.'],
+      ['neu', 'Elemente: Feuer, Frost, Blitz, Gift, Licht und Schatten. Triff Gegner an ihrer Schwäche für 50 % mehr Schaden – Rüstungen mit Element schützen dich.'],
+      ['neu', 'Schmiede der Meister: Sammle Bauteile in zehn Stufen, verbinde drei zu einem besseren und schmiede daraus dein eigenes Meisterwerk. Die Schmiedemeisterschaft wächst bis Level 100.'],
+      ['neu', 'Zerlegen: Alte Gegenstände werden zu Bauteilen und Materialien.'],
+      ['neu', 'Meisterschaft: Jede Fähigkeit wird durch Benutzen stärker – bis Level 50 mit sechs Rängen. Jeder Rang sieht anders aus, ganz oben golden.'],
+      ['neu', 'Tauschen: Verschenke Gegenstände, Materialien und Begleiter per Code oder Link an Freunde. Die Tauschhändlerin hat jeden Tag neue Angebote.'],
+      ['neu', 'Aussehen: Am Spiegel wählst du das Aussehen deiner Waffe und Rüstung aus deiner Sammlung – die Werte bleiben gleich.'],
+      ['besser', 'Heldenbilder zeigen jetzt auch die Waffe.']
+    ]
+  },
+  {
     v: '4.3.1', d: '2026-10-25', t: 'Langer Weg nach oben', items: [
       ['besser', 'Aufsteigen dauert länger: Alle Talente hast du erst nach dem Ende der Geschichte voll, Level 50 ist ein Ziel für das Endgame.'],
       ['besser', 'Dafür bringt jedes Level mehr Lebenspunkte und Schaden – die Kämpfe unterwegs bleiben fair.'],
@@ -89,10 +102,10 @@ const CHANGELOG = [
 
 // Vorschau: was in den nächsten Wochen kommt (Version, Text – siehe ROADMAP.md)
 const COMING = [
-  ['4.4', 'Tägliche und wöchentliche Aufträge mit Belohnungen im Versteck'],
-  ['4.5', 'Neues Gebiet: der Sturmgipfel mit eigenem Boss und vier neuen Gegnern'],
-  ['5.0', 'Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste'],
-  ['5.1', 'Begleiter: Mini-Drache, Geisterkatze und Goldkäfer sammeln Beute für dich']
+  ['5.1', 'Aufträge: Tages- und Wochenaufträge mit Bauteilen, Eiern und Glücksmünzen als Belohnung'],
+  ['5.2', 'Neues Gebiet: der Sturmgipfel mit Blitz-Gegnern, eigenem Boss und Sturmsilber'],
+  ['6.0', 'Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste'],
+  ['6.1', 'Begleiter-Expeditionen und Zucht: neue Farben und Mischformen']
 ];
 
 const NEWS_KIND = { neu: [_t('NEU'), '#79c24e'], besser: [_t('BESSER'), '#57a7d6'], fix: [_t('BEHOBEN'), '#e8b04a'] };

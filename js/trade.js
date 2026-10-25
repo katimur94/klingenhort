@@ -254,7 +254,7 @@ function trDealDo(i) {
 }
 
 /* ---------- Begleiter und Bauteile anzeigen (Daten aus pets.js / forge.js, wenn vorhanden) ---------- */
-function trSpTab() { const T = typeof PET_SPECIES !== 'undefined' ? PET_SPECIES : typeof PETS !== 'undefined' ? PETS : null; return T && typeof T === 'object' ? T : null; }
+function trSpTab() { const T = typeof PET_SP !== 'undefined' ? PET_SP : null; return T && typeof T === 'object' ? T : null; }
 function trSpDef(sp) { const T = trSpTab(); if (!T) return null; return Array.isArray(T) ? T.find(x => x && x.id === sp) || null : trHas(T, sp) ? T[sp] : null; }
 function trRandSp() { const T = trSpTab(); if (!T) return null; const ks = Array.isArray(T) ? T.map(x => x && x.id).filter(trSp) : Object.keys(T).filter(trSp); return ks.length ? pick(ks) : null; }
 function trSpName(sp) { const D = trSpDef(sp); return D && typeof D.n === 'string' ? D.n : String(sp || '?').replace(/^./, c => c.toUpperCase()); }

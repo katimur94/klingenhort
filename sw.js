@@ -1,5 +1,5 @@
 // Klingenhort Service Worker – App offline spielbar machen
-const VERSION = 'klingenhort-v4.3.1';
+const VERSION = 'klingenhort-v5.0.0';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './js/i18n.js', './js/lang/en.js', './js/lang/tr.js', './js/lang/es.js', './js/lang/it.js', './js/lang/fr.js', './js/data.js', './js/story.js', './js/news.js', './js/weekly.js', './js/core.js', './js/art.js', './js/items.js', './js/elements.js', './js/forge.js', './js/pets.js', './js/mastery.js', './js/trade.js', './js/world.js', './js/combat.js', './js/render.js', './js/hideout.js', './js/controls.js', './js/ui.js', './assets/sheet.png', './assets/fx.png', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
