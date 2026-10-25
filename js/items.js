@@ -51,6 +51,7 @@ function makeItem(o) {
   if (o.myth) it.name = MYTHIC[o.myth].n;
   else if (o.set) it.name = SETS[o.set].pieces[o.slot];
   else if (rar === 4) it.name = pick(LEGEND[isW ? it.base : it.slot]);
+  hook('itemGen', it);
   return it;
 }
 /* Mythischer Gegenstand für einen Platz (zufällig, wenn kein Platz angegeben) */
