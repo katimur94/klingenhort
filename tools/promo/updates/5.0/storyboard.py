@@ -574,7 +574,7 @@ LOOKS = json.load(open(os.path.join(RAW, 'look', 'info.json')))
 def look(k):
     if k < 24:
         b = bgd('look/l0.jpg').copy()
-        ui(b, 'look/l0.jpg', (40, 140, 1040, 1580), W / 2, 1000, .6, k)
+        ui(b, 'look/l0.jpg', (40, 545, 1040, 1645), W / 2, 1020, .84, k)
     else:
         i = min(4, (k - 24) // 24 + 1); kk = (k - 24) % 24 if k < 120 else k - 96
         b = bgd('look/l%d.jpg' % i, .28).copy()

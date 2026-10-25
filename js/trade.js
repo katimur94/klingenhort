@@ -267,12 +267,12 @@ function trPetName(p) { return p && typeof p.nm === 'string' && p.nm.trim() ? p.
 function trPetIcon(p) { if (typeof petIconURL === 'function') { try { const u = petIconURL(p); if (typeof u === 'string' && u.startsWith('data:')) return u; } catch (_) { } } const el = trSpEl(p && p.sp); return trArt('paw', el ? TR_ELC[el] : '#e8b04a'); }
 function trEggIcon(sp) { const el = trSpEl(sp); return trArt('egg', el ? TR_ELC[el] : '#efe2bf', '#6a4a8a'); }
 function trPartName(k) {
-  if (typeof partName === 'function') { try { const s = partName(k); if (typeof s === 'string' && s) return s; } catch (_) { } }
+  if (typeof pname === 'function' && typeof pparse === 'function') { try { const p = pparse(k), s = pname(p.t, p.g, p.el); if (typeof s === 'string' && s) return s; } catch (_) { } }
   const a = k.split(':'), g = +a[a.length - 1], t = TR_PART[a[0]] || a[0].replace(/^./, c => c.toUpperCase()), el = a.length > 2 ? TR_ELN[a[1]] || a[1] : null;
   return _t('{part} ({grade})', { part: el ? t + ' · ' + el : t, grade: TR_GRADE[g - 1] || g });
 }
 function trPartIcon(k) {
-  if (typeof partIconURL === 'function') { try { const u = partIconURL(k); if (typeof u === 'string' && u.startsWith('data:')) return u; } catch (_) { } }
+  if (typeof partIconURL === 'function' && typeof pparse === 'function') { try { const p = pparse(k), u = partIconURL(p.t, p.g, p.el); if (typeof u === 'string' && u.startsWith('data:')) return u; } catch (_) { } }
   const a = k.split(':'), g = clamp(+a[a.length - 1] || 1, 1, 10), el = a.length > 2 ? a[1] : null;
   return trArt('p_' + a[0], el && TR_ELC[el] ? TR_ELC[el] : MAT[clamp(Math.floor((g - 1) * .8), 0, TIERS - 1)].m[2], TR_GRC[g - 1]);
 }
