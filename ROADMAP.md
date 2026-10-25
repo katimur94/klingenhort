@@ -36,19 +36,20 @@ Ausführlich für den automatischen Lauf: [`tools/WOCHENUPDATE.md`](tools/WOCHEN
 
 | Woche | Version | Thema | Inhalt | Aufwand | Status |
 |---|---|---|---|---|---|
-| 1 | 4.2 | **Wochen-Ereignisse** | Automatisch nach Kalenderwoche: *Goldrausch* (+50 % Gold), *Blutmond* (doppelt so viele Elite-Gegner, bessere Beute), *Drachenwoche* (mehr Schuppen, Jungdrachen überall), *Glückswoche* (Glücksrad ein Gratis-Dreh pro Tag), *Schmiedewoche* (Aufwerten günstiger). Banner im Titelmenü und auf der Karte | klein | ✅ 4.2 |
+| 1 | 4.2 | **Wochen-Ereignisse** | Automatisch nach Kalenderwoche: *Goldrausch*, *Blutmond*, *Drachenwoche*, *Glückswoche*, *Schmiedewoche*. Banner im Titelmenü und auf der Karte | klein | ✅ 4.2 |
 | – | 4.3 | **Sechs Sprachen** | Deutsch, Englisch, Türkisch, Spanisch, Italienisch, Französisch. Sprache des Geräts beim Start, Auswahl im Titelmenü und in den Einstellungen | mittel | ✅ 4.3 |
-| 2 | 4.4 | **Aufträge** | 3 Tagesaufträge (z. B. „Besiege 40 Untote“, „Verschmelze einen Gegenstand“) und 1 Wochenauftrag. Auftragstafel als neue Station im Versteck. Belohnung: Gold, Materialien, Glücksmünzen | mittel | offen |
-| 3 | 4.5 | **Neues Gebiet: Sturmgipfel** | Gebiet 9 mit Blitz-Effekten, 4 neue Gegner (Harpyie, Sturmgolem, Donnerschamane, Greif), Boss *Sturmkönig Aerok* mit Blitz-Phasen, neues Material *Sturmsilber* | groß | offen |
-| 4 | 5.0 | **Saison 1** | Saison-Helden starten bei Level 1, eigene Saison-Rangliste (lokal: bester Akt, höchste Qual, schnellster Boss), **kostenloser Saison-Pass** mit 30 Stufen (Kosmetik, Titel, Glücksmünzen). Nach 6 Wochen wandern Saison-Helden zu den normalen Helden | groß | offen |
-| 5 | 5.1 | **Begleiter** | Haustiere aus Eiern (Truhen, Bosse): Mini-Drache, Geisterkatze, Goldkäfer. Sie sammeln Beute ein, leveln mit und haben je einen kleinen Effekt | mittel | offen |
-| 6 | 5.2 | **Der Abgrund** | Endlos-Turm: Ebene für Ebene stärker, 3 Minuten pro Ebene, Bestwert pro Klasse in der Ruhmeshalle. Belohnung steigt mit der Ebene | mittel | offen |
-| 7 | 5.3 | **Neue Klasse: Nekromant** | Beschwört Skelette, Knochenspeer, Leichenexplosion, Ultimative *Armee der Toten*. Eigener Talentbaum, eigene Waffen (Sense, Knochenstab) | groß | offen |
-| 8 | 5.4 | **Legendäre Kräfte 2.0** | 12 neue legendäre Effekte, die Fähigkeiten verändern (z. B. Feuerball teilt sich, Wirbelklinge zieht Gegner an). Sets mit 4 Teilen und Ring/Amulett als neue Plätze | mittel | offen |
-| 9 | 5.5 | **Verzaubern & Waffen-Skins** | Einen Zusatzwert gezielt neu würfeln (Verzauberer im Versteck). Waffen-Aussehen übertragen (Transmog) | mittel | offen |
-| 10 | 5.6 | **Weltboss der Woche** | Ein riesiger Boss mit 3 Phasen, nur diese Woche. Schaden-Bestwert, eigene Belohnung (Trophäe fürs Versteck) | mittel | offen |
-| 11 | 5.7 | **Versteck 2.0** | Dekorieren: Trophäen von Bossen, Banner, Teppiche, Pflanzen. Gästebuch-Code: Versteck als Code teilen und das von Freunden ansehen | mittel | offen |
-| 12 | 6.0 | **Saison 2 + Online-Rangliste** | Neue Saison-Regel (z. B. „nur Hardcore“ oder „doppelte Geschwindigkeit“). Optional eine echte Online-Rangliste (braucht einen kleinen Server, z. B. Supabase) | groß | offen |
+| – | 5.0 | **Meisterwerk** | Begleiter (6 Arten, Level 1–100, 6 Entwicklungsstufen), Elemente (Schwächen und Resistenzen), Schmiede der Meister (Bauteile Stufe 1–10, Zerlegen, Meisterwerke, Schmiedemeisterschaft 1–100), Fähigkeiten-Meisterschaft (Level 1–50, 6 Ränge mit neuem Aussehen), Tauschen per Code/Link, Tauschhändler, Aussehen tauschen (Sammlung) | sehr groß | in Arbeit |
+| 2 | 5.1 | **Aufträge** | 3 Tagesaufträge und 1 Wochenauftrag, auch für Begleiter, Meisterschaft und Schmiede („Zerlege 20 Gegenstände“, „Besiege 30 Gegner mit Schwäche-Treffern“). Auftragstafel im Versteck. Belohnung: Bauteile, Eier, Glücksmünzen | mittel | offen |
+| 3 | 5.2 | **Neues Gebiet: Sturmgipfel** | Gebiet 9 mit Blitz-Gegnern (Harpyie, Sturmgolem, Donnerschamane, Greif), Boss *Sturmkönig Aerok* mit Blitz-Phasen, neues Material *Sturmsilber*, Blitz-Elementkerne | groß | offen |
+| 4 | 6.0 | **Saison 1** | Saison-Helden ab Level 1, Saison-Rangliste (lokal), **kostenloser Saison-Pass** mit 30 Stufen (Kosmetik, Titel, Eier, Bauteile). Nach 6 Wochen wandern Saison-Helden zu den normalen | groß | offen |
+| 5 | 6.1 | **Begleiter-Expeditionen & Zucht** | Begleiter auf Expedition schicken (läuft auch, wenn das Spiel zu ist), zwei Begleiter kreuzen → neue Farben und seltene Mischformen, Begleiter-Rangliste | mittel | offen |
+| 6 | 6.2 | **Der Abgrund** | Endlos-Turm: Ebene für Ebene stärker, 3 Minuten pro Ebene, Bestwert pro Klasse in der Ruhmeshalle | mittel | offen |
+| 7 | 6.3 | **Neue Klasse: Nekromant** | Beschwört Skelette, Knochenspeer, Leichenexplosion, Ultimative *Armee der Toten*, eigener Talentbaum, eigene Waffen, Meisterschaft für alle neuen Fähigkeiten | groß | offen |
+| 8 | 6.4 | **Runenwörter & Legendäre Kräfte 2.0** | Runen in Sockeln ergeben in der richtigen Reihenfolge Runenwörter mit starken Effekten. 12 neue legendäre Kräfte, die Fähigkeiten verändern | mittel | offen |
+| 9 | 6.5 | **Verzaubern & Element-Reaktionen** | Einen Zusatzwert gezielt neu würfeln. Elemente kombinieren: Feuer auf gefrorene Gegner = Dampfexplosion, Blitz auf vergiftete = Giftwolke | mittel | offen |
+| 10 | 6.6 | **Weltboss der Woche** | Riesiger Boss mit 3 Phasen, nur diese Woche, Schaden-Bestwert, Trophäe fürs Versteck | mittel | offen |
+| 11 | 6.7 | **Versteck 2.0** | Dekorieren mit Trophäen, Bannern, Pflanzen; Begleiter-Nest; Versteck als Code teilen | mittel | offen |
+| 12 | 7.0 | **Saison 2 + Online** | Neue Saison-Regel. Echte Online-Rangliste und Marktplatz zum Handeln (braucht einen kleinen Server, z. B. Supabase) | groß | offen |
 
 > Faustregel: Wochen mit „groß“ wechseln sich mit kleinen und mittleren ab. Fällt eine Woche aus, lieber ein kleines Update als gar keins – Ereignisse und Aufträge laufen ab Woche 2 auch ohne neue Inhalte weiter.
 
@@ -70,8 +71,22 @@ Schon erledigt in 4.1: Hochformat, klebende Kopf- und Fußleisten, Liste neben D
 - **Haptik-Stärke** einstellbar
 - **Spielstand in der Cloud** (Code per Link teilen statt kopieren)
 - ✅ **Sechs Sprachen** (Englisch, Türkisch, Spanisch, Italienisch, Französisch, Deutsch) – 4.3
+- **Auto-Zerlegen:** Gewöhnliche und magische Beute automatisch in Bauteile zerlegen
 
 ---
+
+## Langzeitziele – warum Klingenhort Tausende Stunden trägt
+
+| Ziel | Umfang | grob |
+|---|---|---|
+| Helden-Level 1–50, dann Paragon ohne Obergrenze | 4 Klassen, Wiedergeburt | Hunderte Stunden je Klasse |
+| Qual-Stufen | ohne Obergrenze | endlos |
+| Begleiter Level 1–100 | 6 Arten × 6 Entwicklungsstufen × Farben, schillernde Varianten | Hunderte Stunden je Begleiter |
+| Fähigkeiten-Meisterschaft 1–50 | 16 Fähigkeiten (bald 20), 6 Ränge | Hunderte Stunden je Klasse |
+| Schmiedemeisterschaft 1–100 | Bauteile bis Stufe 10 (3 → 1, eine göttliche Klinge = 19 683 rohe) | Tausend Stunden und mehr |
+| Sammlung: Aussehen, Bestiarium, Chronik, Erfolge, Kosmetik | Hunderte Einträge | lang |
+
+Jedes System zeigt immer das nächste Ziel und einen Fortschrittsbalken – der Spieler weiß jederzeit, wofür er spielt.
 
 ## Ideenspeicher
 
@@ -82,6 +97,10 @@ Schon erledigt in 4.1: Hochformat, klebende Kopf- und Fußleisten, Liste neben D
 **Versteck:** Kartograph (Karten-Modifikatoren kaufen) · Arena mit Wellen-Herausforderungen · Haustierstall · Brunnen der Wünsche (Münzen opfern)
 
 **Geschichte:** Nebenquests von NPCs im Versteck · Tagebuch-Seiten pro Gebiet · Geheime Räume auf der Karte · Zweites Kapitel nach Pyraxis
+
+**Begleiter:** Expeditionen (offline) · Zucht und Mischformen · Begleiter-Arena · Begleiter-Kostüme · zweiter Begleiter-Platz ab Paragon 100
+
+**Berufe:** Bergbau, Kräuterkunde und Angeln im Versteck · Kochen (Mahlzeiten als Buffs) · Erbstücke, die mit dem Helden mitwachsen
 
 **Gemeinschaft:** Wochen-Code: alle spielen dieselbe Karte · Bestwerte als Bild teilen (für TikTok) · Fan-Wünsche aus den Kommentaren als „Community-Update“ des Monats
 
