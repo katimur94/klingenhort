@@ -98,7 +98,7 @@ const PC = process.argv[5] === 'pc', BASE = (process.env.BASE || 'http://localho
   await shot('36_hall', () => { showHall(); });
   await shot('37_code', () => { showCode(); });
   // 5.0: Begleiter, Bauteile, Meisterschmiede, Tauschen, Aussehen
-  await shot('38_pet_starter', () => { SAVE.meta.pets.starter = false; titleScene(); showTitle(); petStarter('title'); });
+  await shot('38_brutnest', () => { activateChar(0); SAVE.meta.pets.eggs = []; eggGive('maus', true); eggGive('drache', true); eggGive('wal', true); const E = SAVE.meta.pets.eggs; Object.assign(E[0], { got: E[0].need * .6, w: 1, f: .8, z: .9 }); E[2].got = E[2].need; openNest('title'); }, 500);
   await shot('39_pet', () => { SAVE.meta.pets.starter = true; petGive('drache', { nm: 'Funki', lv: 52 }); eggGive('eule', true); activateChar(0); openChar('pet', 'map'); }, 500);
   await shot('40_parts', () => { Object.assign(P.parts, { 'klinge:3': 2, 'griff:2': 4, 'kern:feuer:2': 1, 'platte:1': 5, 'futter:4': 1, 'rune:licht:3': 2 }); openChar('parts'); });
   await shot('41_wb_mw', () => { wbTab = 'mw'; openWorkbench('node'); });

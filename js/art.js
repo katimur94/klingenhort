@@ -27,73 +27,151 @@ function pbOutline(b, col) {
   for (const [x, y] of o) b.set(x, y, col || OUT);
   return b;
 }
-function pbCanvas(b) { return mk(b.w, b.h, g => { for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) { const c = b.a[y * b.w + x]; if (c) { g.fillStyle = c; g.fillRect(x, y, 1, 1); } } }); }
+function pbCanvas(b, pal) { return mk(b.w, b.h, g => { for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) { const c = b.a[y * b.w + x]; if (c) { g.fillStyle = pal ? pal[c] || c : c; g.fillRect(x, y, 1, 1); } } }); }
 function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function mixC(a, b, k) { const A = hexRgb(a), B = hexRgb(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * k).toString(16).padStart(2, '0')).join(''); }
+function rgbaC(h, a) { const [r, g, b] = hexRgb(h); return `rgba(${r},${g},${b},${a})`; }
+// Puffer vergrößern (Rand für Zierde) und wieder auf den Inhalt zuschneiden
+function pbPad(b, p) { const n = PB(b.w + 2 * p, b.h + 2 * p); for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) n.a[(y + p) * n.w + x + p] = b.a[y * b.w + x]; return n; }
+function pbTrim(b) {
+  let x0 = b.w, y0 = b.h, x1 = -1, y1 = -1;
+  for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) if (b.a[y * b.w + x]) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  if (x1 < 0) return { b, x: 0, y: 0 };
+  const n = PB(x1 - x0 + 1, y1 - y0 + 1); for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) n.a[(y - y0) * n.w + x - x0] = b.a[y * b.w + x];
+  return { b: n, x: x0, y: y0 };
+}
+function offPB(b, ox, oy) { return { w: b.w, h: b.h, set: (x, y, c) => b.set(x + ox, y + oy, c), get: (x, y) => b.get(x + ox, y + oy), rect: (x, y, w, h, c) => b.rect(x + ox, y + oy, w, h, c), line: (x0, y0, x1, y1, c) => b.line(x0 + ox, y0 + oy, x1 + ox, y1 + oy, c), disc: (cx, cy, r, c) => b.disc(cx + ox, cy + oy, r, c) }; }
+/* Pixelbild aus Zeichen (Helme, Kopfschmuck): . leer, 0–3 Zierfarben, g h i Beschlag, m n o p Metall, c d Rüstung, e/f Edelstein, w weiß, k dunkel, r rot, b blau, v grün, y gelb */
+const PXC = { 0: 'a0', 1: 'a1', 2: 'a2', 3: 'a3', g: 'g0', h: 'g1', i: 'g2', m: 'm0', n: 'm1', o: 'm2', p: 'm3', c: 'c0', d: 'c1', e: 'gm', f: 'gd', w: '#ffffff', k: '#1a1420', r: '#d8342c', b: '#3a8ae8', v: '#3ac87a', y: '#ffe27a' };
+function pxStamp(b, rows, x0, y0) { rows.forEach((s, y) => { for (let x = 0; x < s.length; x++) if (s[x] !== '.') b.set(x0 + x, y0 + y, PXC[s[x]] || s[x]); }); }
 
-/* ---------- Waffen ---------- */
+/* ---------- Waffen ----------
+   Gezeichnet wird mit Rollen statt Farben: m0–m3 Metall, g0–g2 Beschlag, l0–l2 Griff, w0–w2 Holz, b0–b2 Knochen, st Sehne,
+   gm/gd Edelstein, ob Kugel, r0/r1 Runen, a0–a3 Zierfarben, ou Umriss, rg Schein. itemPal() setzt die Farben ein:
+   Stufe → Material und wachsende Form (Parierstange, Dornen, Sägezähne, Lichtkern, Flügel), Seltenheit → farbige Schneide
+   (Magisch blau, Selten gold, Episch violett), Juwel, Runen, Umriss und Schein; benannte Gegenstände (ITEMLOOK) → eigene Palette und Zierde */
 function wform(it) { const F = WFORM[it.base]; if (!F) return {}; return F.find(f => f.id === it.form) || F.find(f => f.std) || F[0]; }
-function itemArtKey(it) { return it.slot + it.base + (it.form || '') + it.tier + '.' + it.rar + (it.myth || '') + (it.set || '') + (it.name ? 'n' : ''); }
+// alles, was das Aussehen bestimmt (auch Name und Element) – gleiche Schlüssel heißen gleiches Bild
+function itemArtKey(it) { return it.slot + it.base + (it.form || '') + it.tier + '.' + it.rar + (it.myth || '') + (it.set || '') + (it.name ? '~' + it.name : '') + (it.el ? '^' + it.el : ''); }
 function gemCol(it) { return it.myth ? '#ff4fd8' : it.set ? '#4ade80' : RAR[it.rar].c; }
+const RM = ['m0', 'm1', 'm2', 'm3'], RG = ['g0', 'g1', 'g2'], RL = ['l0', 'l1', 'l2'], RW = ['w0', 'w1', 'w2'], RB = ['b0', 'b1', 'b2'];
+const RTINT = [null, '#6ab8ff', '#ffe36a', '#d6a8ff'];
+const ROUT = [OUT, OUT, OUT, '#2a1240', '#3a1606', '#0a2e16', '#3a0832'];
+const RRING = [null, null, null, 'rgba(184,146,244,.32)', 'rgba(255,150,60,.55)', 'rgba(74,222,128,.5)', 'rgba(255,79,216,.6)'];
+function itemLook(it) {
+  if (!it) return null;
+  if (it.rar === 6 && it.myth) return ITEMLOOK['m:' + it.myth] || null;
+  if (it.rar === 5 && it.set) return ITEMLOOK['s:' + it.set] || null;
+  if (it.rar === 4 && it.name) return ITEMLOOK[it.name] || null;
+  return null;
+}
+function itemPal(it, L) {
+  const Tm = MAT[clamp(it.tier, 0, TIERS - 1)], M = Tm.m, r = clamp(it.rar, 0, 6), rc = RAR[r].c, p = { st: '#e8e2cf', ou: ROUT[r], rg: RRING[r] };
+  const G = r >= 4 || it.set || it.tier >= 4 ? GOLDC : M, ec = it.el && typeof ELEM !== 'undefined' && ELEM[it.el] ? ELEM[it.el].c : null;
+  for (let i = 0; i < 4; i++) p[RM[i]] = M[i];
+  for (let i = 0; i < 3; i++) { p[RG[i]] = G[i]; p[RL[i]] = LEATH[i]; p[RW[i]] = WOOD[i]; p[RB[i]] = BONE[i]; }
+  if (RTINT[r]) { p.m3 = mixC(M[3], RTINT[r], .6); for (let i = 0; i < 3; i++) p[RL[i]] = mixC(LEATH[i], RTINT[r], .5 + i * .12); }
+  p.c0 = Tm.c[0]; p.c1 = Tm.c[1]; p.tr = r >= 4 || it.set || it.tier >= 4 ? GOLDC[1] : M[1];
+  if (RTINT[r]) p.tr = mixC(p.tr, RTINT[r], .6);
+  p.rb = RTINT[r] ? mixC(G[1], RTINT[r], .65) : G[1];
+  p.gm = gemCol(it); p.gd = mixC(p.gm, '#000000', .45); p.ob = it.myth ? '#ff4fd8' : ORB[clamp(it.tier, 0, 7)];
+  p.r0 = ec ? ec[2] : '#c8a0ff'; p.r1 = ec ? ec[3] : '#f4e8ff';
+  p.a0 = mixC(rc, '#000000', .5); p.a1 = rc; p.a2 = mixC(rc, '#ffffff', .45); p.a3 = '#ffffff';
+  if (L) Object.assign(p, L.pal);
+  return p;
+}
 const WACACHE = {};
 function weaponArt(it) {
   const k = itemArtKey(it); if (WACACHE[k]) return WACACHE[k];
-  const F = wform(it), M = MAT[clamp(it.tier, 0, TIERS - 1)].m, R = mulberry(hashStr(k));
-  const fancy = it.rar >= 4 || it.set, guard = fancy || it.tier >= 4 ? GOLDC : [M[0], M[1], M[2]];
-  let res;
-  if (it.base === 'sword') res = artSword(F, M, guard, it, R);
-  else if (it.base === 'axe') res = artAxe(F, M, guard, it, R);
-  else if (it.base === 'dagger') res = artDagger(F, M, guard, it, R);
-  else if (it.base === 'bow') res = F.id === 'arm' ? artCrossbow(M, guard, it) : artBow(F, M, guard, it, R);
-  else res = artStaff(F, M, guard, it, R);
-  return WACACHE[k] = res;
+  const F = wform(it), L = itemLook(it), pal = itemPal(it, L), R = mulberry(hashStr(k));
+  let s;
+  if (it.base === 'sword') s = artSword(F, it);
+  else if (it.base === 'axe') s = artAxe(F, it);
+  else if (it.base === 'dagger') s = artDagger(F, it);
+  else if (it.base === 'bow') s = F.id === 'arm' ? artCrossbow(it) : artBow(F, it);
+  else s = artStaff(F, it);
+  const pd = 7, b = pbPad(s.b, pd), A = {}; for (const n in s.A) A[n] = Array.isArray(s.A[n]) && typeof s.A[n][0] === 'number' ? [s.A[n][0] + pd, s.A[n][1] + pd] : s.A[n];
+  A.top = s.A.top + pd; A.hy = s.A.hy + pd; A.runes = s.A.runes.map(([x, y]) => [x + pd, y + pd]);
+  // Episch (und Legendär ohne eigenes Aussehen): leuchtende Runen
+  if (it.rar === 3 || (it.rar >= 4 && !L)) A.runes.forEach(([x, y], i) => { if (b.get(x, y)) b.set(x, y, i % 2 ? 'r1' : 'r0'); });
+  if (L && L.w) for (const [d, o] of L.w) if (!o || !o.only || o.only.includes(it.base)) DECO[d](b, A, R, o || {});
+  sparkle(b, it, R);
+  return WACACHE[k] = finishArt(b, pal, L, s.ox + pd, s.oy + pd, { bow: s.bow, tip: A.tip, it });
+}
+/* Umriss, Schein, zuschneiden, Farben einsetzen; Mythisch: Bilder mit wandernden Zierfarben (fr) */
+function finishArt(b, pal, L, ox, oy, o) {
+  pbOutline(b, 'ou'); if (pal.rg) pbOutline(b, 'rg');
+  const t = pbTrim(b), it = o.it; ox -= t.x; oy -= t.y;
+  const res = { c: pbCanvas(t.b, pal), ox, oy, bow: !!o.bow, glint: it.rar >= 4, col: L ? L.acc : RAR[clamp(it.rar, 0, 6)].c, myth: it.rar === 6 };
+  if (o.tip) res.tl = oy - (o.tip[1] - t.y); // Abstand Griff → Spitze (für Schweif und Funken)
+  if (L && L.cyc) res.fr = cycFrames(t.b, pal, L.cyc, res.c);
+  return res;
+}
+function cycFrames(b, pal, cyc, c0) {
+  const n = 8, fr = [c0];
+  for (let f = 1; f < n; f++) {
+    const ph = f / n * cyc.length, i = Math.floor(ph), k = ph - i, A = cyc[i % cyc.length], B = cyc[(i + 1) % cyc.length], p = Object.assign({}, pal);
+    for (let j = 0; j < 4; j++) p['a' + j] = mixC(A[j], B[j], k);
+    p.rg = rgbaC(p.a2, .6); fr.push(pbCanvas(b, p));
+  }
+  return fr;
 }
 function bladeRow(b, x, y, ww, M, fuller) { for (let i = 0; i < ww; i++) b.set(x + i, y, i === 0 ? M[3] : i === ww - 1 ? M[1] : fuller && i === Math.floor(ww / 2) ? M[1] : M[2]); }
-function sparkle(b, it, R) { if (it.tier === 6 || it.myth) for (let k = 0; k < 3; k++) { const x = Math.floor(R() * b.w), y = Math.floor(R() * b.h * .6); if (b.get(x, y) && b.get(x, y) !== OUT) b.set(x, y, '#ffffff'); } }
-function artSword(F, M, G, it, R) {
-  const len = F.len + (it.tier >= 5 ? 1 : 0), w = F.w, big = F.big ? 1 : 0, curve = F.curve ? 3 : 0, gl = big ? 6 : 4;
-  const bl = 4 + big, W = bl + w + 4 + big + curve, H = len + gl + 7, b = PB(W, H);
-  const tipLen = Math.ceil((w - 1) / 2);
+function sparkle(b, it, R) { if (it.tier >= 6 || it.myth) for (let k = 0, n = 0; k < 60 && n < 3; k++) { const x = Math.floor(R() * b.w), y = Math.floor(R() * b.h * .6); if (b.get(x, y)) { b.set(x, y, '#ffffff'); n++; } } }
+function artSword(F, it) {
+  const t = it.tier, r = it.rar, len = F.len + (t >= 5 ? 1 : 0), w = F.w, big = F.big ? 1 : 0, curve = F.curve ? 3 : 0, gl = big ? 6 : 4, M = RM, G = RG;
+  const bl = 6 + big, W = bl + w + 7 + big + curve, H = len + gl + 9, b = PB(W, H), runes = [];
+  const tipLen = Math.ceil((w - 1) / 2); let tip = null;
   for (let y = 1; y <= len; y++) {
     const off = curve ? Math.round(curve * Math.pow((len - y) / len, 2)) : 0;
     let ww = Math.max(1, w - Math.max(0, tipLen - y + 1) * 2), lx = bl + off + Math.floor((w - ww) / 2);
     if (F.wavy && y > 2 && y < len - 1 && (y >> 1) % 2) { lx++; ww--; }
     bladeRow(b, lx, y, ww, M, w >= 4 && y > 3 && y < len - 1);
+    const mx = lx + Math.floor(ww / 2); if (!tip) tip = [mx, y];
+    if (t >= 6 && ww >= 3 && y > 2 && y < len - 1) b.set(mx, y, M[3]);           // Lichtkern
+    if (t >= 5 && y > 3 && y < len - 2 && y % 3 === 0) b.set(lx + ww, y, M[1]);   // Sägezähne
+    if (y > 3 && y < len - 1 && !(y & 1) && ww >= 3) runes.push([mx, y]);
   }
-  const gy = len + 1, gx = bl - 2 - big, gw = w + 4 + big * 2;
+  const gy = len + 1, gx = bl - 2 - big, gw = w + 4 + big * 2, cx = bl + Math.floor(w / 2);
   b.rect(gx, gy, gw, 1, G[1]); b.rect(gx, gy + 1, gw, 1, G[0]); b.set(gx, gy, G[2]);
-  if (it.tier >= 3 || it.rar >= 3) { b.set(gx, gy - 1, G[1]); b.set(gx + gw - 1, gy - 1, G[1]); }
-  if (it.tier >= 4 || it.rar >= 4) { b.set(gx - 1, gy - 2, G[1]); b.set(gx + gw, gy - 2, G[1]); }
-  const cx = bl + Math.floor(w / 2);
-  if (it.rar >= 2) { b.set(cx, gy, gemCol(it)); if (w >= 4) b.set(cx - 1, gy, gemCol(it)); }
+  if (t >= 2 || r >= 3) { b.set(gx, gy - 1, G[1]); b.set(gx + gw - 1, gy - 1, G[1]); }
+  if (t >= 3) { b.set(gx - 1, gy + 1, G[0]); b.set(gx + gw, gy + 1, G[0]); }
+  if (t >= 4 || r >= 4) { b.set(gx - 1, gy - 2, G[1]); b.set(gx + gw, gy - 2, G[1]); }
+  if (t >= 6) { b.set(gx - 2, gy - 3, G[2]); b.set(gx + gw + 1, gy - 3, G[2]); b.set(gx - 1, gy - 1, G[0]); b.set(gx + gw, gy - 1, G[0]); }
+  if (r >= 2) { b.set(cx, gy, 'gm'); b.set(cx, gy + 1, 'gd'); if (w >= 4) { b.set(cx - 1, gy, 'gm'); b.set(cx - 1, gy + 1, 'gd'); } }
   const hx = cx - 1;
-  for (let y = gy + 2; y < gy + 2 + gl; y++) { b.set(hx, y, (y & 1) ? LEATH[2] : LEATH[1]); b.set(hx + 1, y, LEATH[0]); }
+  for (let y = gy + 2; y < gy + 2 + gl; y++) { b.set(hx, y, (y & 1) ? RL[2] : RL[1]); b.set(hx + 1, y, RL[0]); }
   const py = gy + 2 + gl; b.rect(hx, py, 2, 1, G[1]); b.set(hx, py + 1, G[0]); b.set(hx + 1, py + 1, G[0]);
-  if (it.rar >= 3) b.set(hx, py, gemCol(it));
-  sparkle(b, it, R);
-  return { c: pbCanvas(pbOutline(b)), ox: hx + 1, oy: gy + 3, bow: false };
+  if (r >= 3 || t >= 6) b.set(hx, py, r >= 3 ? 'gm' : M[3]);
+  if (t >= 5) { b.set(hx, py + 2, G[1]); b.set(hx + 1, py + 2, G[0]); }
+  if (t >= 7) { b.set(hx - 1, py, G[2]); b.set(hx + 2, py, G[2]); }
+  return { b, ox: hx + 1, oy: gy + 3, bow: false, A: { tip, guard: [cx, gy], pom: [hx, py + 1], head: [cx, Math.round(len * .5)], top: 1, hy: gy, gw: gw >> 1, runes } };
 }
-function artAxe(F, M, G, it, R) {
-  const id = F.id, H = id === 'helle' ? 30 : id === 'beil' ? 18 : 24, W = 17, hx = 7, b = PB(W, H);
-  const metalHaft = it.tier >= 5, HF = metalHaft ? [M[0], M[1]] : [WOOD[0], WOOD[1]];
-  const top = id === 'helle' ? 7 : 2;
+function artAxe(F, it) {
+  const id = F.id, t = it.tier, H = id === 'helle' ? 30 : id === 'beil' ? 18 : 24, W = 17, hx = 7, b = PB(W, H), M = RM, G = RG, runes = [];
+  const HF = t >= 5 ? [M[0], M[1]] : [RW[0], RW[1]], top = id === 'helle' ? 7 : 2;
   for (let y = top; y < H - 2; y++) { b.set(hx, y, HF[1]); b.set(hx + 1, y, HF[0]); }
-  const blade = (y0, prof, dir) => prof.forEach((wd, r) => { for (let i = 0; i < wd; i++) { const x = dir > 0 ? hx + 2 + i : hx - 1 - i; b.set(x, y0 + r, i === wd - 1 ? M[3] : i === 0 ? M[1] : M[2]); } });
-  if (id === 'beil') blade(3, [2, 3, 4, 4, 3, 2], 1);
+  const blade = (y0, prof, dir) => prof.forEach((wd, rr) => { for (let i = 0; i < wd; i++) { const x = dir > 0 ? hx + 2 + i : hx - 1 - i; b.set(x, y0 + rr, i === wd - 1 ? M[3] : i === 0 ? M[1] : M[2]); } if (rr % 2 && wd >= 4) runes.push([dir > 0 ? hx + 2 + (wd >> 1) : hx - 1 - (wd >> 1), y0 + rr]); });
+  let head = [hx + 5, 6];
+  if (id === 'beil') { blade(3, [2, 3, 4, 4, 3, 2], 1); head = [hx + 4, 5]; }
   else if (id === 'streit') { blade(2, [2, 3, 5, 6, 6, 6, 5, 3, 2], 1); b.rect(hx - 2, 5, 2, 2, M[1]); b.set(hx - 3, 5, M[2]); }
-  else if (id === 'doppel') { const p = [2, 4, 5, 6, 6, 6, 5, 4, 2]; blade(2, p, 1); blade(2, p, -1); }
-  else if (id === 'barte') { blade(2, [2, 3, 3, 3, 4, 5, 6, 6, 5, 3], 1); b.set(hx + 7, 10, M[3]); }
-  else if (id === 'hammer') { b.rect(hx - 3, 2, 8, 6, M[2]); b.rect(hx - 3, 2, 8, 1, M[3]); b.rect(hx - 3, 7, 8, 1, M[1]); b.rect(hx - 3, 2, 1, 6, M[3]); b.rect(hx + 4, 2, 1, 6, M[1]); b.rect(hx - 1, 4, 4, 2, M[1]); }
-  else if (id === 'helle') { b.set(hx, 0, M[3]); b.rect(hx, 1, 2, 6, M[2]); b.set(hx, 1, M[3]); b.set(hx, 2, M[3]); blade(8, [2, 4, 5, 5, 4, 2], 1); b.set(hx - 1, 9, M[2]); b.set(hx - 2, 10, M[2]); }
+  else if (id === 'doppel') { const p = [2, 4, 5, 6, 6, 6, 5, 4, 2]; blade(2, p, 1); blade(2, p, -1); head = [hx, 6]; }
+  else if (id === 'barte') { blade(2, [2, 3, 3, 3, 4, 5, 6, 6, 5, 3], 1); b.set(hx + 7, 10, M[3]); head = [hx + 5, 8]; }
+  else if (id === 'hammer') { b.rect(hx - 3, 2, 8, 6, M[2]); b.rect(hx - 3, 2, 8, 1, M[3]); b.rect(hx - 3, 7, 8, 1, M[1]); b.rect(hx - 3, 2, 1, 6, M[3]); b.rect(hx + 4, 2, 1, 6, M[1]); b.rect(hx - 1, 4, 4, 2, M[1]); runes.push([hx - 2, 4], [hx + 3, 5]); head = [hx, 4]; }
+  else if (id === 'helle') { b.set(hx, 0, M[3]); b.rect(hx, 1, 2, 6, M[2]); b.set(hx, 1, M[3]); b.set(hx, 2, M[3]); blade(8, [2, 4, 5, 5, 4, 2], 1); b.set(hx - 1, 9, M[2]); b.set(hx - 2, 10, M[2]); head = [hx + 4, 10]; }
   const band = id === 'helle' ? 14 : id === 'hammer' ? 8 : 11; b.rect(hx, band, 2, 1, G[1]);
-  if (it.rar >= 2) b.set(hx, band, gemCol(it));
+  if (it.rar >= 2) { b.set(hx, band, 'gm'); b.set(hx + 1, band, 'gd'); }
   b.rect(hx, H - 3, 2, 1, G[0]);
-  for (let y = H - 7; y < H - 3; y++) b.set(hx, y, (y & 1) ? LEATH[2] : LEATH[1]);
-  if (it.tier >= 4 || it.rar >= 4) { b.set(hx - 1, band, G[1]); b.set(hx + 2, band, G[1]); }
-  sparkle(b, it, R);
-  return { c: pbCanvas(pbOutline(b)), ox: hx + 1, oy: H - 5, bow: false };
+  for (let y = H - 7; y < H - 3; y++) b.set(hx, y, (y & 1) ? RL[2] : RL[1]);
+  if (t >= 4 || it.rar >= 4) { b.set(hx - 1, band, G[1]); b.set(hx + 2, band, G[1]); }
+  if (t >= 3 && id !== 'helle') { b.set(hx, top - 1, M[3]); b.set(hx + 1, top - 1, M[2]); b.set(hx, top - 2, M[3]); }   // Dorn oben
+  if (t >= 5) { b.set(hx, H - 2, G[1]); b.set(hx + 1, H - 2, G[0]); b.set(hx, H - 1, M[3]); }                              // Knaufdorn
+  if (t >= 6) { b.rect(hx, band + 3, 2, 1, G[1]); b.set(hx, band + 3, M[3]); }
+  if (t >= 7) { b.set(hx - 1, band + 3, G[2]); b.set(hx + 2, band + 3, G[2]); }
+  return { b, ox: hx + 1, oy: H - 5, bow: false, A: { tip: [hx, id === 'helle' ? 0 : top - (t >= 3 ? 2 : 0)], guard: [hx, band], pom: [hx, H - 3], head, top: 0, hy: band, gw: 2, runes } };
 }
-function artDagger(F, M, G, it, R) {
-  const id = F.id, len = id === 'stilett' ? 10 : id === 'katar' ? 7 : 8, W = 10, H = len + 9, b = PB(W, H), cx = 4;
+function artDagger(F, it) {
+  const id = F.id, t = it.tier, len = id === 'stilett' ? 10 : id === 'katar' ? 7 : 8, W = 10, H = len + 10, b = PB(W, H), cx = 4, M = RM, G = RG, runes = [];
   if (id === 'sichel') {
     for (let y = 2; y <= len; y++) { const off = y < 4 ? 4 - y : 0; bladeRow(b, cx + off, y, 2, M, false); }
     b.set(cx + 3, 1, M[3]); b.set(cx + 4, 2, M[2]);
@@ -103,96 +181,343 @@ function artDagger(F, M, G, it, R) {
     const w = id === 'stilett' ? 1 : 2;
     for (let y = 1; y <= len; y++) { let x = cx; if (id === 'kris' && y > 1 && y < len - 1) x += (y >> 1) % 2 ? 1 : 0; const ww = y === 1 ? 1 : w; bladeRow(b, x, y, ww, M, false); if (w === 1) b.set(x + 1, y, y > 2 ? M[1] : null); }
   }
+  for (let y = 3; y < len; y += 2) if (b.get(cx + 1, y)) runes.push([cx + 1, y]);
   const gy = len + 1;
-  if (id === 'katar') { b.rect(cx - 2, gy, 6, 1, G[1]); b.rect(cx - 2, gy + 1, 1, 4, G[0]); b.rect(cx + 3, gy + 1, 1, 4, G[0]); b.rect(cx - 1, gy + 3, 4, 1, LEATH[2]); }
-  else { b.rect(cx - 2, gy, 6, 1, G[1]); if (it.rar >= 2) b.set(cx, gy, gemCol(it)); for (let y = gy + 1; y < gy + 4; y++) { b.set(cx, y, (y & 1) ? LEATH[2] : LEATH[1]); b.set(cx + 1, y, LEATH[0]); } b.rect(cx, gy + 4, 2, 1, G[1]); }
-  sparkle(b, it, R);
-  return { c: pbCanvas(pbOutline(b)), ox: cx + 1, oy: gy + 2, bow: false };
+  if (id === 'katar') { b.rect(cx - 2, gy, 6, 1, G[1]); b.rect(cx - 2, gy + 1, 1, 4, G[0]); b.rect(cx + 3, gy + 1, 1, 4, G[0]); b.rect(cx - 1, gy + 3, 4, 1, RL[2]); if (it.rar >= 2) b.set(cx, gy, 'gm'); if (t >= 3) { b.set(cx - 2, gy - 1, G[1]); b.set(cx + 3, gy - 1, G[1]); } if (t >= 5) { b.set(cx - 2, gy + 5, M[3]); b.set(cx + 3, gy + 5, M[3]); } if (t >= 2) { b.set(cx - 3, gy, G[1]); b.set(cx + 4, gy, G[1]); } if (t >= 7) { b.set(cx - 3, gy - 2, G[2]); b.set(cx + 4, gy - 2, G[2]); } }
+  else {
+    b.rect(cx - 2, gy, 6, 1, G[1]); if (it.rar >= 2) { b.set(cx, gy, 'gm'); b.set(cx + 1, gy, 'gd'); }
+    for (let y = gy + 1; y < gy + 4; y++) { b.set(cx, y, (y & 1) ? RL[2] : RL[1]); b.set(cx + 1, y, RL[0]); } b.rect(cx, gy + 4, 2, 1, G[1]);
+    if (t >= 3) { b.set(cx - 2, gy - 1, G[1]); b.set(cx + 3, gy - 1, G[1]); }
+    if (t >= 5) { b.set(cx - 3, gy - 1, G[2]); b.set(cx + 4, gy - 1, G[2]); b.set(cx, gy + 5, G[0]); b.set(cx + 1, gy + 5, M[3]); }
+    if (t >= 6) b.set(cx + 1, gy + 4, it.rar >= 2 ? 'gm' : M[3]);
+    if (t >= 2) { b.set(cx - 1, gy + 4, G[0]); b.set(cx + 2, gy + 4, G[0]); }
+    if (t >= 7) { b.set(cx - 3, gy - 2, G[2]); b.set(cx + 4, gy - 2, G[2]); }
+  }
+  return { b, ox: cx + 1, oy: gy + 2, bow: false, A: { tip: [cx, 1], guard: [cx, gy], pom: [cx, gy + 4], head: [cx, len >> 1], top: 1, hy: gy, gw: 3, runes } };
 }
-function artBow(F, M, G, it, R) {
-  const id = F.id, H = id === 'lang' ? 30 : id === 'kurz' ? 22 : 26, depth = id === 'kurz' ? 4 : 5, W = 11, b = PB(W, H);
-  const L = it.tier <= 1 ? [WOOD[0], WOOD[1], WOOD[2]] : [M[0], M[1], M[2]], sx = 2;
-  for (let y = 2; y <= H - 3; y++) b.set(sx, y, '#e8e2cf');
+function artBow(F, it) {
+  const id = F.id, t = it.tier, H = id === 'lang' ? 30 : id === 'kurz' ? 22 : 26, depth = id === 'kurz' ? 4 : 5, W = 11, b = PB(W, H), G = RG, runes = [];
+  const L = t <= 1 ? RW : RM, sx = 2;
+  for (let y = 2; y <= H - 3; y++) b.set(sx, y, 'st');
   for (let y = 1; y <= H - 2; y++) {
     const u = (y - 1) / (H - 3); let x = sx + Math.round(depth * Math.sin(Math.PI * u));
     if (id === 'reflex' && (u < .1 || u > .9)) x -= 1;
-    b.set(x, y, L[1]); b.set(x + 1, y, L[0]); if (id === 'lang' || it.tier >= 3) b.set(x - 1, y, L[2]);
+    b.set(x, y, L[1]); b.set(x + 1, y, L[0]); if (id === 'lang' || t >= 3) b.set(x - 1, y, L[2]);
+    if (y % 4 === 1 && Math.abs(u - .5) > .14 && u > .08 && u < .92) runes.push([x, y]);
   }
-  const mid = Math.floor(H / 2), mx = sx + depth; b.rect(mx - 1, mid - 2, 3, 4, LEATH[1]); b.set(mx - 1, mid - 1, LEATH[2]);
+  const mid = Math.floor(H / 2), mx = sx + depth; b.rect(mx - 1, mid - 2, 3, 4, RL[1]); b.set(mx - 1, mid - 1, RL[2]);
   b.rect(sx - 1, 0, 2, 2, G[1]); b.rect(sx - 1, H - 2, 2, 2, G[1]);
-  if (it.tier >= 3 || it.rar >= 3) for (const u of [.25, .75]) { const y = Math.round(1 + u * (H - 3)), x = sx + Math.round(depth * Math.sin(Math.PI * u)); b.set(x, y, G[2]); b.set(x + 1, y, G[1]); }
-  if (it.rar >= 2) b.set(mx, mid, gemCol(it));
-  sparkle(b, it, R);
-  return { c: pbCanvas(pbOutline(b)), ox: Math.floor(W / 2), oy: mid, bow: true };
+  if (t >= 3 || it.rar >= 3) for (const u of [.25, .75]) { const y = Math.round(1 + u * (H - 3)), x = sx + Math.round(depth * Math.sin(Math.PI * u)); b.set(x, y, G[2]); b.set(x + 1, y, G[1]); }
+  if (t >= 5) { b.set(sx - 2, 0, G[2]); b.set(sx - 2, H - 1, G[2]); b.set(sx - 1, 2, G[0]); b.set(sx - 1, H - 3, G[0]); }
+  if (it.rar >= 2) { b.set(mx, mid, 'gm'); b.set(mx, mid + 1, 'gd'); }
+  if (t >= 6) { b.set(mx + 2, mid - 1, G[1]); b.set(mx + 2, mid, G[2]); }
+  if (t >= 2) { b.set(mx + 2, mid - 2, RL[1]); b.set(mx + 2, mid + 1, RL[1]); }
+  if (t >= 4) { b.set(sx + 1, 1, G[2]); b.set(sx + 1, H - 2, G[2]); b.set(sx + 2, 0, G[1]); b.set(sx + 2, H - 1, G[1]); }
+  if (t >= 7) { b.set(sx - 3, 1, G[2]); b.set(sx - 3, H - 2, G[2]); }
+  return { b, ox: Math.floor(W / 2), oy: mid, bow: true, A: { tip: [sx, 0], guard: [mx, mid], pom: [sx, H - 1], head: [mx, mid], top: 0, hy: H, gw: 2, runes } };
 }
-function artCrossbow(M, G, it) {
-  const W = 19, H = 15, b = PB(W, H), y0 = 7;
-  b.rect(1, y0, 13, 1, WOOD[2]); b.rect(1, y0 + 1, 13, 1, WOOD[1]); b.rect(1, y0 + 2, 4, 1, WOOD[0]); b.rect(4, y0 + 2, 2, 2, LEATH[1]);
+function artCrossbow(it) {
+  const W = 19, H = 15, b = PB(W, H), y0 = 7, t = it.tier, M = RM, G = RG;
+  b.rect(1, y0, 13, 1, RW[2]); b.rect(1, y0 + 1, 13, 1, RW[1]); b.rect(1, y0 + 2, 4, 1, RW[0]); b.rect(4, y0 + 2, 2, 2, RL[1]);
   for (let y = 1; y <= 13; y++) { const x = 13 + Math.round(1.8 * Math.sin(Math.PI * (y - 1) / 12)); b.set(x, y, M[2]); b.set(x + 1, y, M[1]); }
-  b.line(13, 1, 8, y0, '#e8e2cf'); b.line(13, 13, 8, y0 + 1, '#e8e2cf');
+  b.line(13, 1, 8, y0, 'st'); b.line(13, 13, 8, y0 + 1, 'st');
   b.rect(10, y0 - 1, 6, 1, M[3]); b.set(16, y0 - 1, M[3]);
-  if (it.rar >= 2) b.set(13, y0, gemCol(it));
+  if (it.rar >= 2) { b.set(13, y0, 'gm'); b.set(13, y0 + 1, 'gd'); }
   b.set(14, 0, G[1]); b.set(14, 14, G[1]);
-  return { c: pbCanvas(pbOutline(b)), ox: 7, oy: y0, bow: true };
+  if (t >= 3) { b.set(15, 0, G[2]); b.set(15, 14, G[2]); b.set(1, y0 - 1, G[1]); }
+  if (t >= 5) { b.set(17, y0 - 1, M[3]); b.set(0, y0, G[1]); b.set(0, y0 + 1, G[0]); }
+  if (t >= 2) { b.set(4, y0 + 4, RL[2]); b.set(5, y0 + 4, RL[1]); }
+  if (t >= 7) { b.set(16, 0, G[2]); b.set(16, 14, G[2]); }
+  return { b, ox: 7, oy: y0, bow: true, A: { tip: [16, y0 - 1], guard: [9, y0], pom: [1, y0 + 1], head: [13, y0], top: 0, hy: H, gw: 2, runes: [[3, y0], [6, y0], [9, y0], [11, y0 + 1]] } };
 }
-function artStaff(F, M, G, it, R) {
-  const id = F.id, H = id === 'zepter' ? 24 : 31, W = 13, cx = 6, b = PB(W, H), oc = it.myth ? '#ff4fd8' : ORB[clamp(it.tier, 0, 7)];
-  const S = id === 'knochen' ? BONE : it.tier >= 3 ? [M[0], M[1], M[2]] : WOOD;
-  for (let y = 8; y < H - 1; y++) { b.set(cx - 1, y, S[1]); b.set(cx, y, S[0]); }
-  if (id !== 'knochen') for (let y = 12; y < H - 1; y += 6) b.rect(cx - 1, y, 2, 1, G[1]);
+function artStaff(F, it) {
+  const id = F.id, t = it.tier, H = id === 'zepter' ? 24 : 31, W = 13, cx = 6, b = PB(W, H), M = RM, G = RG, oc = 'ob', runes = [];
+  const S = id === 'knochen' ? RB : t >= 3 ? M : RW;
+  for (let y = 8; y < H - 1; y++) { b.set(cx - 1, y, S[1]); b.set(cx, y, S[0]); if (y >= 10 && y < H - 3 && y % 3 === 1) runes.push([cx - 1, y]); }
+  if (id !== 'knochen') for (let y = 12; y < H - 1; y += 6) b.rect(cx - 1, y, 2, 1, 'rb');
+  for (let y = H - 9; y < H - 5; y++) b.set(cx - 1, y, (y & 1) ? RL[2] : RL[1]);   // Griffwicklung
+  if (t >= 2) b.rect(cx - 2, 14, 4, 1, 'rb');
+  if (t >= 4) { b.set(cx - 2, H - 2, G[0]); b.set(cx + 1, H - 2, G[0]); }
+  let head = [cx, 4];
   if (id === 'stab') { b.disc(cx - .5, 4, 2.6, oc); b.set(cx - 2, 3, '#fff'); for (const s of [-1, 1]) { const x = s < 0 ? cx - 4 : cx + 3; b.line(x, 6, x, 2, M[2]); b.set(s < 0 ? x + 1 : x - 1, 7, M[1]); b.set(x, 1, M[3]); } }
-  else if (id === 'zepter') { b.rect(cx - 3, 5, 6, 3, G[1]); b.rect(cx - 3, 7, 6, 1, G[0]); for (const x of [cx - 3, cx - 1, cx + 1, cx + 2]) b.set(x, 4, G[2]); b.rect(cx - 1, 2, 2, 3, oc); b.set(cx - 1, 2, '#fff'); }
-  else if (id === 'kristall') { [1, 3, 3, 5, 5, 5, 3, 1].forEach((wd, r) => { for (let i = 0; i < wd; i++) b.set(cx - Math.floor(wd / 2) - (wd % 2 ? 0 : 1) + i, r, i === 0 ? '#ffffff' : oc); }); b.set(cx, 3, '#fff'); b.rect(cx - 2, 8, 4, 1, G[1]); }
-  else if (id === 'knochen') { b.rect(cx - 3, 2, 6, 5, BONE[1]); b.rect(cx - 2, 7, 4, 1, BONE[1]); b.rect(cx - 3, 2, 6, 1, BONE[2]); b.set(cx - 2, 4, it.tier >= 3 ? oc : OUT); b.set(cx + 1, 4, it.tier >= 3 ? oc : OUT); b.set(cx - 1, 6, BONE[0]); b.set(cx, 6, BONE[0]); }
-  else if (id === 'mond') { for (let y = 0; y < 10; y++) for (let x = 0; x < W; x++) { const d1 = Math.hypot(x - cx, y - 5), d2 = Math.hypot(x - cx - 2.4, y - 3.6); if (d1 <= 4.6 && d2 > 3.4) b.set(x, y, x < cx - 2 ? M[3] : M[2]); } b.disc(cx - .5, 5, 1, oc); }
-  if (it.rar >= 4 || it.set) { b.set(cx - 2, 9, G[2]); b.set(cx + 1, 9, G[2]); }
-  sparkle(b, it, R);
-  return { c: pbCanvas(pbOutline(b)), ox: cx, oy: H - 6, bow: false };
+  else if (id === 'zepter') { b.rect(cx - 3, 5, 6, 3, G[1]); b.rect(cx - 3, 7, 6, 1, G[0]); for (const x of [cx - 3, cx - 1, cx + 1, cx + 2]) b.set(x, 4, G[2]); b.rect(cx - 1, 2, 2, 3, oc); b.set(cx - 1, 2, '#fff'); head = [cx, 3]; }
+  else if (id === 'kristall') { [1, 3, 3, 5, 5, 5, 3, 1].forEach((wd, r) => { for (let i = 0; i < wd; i++) b.set(cx - Math.floor(wd / 2) - (wd % 2 ? 0 : 1) + i, r, i === 0 ? '#ffffff' : oc); }); b.set(cx, 3, '#fff'); b.rect(cx - 2, 8, 4, 1, G[1]); head = [cx, 4]; }
+  else if (id === 'knochen') { b.rect(cx - 3, 2, 6, 5, RB[1]); b.rect(cx - 2, 7, 4, 1, RB[1]); b.rect(cx - 3, 2, 6, 1, RB[2]); b.set(cx - 2, 4, t >= 3 ? oc : OUT); b.set(cx + 1, 4, t >= 3 ? oc : OUT); b.set(cx - 1, 6, RB[0]); b.set(cx, 6, RB[0]); head = [cx, 4]; }
+  else if (id === 'mond') { for (let y = 0; y < 10; y++) for (let x = 0; x < W; x++) { const d1 = Math.hypot(x - cx, y - 5), d2 = Math.hypot(x - cx - 2.4, y - 3.6); if (d1 <= 4.6 && d2 > 3.4) b.set(x, y, x < cx - 2 ? M[3] : M[2]); } b.disc(cx - .5, 5, 1, oc); head = [cx, 5]; }
+  if (it.rar >= 4 || it.set || t >= 4) { b.set(cx - 2, 9, G[2]); b.set(cx + 1, 9, G[2]); }
+  if (it.rar >= 2) { b.set(cx - 1, 10, 'gm'); b.set(cx, 10, 'gd'); }
+  if (t >= 5) { b.set(cx - 1, H - 1, G[1]); b.set(cx, H - 1, G[0]); b.set(cx - 3, 8, G[1]); b.set(cx + 2, 8, G[1]); }
+  if (t >= 6) { b.set(cx - 4, 9, G[2]); b.set(cx + 3, 9, G[2]); }
+  return { b, ox: cx, oy: H - 6, bow: false, A: { tip: [cx, 0], guard: [cx, 9], pom: [cx, H - 2], head, top: 0, hy: 10, gw: 2, runes } };
 }
-/* Farbe des Zauberstab-Kopfes / Klingenglanz für Licht und Partikel */
-function weaponGlow(it) { return it.base === 'staff' ? (it.myth ? '#ff4fd8' : ORB[clamp(it.tier, 0, 7)]) : (MAT[clamp(it.tier, 0, 7)].glow || MAT[clamp(it.tier, 0, 7)].m[3]); }
+/* Farbe des Zauberstab-Kopfes / Klingenglanz für Licht und Partikel (benannte Gegenstände: ihre Zierfarbe) */
+function weaponGlow(it) { const L = itemLook(it); if (L) return L.acc; return it.base === 'staff' ? (it.myth ? '#ff4fd8' : ORB[clamp(it.tier, 0, 7)]) : (MAT[clamp(it.tier, 0, 7)].glow || MAT[clamp(it.tier, 0, 7)].m[3]); }
 
-/* ---------- Rüstung & Helm (Icons) ---------- */
+/* ---------- Zierde für benannte Gegenstände ----------
+   zeichnet in den gepolsterten Puffer, A = Ankerpunkte (tip, guard, pom, head; Rüstung: chest, top, bot), top/hy = Bereich der Klinge/des Kopfs */
+const NB4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+function setE(b, x, y, c) { x = Math.round(x); y = Math.round(y); if (!b.get(x, y)) b.set(x, y, c); }
+function discE(b, cx, cy, r, c) { for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) if ((x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r + .3) setE(b, x, y, c); }
+// leere Randpixel oberhalb von ymax, mit Richtung nach außen
+function edgeList(b, ymax) { const r = []; for (let y = 0; y < Math.min(b.h, ymax); y++) for (let x = 0; x < b.w; x++) if (!b.get(x, y)) for (const [dx, dy] of NB4) if (b.get(x + dx, y + dy)) { r.push([x, y, -dx, -dy]); break; } return r; }
+function pickN(E, n, R) { const r = []; if (E.length) for (let i = 0; i < n; i++) r.push(E[Math.floor(R() * E.length)]); return r; }
+const isBody = c => c && /^(m[0-3]|c[01]|w[0-2])$/.test(c);
+const DECO = {
+  sun(b, A, R, o) { const [x, y] = A[o.at || 'guard'], r = o.r || 3.2; for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6, L = k % 2 ? 1.6 : 2.8; for (let d = r + .8; d <= r + L; d += .7) setE(b, x + Math.cos(a) * d, y + Math.sin(a) * d, k % 2 ? 'a1' : 'a2'); } discE(b, x, y, r - 1.2, 'a3'); discE(b, x, y, r - .4, 'a2'); discE(b, x, y, r, 'a1'); },
+  rays(b, A, R, o) { const [x, y] = A[o.at || 'head']; for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4 + .39; for (let d = 3.4; d <= 5 + (k % 2); d += .8) setE(b, x + Math.cos(a) * d, y + Math.sin(a) * d, d > 4.6 ? 'a1' : 'a2'); } },
+  flames(b, A, R, o) {
+    const span = Math.max(1, A.hy - A.top);
+    for (const [x, y, dx, dy] of edgeList(b, A.hy)) { if (dy > 0 || R() > (o.p || .55)) continue; const k = (y - A.top) / span; setE(b, x, y, k < .3 ? 'a3' : k < .65 ? 'a2' : 'a1'); if (R() < .55) setE(b, x + dx, y - 1, k < .5 ? 'a2' : 'a1'); if (R() < .3) setE(b, x + dx, y - 2, 'a3'); }
+    const [tx, ty] = A.tip; setE(b, tx, ty - 1, 'a2'); setE(b, tx, ty - 2, 'a3'); setE(b, tx + 1, ty - 3, 'a2');
+  },
+  embers(b, A, R, o) { for (let i = 0, n = 0; i < 400 && n < (o.n || 6); i++) { const x = Math.floor(R() * b.w), y = Math.floor(R() * Math.min(b.h, A.hy)); if (isBody(b.get(x, y))) { b.set(x, y, R() < .5 ? 'a2' : 'a1'); n++; } } },
+  frost(b, A, R, o) { for (const [x, y, dx, dy] of edgeList(b, A.hy)) { if (R() > (o.p || .25)) continue; setE(b, x, y, 'a2'); if (R() < .6) setE(b, x + dx, y + dy, 'a3'); } },
+  crystals(b, A, R, o) { const E = edgeList(b, A.hy).filter(e => !o.at || Math.hypot(e[0] - A[o.at][0], e[1] - A[o.at][1]) < 6); for (const [x, y, dx, dy] of pickN(E, o.n || 3, R)) { setE(b, x, y, 'a1'); setE(b, x + dx, y + dy, 'a2'); setE(b, x + 2 * dx, y + 2 * dy - (dx ? 1 : 0), 'a3'); if (dx) setE(b, x + dx, y - 1, 'a2'); } },
+  bolt(b, A, R) { for (let y = A.top + 1, i = 0; y < A.hy; y++, i++) { let a = -1, c = -1; for (let x = 0; x < b.w; x++) if (b.get(x, y)) { if (a < 0) a = x; c = x; } if (a < 0 || c - a < 2) continue; const x = ((a + c) >> 1) + [0, 1, 0, -1][(i >> 1) % 4]; if (b.get(x, y)) b.set(x, y, i % 4 === 1 ? 'a3' : 'a2'); } },
+  arcs(b, A, R, o) { for (const [x, y, dx, dy] of pickN(edgeList(b, A.hy), o.n || 4, R)) { const s = R() < .5 ? 1 : -1; setE(b, x, y, 'a3'); setE(b, x + dx + (dy ? s : 0), y + dy + (dx ? s : 0), 'a2'); setE(b, x + 2 * dx, y + 2 * dy, 'a3'); } },
+  wings(b, A, R, o) {
+    const [x, y] = A[o.at || 'guard'], L = o.big ? 7 : o.s || 4, fy = o.flip ? -1 : 1, x0 = o.x0 || 2;
+    for (let i = 0; i < L; i++) { const h = Math.round(i * .85), n = 1 + (i >> 1); for (let j = 0; j <= n; j++) { if (o.bat && j === n && i % 2) continue; const c = o.bat ? (j === 0 ? 'a2' : j === n ? 'a0' : 'a1') : (j === 0 ? 'a3' : j === 1 ? 'a2' : 'a1'); for (const s of [-1, 1]) setE(b, x + s * (x0 + i), y + fy * (j - h), c); } }
+  },
+  skull(b, A, R, o) { const [x, y] = A[o.at || 'pom']; [[-1, -1, 'b2'], [0, -1, 'b2'], [1, -1, 'b2'], [-1, 0, 'a2'], [0, 0, 'b1'], [1, 0, 'a2'], [-1, 1, 'b1'], [1, 1, 'b1'], [0, 1, 'b0']].forEach(([dx, dy, c]) => b.set(x + dx, y + dy, c)); },
+  eye(b, A, R, o) { const [x, y] = A[o.at || 'head']; b.disc(x, y, 2.3, '#ffffff'); b.rect(x - 1, y - 1, 2, 2, 'a1'); b.set(x, y, 'a0'); b.set(x - 1, y - 1, 'a3'); for (let i = -2; i <= 2; i++) b.set(x + i, y - 3, 'g1'); b.set(x - 3, y - 2, 'g1'); b.set(x + 3, y - 2, 'g1'); },
+  star(b, A, R, o) { const [x, y] = A[o.at || 'tip'], s = o.s || 2; for (let d = 1; d <= s; d++) for (const [dx, dy] of NB4) b.set(x + dx * d, y + dy * d, d === s ? 'a1' : 'a2'); if (s >= 2) for (const [dx, dy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) b.set(x + dx, y + dy, 'a1'); b.set(x, y, 'a3'); },
+  stars(b, A, R, o) { for (const [x, y, dx, dy] of pickN(edgeList(b, A.hy), o.n || 4, R)) { const sx = x + dx * 2, sy = y + dy * 2; if (b.get(sx, sy)) continue; b.set(sx, sy, 'a3'); if (R() < .5) for (const [ex, ey] of NB4) setE(b, sx + ex, sy + ey, 'a1'); } },
+  spark(b, A, R, o) { for (let i = 0, n = 0; i < 300 && n < (o.n || 3); i++) { const x = Math.floor(R() * b.w), y = Math.floor(R() * Math.min(b.h, A.hy)); if (b.get(x, y)) { b.set(x, y, '#ffffff'); n++; } } },
+  snake(b, A) { const [x, y] = A.guard; [[2, -1, 'a2'], [3, -1, 'a2'], [3, -2, 'a1'], [4, -1, 'a1'], [2, 0, 'a1'], [3, 0, 'a1'], [4, 0, 'a1'], [5, 0, 'a0']].forEach(([dx, dy, c]) => b.set(x + dx, y + dy, c)); b.set(x + 4, y - 1, '#e8402a'); b.set(x + 6, y + 1, '#e8402a'); b.set(x + 7, y, '#e8402a'); for (let k = 1; k < 5; k++) b.set(x + (k % 2 ? -1 : 2), y + 1 + k, 'a1'); },
+  moon(b, A, R, o) { const [x, y] = A[o.at || 'pom']; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const d1 = Math.hypot(dx, dy), d2 = Math.hypot(dx - 1.2, dy - .8); if (d1 <= 2.3 && d2 > 1.6) b.set(x + dx, y + dy + 1, dx < 0 ? 'a3' : 'a2'); } },
+  lion(b, A, R, o) { const [x, y] = A[o.at || 'guard']; pxStamp(b, ['.01010.', '0111110', '1hkhkh1', '1hhhhh1', '12h0h21', '.12h21.', '..111..'], x - 3, y - 3); },
+  scales(b, A, R, o) { const tk = o.tok || ['m1', 'm2']; for (let y = 0; y < Math.min(b.h, A.hy); y++) for (let x = 0; x < b.w; x++) { const c = b.get(x, y); if (!tk.includes(c)) continue; const q = (x + ((y >> 1) & 1) * 2) % 4; if (q === 0 && (y & 1)) b.set(x, y, 'a1'); else if (q === 1 && !(y & 1)) b.set(x, y, 'a2'); } },
+  crack(b, A, R) { let p = null; for (let y = A.top; y < A.hy && !p; y++) for (let x = 0; x < b.w; x++) if (b.get(x, y) === 'm2') { p = [x, y]; break; } let n = 0; while (p && n++ < 40) { b.set(p[0], p[1], n % 3 ? 'a2' : 'a3'); const c = [-1, 0, 1].map(d => [p[0] + d, p[1] + 1]).filter(([x, y]) => y < A.hy && /^m[12]$/.test(b.get(x, y) || '')); p = c.length ? c[Math.floor(R() * c.length)] : null; } },
+  wisp(b, A, R, o) { const [x, y] = A[o.at || 'tip'], f = o.flip ? -1 : 1; [[1, -1, 'a3'], [2, -2, 'a2'], [2, -3, 'a2'], [1, -4, 'a1'], [0, -4, 'a1'], [-1, -3, 'a0']].forEach(([dx, dy, c]) => setE(b, x + dx, y + dy * f, c)); },
+  thorns(b, A, R, o) { for (const [x, y, dx, dy] of edgeList(b, A.hy)) { if (R() > (o.p || .3)) continue; setE(b, x, y, 'a0'); setE(b, x + (dx || (R() < .5 ? 1 : -1)), y + (dy || -1), 'a2'); } },
+  feather(b, A, R, o) { const [x, y] = A[o.at || 'guard']; for (const s of [0, 3]) for (let k = 1; k <= 5; k++) { setE(b, x + 1 + s + (k >> 1), y + k, k === 5 ? 'a3' : 'a0'); setE(b, x + 2 + s + (k >> 1), y + k, 'a2'); } },
+  gradient(b, A) { const span = Math.max(1, A.hy - A.top); for (let y = A.top; y < A.hy; y++) for (let x = 0; x < b.w; x++) { const c = b.get(x, y), k = (y - A.top) / span; if (c === 'm2') b.set(x, y, k < .3 ? 'a3' : k < .62 ? 'a2' : 'a1'); else if (c === 'm1') b.set(x, y, k < .5 ? 'a1' : 'a0'); } },
+  drip(b, A, R, o) { for (const [x, y] of pickN(edgeList(b, A.hy).filter(e => e[2]), o.n || 3, R)) { setE(b, x, y, 'a2'); setE(b, x, y + 1, 'a1'); if (R() < .6) setE(b, x, y + 3, 'a2'); } },
+  smoke(b, A, R, o) { for (const [x, y, dx] of pickN(edgeList(b, A.hy), o.n || 4, R)) { const s = dx || (R() < .5 ? 1 : -1); setE(b, x, y, 'a1'); setE(b, x + s, y - 1, 'a0'); setE(b, x + s * 2, y - 1, 'a0'); setE(b, x + s * 2, y - 2, 'a1'); } },
+  horns(b, A, R, o) { const [x, y] = A[o.at || 'guard'], w = (o.w || A.gw) + 1; for (const s of [-1, 1]) { const hx = x + s * w; setE(b, hx, y - 1, 'a1'); setE(b, hx + s, y - 2, 'a1'); setE(b, hx + s, y - 3, 'a2'); setE(b, hx, y - 4, 'a3'); } },
+  hook(b, A) { const [x, y] = A.tip; [[-1, 0, 'm3'], [-2, 1, 'm3'], [-3, 1, 'm2'], [-4, 2, 'm2'], [-5, 3, 'm1'], [-5, 4, 'm1']].forEach(([dx, dy, c]) => setE(b, x + dx, y + dy, c)); },
+  snowcap(b, A, R) { for (let y = A.top; y < A.hy; y++) for (let x = 0; x < b.w; x++) { const c = b.get(x, y); if (c && /^m/.test(c) && !b.get(x, y - 1)) { b.set(x, y, 'a3'); if (R() < .35 && b.get(x, y + 1)) b.set(x, y + 1, 'a2'); } } },
+  flower(b, A, R, o) { const [x, y] = A[o.at || 'guard']; [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([dx, dy]) => b.set(x + dx, y + dy, 'a1')); NB4.forEach(([dx, dy]) => b.set(x + dx, y + dy, 'a2')); b.set(x, y, 'a3'); setE(b, x - 2, y + 2, 'a0'); setE(b, x + 2, y + 2, 'a0'); setE(b, x - 3, y + 2, 'a0'); setE(b, x + 3, y + 1, 'a0'); },
+  leaf(b, A, R, o) { for (const [x, y, dx] of pickN(edgeList(b, A.hy).filter(e => e[2]), o.n || 4, R)) { setE(b, x, y, 'a1'); setE(b, x + dx, y - 1, 'a2'); setE(b, x + dx, y, 'a0'); setE(b, x + 2 * dx, y - 1, 'a1'); } },
+  vine(b, A) { for (const [x, y, dx] of edgeList(b, A.hy)) if (dx && y % 3 === 0) setE(b, x, y, 'a0'); },
+  kiss(b, A, R, o) { const [x, y] = A[o.at || 'guard']; b.set(x - 1, y - 1, 'a2'); b.set(x + 1, y - 1, 'a2'); b.rect(x - 1, y, 3, 1, 'a2'); b.set(x, y + 1, 'a2'); b.set(x - 1, y - 1, 'a3'); },
+  heart(b, A, R, o) { const [x, y] = A[o.at || 'chest']; pxStamp(b, ['.3...', '.2...', '11.11', '12211', '.111.', '..0..'].map(s => s), x - 2, y - 3); },
+  flameE(b, A, R, o) { const [x, y] = A[o.at || 'chest']; pxStamp(b, ['..3..', '.32..', '.232.', '12321', '.121.'], x - 2, y - 2); },
+  rune(b, A, R, o) { const [x, y] = A[o.at || 'chest']; pxStamp(b, ['2.2', '.3.', '232', '.2.', '2.2'], x - 1, y - 2); },
+  studs(b, A, R, o) { for (const [x, y] of [A.shl, A.shr]) { b.set(x, y, 'a3'); b.set(x - 1, y + 2, 'a2'); b.set(x + 1, y + 2, 'a2'); } },
+  gem(b, A, R, o) { const [x, y] = A[o.at || 'guard']; b.set(x, y, '#ffffff'); b.set(x + 1, y, 'gm'); b.set(x, y + 1, 'gm'); b.set(x + 1, y + 1, 'gd'); }
+};
+
+/* ---------- Rüstung & Helm (Icons, 20×20) ---------- */
 const AACACHE = {};
-function armorArt(it, cls) {
+function armorArt(it, cls) { return armorSpr(it, cls).c; }
+function armorSpr(it, cls) {
   const st = CLASSES[cls].style, k = itemArtKey(it) + st; if (AACACHE[k]) return AACACHE[k];
-  const T = MAT[clamp(it.tier, 0, 7)], a = T.c[0], s = T.c[1], h = T.m[3], t = it.rar >= 4 || it.set || it.tier >= 4 ? GOLDC[1] : T.m[1], gem = gemCol(it), b = PB(16, 16);
+  const L = itemLook(it), pal = itemPal(it, L), R = mulberry(hashStr(k)), b0 = PB(20, 20), b = offPB(b0, 2, 2), t = it.tier, r = it.rar;
+  const A = { chest: [10, 8], neck: [10, 3], bot: [10, 16], shl: [5, 5], shr: [14, 5], hy: 20 };
+  const hx0 = L && L.h ? 10 - (L.h[0].length >> 1) : 0, hy0 = L && L.h ? 10 - (L.h.length >> 1) : 0;
+  if (it.slot === 'helm' && L && L.h) pxStamp(b0, L.h, hx0, hy0);
+  else if (it.slot === 'armor') armorBody(b, st, t, r, A);
+  else helmBody(b, st, t, r);
+  A.tip = A.neck; A.guard = A.head = A.chest; A.pom = A.bot; A.top = 0;
   if (it.slot === 'armor') {
-    if (st === 'plate') {
-      for (let y = 3; y < 13; y++) { const ww = y < 10 ? 10 : 8, x0 = 8 - ww / 2; for (let i = 0; i < ww; i++) b.set(x0 + i, y, i < ww / 2 ? a : s); b.set(x0, y, h); }
-      b.disc(3.5, 3.5, 2.2, a); b.disc(12, 3.5, 2.2, s); b.set(3, 2, h); b.rect(6, 2, 4, 2, null);
-      b.rect(6, 3, 4, 1, s); b.rect(7, 4, 2, 6, t); b.rect(4, 10, 8, 1, t); b.rect(5, 13, 2, 2, s); b.rect(9, 13, 2, 2, s);
-    } else if (st === 'robe') {
-      for (let y = 2; y < 15; y++) { const ww = Math.min(13, 5 + Math.floor((y - 2) * .8)), x0 = 8 - Math.floor(ww / 2); for (let i = 0; i < ww; i++) b.set(x0 + i, y, i < ww / 2 ? a : s); }
-      b.rect(2, 4, 2, 5, s); b.rect(12, 4, 2, 5, s); b.rect(6, 2, 4, 2, t); b.rect(7, 4, 2, 10, t); b.rect(3, 14, 10, 1, t); b.rect(4, 8, 8, 1, LEATH[1]);
-    } else if (st === 'cloak') {
-      b.disc(8, 4, 3.6, s); b.disc(8, 4.5, 2.2, OUT);
-      for (let y = 6; y < 15; y++) { const ww = Math.min(13, 7 + (y - 6)), x0 = 8 - Math.floor(ww / 2); for (let i = 0; i < ww; i++) b.set(x0 + i, y, i < ww / 2 ? a : s); b.set(8, y, '#1e1828'); }
-      b.set(5, 7, h); b.rect(7, 7, 2, 1, t);
-    } else {
-      for (let y = 3; y < 14; y++) { const ww = 9, x0 = 4; for (let i = 0; i < ww; i++) b.set(x0 + i, y, i < 4 ? a : s); }
-      b.rect(3, 3, 2, 3, s); b.rect(12, 3, 2, 3, s); b.rect(6, 3, 4, 2, null); b.rect(6, 3, 4, 1, LEATH[1]);
-      for (let y = 5; y < 10; y++) b.set(y % 2 ? 7 : 8, y, LEATH[2]); b.rect(4, 10, 9, 1, LEATH[1]); b.set(8, 10, t);
-    }
-  } else {
-    if (st === 'plate') {
-      for (let y = 4; y < 13; y++) { const ww = y < 6 ? 7 : 9, x0 = 8 - Math.ceil(ww / 2); for (let i = 0; i < ww; i++) b.set(x0 + i, y, i < ww / 2 ? a : s); b.set(x0, y, h); }
-      b.rect(5, 8, 7, 1, OUT); b.rect(7, 9, 1, 3, OUT); b.rect(9, 9, 1, 3, OUT);
-      if (T.pl) { b.rect(7, 1, 3, 3, T.pl[0]); b.set(10, 2, T.pl[1]); b.set(10, 1, T.pl[1]); }
-    } else if (st === 'robe') {
-      for (let y = 1; y < 11; y++) { const ww = Math.max(1, Math.floor(y * .7)), x0 = 7 - Math.floor(ww / 2) + Math.round((10 - y) * .25); for (let i = 0; i < ww; i++) b.set(x0 + i, y, i < ww / 2 ? a : s); }
-      b.rect(1, 11, 14, 2, s); b.rect(2, 11, 6, 1, a); b.rect(4, 10, 8, 1, t);
-    } else if (st === 'cloak') {
-      for (let y = 2; y < 14; y++) { const ww = y < 4 ? 7 : y > 11 ? 7 : 9, x0 = 8 - Math.ceil(ww / 2); for (let i = 0; i < ww; i++) b.set(x0 + i, y, i < ww / 2 ? a : s); }
-      b.rect(4, 6, 3, 2, OUT); b.rect(9, 6, 3, 2, OUT); b.set(5, 6, it.tier >= 4 ? T.m[3] : '#e8e2cf'); b.set(10, 6, it.tier >= 4 ? T.m[3] : '#e8e2cf'); b.rect(6, 10, 4, 1, s);
-    } else {
-      for (let x = 2; x < 14; x++) { const y = 8 + Math.round(Math.abs(x - 7.5) * -.35 + 1.5); b.set(x, y, a); b.set(x, y + 1, s); }
-      b.line(11, 7, 14, 1, '#f0f0f0'); b.line(12, 7, 14, 2, T.c[0]); b.set(14, 0, '#fff');
-    }
+    if (r === 3 || (r >= 4 && !L)) for (const [x, y] of A.runes || []) if (b0.get(x, y)) b0.set(x, y, (x + y) % 2 ? 'r1' : 'r0');
+    if (L && L.a) for (const [d, o] of L.a) DECO[d](b0, A, R, o || {});
   }
-  if (it.rar >= 2) b.set(8, it.slot === 'armor' ? 5 : 9, gem);
-  return AACACHE[k] = pbCanvas(pbOutline(b));
+  if (it.slot === 'helm' && (r === 3 || (r >= 4 && !L))) for (const [x, y] of [[7, 9], [13, 9], [10, 6]]) if (b0.get(x, y)) b0.set(x, y, 'r0');
+  pbOutline(b0, 'ou'); if (pal.rg) pbOutline(b0, 'rg');
+  if (it.slot === 'helm' && L && L.h2) pxStamp(b0, L.h2, hx0, hy0); // Heiligenschein ohne Umriss: leuchtet frei
+  const res = { c: pbCanvas(b0, pal), col: L ? L.acc : RAR[clamp(r, 0, 6)].c };
+  if (L && L.cyc) res.fr = cycFrames(b0, pal, L.cyc, res.c);
+  return AACACHE[k] = res;
 }
+// Rüstung je Klassen-Stil; Stufe: Schulterdornen, Nähte, Sterne; Seltenheit: Juwel (2 px), Runen (Episch)
+function armorBody(b, st, t, r, A) {
+  const a = 'c0', s = 'c1', h = 'm3', tr = 'tr';
+  if (st === 'plate') {
+    for (let y = 3; y < 13; y++) { const ww = y < 10 ? 10 : 8, x0 = 8 - ww / 2; for (let i = 0; i < ww; i++) b.set(x0 + i, y, i < ww / 2 ? a : s); b.set(x0, y, h); }
+    b.disc(3.5, 3.5, 2.2, a); b.disc(12, 3.5, 2.2, s); b.set(3, 2, h);
+    b.rect(6, 3, 4, 1, s); b.rect(7, 4, 2, 6, tr); b.rect(4, 10, 8, 1, tr); b.rect(5, 13, 2, 2, s); b.rect(9, 13, 2, 2, s);
+    if (t >= 2) { b.rect(2, 5, 3, 1, tr); b.rect(11, 5, 3, 1, tr); }
+    if (t >= 3) { b.set(3, 0, h); b.set(3, 1, a); b.set(12, 0, h); b.set(12, 1, s); }
+    if (t >= 5) { b.set(1, 1, h); b.set(14, 1, h); b.set(0, 3, h); b.set(15, 3, s); b.rect(5, 7, 1, 2, h); b.rect(10, 7, 1, 2, h); }
+    if (t >= 6) { b.set(7, 4, 'm3'); b.set(8, 4, 'm3'); }
+    A.chest = [10, 8]; A.shl = [5, 5]; A.shr = [14, 5]; A.runes = [[7, 9], [12, 9], [7, 11], [12, 11]];
+  } else if (st === 'robe') {
+    for (let y = 2; y < 15; y++) { const ww = Math.min(13, 5 + Math.floor((y - 2) * .8)), x0 = 8 - Math.floor(ww / 2); for (let i = 0; i < ww; i++) b.set(x0 + i, y, i < ww / 2 ? a : s); }
+    b.rect(2, 4, 2, 5, s); b.rect(12, 4, 2, 5, s); b.rect(6, 2, 4, 2, tr); b.rect(7, 4, 2, 10, tr); b.rect(3, 14, 10, 1, tr); b.rect(4, 8, 8, 1, RL[1]);
+    if (t >= 3) { b.rect(5, 3, 1, 2, tr); b.rect(10, 3, 1, 2, tr); }
+    if (t >= 5) for (let x = 3; x < 13; x += 2) b.set(x, 13, h);
+    if (t >= 6) { b.set(2, 3, h); b.set(13, 3, h); }
+    A.chest = [10, 8]; A.runes = [[6, 11], [11, 11], [5, 13], [12, 13]];
+  } else if (st === 'cloak') {
+    b.disc(8, 4, 3.6, s); b.disc(8, 4.5, 2.2, OUT);
+    for (let y = 6; y < 15; y++) { const ww = Math.min(13, 7 + (y - 6)), x0 = 8 - Math.floor(ww / 2); for (let i = 0; i < ww; i++) b.set(x0 + i, y, i < ww / 2 ? a : s); b.set(8, y, '#1e1828'); }
+    b.set(5, 7, h); b.rect(7, 7, 2, 1, tr);
+    if (t >= 3 || r >= 1) { b.rect(3, 13, 11, 1, tr); }
+    if (t >= 5) { b.set(4, 2, h); b.set(12, 2, h); b.set(3, 3, s); b.set(13, 3, s); }
+    if (t >= 6) b.set(8, 4, 'm3');
+    A.chest = [10, 10]; A.neck = [10, 7]; A.runes = [[6, 12], [12, 12], [5, 14], [13, 14]];
+  } else {
+    for (let y = 3; y < 14; y++) { const ww = 9, x0 = 4; for (let i = 0; i < ww; i++) b.set(x0 + i, y, i < 4 ? a : s); }
+    b.rect(3, 3, 2, 3, s); b.rect(12, 3, 2, 3, s); b.rect(6, 3, 4, 1, RL[1]);
+    for (let y = 5; y < 10; y++) b.set(y % 2 ? 7 : 8, y, RL[2]); b.rect(4, 10, 9, 1, r >= 1 ? tr : RL[1]); b.set(8, 10, tr);
+    if (t >= 3) { b.rect(2, 2, 3, 2, tr); b.rect(12, 2, 3, 2, tr); }
+    if (t >= 5) { b.set(2, 1, h); b.set(14, 1, h); b.set(7, 10, h); b.set(9, 10, h); }
+    if (t >= 6) b.rect(5, 12, 7, 1, h);
+    A.chest = [10, 8]; A.runes = [[7, 7], [12, 7], [7, 13], [12, 13]];
+  }
+  if (r >= 2) { const [x, y] = A.chest; b.set(x - 2, y - 2 - (st === 'cloak' ? 1 : 0), 'gm'); b.set(x - 2, y - 1 - (st === 'cloak' ? 1 : 0), 'gd'); }
+}
+function helmBody(b, st, t, r) {
+  const a = 'c0', s = 'c1', h = 'm3', tr = 'tr', T = MAT[clamp(t, 0, TIERS - 1)];
+  if (st === 'plate') {
+    for (let y = 4; y < 13; y++) { const ww = y < 6 ? 7 : 9, x0 = 8 - Math.ceil(ww / 2); for (let i = 0; i < ww; i++) b.set(x0 + i, y, i < ww / 2 ? a : s); b.set(x0, y, h); }
+    b.rect(5, 8, 7, 1, OUT); b.rect(7, 9, 1, 3, OUT); b.rect(9, 9, 1, 3, OUT);
+    if (T.pl) { b.rect(7, 1, 3, 3, T.pl[0]); b.set(10, 2, T.pl[1]); b.set(10, 1, T.pl[1]); }
+    if (t >= 3 || r >= 1) { b.rect(3, 11, 11, 1, tr); }
+    if (t >= 5) { b.set(3, 5, h); b.set(2, 4, h); b.set(13, 5, s); b.set(14, 4, h); }
+    if (t >= 6) { b.set(5, 6, 'm3'); b.set(11, 6, 'm3'); }
+  } else if (st === 'robe') {
+    for (let y = 1; y < 11; y++) { const ww = Math.max(1, Math.floor(y * .7)), x0 = 7 - Math.floor(ww / 2) + Math.round((10 - y) * .25); for (let i = 0; i < ww; i++) b.set(x0 + i, y, i < ww / 2 ? a : s); }
+    b.rect(1, 11, 14, 2, s); b.rect(2, 11, 6, 1, a); b.rect(4, 10, 8, 1, tr);
+    if (t >= 3) { b.set(9, 1, h); b.set(10, 0, h); }
+    if (t >= 5) { b.set(1, 13, tr); b.set(14, 13, tr); b.set(6, 7, h); }
+    if (t >= 6) { b.set(7, 4, '#ffffff'); }
+  } else if (st === 'cloak') {
+    for (let y = 2; y < 14; y++) { const ww = y < 4 ? 7 : y > 11 ? 7 : 9, x0 = 8 - Math.ceil(ww / 2); for (let i = 0; i < ww; i++) b.set(x0 + i, y, i < ww / 2 ? a : s); }
+    b.rect(4, 6, 3, 2, OUT); b.rect(9, 6, 3, 2, OUT); b.set(5, 6, t >= 4 ? T.m[3] : '#e8e2cf'); b.set(10, 6, t >= 4 ? T.m[3] : '#e8e2cf'); b.rect(6, 10, 4, 1, s);
+    if (t >= 3) { b.set(3, 2, a); b.set(12, 2, s); b.set(2, 1, h); b.set(13, 1, h); }
+    if (t >= 5 || r >= 1) { b.rect(5, 12, 6, 1, tr); }
+  } else {
+    for (let x = 2; x < 14; x++) { const y = 8 + Math.round(Math.abs(x - 7.5) * -.35 + 1.5); b.set(x, y, a); b.set(x, y + 1, r >= 1 ? tr : s); }
+    b.line(11, 7, 14, 1, '#f0f0f0'); b.line(12, 7, 14, 2, T.c[0]); b.set(14, 0, '#fff');
+    if (t >= 3) { b.line(3, 7, 1, 2, '#f0f0f0'); b.set(1, 1, '#fff'); }
+    if (t >= 5) { b.set(5, 8, h); b.set(10, 8, h); }
+  }
+  if (r >= 2) { const y = st === 'vest' ? 9 : st === 'robe' ? 10 : st === 'cloak' ? 3 : 5; b.set(8, y, 'gm'); if (st !== 'vest') b.set(8, y + 1, 'gd'); }
+}
+
+/* ---------- Benannte Gegenstände: eigene Palette, Zierde, Helmform, Kopfschmuck am Helden ----------
+   Schlüssel: Legendär = Name, Set = 's:<set>', Mythisch = 'm:<kraft>'. p: Farben (m Metall, g Beschlag, l Griff, w Holz/Schaft,
+   b Knochen, c Rüstung, a Zierfarben, gm Edelstein, ob Kugel, tr Rüstungsborte), w: Waffen-Zierde, a: Rüstungs-Zierde,
+   h: Helm-Bild, hd: Kopfschmuck am Helden, acc: Leuchtfarbe (Aura, Strahl, Schweif), cyc: wandernde Zierfarben (Mythisch) */
+const FIRE4 = ['#8a1e10', '#e8401e', '#ff9a2a', '#ffe27a'], ICE4 = ['#2a5a8a', '#5aa8e8', '#a8e8ff', '#ffffff'], GOLD4 = ['#9c6a24', '#e8b04a', '#ffe08a', '#fffbe0'];
+const SOUL4 = ['#1e5a4a', '#3ac8a0', '#9affd8', '#f0fff8'], VOLT4 = ['#3a3aa8', '#8ab0ff', '#fff08a', '#ffffff'], VENOM4 = ['#1e4a1a', '#3a9a2a', '#8ae04a', '#e0ffb0'], LEAF4 = ['#1e4a1e', '#3a8a2a', '#79c24e', '#c8f06a'];
+const ITEMLOOK = {
+  /* Legendär – Waffen */
+  'Nachtzahn': { p: { m: ['#2a1e48', '#6a58a0', '#c8c0e8', '#ffffff'], g: ['#1e1030', '#4a2a7a', '#8a5ad0'], l: ['#1a1420', '#3a2a4a', '#5a4a6a'], gm: '#e0ccff', a: ['#2a1a4a', '#6a48c0', '#c8b0ff', '#ffffff'] }, w: [['hook'], ['moon', { at: 'pom' }], ['stars', { n: 3 }]], acc: '#b892f4' },
+  'Viperbiss': { p: { m: ['#1e3a14', '#3a7a2a', '#79c24e', '#d8ffb0'], g: ['#3a3a10', '#8a8a2a', '#c8c84a'], gm: '#e8402a', a: VENOM4 }, w: [['snake'], ['drip', { n: 4 }]], acc: '#8ae04a' },
+  'Schattenkuss': { p: { m: ['#0e0814', '#2a1e3a', '#4a3a6a', '#c8a8f0'], g: ['#0e0814', '#2a1e3a', '#5a4a7a'], l: ['#0e0814', '#2a1e3a', '#3a2a4a'], gm: '#ff4a8a', a: ['#2a1e3a', '#6a48c0', '#ff4a8a', '#ffc0d8'] }, w: [['smoke', { n: 6 }], ['kiss']], acc: '#d06ae8' },
+  'Sonnenklinge': { p: { m: ['#9c5a10', '#e8a020', '#ffd24a', '#fff8c0'], g: GOLD4, gm: '#ff5a2a', a: ['#c8641a', '#ffb03a', '#ffe27a', '#ffffff'] }, w: [['sun', { r: 3.8 }], ['spark', { n: 2 }]], acc: '#ffd24a' },
+  'Morgenrot': { p: { m: ['#6a1428', '#c83a4a', '#ff8a6a', '#ffe0c0'], g: ['#7a3a2a', '#e88a5a', '#ffd0a0'], gm: '#ffe08a', a: ['#a8202a', '#ff6a4a', '#ffb06a', '#fff0c0'] }, w: [['gradient'], ['wings', { s: 6 }], ['spark', { n: 2 }]], acc: '#ff7a5a' },
+  'Sturmbrecher': { p: { m: ['#1e2a4a', '#4a6aa8', '#a8c8f0', '#ffffff'], g: ['#1e2a3a', '#4a5a7a', '#8a9ab8'], gm: '#8ad8ff', a: VOLT4 }, w: [['bolt'], ['arcs', { n: 4 }]], acc: '#a8c8ff' },
+  'Weltspalter': { p: { m: ['#2a1e14', '#5a4430', '#8a7058', '#c8b090'], g: ['#2a1e14', '#5a4430', '#a8743e'], w: ['#2a1e14', '#4a3420', '#6a5038'], gm: '#ff6a2a', a: ['#7a1e10', '#ff6a2a', '#ffd24a', '#fff0a0'] }, w: [['crack'], ['crack'], ['embers', { n: 3 }], ['crystals', { n: 3 }]], acc: '#ff8a3a' },
+  'Donnerkeil': { p: { m: ['#1e1e4a', '#3a3a8a', '#8a90e0', '#e8ecff'], g: GOLD4, gm: '#fff08a', a: VOLT4 }, w: [['arcs', { n: 7 }], ['spark', { n: 2 }]], acc: '#fff08a' },
+  'Bergfäller': { p: { m: ['#2a302a', '#4a5a4a', '#7a8a78', '#c8d0c0'], g: ['#3a2a14', '#7a5a2a', '#a8843e'], w: ['#3a2a14', '#5a4020', '#7a5a2a'], gm: '#57c7e6', a: ['#5a8aa8', '#a8d8f0', '#e8f8ff', '#ffffff'] }, w: [['snowcap'], ['crystals', { n: 3 }]], acc: '#c8e8ff' },
+  'Sternenfall': { p: { m: ['#10123a', '#2a2a8a', '#5a5ae0', '#c8c8ff'], g: ['#1a1a4a', '#4a4ab0', '#9aa2ff'], gm: '#ffe08a', st: '#c8c8ff', a: ['#4a4ad0', '#9aa2ff', '#ffe08a', '#ffffff'] }, w: [['stars', { n: 6 }], ['star', { at: 'tip' }], ['star', { at: 'pom', s: 1 }]], acc: '#ffe08a' },
+  'Himmelsbogen': { p: { m: ['#4a7aa8', '#8ac8f0', '#e0f4ff', '#ffffff'], w: ['#4a7aa8', '#8ac8f0', '#e0f4ff'], g: GOLD4, gm: '#57c7e6', a: ['#6a9ac8', '#c8e4ff', '#ffffff', '#ffffff'] }, w: [['wings', { at: 'tip', s: 4, x0: 1 }], ['wings', { at: 'pom', s: 4, x0: 1, flip: 1 }]], acc: '#bfefff' },
+  'Windflüsterer': { p: { m: ['#1e5a4a', '#3aa88a', '#8ae8c8', '#e8fff4'], w: ['#1e5a4a', '#3aa88a', '#8ae8c8'], g: ['#1e3a2a', '#3a7a5a', '#79c2a0'], gm: '#c8fff0', a: ['#3aa88a', '#8ae8c8', '#e8fff4', '#ffffff'] }, w: [['feather'], ['wisp', { at: 'tip' }], ['wisp', { at: 'pom', flip: 1 }]], acc: '#8ae8c8' },
+  'Sternenfeuer': { p: { m: ['#14143a', '#2a2a6a', '#4a4ab0', '#9aa2ff'], w: ['#14143a', '#2a2a6a', '#4a4ab0'], g: ['#2a2a6a', '#5a5ae0', '#c8c8ff'], ob: '#9ad0ff', a: ['#3a6ae8', '#8ab8ff', '#d8ecff', '#ffffff'] }, w: [['star', { at: 'head', s: 3 }], ['flames', { p: .45 }]], acc: '#8ab8ff' },
+  'Eiswind': { p: { m: ['#4a7a9a', '#8ac0d8', '#c8eef8', '#ffffff'], w: ['#3a6a8a', '#6aa8c8', '#a8d8f0'], g: ['#2a5a7a', '#57a7d6', '#bfefff'], ob: '#bfefff', a: ICE4 }, w: [['crystals', { n: 5, at: 'head' }], ['frost', { p: .35 }]], acc: '#a8e8ff' },
+  'Weltenauge': { p: { m: ['#3a2a14', '#7a5a2a', '#a8843e', '#e8c070'], w: ['#3a2a14', '#6a4a24', '#8a6a3a'], g: GOLD4, ob: '#ffffff', a: ['#1e5a3a', '#3aa86a', '#8ae8a8', '#ffffff'] }, w: [['eye'], ['rays', { at: 'head' }]], acc: '#5ad88a' },
+  /* Legendär – Rüstungen */
+  'Ewige Wacht': { p: { c: ['#e8ecf4', '#8a96aa'], m: ['#4a5466', '#8a96aa', '#c8d2e0', '#ffffff'], tr: '#57a7d6', gm: '#57c7e6', a: ['#1e3a6a', '#57a7d6', '#bfefff', '#ffffff'] }, a: [['eye', { at: 'chest' }], ['wings', { at: 'neck', s: 5, x0: 3 }]], acc: '#8ad8ff' },
+  'Phönixherz': { p: { c: ['#d8401e', '#7a1e10'], m: ['#6a1410', '#b8301e', '#f06a2a', '#ffd24a'], tr: '#ffd24a', gm: '#ffd24a', a: FIRE4 }, a: [['heart', { at: 'chest' }], ['embers', { n: 5 }]], acc: '#ff8a3a' },
+  'Bollwerk der Ahnen': { p: { c: ['#a8743e', '#5a3a1a'], m: ['#3a2a14', '#6a4a24', '#a8743e', '#e8c890'], tr: '#5ad8a8', gm: '#3ac8a0', a: ['#1e5a4a', '#3ac8a0', '#9affd8', '#ffffff'] }, a: [['rune', { at: 'chest' }], ['studs']], acc: '#5ad8a8' },
+  /* Legendär – Helme (eigene Form) */
+  'Krone der Ahnen': {
+    p: { g: ['#5a3a1a', '#a8743e', '#e8b070'], a: ['#1e5a4a', '#3ac8a0', '#9affd8', '#ffffff'] },
+    h: ['..i....i....i..', '.hrh..heh..hbh.', '.hhh..hhh..hhh.', '.hhhh.hhh.hhhh.', '.hhhhhhhhhhhhh.', '.g1gg1ggg1gg1g.', '.hhhhhhhhhhhhh.', '.ggggggggggggg.'],
+    hd: ['i..i..i', 'hrhehbh', 'hhhhhhh', 'g1g1g1g'], acc: '#e8b070'
+  },
+  'Drachenblick': {
+    p: { m: ['#3a0806', '#7a1410', '#b8301e', '#e86a3a'], a: ['#2a1e14', '#6a5a48', '#c8b8a0', '#fff0c0'] },
+    h: ['1.............1', '21...........12', '.21.........12.', '..2mmmmmmmmm2..', '..mnnnnnnnnnm..', '.mnnoonnnoonnm.', '.mnnyynnnyynnm.', '.mnnnnnpnnnnnm.', '.mnooooooooonm.', '..mnnnnnnnnnm..', '..mw.w.w.w.wm..', '...mnnnnnnnm...'],
+    hd: ['1.......1', '21.....12', '.2nnnnn2.'], acc: '#ff6a3a'
+  },
+  'Löwenhaupt': {
+    p: { g: ['#9c6a24', '#e8b04a', '#ffe08a'], a: ['#7a3a10', '#d8802a', '#ffb03a', '#ffe27a'] },
+    h: ['.0.0.0.0.0.0.0.', '.0111111111110.', '011112222211110', '01112hhhhh21110', '0112hhhhhhh2110', '012hhkhhhkhh210', '012hhhhhhhhh210', '012hhiiiiihh210', '0112hii0iih2110', '.0112hiiih2110.', '.01112hhh21110.', '..01112221110..', '...0.01110.0...'],
+    hd: ['.0.0.0.0.', '011111110', '12.....21', '1.......1', '1.......1', '.1.....1.'], hdo: 2, acc: '#ffb03a'
+  },
+  /* Sets */
+  's:lion': {
+    p: { m: ['#5a4a2a', '#a89060', '#e8dcb0', '#fffbe8'], g: GOLD4, gm: '#e8402a', c: ['#e8b04a', '#9c6a24'], tr: '#c8342c', a: ['#7a3a10', '#d8802a', '#ffc04a', '#fff0b0'] },
+    w: [['lion']], a: [['lion', { at: 'chest' }]],
+    h: ['.....rrrr....', '....rrrrrr...', '...rr.rr..r..', '...hhhhhhh...', '..hiiiiiiih..', '..hihhhhhih..', '..hkkkkkkkh..', '..hihhkhhih..', '..hihhkhhih..', '..h1hhhhh1h..', '...ggggggg...'],
+    hd: ['..rrr..', '.rr.rr.', 'hiiiiih'], acc: '#ffc04a'
+  },
+  's:glut': {
+    p: { m: ['#1e1414', '#3a2420', '#6a3a2a', '#ff8a3a'], w: ['#1e1414', '#3a2420', '#5a3a2a'], g: ['#5a1e10', '#c8401e', '#ff8a3a'], ob: '#ff8a3a', gm: '#ffd24a', c: ['#5a2a1e', '#2a1414'], tr: '#ff8a3a', a: FIRE4 },
+    w: [['flames', { p: .7 }], ['embers', { n: 3 }]], a: [['embers', { n: 9 }], ['flames', { p: .3 }]],
+    h: ['.......3.....', '......32.....', '......21.....', '.....mm......', '.....mnm.....', '....mnnm.....', '....mnnnm....', '...mnnnnm....', '...m1212m....', '..mnnnnnnm...', 'mmmmmmmmmmmmm', '.nnnnnnnnnnn.'],
+    hd: ['...3.', '..32.', '..m..', '.mnm.', '.121.', 'mmmmm'], acc: '#ff8a3a', flame: 1
+  },
+  's:nacht': {
+    p: { m: ['#1e1030', '#3a2a5a', '#6a4a9a', '#c8b0f0'], g: ['#1e1030', '#3a2a5a', '#6a4a9a'], l: ['#1e1030', '#2a1e3a', '#3a2a5a'], gm: '#79e04a', c: ['#3a2a5a', '#1e1030'], tr: '#79e04a', a: ['#3a8a2a', '#9a5ad8', '#e0b0ff', '#ffe04a'] },
+    w: [['flower'], ['leaf', { n: 3 }], ['drip', { n: 3 }]], a: [['flower', { at: 'chest' }], ['smoke', { n: 3 }]],
+    h: ['....mmmmm.12', '...mnnnnn232', '..mnnnnnnn12', '..mnoooooonm', '.mnokkkkkonm', '.mnokvkkvkonm', '.mnokkkkkonm', '.mnnoooooonm', '..mnnnnnnnm.', '...mm...mm..'],
+    hd: ['.mnnnnm.', 'mn....nm', 'n......n', 'n......n'], hdo: 1, acc: '#b07ae8'
+  },
+  's:wald': {
+    p: { w: ['#4a2e14', '#7a4e24', '#a8743e'], m: ['#3a2a14', '#6a4a24', '#8a6a3a', '#c8a060'], g: ['#2a4a1a', '#3a7a2a', '#79c24e'], gm: '#ff6a8a', c: ['#3a8a3a', '#1e4a1e'], tr: '#a8743e', a: LEAF4 },
+    w: [['leaf', { n: 7 }], ['vine']], a: [['leaf', { n: 8 }]],
+    h: ['..1.......1..', '.121..2..121.', '..12.121.21..', '...1..1..1...', 'ghhhhhehhhhhg', '.ggggggggggg.'],
+    hd: ['1.2.2.1', '.21.12.', 'gghehgg'], acc: '#79c24e'
+  },
+  's:drache': {
+    p: { m: ['#4a0e0a', '#a8201a', '#e84a2a', '#ffb03a'], w: ['#4a0e0a', '#8a1a14', '#c8302a'], g: GOLD4, gm: '#ffd24a', c: ['#c8302a', '#5a0e0a'], tr: '#e8b04a', a: ['#3a0806', '#8a1a14', '#d8402a', '#ffb03a'] },
+    w: [['wings', { bat: 1, s: 5 }], ['scales']], a: [['scales', { tok: ['c0', 'c1'] }], ['wings', { at: 'neck', bat: 1, s: 6, x0: 3 }]],
+    h: ['2.............2', '21....h.h....12', '211...hhh...112', '.211.hhhhh.112.', '..21hhrrrhh12..', '...hhhrrrhhh...', '...hhhhhhhhh...', '...ggggggggg...'],
+    hd: ['2..h.h..2', '21hhhhh12', '.1hhrhh1.'], acc: '#ff6a2a'
+  },
+  /* Mythisch */
+  'm:klinge': {
+    p: { m: ['#3a4a6a', '#9ab0d0', '#e8f0ff', '#ffffff'], w: ['#3a4a6a', '#9ab0d0', '#e8f0ff'], g: GOLD4, gm: '#57c7e6', ob: '#bfefff', a: VOLT4 },
+    w: [['bolt'], ['wings', { s: 5 }], ['arcs', { n: 5 }], ['star', { at: 'pom', s: 1 }]], cyc: [VOLT4, ['#3a6ae8', '#8ad8ff', '#ffffff', '#ffffff'], ['#8a6a10', '#ffe04a', '#fffbd0', '#ffffff']], acc: '#a8d8ff'
+  },
+  'm:zorn': {
+    p: { m: ['#120808', '#3a1410', '#8a2a1a', '#ff8a3a'], w: ['#120808', '#3a1410', '#5a1e14'], g: ['#1a0a0a', '#5a1410', '#c8301e'], gm: '#ffd24a', ob: '#ff6a2a', a: FIRE4 },
+    w: [['flames', { p: .8 }], ['horns']], cyc: [FIRE4, ['#a8201a', '#ff6a2a', '#ffd24a', '#ffffff'], ['#6a1010', '#c8301e', '#ff8a3a', '#ffd27a']], acc: '#ff6a2a'
+  },
+  'm:ernter': {
+    p: { m: ['#1e3a3a', '#3a7a6a', '#8ae0c0', '#e8fff8'], w: ['#1e2a2a', '#3a5a50', '#6a8a80'], g: ['#6a6a5a', '#c8c0a8', '#f0ead8'], gm: '#3ac8a0', ob: '#9affd8', a: SOUL4 },
+    w: [['hook', { only: ['sword', 'dagger', 'axe'] }], ['skull', { at: 'guard' }], ['wisp', { at: 'tip' }], ['stars', { n: 3 }]], cyc: [SOUL4, ['#1e4a5a', '#3aa8c8', '#bff4ff', '#ffffff'], ['#2a6a3a', '#5ae08a', '#d8ffe0', '#ffffff']], acc: '#5ae0b0'
+  },
+  'm:phoenix': {
+    p: { c: ['#e8501e', '#8a1e10'], m: ['#6a1410', '#b8301e', '#ff8a3a', '#ffe27a'], tr: '#ffd24a', gm: '#ffe27a', a: FIRE4 },
+    a: [['wings', { at: 'neck', big: 1, x0: 3 }], ['flameE', { at: 'chest' }], ['flames', { p: .25 }]], cyc: [FIRE4, ['#a8201a', '#ff6a2a', '#ffd24a', '#ffffff'], ['#c8401e', '#ffb03a', '#fff0a0', '#ffffff']], acc: '#ff8a3a'
+  },
+  'm:dornen': {
+    p: { c: ['#3a5a24', '#1e2e14'], m: ['#14200e', '#2a3a1a', '#4a6a2a', '#8ab04a'], tr: '#6a4a24', gm: '#e8402a', a: ['#2a1a0e', '#5a3a1e', '#e8402a', '#ffb0a0'] },
+    a: [['thorns', { p: .55 }], ['rune', { at: 'chest' }]], cyc: [['#2a1a0e', '#5a3a1e', '#e8402a', '#ffb0a0'], ['#2a1a0e', '#5a3a1e', '#ff6a4a', '#ffffff'], ['#2a1a0e', '#4a2e14', '#a8202a', '#ff8a6a']], acc: '#e8402a'
+  },
+  'm:krone': {
+    p: { g: ['#c8a04a', '#ffe08a', '#fffbe0'], gm: '#57c7e6', a: ['#c8a04a', '#ffe08a', '#fffbe0', '#ffffff'] },
+    h: ['.............', '.............', '.............', '.............', '..i...i...i..', '..hi.hih.ih..', '..hhhhehhhh..', '.hhwhhhhhwhh.', '.ggggggggggg.'], h2: ['...3333333...', '.32.......23.', '...3333333...'],
+    hd: ['.........', '.........', '.........', '..w.w.w..', '..hhehh..'], hd2: ['..33333..', '.3.....3.', '..33333..'], cyc: [GOLD4, ['#e8c060', '#fff4c0', '#ffffff', '#ffffff'], ['#c8a04a', '#ffd24a', '#fff0a0', '#ffffff']], acc: '#ffe08a'
+  },
+  'm:eisherz': {
+    p: { m: ['#4a5466', '#8a96aa', '#c8d2e0', '#f4f8ff'], gm: '#a8e8ff', a: ICE4 },
+    h: ['......3......', '.....323.....', '..3..222..3..', '.323.212.323.', '.222.212.222.', '.212.111.212.', 'ooooooooooooo', 'nnnn.1e1.nnnn', '.....1e1.....', '......1......'],
+    hd: ['...3...', '.3.2.3.', '.2.2.2.', 'ooo1ooo', '...e...'], cyc: [ICE4, ['#3a8ad8', '#8ad8ff', '#e8faff', '#ffffff'], ['#5a7aa8', '#c8e8ff', '#ffffff', '#ffffff']], acc: '#a8e8ff'
+  },
+  'm:midas': {
+    p: { g: ['#9c6a24', '#e8b04a', '#ffe08a'], gm: '#e8402a', a: GOLD4 },
+    h: ['....iiiii....', '..iihhhhhii..', '.ihhwwhhhhhi.', '.ihwhhhhhhhi.', 'ihhhhhhhhhhhi', 'ihhhhhehhhhhi', 'rrrrrrrrrrrrr', 'i..i..i..i..i'],
+    hd: ['...3...', '..iii..', '.ihwhi.', 'ihheehh', 'ggggggg'], cyc: [GOLD4, ['#c8902a', '#ffd24a', '#fff8c0', '#ffffff'], ['#e8b04a', '#fff0a0', '#ffffff', '#ffffff']], acc: '#ffd24a'
+  }
+};
+for (const k in ITEMLOOK) {
+  const L = ITEMLOOK[k], p = L.p, r = {};
+  for (const n of ['m', 'g', 'l', 'w', 'b', 'c', 'a']) if (p[n]) p[n].forEach((c, i) => { r[n + i] = c; });
+  for (const n of ['gm', 'gd', 'ob', 'tr', 'st']) if (p[n]) r[n] = p[n];
+  if (p.gm && !p.gd) r.gd = mixC(p.gm, '#000000', .45);
+  L.pal = r;
+}
+
 
 /* ---------- Kleine Icons (Versteck, Karte) ---------- */
 const PACACHE = {};
@@ -225,10 +550,24 @@ function artIcon(name) {
    g = Zeichenfläche, (ox, oy) = linke obere Ecke des Einzelbilds, m = Ankerpunkte */
 function headgearOf(helm) {
   if (!helm) return null;
+  const L = itemLook(helm); if (L && L.hd) return 'h:' + (helm.rar === 6 ? 'm:' + helm.myth : helm.rar === 5 ? 's:' + helm.set : helm.name);
   if (helm.rar === 6) return 'halo';
   if (helm.rar === 4 || helm.tier >= 7) return 'crown';
   if (helm.tier === 4 || helm.tier === 5) return 'horns';
   return null;
+}
+// Kopfschmuck, der den Helmbusch ersetzt
+function hgNoPlume(hg) { return hg === 'crown' || (hg && hg.startsWith('h:')) ? 1 : 0; }
+/* Kopfschmuck benannter Helme am Helden (ITEMLOOK hd): Zeile hdo sitzt auf dem Scheitel, sonst die unterste */
+const HGCACHE = {};
+function headgearSpr(key) {
+  if (HGCACHE[key]) return HGCACHE[key];
+  const L = ITEMLOOK[key], rows = L.hd, w = Math.max(...rows.map(s => s.length)), b = PB(w + 2, rows.length + 2), M = MAT[1].m;
+  const pal = Object.assign({ g0: GOLDC[0], g1: GOLDC[1], g2: GOLDC[2], m0: M[0], m1: M[1], m2: M[2], m3: M[3], a0: '#7a3a10', a1: '#d8802a', a2: '#ffb03a', a3: '#ffe27a', gm: '#e8402a', gd: '#7a1e18' }, L.pal);
+  pxStamp(b, rows, 1, 1); pbOutline(b, OUT); if (L.hd2) pxStamp(b, L.hd2, 1, 1);
+  const res = { c: pbCanvas(b, pal), w, y0: L.hdo != null ? L.hdo : rows.length - 1 };
+  if (L.cyc) res.fr = cycFrames(b, pal, L.cyc, res.c);
+  return HGCACHE[key] = res;
 }
 function capeCols(L) {
   if (L.ccape) { const C = COSM[L.ccape]; return { a: C.c[0], b: C.c[1], trim: C.trim, stars: C.stars }; }
@@ -271,6 +610,7 @@ function drawWings(g, ox, oy, m, C, moving) {
 }
 function drawHeadgear(g, ox, oy, m, kind, helm) {
   const x = ox + m.cx, y = oy + m.top, d = (px_, py_, c) => { g.fillStyle = c; g.fillRect(px_, py_, 1, 1); };
+  if (kind.startsWith('h:')) { const H = headgearSpr(kind.slice(2)); g.drawImage(H.fr ? H.fr[Math.floor(T * 8) % H.fr.length] : H.c, x - (H.w >> 1) - 1, y - H.y0 - 1); return; }
   if (kind === 'horns') {
     const c = helm.tier === 5 ? ['#2a1e3a', '#ff8a3a'] : ['#e8e2cf', '#c8342c'];
     for (const s of [-1, 1]) { const hx = x + s * 4; d(hx, y + 2, OUT); d(hx, y + 1, c[0]); d(hx + s, y, c[0]); d(hx + s, y - 1, c[1]); d(hx + s * 2, y, OUT); }

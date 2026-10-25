@@ -41,10 +41,10 @@ function fitPanel() {
 const HPCACHE = {};
 function heroPreviewURL(c) {
   // Ausrüstung im gewählten Aussehen (visItem, js/trade.js), dazu die Waffe seitlich hinter dem Körper
-  const L = lookOf(c), g = c.gear || {}, hm = visItem(g.helm), am = visItem(g.armor), wv = visItem(g.weapon), hg = headgearOf(hm), spec = heroSpec(c, { np: hg === 'crown' ? 1 : 0, at: am ? am.tier : 0, ht: hm ? hm.tier : 0 }), key = JSON.stringify([spec, L.cape, L.ccape, L.wings, hg, hm ? hm.tier : 0, wv && wv.base ? itemArtKey(wv) : '']);
+  const L = lookOf(c), g = c.gear || {}, hm = visItem(g.helm), am = visItem(g.armor), wv = visItem(g.weapon), hg = headgearOf(hm), spec = heroSpec(c, { np: hgNoPlume(hg), at: am ? am.tier : 0, ht: hm ? hm.tier : 0 }), key = JSON.stringify([spec, L.cape, L.ccape, L.wings, hg, hm ? hm.tier : 0, wv && wv.base ? itemArtKey(wv) : '', auraKey(c)]);
   if (HPCACHE[key]) return HPCACHE[key];
   const st = charStrip(spec), FW = 40, FH = 44, cc = capeCols(L);
-  const cv = mk(FW * 4, FH, gg => { for (let f = 0; f < 4; f++) { const ox = f * FW + (FW - st.w) / 2, oy = FH - st.h - 1, m = st.meta[f]; if (L.wings && COSM[L.wings]) drawWings(gg, ox, oy, m, COSM[L.wings], false); if (cc) drawCape(gg, ox, oy, m, cc, false, 0); drawHeldWeapon(gg, wv, f * FW, FW, FH, spec.body); gg.drawImage(st.c, f * st.w, 0, st.w, st.h, ox, oy, st.w, st.h); if (hg) drawHeadgear(gg, ox, oy, m, hg, hm); } });
+  const cv = mk(FW * 4, FH, gg => { for (let f = 0; f < 4; f++) { const ox = f * FW + (FW - st.w) / 2, oy = FH - st.h - 1, m = st.meta[f]; auraPreview(gg, ox, oy, m, c, 0, f * FW, FW, FH); if (L.wings && COSM[L.wings]) drawWings(gg, ox, oy, m, COSM[L.wings], false); if (cc) drawCape(gg, ox, oy, m, cc, false, 0); drawHeldWeapon(gg, wv, f * FW, FW, FH, spec.body); gg.drawImage(st.c, f * st.w, 0, st.w, st.h, ox, oy, st.w, st.h); if (hg) drawHeadgear(gg, ox, oy, m, hg, hm); auraPreview(gg, ox, oy, m, c, 1, f * FW, FW, FH); } });
   return HPCACHE[key] = { url: cv.toDataURL(), w: FW, h: FH };
 }
 function heroHTML(c, s) { const H = heroPreviewURL(c); return `<i class="spr" style="width:${H.w * s}px;height:${H.h * s}px;background-image:url(${H.url});background-size:${H.w * 4 * s}px ${H.h * s}px;--to:-${H.w * 4 * s}px;animation:idle4 .7s steps(4) infinite"></i>`; }
@@ -341,55 +341,7 @@ function gemListHTML(withAct) {
   return any ? h : '<p class="sub">' + _t('Keine Edelsteine. Elite-Gegner, Truhen, Erzadern und Bosse lassen welche fallen.') + '</p>';
 }
 
-/* ---------- Werkbank (Karte, Schmiede, Juwelier) ---------- */
-let wbTab = 'up', wbFree = false, wbMode = 'node', fuseA = null, fuseB = null, forgeSlot = 'weapon';
-const WB_TABS = { node: ['up', 'fuse', 'forge', 'craft', 'sock', 'gems', 'dye'], act: ['up', 'fuse', 'forge', 'craft', 'sock', 'gems', 'dye'], smith: ['up', 'fuse', 'forge', 'craft', 'dye'], jewel: ['sock', 'gems', 'trans'] };
-const WB_LABEL = { up: _t('AUFWERTEN'), fuse: _t('VERSCHMELZEN'), forge: _t('SCHMIEDEN'), craft: _t('HERSTELLEN'), sock: _t('SOCKEL'), gems: _t('EDELSTEINE'), dye: _t('FARBEN'), trans: _t('VEREDELN') };
-for (const t of HOOK.wbTabs) { for (const m of t.modes) WB_TABS[m].push(t.k); WB_LABEL[t.k] = t.label(); }
-function openWorkbench(mode) {
-  if (mode !== undefined) { wbMode = mode; wbFree = mode === 'node'; fuseA = fuseB = null; }
-  if (!WB_TABS[wbMode].includes(wbTab)) wbTab = WB_TABS[wbMode][0];
-  setState('menu'); showHud(false); computeStats();
-  const tab_ = k => `<button class="tab" role="tab" aria-selected="${wbTab === k}" data-act="wtab" data-id="${k}">${WB_LABEL[k]}</button>`;
-  const all = ['weapon', 'armor', 'helm'].map(s => P.gear[s]).filter(Boolean).concat(P.bag);
-  if (!selItem || !findItem(selItem)) selItem = P.gear.weapon.uid;
-  const sel = findItem(selItem), it = sel.it;
-  const list = `<div class="grid" style="margin-bottom:8px">${all.map(x => itemSlot(x, 'wsel', x === it)).join('')}</div>`;
-  let body = '';
-  if (wbTab === 'up') {
-    const c = it.up < 10 ? upCost(it, it.up + 1) : null;
-    body = `<div class="split"><div>${list}</div><div class="side sheet">${c ? `<h3>${_t('AUFWERTEN AUF +{n}', { n: it.up + 1 })}</h3>${costHTML(c.mats, c.gold)}<button class="btn" data-act="up" ${canAfford(c.mats, c.gold) ? '' : 'disabled'}>${_t('Aufwerten · {p} %', { p: Math.round(c.chance * 100) })}</button><p class="sub">${_t('Erfolgschance: {p}', { p: `<b style="color:${c.chance < 1 ? 'var(--gold)' : 'var(--moss)'}">${Math.round(c.chance * 100)} %</b>` })}${wbFree ? ' ' + _t('(Werkbank-Bonus +5 %)') : ''}. ${_t('Bei Misserfolg sind die Materialien weg, der Gegenstand bleibt. Ab +5 leuchtet deine Ausrüstung, ab +8 bekommt sie eine Aura.')}</p>` : '<p class="sub">' + _t('Maximal aufgewertet.') + '</p>'}${itemDetail(it, '')}</div></div>`;
-  } else if (wbTab === 'fuse') {
-    const A = fuseA && findItem(fuseA) ? findItem(fuseA).it : null, Bf = fuseB && findItem(fuseB) ? findItem(fuseB).it : null, err = fuseCheck(A, Bf);
-    let side = '';
-    body = `<p class="sub">${_t('Verschmelze zwei Gegenstände derselben Art. Der {main} behält Aussehen und Namen, das {victim} vergeht. Ergebnis: höchste Stufe und Aufwertung, die besten Zusatzwerte beider, einen Zusatzwert mehr, +6 % Grundwerte – und vielleicht eine höhere Seltenheit.', { main: `<b style="color:var(--gold)">${_t('Hauptgegenstand')}</b>`, victim: `<b style="color:var(--blood)">${_t('Opfer')}</b>` })}</p>
-    <div class="grid" style="margin-bottom:8px">${all.map(x => `<button class="slot${x === A ? ' fa' : x === Bf ? ' fb' : ''}" data-act="fsel" data-id="${x.uid}" style="box-shadow:inset 0 0 0 2px ${itemColor(x)}${x === A ? ',0 0 0 3px #e8b04a' : x === Bf ? ',0 0 0 3px #c8463c' : ''};${A && !Bf && x !== A && (x.slot !== A.slot || !P.bag.includes(x)) ? 'opacity:.35' : ''}" aria-label="${esc(itemName(x))}"><img src="${itemIconURL(x)}" alt="">${x === A ? '<span class="u">' + _t('HAUPT') + '</span>' : x === Bf ? '<span class="u" style="color:#ff6a5a">' + _t('OPFER') + '</span>' : x.fz ? `<span class="n">★${x.fz}</span>` : ''}</button>`).join('')}</div>`;
-    const mini = (x, l, col) => `<div class="row" style="cursor:default"><div class="ic" style="box-shadow:inset 0 0 0 2px ${col}"><img src="${itemIconURL(x)}" alt=""></div><div><div class="st" style="margin:0">${l}</div><div class="nm" style="color:${itemColor(x)}">${esc(itemName(x))}</div></div><span></span></div>`;
-    if (err) side += `${A ? itemDetail(A, '') : ''}<p class="sub" style="color:var(--gold)">${esc(err)}</p>${A ? '<button class="btn alt sm" data-act="freset">' + _t('Auswahl zurücksetzen') + '</button>' : ''}`;
-    else { const R = fusePreview(A, Bf), ch = fuseChance(A, Bf), c = fuseCost(A, Bf); side += `<h3 style="margin-top:0">${_t('ERGEBNIS')}</h3>${costHTML(c.mats, c.gold)}<div class="acts" style="justify-content:flex-start"><button class="btn" data-act="fuse" ${canAfford(c.mats, c.gold) ? '' : 'disabled'}>${_t('Verschmelzen')}</button><button class="btn alt sm" data-act="freset">${_t('Neu wählen')}</button></div>${ch > 0 && ch < 1 ? `<p class="sub">${_t('Dazu {chance} auf {rar} mit einem weiteren Zusatzwert.', { chance: `<b style="color:var(--rune)">${_t('{p} % Chance', { p: Math.round(ch * 100) })}</b>`, rar: A.rar === 4 ? `<b style="color:#ff4fd8">${_t('MYTHISCH')}</b>` : RAR[A.rar + 1].n })}${Bf.gems.length ? ' ' + _t('Edelsteine des Opfers kommen zurück in den Vorrat.') : ''}</p>` : ''}${itemDetail(R, '')}${mini(A, _t('HAUPTGEGENSTAND'), '#e8b04a')}${mini(Bf, _t('OPFER – VERGEHT'), '#c8463c')}`; }
-    body = `<div class="split"><div>${body}</div><div class="side${A ? ' sheet' : ''}">${side}</div></div>`;
-  } else if (wbTab === 'forge') {
-    body = `<p class="sub">${_t('Schmiede einen magischen Gegenstand aus einem bestimmten Material – garantiert in dieser Stufe, mit zufälliger Form.')}${hideLv('schmiede') >= 2 ? ' ' + _t('Schmiede-Rabatt aktiv.') : ''}</p><div class="opts">${['weapon', 'armor', 'helm'].map(s => `<button class="opt${forgeSlot === s ? ' sel' : ''}" data-act="fslot" data-id="${s}">${s === 'weapon' ? _t('Waffe') : AR[s].label}</button>`).join('')}</div>`;
-    body += MAT.map((M, t) => { const c = forgeCost(t, forgeSlot), ok = forgeOk(t), sample = forgeSlot === 'weapon' ? weaponArt({ slot: 'weapon', base: P.gear.weapon.base, form: wform(P.gear.weapon).id, tier: t, rar: 1, aff: {}, gems: [] }).c : armorArt({ slot: forgeSlot, base: forgeSlot, tier: t, rar: 1, aff: {}, gems: [] }, P.cls); return `<div class="row" style="cursor:default;${ok ? '' : 'opacity:.5'}"><div class="ic"><img src="${sample.toDataURL()}" alt=""></div><div><div class="nm" style="color:${M.m[2]}">${M.n}${forgeSlot !== 'weapon' ? ' · ' + CLASSES[P.cls].names[t][forgeSlot === 'armor' ? 0 : 1] : ''}</div><div class="st">${_t('Stufe {n}', { n: t + 1 })}${ok ? '' : ' · ' + _t('ab Level {lv}', { lv: REQ[t] })}</div>${costHTML(c.mats, c.gold)}</div><button class="btn sm" data-act="forge" data-i="${t}" ${ok && canAfford(c.mats, c.gold) ? '' : 'disabled'}>${_t('Schmieden')}</button></div>`; }).join('');
-  } else if (wbTab === 'craft') {
-    body = RECIPES.map(R => `<div class="row" style="cursor:default"><div class="ic"><img src="${iconURL(R.id === 'potion' ? ['s', 288, 336, 16, 16] : R.id === 'gem' ? ['gem', 'rubin', 1] : R.id === 'socket' ? ['gem', 'saphir', 3] : ['fx', 'sparks', 2])}" alt=""></div><div><div class="nm">${R.n}</div><div class="st">${R.d}${R.needItem ? ' – ' + _t('für: {item}', { item: '<b style="color:' + itemColor(it) + '">' + esc(itemName(it)) + '</b>' }) : ''}</div>${costHTML(R.cost, R.gold)}</div><button class="btn sm" data-act="craft" data-id="${R.id}" ${canAfford(R.cost, R.gold) ? '' : 'disabled'}>${_t('Herstellen')}</button></div>`).join('') + '<p class="sub">' + _t('Für Umschmieden und Sockel bohren den Gegenstand im Reiter „Aufwerten“ oder „Sockel“ auswählen.') + '</p>';
-  } else if (wbTab === 'sock') {
-    body = `<div class="split"><div>${list}</div><div class="side sheet">${itemDetail(it, it.gems.length ? `<button class="btn alt sm" data-act="unsock">${_t('Edelsteine entfernen ({gold} Gold)', { gold: 40 + it.gems.length * 20 })}</button>` : '')}<h3>${_t('EDELSTEIN EINSETZEN ({n}/{max} Sockel)', { n: it.gems.length, max: it.sockets })}</h3>${it.sockets > it.gems.length ? gemListHTML('sock') : '<p class="sub">' + _t('Keine freien Sockel – an der Werkbank kannst du welche bohren.') + '</p>'}</div></div>`;
-  } else if (wbTab === 'gems') {
-    body = `<p class="sub">${_t('Drei gleiche Edelsteine verschmelzen zu einem besseren.')}${hideLv('juwelier') >= 2 ? ' ' + _t('Juwelier-Rabatt aktiv.') : ''}</p>` + gemListHTML('comb');
-  } else if (wbTab === 'trans') {
-    body = '<p class="sub">' + _t('Veredle Materialien, die du übrig hast, zu selteneren.') + '</p>' + TRANSMUTE.map(([f, t, n, g], i) => `<div class="row" style="cursor:default"><div class="ic"><img src="${iconURL(['mat', t])}" alt=""></div><div><div class="nm">${n} ${MATS[f].n} → 1 ${MATS[t].n}</div>${costHTML({ [f]: n }, g)}</div><button class="btn sm" data-act="trans" data-i="${i}" ${(P.mats[f] || 0) >= n && P.gold >= g ? '' : 'disabled'}>${_t('Veredeln')}</button></div>`).join('');
-  } else if (HOOK.wbTabs.some(t => t.k === wbTab)) {
-    body = HOOK.wbTabs.find(t => t.k === wbTab).body(it, list, all);
-  } else if (wbTab === 'dye') {
-    body = `<div style="display:flex;gap:16px;align-items:center;margin-bottom:10px">${heroHTML(P, 2.4)}<p class="sub">${_t('Farbstoffe färben deine Rüstung. „Material“ zeigt die echte Farbe von Mithril, Adamant, Drachen … Einmal freigeschaltet, kannst du jederzeit wechseln.')}</p></div>` + DYES.map(D => { const have = P.dyes.includes(D.id); return `<div class="row${P.dye === D.id ? ' sel' : ''}" style="cursor:default"><div class="ic">${heroHTML(Object.assign({}, P, { dye: D.id, look: P.look }), .9)}</div><div><div class="nm">${D.n}</div>${have ? '<div class="st">' + _t('Freigeschaltet') + '</div>' : costHTML(D.cost, 0)}</div><button class="btn sm" data-act="dye" data-id="${D.id}" ${have || hasMats(D.cost) ? '' : 'disabled'}>${P.dye === D.id ? _t('Aktiv') : have ? _t('Anlegen') : _t('Freischalten')}</button></div>`; }).join('');
-  }
-  const title = wbMode === 'smith' ? _t('SCHMIEDE') : wbMode === 'jewel' ? _t('JUWELIER') : _t('WERKBANK'), npc = wbMode === 'smith' ? npcLine('schmiede') : wbMode === 'jewel' ? npcLine('juwelier') : '';
-  showOverlay(`<div class="head"><h2>${title}</h2><div class="hbtns"><div class="gold"><i class="coin"></i>${fmt(P.gold)}</div><button class="btn ${wbMode === 'smith' || wbMode === 'jewel' ? 'alt ' : ''}sm" data-act="wbdone">${wbMode === 'smith' || wbMode === 'jewel' ? _t('Zurück') : _t('Weiter')}</button></div></div>${npc}
-  <div class="cost" style="font-size:16px">${MATORDER.filter(k => P.mats[k]).map(k => `<span><img src="${iconURL(['mat', k])}" alt="${MATS[k].n}">${P.mats[k] || 0}</span>`).join('') || '<span>' + _t('Keine Materialien') + '</span>'}</div>
-  <div class="tabs" role="tablist">${WB_TABS[wbMode].map(tab_).join('')}</div>
-  ${body}${wbMode === 'smith' ? buildHTML('schmiede') : wbMode === 'jewel' ? buildHTML('juwelier') : ''}`, true);
-}
+/* ---------- Werkbank (Karte, Schmiede, Juwelier): js/forge.js – openWorkbench ---------- */
 
 /* ---------- Händler ---------- */
 let mTab = 'buy';
@@ -605,21 +557,6 @@ panel.addEventListener('click', ev => {
     case 'rebirthok': P.rebirths++; stat('rebirths'); P.lv = 1; P.xp = 0; P.sp = 0; P.talents = {}; P.act = 1; P.map = null; P.story = {}; computeStats(); P.hp = P.st.hp; saveChar(); checkAch(); banner(_t('WIEDERGEBOREN'), '★ ' + P.rebirths); openMap(); break;
     case 'cback': { const r = returnTo; returnTo = null; saveChar(); if (r === 'pause') { setState('play'); showPause(); } else if (r === 'wb') openWorkbench(); else openMap(); break; }
     case 'pchar': selItem = null; returnTo = 'pause'; openChar('gear', 'pause'); break;
-    case 'wtab': wbTab = id; openWorkbench(); break;
-    case 'wsel': selItem = id; openWorkbench(); break;
-    case 'up': { const f = findItem(selItem); const r = upgradeItem(f.it); if (r === 'ok') { sfx('craft'); toast(_t('Erfolg: {item}', { item: itemName(f.it) }), '#79c24e'); } else if (r === 'fail') { sfx('fail'); toast(_t('Fehlgeschlagen – die Materialien sind verloren'), '#ff6a5a'); } saveChar(); checkAch(); openWorkbench(); break; }
-    case 'craft': { const f = findItem(selItem); const r = craft(id, f && f.it); if (r.r === 'ok') { sfx('craft'); toast(r.msg || _t('Hergestellt'), '#79c24e'); } else if (r.r === 'fail') { sfx('fail'); toast(r.msg, '#ff6a5a'); } else if (r.r === 'max') toast(_t('Schon 3 Sockel')); else sfx('deny'); saveChar(); checkAch(); openWorkbench(); break; }
-    case 'fslot': forgeSlot = id; openWorkbench(); break;
-    case 'forge': { const it = forgeItem(i, forgeSlot); if (it) { sfx('craft'); toast(_t('{item} geschmiedet', { item: itemName(it) }), RAR[it.rar].c); selItem = it.uid; } else sfx('deny'); saveChar(); checkAch(); openWorkbench(); break; }
-    case 'fsel': { const f = findItem(id); if (!f) break; const it = f.it; if (fuseA === id) { fuseA = null; fuseB = null; } else if (fuseB === id) fuseB = null; else if (!fuseA) fuseA = id; else { const A = findItem(fuseA); if (A && A.it.slot === it.slot && f.bi != null) fuseB = id; else { fuseA = id; fuseB = null; } } sfx('click'); openWorkbench(); break; }
-    case 'freset': fuseA = fuseB = null; openWorkbench(); break;
-    case 'fuse': { const A = findItem(fuseA), Bf = findItem(fuseB); const r = fuseItems(A && A.it, Bf && Bf.it); if (r.r === 'ok') { sfx('fuse'); shake(3); toast(r.up ? _t('SELTENHEIT GESTIEGEN! {item}', { item: itemName(r.it) }) : _t('Verschmolzen: {item}', { item: itemName(r.it) }), RAR[r.it.rar].c); if (r.it.rar === 6) { sfx('myth'); banner(_t('MYTHISCH!'), _t(r.it.name)); } fuseB = null; } else if (r.r === 'err') toast(r.msg); else sfx('deny'); saveChar(); checkAch(); openWorkbench(); break; }
-    case 'trans': if (transmute(i)) { sfx('craft'); saveChar(); } else sfx('deny'); openWorkbench(); break;
-    case 'sock': { const f = findItem(selItem); if (socketGem(f.it, id)) { sfx('craft'); saveChar(); } openWorkbench(); break; }
-    case 'unsock': { const f = findItem(selItem); if (unsocketAll(f.it)) { sfx('coin'); saveChar(); } openWorkbench(); break; }
-    case 'gcomb': { const [gid, gr] = id.split(','); if (combineGem(gid, +gr)) { sfx('craft'); saveChar(); checkAch(); } openWorkbench(); break; }
-    case 'dye': if (unlockDye(id)) { sfx('craft'); saveChar(); } openWorkbench(); break;
-    case 'wbdone': if (wbMode === 'smith' || wbMode === 'jewel') backToHide(); else if (state === 'menu' && P.map && P.map.pos.r >= 0 && P.map.rows[P.map.pos.r][P.map.pos.i].t === 'werkbank' && !P.map.rows[P.map.pos.r][P.map.pos.i].done) nodeLeave(); else openMap(); break;
     case 'mtab': mTab = id; openMerchant(); break;
     case 'buy': { const s = P.map.shop.stock[i]; if (s && !s.sold && P.gold >= s.price) { P.gold -= s.price; s.sold = true; const g = addToBag(s.it); if (!g && canEquip(s.it) && itemScore(s.it) > itemScore(P.gear[s.it.slot])) { equipFromBag(P.bag.length - 1); toast(_t('{item} angelegt', { item: itemName(s.it) })); } sfx('buy'); saveChar(); } openMerchant(); break; }
     case 'buyx': { const p = i; if (P.gold < p) break; P.gold -= p; if (id === 'potion') P.potions = Math.min(potMax(), P.potions + 1); else if (id === 'gem') gainGem(pick(GEMORDER) + ':0'); else if (id === 'erz' || id === 'leder') gainMat(id, 5); else gainMat(id, 1); sfx('buy'); saveChar(); openMerchant(); break; }

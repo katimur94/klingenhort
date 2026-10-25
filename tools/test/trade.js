@@ -107,7 +107,7 @@ const PETS_MOCK = () => {
     o.apply = tmApply('weapon', 'w.sword.zwei.7') && visItem(P.gear.weapon).tier === 7 && visItem(P.gear.weapon).form === 'zwei' && P.gear.weapon.tier === 1 && wform(P.gear.weapon).id === 'lang';
     computeStats(); o.stats = JSON.stringify([P.st.wbase, P.st.def, P.st.hp, P.st.crit, P.st.cd]) === st0 && playerW().dmg > 0;
     o.preview = heroPreviewURL(P).url !== pv0 && weaponArt(visItem(P.gear.weapon)) !== weaponArt(P.gear.weapon);
-    o.crown = headgearOf(P.gear.helm) === 'crown' && tmApply('helm', 'h.0') && headgearOf(visItem(P.gear.helm)) !== 'crown' && tmApply('helm', 'h.schein') && headgearOf(visItem(P.gear.helm)) === 'halo';
+    o.crown = ['crown', 'h:' + P.gear.helm.name].includes(headgearOf(P.gear.helm)) && tmApply('helm', 'h.0') && headgearOf(visItem(P.gear.helm)) !== 'crown' && tmApply('helm', 'h.schein') && headgearOf(visItem(P.gear.helm)) === 'halo';
     o.lines = itemLines(P.gear.weapon).some(l => l.includes(tmName('w.sword.zwei.7')));
     o.orig = tmApply('weapon', 'orig') && !P.gear.weapon.skin && visItem(P.gear.weapon) === P.gear.weapon;
     P.gear.armor.skin = { tier: 99, form: '<x>' }; o.badSkin = visItem(P.gear.armor).tier === P.gear.armor.tier; P.gear.armor.skin = { tier: 5 }; o.armorSkin = visItem(P.gear.armor).tier === 5 && heroSpec(P, { at: visItem(P.gear.armor).tier }).at === 5; delete P.gear.armor.skin;

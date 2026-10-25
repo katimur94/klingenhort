@@ -303,7 +303,7 @@ function openChestLuck(id) {
   if (win.k === 'myth') res.it = makeMythic();
   else if (win.k === 'cos') res.t = grantCosmetic();
   else { const rar = rarOf[win.k]; res.it = randomItem(id === 'drache' ? st + 6 : st, rar, id === 'drache' ? { setChance: .1 } : {}); res.it.rar = Math.max(res.it.rar, rar); }
-  if (id === 'drache') { if (Math.random() < .15) res.t += ' · ' + grantCosmetic(); if (typeof eggGive === 'function' && Math.random() < .1 && eggGive(null, true)) res.t += ' · ' + _t('Ein Begleiter-Ei!'); }
+  if (id === 'drache') { if (Math.random() < .15) res.t += ' · ' + grantCosmetic(); if (typeof eggGive === 'function' && Math.random() < .1) { const g = eggGive(null, true, { luck: 1.5 }); if (g) res.t += ' · ' + (g.tier != null && typeof PET_TIERS !== 'undefined' ? _t('Begleiter-Ei: {egg}!', { egg: PET_TIERS[g.tier].egg }) : _t('Ein Begleiter-Ei!')); } }
   if (res.it) { if (res.it.rar === 4 && !res.it.name) res.it.name = pick(LEGEND[res.it.slot === 'weapon' ? res.it.base : res.it.slot]); addToBag(res.it); if (res.it.rar === 4) stat('legs'); res.c = RAR[res.it.rar].c; if (res.it.rar === 6) statMax('myths', 1); }
   sfx('chest'); saveChar(); persist();
   rollStart(id, win, res);

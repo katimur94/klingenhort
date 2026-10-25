@@ -1,7 +1,8 @@
 // Elemente & Schmiede der Meister (5.0): Regeln, Antippen auf dem Handy, Bildschirmfotos.
 // Aufruf: node forge.js [ausgabeordner]   (BASE = lokale Version, Standard http://localhost:8777/)
 // Prüft Schwächen/Resistenzen, Element-Effekte, Rüstungsschutz, Bauteile (Beute, Kombinieren, Zerlegen),
-// Meisterwerke (Werte, Seltenheit, Umbau), Schmiedemeisterschaft, alte Spielstände und beide Werkbank-Reiter
+// Meisterwerke (Werte, Seltenheit, Umbau), Schmiedemeisterschaft, alte Spielstände und die Werkbank (6.0: vier Bereiche,
+// Gegenstand zuerst, Schmieden in 5 Schritten, Ein-Tipp-Hilfen, Gründe bei gesperrten Knöpfen; Schmiede und Juwelier)
 // hoch und quer – nichts abgeschnitten, kein Seiten-Scrollen zur Seite, keine Fehler.
 const { chromium } = require('playwright');
 const fs = require('fs');
@@ -105,6 +106,20 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
       S.lv = 99; S.xp = 0; smithXP(1e9); o.lv100 = S.lv === 100 && S.xp === 0;
       o.titles = smithTitle(1) !== smithTitle(10) && smithTitle(90) !== smithTitle(100);
       S.lv = 1;
+      // 6.0 Schmiede einfach: alle kombinieren (Vorschau = Ergebnis), Umbau mit gewähltem Bauteil, Hilfen
+      { const rr = Math.random; Math.random = () => .5;
+        P.parts = { 'klinge:1': 9, 'kern:feuer:1': 2, 'kern:frost:1': 1, 'platte:1': 3 }; P.gold = 99999; const g0 = P.gold, pl = combPlan(PARTW), ca = combAll(PARTW);
+        o.combPlan = pl.n === 5 && ca.n === 5 && pl.gold === g0 - P.gold && P.parts['klinge:3'] === 1 && P.parts['kern:feuer:2'] === 1 && P.parts['platte:1'] === 3 && !P.parts['klinge:1'];
+        P.gold = 0; o.combPoor = combPlan(PARTA).n === 0 && combAll(PARTA).n === 0; Math.random = rr; }
+      { P.gold = 99999; const w = makeItem({ slot: 'weapon', base: 'sword', tier: 2, rar: 2 }); w.mw = { klinge: 2, griff: 2, kern: 2 }; w.el = 'feuer'; P.bag.push(w);
+        P.parts = { 'klinge:4': 1, 'klinge:3': 1, 'kern:frost:2': 1, 'kern:feuer:2': 1, 'griff:1': 1 }; MW.pick = {};
+        o.swapOpts = mwSwapOpts(w, 'klinge').join() === 'klinge:4,klinge:3' && mwSwapOpts(w, 'kern').join() === 'kern:frost:2' && !mwSwapOpts(w, 'griff').length;
+        o.swapPick = mwSwap(w, 'klinge', 'klinge:3') && w.mw.klinge === 3 && P.parts['klinge:4'] === 1 && !P.parts['klinge:3'] && P.parts['klinge:1'] === 1 && !mwSwap(w, 'klinge', 'griff:1'); }
+      o.matWhere = MATORDER.every(k => matWhere(k).length > 3);
+      { P.lv = 20; P.mats = { erz: 20, zahn: 5 }; MW.tier = -1; MW.slot = 'weapon'; mwInit(); const t1 = MW.tier; P.mats = {}; MW.tier = -1; mwInit(); o.defTier = t1 === 1 && MW.tier === 0; }
+      { const a = makeItem({ slot: 'armor', base: 'armor', tier: 1, rar: 1 }), lo = makeItem({ slot: 'armor', base: 'armor', tier: 0, rar: 0 }), hi = makeItem({ slot: 'armor', base: 'armor', tier: 4, rar: 3 }); P.bag = [a, lo, hi, makeItem({ slot: 'helm', base: 'helm', tier: 5, rar: 3 })];
+        o.fuseBest = fuseBest(a) === hi && fuseCands(a).length === 2;
+        const c = cmpHTML(a, Object.assign({}, a, { up: a.up + 1 })), d = cmpHTML(hi, a); o.cmp = c.includes('class="up"') && !c.includes('class="dn"') && d.includes('class="dn"'); }
       // Bestiarium-Zeile
       SAVE.meta.bestiary.pyro = 3; o.best = bestiaryHTML().includes('anfällig für');
       // alter Held ohne Bauteile, altes Konto ohne Schmiedemeisterschaft
@@ -151,13 +166,19 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     ok(r.lv1 && r.lv2, 'Schmiedemeister Stufe 2 nach 60 EP');
     ok(r.total > 15e6, `Stufe 100 braucht ${(r.total / 1e6).toFixed(1)} Mio. EP (hunderte Stunden)`);
     ok(r.lv100 && r.titles, 'Stufe 100 ist das Ende, alle 10 Stufen ein neuer Titel');
+    ok(r.combPlan, '„Alle kombinieren“: Vorschau stimmt mit dem Ergebnis überein (Anzahl und Gold), nur die gewählten Arten');
+    ok(r.combPoor, 'ohne Gold wird nichts kombiniert');
+    ok(r.swapOpts && r.swapPick, 'Umbau: nur bessere Bauteile zur Wahl, das gewählte wird eingebaut, altes eine Stufe tiefer zurück');
+    ok(r.matWhere, 'zu jedem Material steht, wo es es gibt');
+    ok(r.defTier, 'Schmieden startet mit dem besten Material, das man hat (sonst Eisen)');
+    ok(r.fuseBest && r.cmp, '„Bestes wählen“ beim Verschmelzen, Vorher/Nachher grün und rot');
     ok(r.best, 'Bestiarium zeigt Element und Schwäche');
     ok(r.oldHero && r.oldMeta, 'alte Helden ohne Bauteile und alte Konten laden');
     ok(r.clean, 'ungültige Bauteil-Schlüssel werden beim Laden entfernt');
     ok(!errs.length, 'keine Fehler (Regeln)' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
     await page.close();
   }
-  /* ---------- Antippen und Fotos: hoch und quer ---------- */
+  /* ---------- Antippen und Fotos: hoch und quer (6.0: vier Bereiche, Gegenstand zuerst, Schmieden in 5 Schritten) ---------- */
   for (const [W, H] of [[390, 844], [844, 390]]) {
     console.log(`Schmiede antippen ${W}x${H}`);
     const ctx = await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'de-DE' });
@@ -167,64 +188,126 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     const dir = `${OUT}/${W}x${H}`; fs.mkdirSync(dir, { recursive: true });
     const shot = async name => { await page.waitForTimeout(250); await page.screenshot({ path: `${dir}/${name}.png` }); };
     const tap = async sel => { const el = page.locator(sel).first(); await el.scrollIntoViewIfNeeded().catch(() => { }); await el.tap({ timeout: 4000 }); await page.waitForTimeout(220); };
+    const has = sel => page.evaluate(s => [...$('panel').querySelectorAll(s)].some(e => e.offsetParent), sel);
+    const inView = sel => page.evaluate(s => { const e = [...$('panel').querySelectorAll(s)].find(x => x.offsetParent); if (!e) return false; const r = e.getBoundingClientRect(); return r.height > 0 && r.top >= 0 && r.bottom <= innerHeight; }, sel);
     const noSide = async () => page.evaluate(() => { const p = $('panel'); return p.scrollWidth <= p.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth + 1; });
-    const clipped = async () => page.evaluate(() => { const p = $('panel').getBoundingClientRect(); return [...$('panel').querySelectorAll('.btn,.opt,.row,.slot')].filter(e => { const r = e.getBoundingClientRect(); return r.width && (r.left < p.left - 1 || r.right > p.right + 1); }).length; });
-    const smallTargets = async () => page.evaluate(() => [...$('panel').querySelectorAll('[data-act^="mw_"],[data-act^="fg_"],[data-act^="zr_"]')].filter(e => { const r = e.getBoundingClientRect(); return r.width && (r.height < 37 || r.width < 37); }).map(e => e.dataset.act + ' ' + Math.round(e.getBoundingClientRect().width) + 'x' + Math.round(e.getBoundingClientRect().height)));
+    const clipped = async () => page.evaluate(() => { const p = $('panel').getBoundingClientRect(); return [...$('panel').querySelectorAll('.btn,.opt,.row,.slot,.wbchip,.wbgear,.mws')].filter(e => { const r = e.getBoundingClientRect(); return r.width && (r.left < p.left - 1 || r.right > p.right + 1); }).length; });
+    const smallTargets = async () => page.evaluate(() => [...$('panel').querySelectorAll('[data-act^="mw_"],[data-act^="fg_"],[data-act^="zr_"],[data-act^="wb_"],[data-act="wtab"],[data-act="wsel"],[data-act="fsel"],[data-act="fbest"],[data-act="sockbest"]')].filter(e => { const r = e.getBoundingClientRect(); return e.offsetParent && r.width && (r.height < 37 || r.width < 37); }).map(e => e.dataset.act + ' ' + Math.round(e.getBoundingClientRect().width) + 'x' + Math.round(e.getBoundingClientRect().height)));
+    const look = async name => { ok(await noSide(), name + ': nichts ragt zur Seite heraus'); ok((await clipped()) === 0, name + ': keine Knöpfe abgeschnitten'); const st = await smallTargets(); ok(!st.length, name + ': Tippziele groß genug' + (st.length ? ' – ' + st.slice(0, 4).join(', ') : '')); };
+    const nav = W < 600 ? '.wbfoot' : '.mwnav';
     await page.evaluate(() => {
       const c = newChar('mage', 'Ilva', 'normal', false); c.lv = 18; c.act = 3; c.maxAct = 3; SAVE.chars.push(c); activateChar(0);
-      P.gold = 50000; for (const k of MATORDER) P.mats[k] = 30;
+      P.gold = 50000; for (const k of MATORDER) P.mats[k] = 30; P.gems = { 'rubin:1': 4, 'saphir:0': 3 };
       P.parts = { 'klinge:1': 7, 'klinge:3': 1, 'griff:2': 2, 'kern:feuer:2': 1, 'kern:frost:4': 1, 'platte:1': 3, 'polster:2': 1, 'rune:schatten:3': 1, 'rune:licht:1': 4, 'griff:7': 1 };
       for (let i = 0; i < 8; i++) P.bag.push(randomItem(14, i % 4)); for (let i = 0; i < 4; i++) P.bag.push(makeItem({ slot: 'weapon', base: 'staff', tier: 1, rar: 0 }));
       const el = makeItem({ slot: 'weapon', base: 'staff', tier: 2, rar: 3 }); el.el = 'blitz'; P.bag.push(el);
       SAVE.meta.smith.lv = 7; SAVE.meta.smith.xp = 1200; SAVE.meta.smith.found = 40; saveChar(); persist();
-      selItem = null; wbTab = 'mw'; openWorkbench('node');
+      selItem = null; wbTab = 'up'; openWorkbench('node');
     });
-    await shot('01_meisterwerk');
-    for (const k of [1, 2, 3]) { await page.evaluate(k => { const p = $('panel'); p.scrollTop = p.clientHeight * .8 * k; }, k); await shot('01_meisterwerk_' + k); }
-    await page.evaluate(() => { $('panel').scrollTop = 0; });
-    ok(await noSide(), 'Meisterwerk: nichts ragt zur Seite heraus');
-    ok((await clipped()) === 0, 'Meisterwerk: keine Knöpfe abgeschnitten');
-    const st = await smallTargets(); ok(!st.length, 'Meisterwerk: Tippziele groß genug' + (st.length ? ' – ' + st.slice(0, 4).join(', ') : ''));
-    await tap('[data-act="mw_cyc"][data-id="kern"]');
-    ok(await page.evaluate(() => MW.pick.kern === 'kern:feuer:2'), 'Kern wechseln per Antippen');
-    await tap('[data-act="mw_form"][data-i="1"]'); await tap('[data-act="mw_tier"][data-i="-1"]');
+    // Aufbau: vier Bereiche in einer Zeile, Erklärzeile mit „?“
+    const secs = await page.evaluate(() => { const b = [...$('panel').querySelectorAll('.wbsecs [data-act="wtab"]')]; return { n: b.length, rows: new Set(b.map(x => Math.round(x.getBoundingClientRect().top))).size, ids: b.map(x => x.dataset.id).join() }; });
+    ok(secs.n === 4 && secs.rows === 1 && secs.ids === 'ver,sch,zer,ws', `Werkbank: vier Bereiche in einer Zeile (${secs.ids}, ${secs.rows} Zeile)`);
+    ok(await has('.wbintro p') && await has('.wbintro [data-act="wb_help"]'), 'Erklärzeile und „?“ oben');
+    await shot('01_verbessern');
+    await look('Verbessern');
+    await tap('.wbintro [data-act="wb_help"]'); ok(await has('.wbhelp'), '„?“ zeigt die Erklärung');
+    await tap('[data-act="wb_help"][aria-expanded="true"]'); ok(!(await has('.wbhelp')), 'nochmal „?“ schließt sie');
+    // Verbessern: Aufwerten mit Vorher/Nachher, Knopf ohne Scrollen sichtbar
+    ok(await page.evaluate(() => WB.act === 'up' && selItem === P.gear.weapon.uid) && await has('.wbcmp li.up'), 'Aufwerten: Waffe gewählt, Vorher/Nachher mit grünen Zahlen');
+    if (W < 600) ok(await inView('[data-act="up"]'), 'Aufwerten-Knopf ohne Scrollen sichtbar');
+    const up0 = await page.evaluate(() => P.gear.weapon.up); await tap('[data-act="up"]');
+    ok(await page.evaluate(() => P.gear.weapon.up) === up0 + 1, 'aufgewertet');
+    // Gegenstand aus dem Beutel wählen (hochkant erst den Beutel aufklappen)
+    if (W < 600) { ok(!(await has('.wbbag [data-act="wsel"]')), 'Beutel zu, bis man ihn antippt'); await tap('[data-act="wb_bag"]'); }
+    ok(await has('.wbbag [data-act="wsel"]'), 'Beutel zeigt die Gegenstände');
+    await tap('.wbbag [data-act="wsel"]');
+    ok(await page.evaluate(() => P.bag.some(x => x.uid === selItem) && !WB.bag), 'Gegenstand aus dem Beutel gewählt');
+    // Verschmelzen: „Bestes wählen“, Vorschau, verschmelzen
+    await tap('.wbpick [data-act="wsel"]');
+    await tap('[data-act="wb_act"][data-id="fuse"]'); await tap('[data-act="fbest"]');
+    ok(await page.evaluate(() => !!fuseB && P.bag.some(x => x.uid === fuseB)) && await has('.wbact.open .wbcmp'), 'Verschmelzen: bestes Opfer gewählt, Vorschau');
+    await shot('02_verschmelzen');
+    await tap('[data-act="fuse"]'); ok(await page.evaluate(() => P.gear.weapon.fz === 1), 'verschmolzen');
+    // Sockel: „Besten einsetzen“
+    await page.evaluate(() => { P.gear.weapon.sockets = Math.max(2, P.gear.weapon.gems.length + 1); WB.act = 'sock'; openWorkbench(); });
+    const g0 = await page.evaluate(() => P.gear.weapon.gems.length); await tap('[data-act="sockbest"]');
+    ok(await page.evaluate(g0 => P.gear.weapon.gems.length === g0 + 1 && P.gear.weapon.gems[g0] === 'rubin:1', g0), 'Sockel: bester Edelstein mit einem Tipp');
+    // Umschmieden: gewöhnlicher Gegenstand → Knopf aus, Grund steht da
+    await page.evaluate(() => { selItem = P.bag.find(x => !x.rar && x.slot === 'weapon').uid; WB.act = 'reroll'; openWorkbench(); });
+    ok(await page.evaluate(() => { const b = $('panel').querySelector('[data-act="craft"][data-id="reroll"]'); return !!b && b.disabled && !!b.nextElementSibling && b.nextElementSibling.classList.contains('wbwhy'); }), 'Umschmieden: gesperrt mit Grund (keine Zusatzwerte)');
+    // Zerlegen direkt beim Gegenstand
+    await page.evaluate(() => { WB.act = 'salv'; openWorkbench(); });
+    const nb0 = await page.evaluate(() => P.bag.length); await tap('.wbact.open [data-act="zr_one"]');
+    ok(await page.evaluate(() => P.bag.length) === nb0 - 1, 'Zerlegen direkt unter Verbessern');
+    // Schmieden: geführt in 5 Schritten
+    await tap('[data-act="wtab"][data-id="sch"]');
+    ok(await page.evaluate(() => MW.step === 1 && $('panel').querySelectorAll('.mwsteps .mws').length === 5), 'Schmieden: Schritt 1 von 5');
+    await shot('03_schmieden_1');
+    await look('Schmieden 1');
+    await tap('[data-act="mw_slot"][data-id="weapon"]');
+    const f0 = await page.evaluate(() => MW.form); await tap('[data-act="mw_form"]:not(.sel)');
+    ok(await page.evaluate(f0 => MW.form !== f0, f0), 'Form per Antippen gewählt');
+    ok(await inView(nav + ' [data-act="mw_step"]'), 'Weiter-Knopf ohne Scrollen sichtbar');
+    await tap(nav + ' [data-act="mw_step"][data-i="2"]'); ok(await page.evaluate(() => MW.step === 2), 'Schritt 2: Material');
+    await shot('04_schmieden_2');
+    await tap('[data-act="mw_mat"][data-i="0"]'); ok(await page.evaluate(() => MW.tier === 0), 'Material gewählt');
+    await tap(nav + ' [data-act="mw_step"][data-i="3"]'); ok(await page.evaluate(() => MW.step === 3), 'Schritt 3: Bauteile');
+    await tap('[data-act="mw_pk"][data-id="kern:feuer:2"]'); ok(await page.evaluate(() => MW.pick.kern === 'kern:feuer:2'), 'Bauteil per Antippen gewählt');
+    await tap('[data-act="mw_best"]'); ok(await page.evaluate(() => MW.pick.kern === 'kern:frost:4' && MW.pick.griff === 'griff:7' && MW.pick.klinge === 'klinge:3'), '„Beste wählen“ nimmt die besten Bauteile');
+    const pw0 = await page.evaluate(() => pcount()); await tap('[data-act="fg_combgrp"]');
+    ok(await page.evaluate(pw0 => pcount() < pw0 && P.parts['klinge:1'] < 3 && combPlan(PARTW).n === 0 && combPlan(PARTA).n > 0, pw0), '„Alle kombinieren“ mit einem Tipp (nur Waffen-Bauteile)');
+    await shot('05_schmieden_3');
+    await look('Schmieden 3');
+    await tap(nav + ' [data-act="mw_step"][data-i="4"]'); ok(await page.evaluate(() => MW.step === 4) && await has('.wbcmp'), 'Schritt 4: Vorschau mit Vergleich');
+    ok(await page.evaluate(() => { const g = P.gold; P.gold = 0; openWorkbench(); const b = [...$('panel').querySelectorAll('[data-act="mw_make"]')].find(x => x.offsetParent), r = !!b && b.disabled && !!$('panel').querySelector('.wbneed') && /Gold/.test($('panel').querySelector('.wbneed').textContent); P.gold = g; openWorkbench(); return r; }), 'ohne Gold: Knopf aus, rot steht, was fehlt und woher');
+    await shot('06_schmieden_4');
     const before = await page.evaluate(() => P.bag.length);
-    await tap('[data-act="mw_make"]');
-    const made = await page.evaluate(() => ({ n: P.bag.length, mw: P.bag.filter(x => x.mw).length, last: !!$('panel').querySelector('.fglast') }));
-    ok(made.n === before + 1 && made.mw === 1 && made.last, 'Meisterwerk geschmiedet und angezeigt');
-    await shot('02_geschmiedet');
-    await tap('[data-act="mw_equip"]');
-    ok(await page.evaluate(() => !!P.gear.weapon.mw), 'neues Meisterwerk angelegt');
-    await tap('[data-act="fg_comb"][data-id="klinge:1"]');
-    ok(await page.evaluate(() => P.parts['klinge:1'] === 4), 'Klingen kombiniert');
-    await tap('[data-act="mw_slot"][data-id="armor"]');
-    await shot('03_ruestung');
-    ok(await noSide(), 'Rüstung: nichts ragt zur Seite heraus');
-    // Umbau vorhandener Meisterwerke
-    await page.evaluate(() => { P.parts['klinge:6'] = 1; MW.pick = {}; MW.slot = 'weapon'; openWorkbench(); });
-    const sw = page.locator('[data-act="mw_swap"]'); ok((await sw.count()) > 0, 'Umbau-Knopf für die bessere Klinge');
-    if (await sw.count()) { await tap('[data-act="mw_swap"]'); ok(await page.evaluate(() => P.gear.weapon.mw.klinge === 6), 'Klinge umgebaut'); }
-    await shot('04_umbau');
+    await tap(nav + ' [data-act="mw_make"]');
+    const made = await page.evaluate(() => ({ n: P.bag.length, mw: P.bag.filter(x => x.mw).length, last: !!$('panel').querySelector('.fglast'), st: MW.step }));
+    ok(made.n === before + 1 && made.mw === 1 && made.last && made.st === 5, 'Schritt 5: Meisterwerk geschmiedet und angezeigt');
+    await shot('07_geschmiedet');
+    await tap('[data-act="mw_equip"]'); ok(await page.evaluate(() => !!P.gear.weapon.mw), 'neues Meisterwerk angelegt');
+    // Umbau unter Verbessern
+    await page.evaluate(() => { P.parts['klinge:9'] = 1; openWorkbench(); });
+    await tap('[data-act="mw_ver"]');
+    ok(await page.evaluate(() => wbTab === 'ver' && selItem === P.gear.weapon.uid), '„Verbessern ›“ öffnet das neue Meisterwerk');
+    if (await page.evaluate(() => WB.act !== 'umbau')) await tap('[data-act="wb_act"][data-id="umbau"]');
+    await tap('[data-act="mw_swap"][data-i="0"]'); ok(await page.evaluate(() => P.gear.weapon.mw.klinge === 9), 'Umbau: göttliche Klinge eingebaut');
+    await shot('08_umbau');
     // Zerlegen
     await tap('[data-act="wtab"][data-id="zer"]');
-    await shot('05_zerlegen');
-    await page.evaluate(() => { const p = $('panel'); p.scrollTop = p.scrollHeight; }); await shot('05_zerlegen_unten');
-    ok(await noSide(), 'Zerlegen: nichts ragt zur Seite heraus');
-    ok((await clipped()) === 0, 'Zerlegen: keine Knöpfe abgeschnitten');
+    await shot('09_zerlegen');
+    await look('Zerlegen');
     const n0 = await page.evaluate(() => P.bag.length);
-    await tap('[data-act="zr_one"]');
-    let n1 = await page.evaluate(() => P.bag.length); if (n1 === n0) { await tap('[data-act="zr_one"]'); n1 = await page.evaluate(() => P.bag.length); }
+    await tap('.zrcard [data-act="zr_one"]');
+    let n1 = await page.evaluate(() => P.bag.length); if (n1 === n0) { await tap('.zrcard [data-act="zr_one"]'); n1 = await page.evaluate(() => P.bag.length); }
     ok(n1 === n0 - 1, 'einzeln zerlegt (wertvolles erst nach Rückfrage)');
     const c0 = await page.evaluate(() => salvBulkList(0).length);
-    if (c0) { await tap('[data-act="zr_all"][data-id="0"]'); ok(await page.evaluate(() => salvBulkList(0).length) === c0, 'Alles Gewöhnliche fragt erst nach'); await tap('[data-act="zr_all"][data-id="0"]'); ok(await page.evaluate(() => salvBulkList(0).length) === 0, 'alles Gewöhnliche zerlegt'); }
-    await shot('06_zerlegt');
-    // bestehende Reiter der Werkbank funktionieren weiter
-    for (const k of ['up', 'fuse', 'forge', 'craft', 'sock', 'gems', 'dye']) { await tap(`[data-act="wtab"][data-id="${k}"]`); }
-    ok(await page.evaluate(() => wbTab === 'dye' && !!$('panel').querySelector('[data-act="dye"]')), 'alte Werkbank-Reiter öffnen sich weiter');
-    // Schmiede im Versteck hat die neuen Reiter auch
-    await page.evaluate(() => { SAVE.meta.hide.intro = true; SAVE.meta.hide.b.schmiede = 2; selItem = null; wbTab = 'mw'; openWorkbench('smith'); });
-    ok(await page.evaluate(() => wbTab === 'mw' && (panel.querySelector('h2') || {}).textContent === 'SCHMIEDE'), 'Schmiede: Reiter MEISTERWERK');
-    await shot('07_schmiede');
+    if (c0) { await tap('[data-act="zr_all"][data-id="0"]'); ok(await page.evaluate(() => salvBulkList(0).length) === c0 && await has('.wbwhy'), 'Alles Gewöhnliche fragt erst nach (mit Vorschau)'); await tap('[data-act="zr_all"][data-id="0"]'); ok(await page.evaluate(() => salvBulkList(0).length) === 0, 'alles Gewöhnliche zerlegt'); }
+    // Werkstatt: alle Bauteile / Edelsteine kombinieren, Farben
+    await tap('[data-act="wtab"][data-id="ws"]');
+    ok(await page.evaluate(() => [...$('panel').querySelectorAll('[data-act="wb_sub"]')].map(x => x.dataset.id).join()) === 'parts,gems,rez,dye', 'Werkstatt: Bauteile, Edelsteine, Rezepte, Farben');
+    const pc0 = await page.evaluate(() => pcount()); await tap('[data-act="fg_combat"]');
+    ok(await page.evaluate(pc0 => pcount() < pc0 && combPlan(PARTORDER).n === 0, pc0), '„Alle Bauteile kombinieren“: danach gibt es nichts mehr zu kombinieren');
+    await shot('10_werkstatt');
+    await look('Werkstatt');
+    await tap('[data-act="wb_sub"][data-id="gems"]'); await tap('[data-act="gcomball"]'); ok(await page.evaluate(() => P.gems['rubin:2'] === 1 && P.gems['saphir:1'] === 1), '„Alle Edelsteine kombinieren“');
+    await tap('[data-act="wb_sub"][data-id="dye"]'); ok(await has('[data-act="dye"]'), 'Farben');
+    // alte Reiter-Namen öffnen den passenden Bereich
+    const map = await page.evaluate(() => { const o = {}; for (const k of ['up', 'fuse', 'forge', 'craft', 'sock', 'gems', 'dye', 'mw', 'zer']) { wbTab = k; openWorkbench(); o[k] = wbTab + (wbTab === 'ver' ? ':' + WB.act : wbTab === 'ws' ? ':' + WB.sub : ''); } return JSON.stringify(o); });
+    ok(map === JSON.stringify({ up: 'ver:up', fuse: 'ver:fuse', forge: 'sch', craft: 'ws:rez', sock: 'ver:sock', gems: 'ws:gems', dye: 'ws:dye', mw: 'sch', zer: 'zer' }), 'alte Reiter-Namen öffnen den passenden Bereich');
+    // Schmiede im Versteck: wie bisher ohne Edelsteine einsetzen, dafür mit Sockel bohren
+    await page.evaluate(() => { SAVE.meta.hide.intro = true; SAVE.meta.hide.b.schmiede = 2; P.gear.weapon.sockets = 1; P.gear.weapon.gems = []; selItem = null; wbTab = 'up'; openWorkbench('smith'); });
+    ok(await page.evaluate(() => wbTab === 'ver' && WB.act === 'up' && (panel.querySelector('h2') || {}).textContent === 'SCHMIEDE' && panel.querySelectorAll('.wbsecs [data-act="wtab"]').length === 4), 'Schmiede: vier Bereiche, Aufwerten offen');
+    await page.evaluate(() => { WB.act = 'sock'; openWorkbench(); });
+    ok(!(await has('[data-act="sock"]')) && await has('[data-act="craft"][data-id="socket"]'), 'Schmiede: Sockel bohren ja, Edelsteine einsetzen nur beim Juwelier');
+    await shot('11_schmiede');
+    await page.evaluate(() => { SAVE.meta.hide.b.juwelier = 1; selItem = null; wbTab = 'sock'; openWorkbench('jewel'); });
+    ok(await page.evaluate(() => (panel.querySelector('h2') || {}).textContent === 'JUWELIER' && panel.querySelectorAll('.wbsecs [data-act="wtab"]').length === 2 && !panel.querySelector('[data-act="up"]')) && await has('[data-act="sock"]'), 'Juwelier: Edelsteine einsetzen, kein Aufwerten');
+    await shot('12_juwelier');
+    await tap('[data-act="wtab"][data-id="ws"]');
+    ok(await page.evaluate(() => [...$('panel').querySelectorAll('[data-act="wb_sub"]')].map(x => x.dataset.id).join()) === 'gems,trans', 'Juwelier-Werkstatt: Edelsteine und Veredeln');
+    await look('Juwelier');
     // Charakter: Reiter BAUTEILE und Zerlegen im Beutel
     await page.evaluate(() => { selItem = null; openChar('parts', 'map'); });
     await shot('08_char_bauteile');
