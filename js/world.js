@@ -134,6 +134,7 @@ function spawnEnemy(type, o) {
   if (o.x != null) { e.x = o.x; e.y = o.y; } else placeFar(e);
   e.face = P.x >= e.x ? 1 : -1; e.turn = e.face;
   if (!o.instant) { burst(e.x, e.y, 4, '#6a5a7a', 10, 30); fx.push({ k: 'portal', x: e.x, y: e.y, life: .7, max: .7 }); }
+  hook('spawn', e, o);
   enemies.push(e); return e;
 }
 /* Gegner je Stufe; jedes Gebiet bevorzugt seine Bewohner */

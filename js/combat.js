@@ -345,6 +345,7 @@ function killEnemy(e, nx, ny) {
   if (e.def.split) for (let i = 0; i < 2; i++) spawnEnemy('minislime', { x: e.x + rnd(-6, 6), y: e.y + rnd(-4, 4), instant: true });
   if (e.affixes.includes('explosiv')) { const x = e.x, y = e.y, dmg = e.atk * 1.6; fx.push({ k: 'warn', x, y, r: 32, life: .8, max: .8 }); setTimeout(() => { if (G && state === 'play') explode(x, y, 32, dmg, 'e'); }, 800); }
   if (e.poison > 0 && mod('plague')) for (const o of enemies) if (!o.dead && o !== e && Math.hypot(o.x - e.x, o.y - e.y) < 50) { o.poison = 4; o.poisonDmg = e.poisonDmg; }
+  hook('loot', e, lm);
   if (e.boss) { banner(_t('BOSS BESIEGT'), e.name); $('bossbar').hidden = true; hitStop = .2; slowmo = 1.2; flash = { a: .6, c: '255,255,255' }; setTimeout(() => { if (G && state === 'play') explode(e.x, e.y, 40, 0, 'p'); }, 350); }
 }
 function gainXP(v, e) {
@@ -533,6 +534,7 @@ function updEnemy(e, dt) {
   const dx = P.x - e.x, dy = P.y - e.y, d = Math.hypot(dx, dy) || 1, R = e.r * e.sc, D = e.def;
   if (e.ai === 'dummy') { e.x = e.hx; e.y = e.hy; e.dmgLog = e.dmgLog.filter(l => T - l[0] < 3); let s = 0; for (const l of e.dmgLog) s += l[1]; e.dps = s / 3; e.hp = e.maxHp; return; }
   if (e.st === 'spawn') { e.stT -= dt; e.alpha = clamp(1 - e.stT / .7, 0, 1); if (e.stT <= 0) { e.st = 'move'; e.alpha = e.ai === 'ghost' ? .6 : null; } return; }
+  if (HOOK.enemyUpd.length) hook('enemyUpd', e, dt);
   if (e.burn > 0) { e.burn -= dt; e.burnT -= dt; if (Math.random() < .4) part(e.x + rnd(-4, 4), e.y, rnd(4, 14) * e.sc, 0, 0, rnd(15, 30), pick(['#ffb03a', '#ff6a2a']), .4, 1, -20, 1); if (e.burnT <= 0) { e.burnT = .5; e.hp -= e.burnDmg; txt(e.x, e.y - 14 * e.sc, String(e.burnDmg), '#ff8a3a'); if (e.hp <= 0) { killEnemy(e, 0, 0); return; } } }
   if (e.poison > 0) { e.poison -= dt; e.poisonT -= dt; if (Math.random() < .3) part(e.x + rnd(-4, 4), e.y, rnd(4, 14) * e.sc, 0, 0, rnd(10, 20), '#79c24e', .4, 1, -10, 1); if (e.poisonT <= 0) { e.poisonT = .5; e.hp -= e.poisonDmg; txt(e.x, e.y - 14 * e.sc, String(e.poisonDmg), '#79c24e'); if (e.hp <= 0) { killEnemy(e, 0, 0); return; } } }
   if (e.chill > 0) e.chill -= dt;
