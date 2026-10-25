@@ -4,7 +4,14 @@
    ========================================================= */
 
 let state = 'load';
-function setState(s) { state = s; }
+// Updates der installierten App: on = Service Worker aktiv, ready = neue Version übernommen, manual = Spieler hat selbst gesucht
+const UPD = { on: false, reg: null, had: false, ready: false, manual: false, done: false, last: 0 };
+function setState(s) { state = s; if (UPD.ready && (s === 'title' || s === 'map')) applyUpdate(); }
+function applyUpdate() {
+  if (UPD.done) return; UPD.done = true;
+  try { if (state === 'map') saveChar(); else persist(); } catch (_) { }
+  location.reload();
+}
 const ov = $('ov'), panel = $('panel');
 let returnTo = null;
 document.head.insertAdjacentHTML('beforeend', '<style>@keyframes idle4{from{background-position-x:0}to{background-position-x:var(--to)}}</style>');
@@ -111,7 +118,7 @@ function showTitle() {
     <button class="btn alt" data-act="settings">Einstellungen</button>
     ${installBtn()}
   </div>
-  <div class="help">${HELP}</div>${CREDIT}`);
+  <div class="help">${HELP}</div>${CREDIT}<p class="credit">Version ${VERSION}</p>`);
 }
 
 /* ---------- Charaktererstellung ---------- */
@@ -345,7 +352,7 @@ function showCode(msg) {
 }
 function showSettings() {
   const s = SAVE.meta.settings;
-  showOverlay(`<h2>EINSTELLUNGEN</h2><div class="menu" style="margin-top:12px"><button class="btn alt" data-act="music">Musik: ${s.music !== false ? 'AN' : 'AUS'}</button><button class="btn alt" data-act="sfx">Soundeffekte: ${s.sfx !== false ? 'AN' : 'AUS'}</button><button class="btn" data-act="backtitle">Zurück</button></div><p class="sub">Version ${VERSION}</p>`);
+  showOverlay(`<h2>EINSTELLUNGEN</h2><div class="menu" style="margin-top:12px"><button class="btn alt" data-act="music">Musik: ${s.music !== false ? 'AN' : 'AUS'}</button><button class="btn alt" data-act="sfx">Soundeffekte: ${s.sfx !== false ? 'AN' : 'AUS'}</button>${UPD.on ? '<button class="btn alt" data-act="checkupd">Nach Update suchen</button>' : ''}<button class="btn" data-act="backtitle">Zurück</button></div><p class="sub" id="updmsg">Version ${VERSION}</p>`);
 }
 
 /* ---------- Klicks ---------- */
@@ -370,6 +377,7 @@ panel.addEventListener('click', ev => {
     case 'settings': showSettings(); break;
     case 'backtitle': showTitle(); break;
     case 'install': if (window.__doInstall) window.__doInstall(); break;
+    case 'checkupd': checkUpdateNow(); break;
     case 'copycode': { const t = $('codeOut'); const done = () => { b.textContent = 'Kopiert'; }; try { navigator.clipboard.writeText(t.value).then(done, () => { t.select(); done(); }); } catch (_) { t.select(); done(); } break; }
     case 'loadcode': try { const r = importCode($('codeIn').value); P = null; if (SAVE.active >= 0 && SAVE.chars[SAVE.active]) activateChar(SAVE.active); titleScene(); showCode(r === 'v1' ? 'Alter Spielstand als Ritter übernommen.' : 'Spielstand geladen.'); } catch (_) { showCode('Der Code ist ungültig. Bitte vollständig kopieren und erneut einfügen.'); } break;
     case 'music': SAVE.meta.settings.music = SAVE.meta.settings.music === false; persist(); if (state === 'pause') { setState('play'); showPause(); } else showSettings(); break;
@@ -458,7 +466,33 @@ addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInsta
 function installBtn() { if (standalone) return ''; if (deferredInstall) return '<button class="btn" data-act="install">Als App installieren</button>'; if (isIOS) return '<p class="help" style="border:0;padding:0;grid-column:1/-1">Als App: in Safari auf TEILEN und dann „Zum Home-Bildschirm“ tippen.</p>'; return ''; }
 window.__doInstall = async () => { if (!deferredInstall) return; deferredInstall.prompt(); try { await deferredInstall.userChoice; } catch (_) { } deferredInstall = null; showTitle(); };
 function goFullscreen() { if (!isTouch) return; const el = document.documentElement; const lock = () => { try { screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => { }); } catch (_) { } }; if (!standalone && !document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).then(lock).catch(() => { }); else lock(); }
-if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { }));
+/* PWA-START */
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  UPD.on = true; UPD.had = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!UPD.had && !UPD.manual) { UPD.had = true; return; } // erste Installation, kein Update
+    UPD.ready = true;
+    if (UPD.manual || state === 'title' || state === 'map' || state === 'load') applyUpdate();
+    else toast('Update geladen – wird auf der Weltkarte installiert', '#e8b04a');
+  });
+  const checkUpdate = () => { if (UPD.reg && Date.now() - UPD.last > 30000) { UPD.last = Date.now(); UPD.reg.update().catch(() => { }); } };
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => { UPD.reg = r; UPD.last = Date.now(); }).catch(() => { }));
+  // App aus dem Hintergrund geholt: nach neuer Version schauen
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
+  setInterval(checkUpdate, 10 * 60 * 1000);
+}
+/* PWA-END */
+function checkUpdateNow() {
+  const msg = t => { const el = $('updmsg'); if (el) el.textContent = t; };
+  if (!UPD.reg) { msg('Updates kommen hier automatisch mit der Seite.'); return; }
+  msg('Suche nach Updates …'); UPD.manual = true; UPD.last = Date.now();
+  UPD.reg.update().then(() => {
+    const r = UPD.reg;
+    if (r.waiting) { applyUpdate(); return; }
+    if (r.installing) { msg('Update wird installiert …'); return; }
+    UPD.manual = false; msg('Du hast die neueste Version (' + VERSION + ').');
+  }).catch(() => { UPD.manual = false; msg('Keine Verbindung. Versuch es später noch mal.'); });
+}
 
 /* ---------- Hauptschleife ---------- */
 function resize() {

@@ -199,6 +199,7 @@ Angriffe zielen automatisch auf den nächsten Gegner.
 - **Android (Chrome):** im Titelmenü „Als App installieren“
 - **iPhone (Safari):** Teilen → „Zum Home-Bildschirm“
 - Als App startet das Spiel im Vollbild und Querformat und läuft offline.
+- **Updates:** Die App sucht beim Öffnen, beim Zurückholen aus dem Hintergrund und alle 10 Minuten nach einer neuen Version. Sie wird im Titelmenü oder auf der Weltkarte automatisch geladen, nie mitten im Kampf. Von Hand: Einstellungen → „Nach Update suchen“. Die installierte Version steht unten im Titelmenü.
 - **Spielstand übertragen:** Titelmenü → „Spielstand übertragen“ – Code kopieren und auf dem anderen Gerät einfügen. Codes aus Version 1 und 2 funktionieren ebenfalls.
 
 ---
