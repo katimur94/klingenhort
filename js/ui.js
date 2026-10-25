@@ -150,7 +150,7 @@ function showTitle() {
     chars += `<div class="cardrow">${heroHTML(c, 1.4)}<div><div style="font-size:21px">${esc(c.name)} ${c.hc ? '<span class="pill hc">HC</span>' : ''}</div><div style="font-size:16px;color:var(--parch-dim)">${C.name} · ${_t('LV {lv}', { lv: c.lv })}${c.paragon ? ' · P' + c.paragon : ''} · ${_t('Akt {act}', { act: c.act })}${qualOf(c.act) ? ' (' + _t('Qual {q}', { q: qualOf(c.act) }) + ')' : ''} · ${DIFFS[c.diff].n}${c.rebirths ? ' · ★' + c.rebirths : ''}</div></div><div class="acts">${confirmDel === i ? `<button class="btn red sm" data-act="delok" data-i="${i}">${_t('Löschen!')}</button><button class="btn alt sm" data-act="delno">${_t('Nein')}</button>` : `<button class="btn sm" data-act="play" data-i="${i}">${_t('Spielen')}</button><button class="btn alt sm" data-act="delchar" data-i="${i}" aria-label="${_t('Löschen')}"><span class="x">×</span></button>`}</div></div>`;
   });
   const N = CHANGELOG[0], fresh = newsUnseen();
-  showOverlay(`<div class="tgrid"><div><h1 class="logo">KLINGEN<br>HORT</h1>
+  showOverlay(`<div class="tgrid"><div><button class="btn alt sm langbtn" data-act="langs" data-id="title" aria-label="${_t('SPRACHE')}">🌐 ${LANG.toUpperCase()}</button><h1 class="logo">KLINGEN<br>HORT</h1>
   <p class="tag">${_t('Der Uralte Drache hat das Weltenfeuer gestohlen. Bau dein Versteck wieder auf, schmiede Klingen aus Mithril, Adamant und Drachenschuppen – und hol dir zurück, was dem Orden gehört.')}</p>
   ${inAppHTML()}<button class="newsteaser" data-act="news"><b>${_t('NEU IN {v}', { v: N.v })}${fresh ? `<span class="badge">${_t('NEU')}</span>` : ''}</b>${esc(N.t)}: ${esc(N.items[0][1])} <span style="color:var(--gold)">${_t('Alle Neuigkeiten ›')}</span></button>${weekHTML()}</div>
   <div>${chars ? '<h3 style="margin-top:0">' + _t('DEINE HELDEN') + '</h3>' + chars : ''}
@@ -163,7 +163,6 @@ function showTitle() {
     <button class="btn alt" data-act="hall">${_t('Ruhmeshalle')}</button>
     <button class="btn alt" data-act="code">${_t('Spielstand übertragen')}</button>
     <button class="btn alt" data-act="settings">${_t('Einstellungen')}</button>
-    <button class="btn alt" data-act="langs" data-id="title">🌐 ${LANGS[LANG]}</button>
     ${installBtn()}
   </div></div></div>
   <div class="help">${HELP}</div>${CREDIT}<p class="credit">${_t('Version {v}', { v: VERSION })}</p>`, true);
