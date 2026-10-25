@@ -86,11 +86,24 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Vers
 
 Klingenhort wird jede Woche erweitert. Im Spiel zeigt **Neuigkeiten** (Titelmenü, Einstellungen oder Weltkarte → Mehr) alle Updates und was als Nächstes kommt; nach einem Update öffnet sich die Seite einmal von selbst.
 
+**Neu in 6.0 – Die Verlorenen Lande**
+
+| System | Was es kann | Langzeit-Ziel |
+|---|---|---|
+| **Die Verlorenen Lande** | Freiwelt mit Extraktion, betreten durch das **Weltentor** im Versteck (ab Level 5). Jeder Ausflug ist eine neue, riesige Zufallskarte aus Wiesen, Wäldern, Sümpfen, Schnee, Ruinen, Asche und Lava – mit Minikarte, Nebel und Kompass zum nächsten Ausgang. Beute liegt immer woanders: Holz-, Eisen-, Gold-, verfluchte und verschlossene Truhen (Schlüssel!), gefallene Abenteurer, vergrabene Schätze, Kräuter. Gefunden heißt nicht gesichert: Erst wer durch einen Ausgang **entkommt**, behält den Rucksack. Mit der Zeit wird es dunkler und gefährlicher. Zufällige **Bosse** streifen umher – weglaufen ist erlaubt. Kundschafterin Elwa vergibt **Aufträge** und **Ruf**, Händler Bodo **tauscht**, Kräuterfrau Mirja **heilt**, **Rivalen** plündern selbst | Weltstufen Grenzland → Wildnis → Verderbnis → Abgrund → Abgrund X; sechs Ruf-Ränge bis „Legende der Lande“ |
+| **Tod = Verlust** | Wer in den Landen stirbt, verliert alles Angelegte und den Rucksack und wacht im Versteck auf. Nur die **Tasche des Begleiters** kommt mit heim – er ist ein mystisches Wesen und bringt sie dir; danach ist er eine Weile verletzt. Die Kampagne bleibt sicher | – |
+| **Begleiter 2.0** | Begleiter schlüpfen nur noch aus **Eiern**: Im **Brutnest** brauchen bis zu drei Eier Wärme, Futter und Zuwendung, sonst pausiert das Brüten – auch während das Spiel zu ist. 24 Kreaturen in sieben Seltenheiten (Plunder bis Mythisch, von Feldmaus und Kröte bis Phönix und Weltenschlange), seltene Eier brauchen seltenes Futter und Tage. Seltenere Begleiter sind stärker und haben eine größere Tasche. Das erste Ei gibt es vom ersten Boss der Geschichte | alle 24 Kreaturen ausbrüten |
+| **Basar** | Kaufen (wechselnde Angebote mit begrenztem Vorrat), sofort an Händlerin Hedda verkaufen, **Auktionen** mit Startpreis, Sofortkauf und Laufzeit (1–24 h, Gebühr), bei Auktionen anderer mitbieten – die Bieter handeln auch, während das Spiel zu ist. Jeder Gegenstand zeigt seinen **Marktwert**. Gebaut hinter einer Schnittstelle (`MARKET`), damit später ein echter Online-Server übernehmen kann | – |
+| **Aussehen & Auren** | Jeder Gegenstand sieht anders aus: Material ändert die Form, Seltenheit Rahmen, Farbe und Glanz; jede Legende, jedes Set-Teil und jedes mythische Stück hat eigene Grafik. Legendäre und mythische Gegenstände und volle Sets geben dem Helden eine **Aura** (Glut, Frost, Gold, Geister, Blitze, Dornen, Heiligenschein …), auch in den Heldenbildern der Menüs | – |
+| **Schmiede, aufgeräumt** | Vier Bereiche statt neun Reitern: **Verbessern** (Gegenstand wählen, darunter alles, was geht), **Schmieden** (Meisterwerk in fünf Schritten mit Vorschau), **Zerlegen**, **Werkstatt**. „?“-Hilfe zu jedem Begriff, fehlende Materialien rot mit Hinweis | – |
+
+**5.0.1 – Die Glücksrolle:** Glücksrad und Schicksalstruhen drehen wie beim Case-Opening, reiner Zufall ohne Garantie nach X Drehungen; Glückstempel Stufe 2 macht Münzen 25 % günstiger.
+
 **Neu in 5.0 – Meisterwerk**
 
 | System | Was es kann | Langzeit-Ziel |
 |---|---|---|
-| **Begleiter** | Glutdrache, Geisterkatze, Goldkäfer, Frosteule, Giftnatter, Sturmfunke – jeder mit eigenem Element, eigenem Angriff und eigener Pixel-Grafik. Folgt dir, kämpft mit, sammelt ab Level 10 Beute ein, ab 25 eine Fähigkeit, ab 50 eine Spezialattacke. Füttern mit Materialien, umbenennen, Farbe wählen. Jeder bekommt einen Starter, weitere schlüpfen aus Eiern (Bosse, Drachentruhe), 1 % schillernd | Level 1–100, sechs Entwicklungsstufen: Baby, Jung, Stark, Erwachsen, Uralt, Mythisch |
+| **Begleiter** | Glutdrache, Geisterkatze, Goldkäfer, Frosteule, Giftnatter, Sturmfunke – jeder mit eigenem Element, eigenem Angriff und eigener Pixel-Grafik. Folgt dir, kämpft mit, sammelt ab Level 10 Beute ein, ab 25 eine Fähigkeit, ab 50 eine Spezialattacke. Füttern mit Materialien, umbenennen, Farbe wählen. Schlüpfen aus Eiern (seit 6.0 im Brutnest), 1 % schillernd | Level 1–100, sechs Entwicklungsstufen: Baby, Jung, Stark, Erwachsen, Uralt, Mythisch |
 | **Elemente** | Feuer, Frost, Blitz, Gift, Licht, Schatten. Gegensätze (Feuer↔Frost, Blitz↔Gift, Licht↔Schatten) treffen ×1,5, gleiches Element ×0,5. Jeder Gegner zeigt sein Element, das Bestiarium seine Schwäche. Effekte: Brand, Kälte, Überschlag, Gift, Heilung, Schattenstoß. Rüstungen mit Element schützen | die richtige Ausrüstung für jedes Gebiet |
 | **Schmiede der Meister** | Bauteile Klinge, Griff, Elementkern (Waffen) und Panzerplatte, Polsterung, Rune (Rüstung, Helm) in zehn Stufen von Roh bis Göttlich. Drei gleiche ergeben eins der nächsten Stufe. Aus Material + Bauteilen ein **Meisterwerk** schmieden, später umbauen. **Zerlegen** macht aus alten Gegenständen Bauteile | Schmiedemeisterschaft 1–100; ein göttliches Bauteil = 19 683 rohe |
 | **Meisterschaft** | Jede der 16 Fähigkeiten wird durch Benutzen stärker: Schaden, Abklingzeit, Kosten. Sechs Ränge (Lehrling, Geselle, Experte, Meister, Großmeister, Legende) – jeder Rang hat eine neue Farbe und Spur, ab Rang IV größere Effekte, Rang VI golden, dazu je ein Extra (mehr Projektile, Sprünge, Radius …) | Level 1–50 je Fähigkeit |
@@ -450,10 +463,13 @@ js/news.js             Neuigkeiten: Changelog und Vorschau („Demnächst“)
 js/weekly.js           Wochen-Ereignisse
 js/i18n.js             Sprachen: Auswahl, _t('Text'), Übersetzen der Spieldaten
 js/elements.js         Elemente: Schwächen, Resistenzen, Treffer-Effekte, Element der Gegner
-js/forge.js            Schmiede der Meister: Bauteile, Zerlegen, Meisterwerke, Schmiedemeisterschaft
-js/pets.js             Begleiter: Arten, Entwicklung, Kampf, Eier, Pixel-Grafik
+js/forge.js            Schmiede: Verbessern, Meisterwerk in 5 Schritten, Bauteile, Zerlegen, Werkstatt
+js/pets.js             Begleiter: 24 Kreaturen, Eier & Brutnest, Tasche, Verletzung, Entwicklung, Kampf
 js/mastery.js          Meisterschaft der Fähigkeiten: Level, Ränge, Aussehen
 js/trade.js            Tauschen per Code/Link, Tauschhändlerin, Aussehen-Sammlung
+js/auras.js            Aussehen der Beute nach Material/Seltenheit, Auren der Helden
+js/lande.js            Die Verlorenen Lande: Freiwelt, Rucksack, NPCs, Aufträge, Rivalen, Ausgänge, Tod
+js/market.js           Basar: Angebote, Verkauf, Auktionen, Marktwert (Schnittstelle MARKET)
 js/lang/               Übersetzungen (en, tr, es, it, fr) – Schlüssel ist der deutsche Text
 js/core.js             Helfer, Grafik laden, Charakter-Umfärbung, Ton & Musik, Speichern
 js/art.js              prozedurale Pixel-Grafik: Waffen, Rüstungen, Umhänge, Flügel, Karte, Stationen
@@ -469,7 +485,7 @@ assets/fx.png          Effekt-Atlas (Zauber, Explosionen, Blitze, Hiebe)
 manifest.webmanifest   App-Manifest (Vollbild, Hoch- und Querformat)
 sw.js                  Service Worker (Offline)
 docs/                  Screenshots, GIF, Werbevideo
-tools/test/            automatische Tests (Handy, iPhone, TikTok-Browser, alte Spielstände, alle Sprachen): bash tools/test/run.sh
+tools/test/            automatische Tests (Handy, iPhone, TikTok-Browser, alte Spielstände, Systeme, alle Sprachen): bash tools/test/run.sh
 tools/i18n/            Sprach-Werkzeuge: fehlende Übersetzungen finden und übernehmen (siehe tools/i18n/README.md)
 tools/promo/           TikTok-Clips aus echten Spielszenen (Aufnahme, Schnitt, Musik)
 tools/WOCHENUPDATE.md  Ablauf für das wöchentliche Update

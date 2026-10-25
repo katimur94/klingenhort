@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Alle automatischen Tests. Aufruf aus dem Repo: bash tools/test/run.sh
 # Startet das Spiel lokal auf Port 8777, prüft Handy (hoch/quer), iPhone, TikTok-Browser,
-# alte Spielstände, Schmiede, Begleiter, Meisterschaft, Tausch, alle Sprachen und fotografiert alle Bildschirme nach /tmp/klingenhort-test/screens-*.
+# alte Spielstände, Schmiede, Begleiter, Meisterschaft, Tausch, Auren, Basar, alle Sprachen und fotografiert alle Bildschirme nach /tmp/klingenhort-test/screens-*.
 # Rückgabe 0 = alles grün, sonst 1.
 cd "$(dirname "$0")/../.."
 PORT=8777; export BASE="http://localhost:$PORT/"
@@ -28,6 +28,8 @@ run node tools/test/forge.js /tmp/klingenhort-test/forge
 run node tools/test/pets.js /tmp/klingenhort-test/pets
 run node tools/test/mastery.js /tmp/klingenhort-test/mastery
 run node tools/test/trade.js 390 844 /tmp/klingenhort-test/trade
+run node tools/test/auras.js /tmp/klingenhort-test/auras
+run node tools/test/market.js 390 844 /tmp/klingenhort-test/market
 run node tools/i18n/check.js
 # jede Sprache im Hochformat (gleichzeitig): nichts fehlt, kein Deutsch, nichts abgeschnitten
 echo; echo "== Sprachen"

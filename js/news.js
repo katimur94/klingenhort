@@ -7,6 +7,21 @@
 
 const CHANGELOG = [
   {
+    v: '6.0.0', d: '2026-10-26', t: 'Die Verlorenen Lande', items: [
+      ['neu', 'Die Verlorenen Lande: Durch das Weltentor in deinem Versteck betrittst du eine riesige, jedes Mal neue Freiwelt. Die beste Beute des Spiels liegt hier – in Truhen, Verstecken, Erzadern und bei gefallenen Abenteurern, immer an anderen Orten.'],
+      ['neu', 'Hohes Risiko: Was du findest, gehört dir erst, wenn du durch einen Ausgang entkommst. Stirbst du, ist alles verloren, was du angelegt und im Rucksack hast – du wachst im Versteck auf.'],
+      ['neu', 'Dein Begleiter ist ein mystisches Wesen: Was in seiner Tasche liegt, bringt er dir beim Tod nach Hause. Danach ist er verletzt und braucht Ruhe.'],
+      ['neu', 'Zufällige Bosse ziehen durch die Lande. Traust du dir den Kampf nicht zu, lauf weg! Dazu Händler, die tauschen, Auftraggeber mit Missionen, Rivalen, die selbst plündern, und Weltstufen bis in den Abgrund.'],
+      ['neu', 'Begleiter schlüpfen jetzt aus Eiern: Im Brutnest wärmst, fütterst und streichelst du sie, bis sie schlüpfen – das kann bei seltenen Eiern Tage dauern. 24 Kreaturen in sieben Seltenheiten, von der Feldmaus bis zur Weltenschlange.'],
+      ['neu', 'Dein erstes Ei bekommst du vom ersten Boss der Geschichte. Weitere findest du in den Verlorenen Landen, in Truhen, bei Bossen und im Basar.'],
+      ['neu', 'Basar: Kaufe Angebote, verkaufe an Händlerin Hedda oder stelle deine Beute in Auktionen ein und biete selbst mit. Jeder Gegenstand zeigt jetzt seinen Marktwert.'],
+      ['neu', 'Jeder Gegenstand sieht anders aus: Material und Seltenheit erkennst du auf einen Blick, Legenden, Set-Teile und Mythisches haben eigene Formen und Farben.'],
+      ['neu', 'Auren: Legendäre und mythische Gegenstände und volle Sets umgeben deinen Helden mit Leuchten, Flammen, Frost, Blitzen oder Funken.'],
+      ['besser', 'Die Schmiede ist aufgeräumt: nur noch vier Bereiche – Verbessern, Schmieden, Zerlegen und Werkstatt. Dein Meisterwerk entsteht Schritt für Schritt, mit Vorschau und Hilfe zu jedem Begriff.'],
+      ['besser', 'Bestehende Begleiter bleiben dir erhalten.']
+    ]
+  },
+  {
     v: '5.0.1', d: '2026-10-25', t: 'Die Glücksrolle', items: [
       ['neu', 'Glücksrolle: Wie beim Case-Opening rauscht eine Reihe Belohnungen vorbei, wird langsamer und bleibt auf deinem Gewinn stehen. Antippen überspringt.'],
       ['neu', 'Auch die Schicksalstruhen öffnen sich jetzt mit der Rolle.'],
@@ -111,10 +126,10 @@ const CHANGELOG = [
 
 // Vorschau: was in den nächsten Wochen kommt (Version, Text – siehe ROADMAP.md)
 const COMING = [
-  ['5.1', 'Aufträge: Tages- und Wochenaufträge mit Bauteilen, Eiern und Glücksmünzen als Belohnung'],
-  ['5.2', 'Neues Gebiet: der Sturmgipfel mit Blitz-Gegnern, eigenem Boss und Sturmsilber'],
-  ['6.0', 'Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste'],
-  ['6.1', 'Begleiter-Expeditionen und Zucht: neue Farben und Mischformen']
+  ['6.1', 'Aufträge & Ruf: Tages- und Wochenaufträge, Fraktionen mit Ruf-Stufen und besseren Tauschangeboten'],
+  ['6.2', 'Neues Gebiet: der Sturmgipfel mit Blitz-Gegnern, eigenem Boss und Sturmsilber – auch in den Verlorenen Landen'],
+  ['7.0', 'Online: Basar und Tausch mit echten Spielern'],
+  ['7.1', 'Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste']
 ];
 
 const NEWS_KIND = { neu: [_t('NEU'), '#79c24e'], besser: [_t('BESSER'), '#57a7d6'], fix: [_t('BEHOBEN'), '#e8b04a'] };
