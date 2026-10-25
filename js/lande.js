@@ -64,7 +64,8 @@ const LNPC = {
   trade: { n: _t('Händler Bodo'), sp: 'dwarf', c: '#79c24e', icon: 'l_tausch', hi: _t('Tauschen') },
   heal: { n: _t('Kräuterfrau Mirja'), sp: 'wizf', c: '#f786a0', icon: 'l_heil', hi: _t('Heilen') }
 };
-const LRIV = [[_t('Kira die Flinke'), 'elfe'], [_t('Brom Eisenfaust'), 'zwerg'], [_t('Selvi Schattenschritt'), 'elfe'], [_t('Taro der Gierige'), 'todesritter'], [_t('Mara Dornhand'), 'hexe'], [_t('Ulf Sturmbart'), 'zwerg'], [_t('Nesa die Stille'), 'pyro'], [_t('Gorm der Sammler'), 'todesritter']];
+// Rivalen: Name, Kampfweise (Gegnerart), Aussehen als Held (Körper, Rüstungsstufe, Haare)
+const LRIV = [[_t('Kira die Flinke'), 'elfe', 'elf_f', 3, 1], [_t('Brom Eisenfaust'), 'zwerg', 'dwarf_m', 2, 3], [_t('Selvi Schattenschritt'), 'elfe', 'elf_m', 5, 8], [_t('Taro der Gierige'), 'todesritter', 'knight_m', 4, -1], [_t('Mara Dornhand'), 'hexe', 'wizard_f', 3, 7], [_t('Ulf Sturmbart'), 'zwerg', 'dwarf_f', 3, 4], [_t('Nesa die Stille'), 'pyro', 'wizard_m', 6, 3], [_t('Gorm der Sammler'), 'todesritter', 'lizard_m', 4, -1]];
 const LNAMED = [_t('Rotzahn der Plünderer'), _t('Moorhexe Ilka'), _t('Knochenfürst Zarr'), _t('Grimmfell'), _t('Sturmklaue'), _t('Vargul der Wilde'), _t('Die Aschenbraut'), _t('Schädelbrecher Orm')];
 const LMARK = { turm: _t('Alter Wachturm'), kreis: _t('Steinkreis'), riese: _t('Weltenbaum'), statue: _t('Statue des Ordens') };
 const LTS = 16, LFC = 32, LGC = 128, LBOX = 40, LPACK = 16;
@@ -90,7 +91,7 @@ function lMetaFix(d) {
   d = d && typeof d === 'object' ? d : {};
   return {
     runs: lNum(d.runs), ext: lNum(d.ext), deaths: lNum(d.deaths), aband: lNum(d.aband), best: lNum(d.best), rep: lNum(d.rep), done: lNum(d.done), keys: Math.min(99, lNum(d.keys)), kills: lNum(d.kills), bosses: lNum(d.bosses), rivals: lNum(d.rivals),
-    tx: (Array.isArray(d.tx) ? d.tx : []).slice(0, LANDE_TIER.length).map(lNum), sel: lNum(d.sel),
+    tx: (Array.isArray(d.tx) ? d.tx : []).slice(0, LANDE_TIER.length).map(lNum), sel: lNum(d.sel), tips: lNum(d.tips),
     box: (Array.isArray(d.box) ? d.box : []).filter(lEntryOk).slice(0, LBOX),
     cur: d.cur && typeof d.cur === 'object' && d.cur.hero ? d.cur : null
   };
@@ -272,7 +273,8 @@ function lGen(ti, seed) {
   const sides = [0, 1, 2, 3].filter(s => s !== side).sort(() => R() - .5), kinds = ti === 0 ? ['portal', 'portal', 'mond'] : ['portal', 'mond', 'schluessel'];
   sides.forEach((sd, i) => {
     let best = null;
-    for (let k = 0; k < 30; k++) { const a = S * (.15 + R() * .7), m = S * .07, p = sd === 0 ? { x: a, y: S - m } : sd === 1 ? { x: m, y: a } : sd === 2 ? { x: a, y: m } : { x: S - m, y: a }; const d = Math.hypot(p.x - L.spawn.x, p.y - L.spawn.y); if (!best || d > best.d) best = Object.assign(p, { d }); }
+    // weit weg vom Start, aber auch nicht neben einem anderen Ausgang
+    for (let k = 0; k < 30; k++) { const a = S * (.15 + R() * .7), m = S * .07, p = sd === 0 ? { x: a, y: S - m } : sd === 1 ? { x: m, y: a } : sd === 2 ? { x: a, y: m } : { x: S - m, y: a }; let d = Math.hypot(p.x - L.spawn.x, p.y - L.spawn.y); for (const e of L.exits) d = Math.min(d, Math.hypot(p.x - e.x, p.y - e.y) * 1.4); if (!best || d > best.d) best = Object.assign(p, { d }); }
     occ.push({ x: best.x, y: best.y, r: 70 });
     L.exits.push(add({ k: 'exit', t: kinds[i], x: best.x, y: best.y, r: 0, ph: R() * 80, open: kinds[i] !== 'schluessel', solid: false }));
   });
@@ -338,7 +340,7 @@ function lGen(ti, seed) {
   for (let i = 0; i < bossN; i++) { const B = BOSSES[TT.boss[Math.floor(R() * TT.boss.length)] % BOSSES.length]; L.bosses.push({ B, x: 0, y: 0, tx: 0, ty: 0, hp: 1, state: 'sleep', wake: i === 0 ? 80 + R() * 70 : (ti >= 2 ? 330 : LDNG[3].t) + R() * 40, rumble: 0 }); }
   // Rivalen
   const rv = LRIV.slice().sort(() => R() - .5);
-  for (let i = 0; i < 1 + (ti >= 1 ? 1 : 0) + (ti >= 3 ? 1 : 0); i++) { const p = place(10, .35, 1); if (!p) continue; L.rivals.push({ name: rv[i][0], type: rv[i][1], x: p.x, y: p.y, hp: 1, loot: [], state: 'roam', tgt: null, t: 0, seen: false, leave: 420 + R() * 240 }); }
+  for (let i = 0; i < 1 + (ti >= 1 ? 1 : 0) + (ti >= 3 ? 1 : 0); i++) { const p = place(10, .35, 1); if (!p) continue; L.rivals.push({ name: rv[i][0], type: rv[i][1], look: { body: rv[i][2], at: rv[i][3], ht: rv[i][3], hair: rv[i][4], skin: -1, accent: -1 }, x: p.x, y: p.y, hp: 1, loot: [], state: 'roam', tgt: null, t: 0, seen: false, leave: 420 + R() * 240 }); }
   // Seen und Pfützen (nicht auf Wegen)
   const pathAt = (x, y, r) => { for (let yy = Math.floor((y - r) / LTS); yy <= Math.floor((y + r) / LTS); yy++) for (let xx = Math.floor((x - r) / LTS); xx <= Math.floor((x + r) / LTS); xx++) if (xx >= 0 && yy >= 0 && xx < N && yy < N && L.path[yy * N + xx]) return true; return false; };
   for (let i = 0; i < Math.round(10 * N2); i++) {
@@ -421,6 +423,13 @@ function lMiniBase(L) {
   for (const l of L.lakes) { g.fillStyle = POOLCOL[l.k][1]; g.beginPath(); g.ellipse(l.x / LTS, l.y / LTS, l.rx / LTS + .5, l.ry / LTS + .5, 0, 0, 7); g.fill(); }
   for (const o of L.objs) if (o.k === 'prop' && (o.t === 'eiche' || o.t === 'tanne' || o.t === 'schnee')) { g.fillStyle = 'rgba(10,30,10,.35)'; g.fillRect(Math.floor(o.x / LTS), Math.floor(o.y / LTS), 1, 1); }
   return c;
+}
+const LPROP = {};
+function lPropImg(t, v) {
+  const key = t + ':' + v; if (LPROP[key]) return LPROP[key];
+  const tree = ['eiche', 'herbst', 'tanne', 'schnee', 'tot', 'kohle'].includes(t), sp = t === 'saeule' ? crop(80, 80, 16, 48) : lSpr(t, v), sw = t === 'wagen' ? 15 : t === 'zelt' ? 13 : t === 'tanne' || t === 'schnee' ? 7 : t === 'saeule' ? 9 : Math.max(5, Math.round(sp.width * .36));
+  const W = Math.max(sp.width, sw * 2 + 2), H = sp.height + 4, c = mk(W, H, g => { g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(W / 2, sp.height - 2 + (t === 'saeule' ? 3 : 0), sw, sw * .38, 0, 0, 6.283); g.fill(); g.drawImage(sp, Math.floor((W - sp.width) / 2), 0); });
+  return LPROP[key] = { c, ox: Math.floor(W / 2), oy: sp.height - (t === 'saeule' ? 4 : 2), h: sp.height, tree };
 }
 function lSpr(k, v) { const key = k + ':' + (v || 0); return LSPR[key] || (LSPR[key] = lPaint(k, v || 0)); }
 function lPaint(k, v) {
@@ -647,7 +656,7 @@ function lSpawnGroup(src, list, x, y, rad) {
 }
 function lDespawn(e) {
   e.dead = true; const s = e.lw && e.lw.src;
-  if (s) { s.alive = Math.max(0, (s.alive || 0) - 1); if (e.lw.rec && s.left) s.left.push(e.lw.rec); if (s.B) { s.hp = clamp(e.hp / e.maxHp, .05, 1); s.state = 'roam'; s.x = e.x; s.y = e.y; $('bossbar').hidden = true; setMusic(LW.TT.mus, false); } if (s.rival) { s.hp = clamp(e.hp / e.maxHp, .05, 1); s.state = 'roam'; s.x = e.x; s.y = e.y; } if (s.left && s.state === 'act' && !s.alive) s.state = 'dorm'; if (s.list && s.state === 'act' && !s.alive) { s.state = 'dorm'; s.x = e.x; s.y = e.y; } }
+  if (s) { s.alive = Math.max(0, (s.alive || 0) - 1); const back = s.left || s.list; if (e.lw.rec && back) back.push(e.lw.rec); if (s.B) { s.hp = clamp(e.hp / e.maxHp, .05, 1); s.state = 'roam'; s.x = e.x; s.y = e.y; $('bossbar').hidden = true; setMusic(LW.TT.mus, false); } if (s.rival) { s.hp = clamp(e.hp / e.maxHp, .05, 1); s.state = 'roam'; s.x = e.x; s.y = e.y; } if (s.left && s.state === 'act' && !s.alive) s.state = 'dorm'; if (s.list && s.state === 'act' && !s.alive) { s.state = 'dorm'; s.x = e.x; s.y = e.y; } }
   fxAnim('ring', e.x, e.y - 6, { sc: .5, dur: .4, add: true });
 }
 
@@ -684,6 +693,8 @@ function lBurst(o, list) { list.forEach((e, i) => setTimeout(() => { if (LW && L
 // Banner nacheinander zeigen (zwei Meldungen im selben Moment überdecken sich sonst)
 const LBQ = []; let LBT = -9;
 function lBanner(t, s) { if (T - LBT < 2.1 && T >= LBT) { if (LBQ.length < 4) LBQ.push([t, s]); return; } LBT = T; banner(t, s); }
+// Tipps für Neulinge: jeder nur einmal pro Konto
+function lTip(bit, s) { const M = lMeta(); if (M.tips & bit) return; M.tips |= bit; persist(); setTimeout(() => { if (LW && LW.on) toast(s, '#9ad8ee'); }, 600); }
 function lMsg(k, s, col, gap) { if (T - (LW.msgT[k] || -99) < (gap || 3)) return; LW.msgT[k] = T; toast(s, col); }
 function lOpenSpot(o) {
   if (o.open) return;
@@ -731,6 +742,7 @@ HOOK.collect.push((h, c) => {
 function lGot(e) {
   const hp = $('lhPack'); if (hp) { hp.classList.remove('pop'); void hp.offsetWidth; hp.classList.add('pop'); }
   if (e.t === 'gold') { sfx('coin'); return; }
+  lTip(1, _t('Tipp: Alles im Rucksack ist verloren, wenn du fällst. Wertvolles in die Begleiter-Tasche legen – Rucksack-Knopf oben rechts.'));
   if (e.t === 'item') {
     const it = e.it; it.lw = LW.id; hook('pickup', it);
     if (it.rar === 4) stat('legs'); if (it.rar === 6) statMax('myths', 1);
@@ -827,6 +839,7 @@ HOOK.update.push(dt => {
     if (Math.hypot(e.x - e.lpx, e.y - e.lpy) > 160) { const a = Math.random() * 6.283; e.x = clamp(P.x + Math.cos(a) * 110, BD.x0 + 10, BD.x1 - 10); e.y = clamp(P.y + Math.sin(a) * 80, BD.y0 + 10, BD.y1 - 10); }   // Teleport über die halbe Karte (placeFar) zurückholen
     if (!(e.ai === 'swoop' && e.z > 8) && e.ai !== 'ghost' && !(e.under > 0)) lPush(e, e.r * e.sc);
     e.lpx = e.x; e.lpy = e.y;
+    if (e.rival && e.rival.look && e.st !== 'spawn') e.alpha = 0;
   }
   for (const p of projs) { if (p.life <= 0 || p.k === 'meteor' || p.k === 'bomb' || p.k === 'flask') continue; lGridEach(p.x, p.y, 20, o => { if (o.solid && o.k === 'prop' && p.life > 0 && Math.hypot(o.x - p.x, (o.y - p.y) * 1.35) < o.r + 2) { p.life = 0; if (p.k === 'fireball') projHitEnd(p); burst(p.x, p.y, p.h, '#8a7a6a', 4, 30); } }); }
   if (state === 'dead' && LW.dead) { LW.dead -= dt; if (LW.dead <= 0) { LW.dead = 0; lDeathScreen(); } }
@@ -901,6 +914,7 @@ function lTick(dt) {
 }
 function lChannelTick(dt) {
   const L = LW, ex = L.exits.find(x => !x.gone && Math.hypot(x.x - P.x, (x.y - P.y) * 1.2) < 22);
+  if (!ex && L.exits.some(x => Math.hypot(x.x - P.x, x.y - P.y) < 160)) lTip(2, _t('Tipp: Stell dich in den Ausgang und bleib stehen. Gegner in der Nähe unterbrechen die Flucht.'));
   if (!ex) { if (L.ch > 0) { L.ch = 0; $('objective').textContent = ''; } L.chEx = null; return; }
   if (ex.t === 'schluessel' && !ex.open) { const M = lMeta(); if (M.keys > 0) { M.keys--; ex.open = true; sfx('ach'); toast(_t('Das Schlüsseltor öffnet sich!'), '#e8b04a'); persist(); } else { lMsg('xkey', _t('Dieses Tor braucht einen Schlüssel.'), '#ff8a5a', 4); return; } }
   if (!lExitOpen(ex)) { $('objective').textContent = _t('MONDTOR ÖFFNET IN {n} S', { n: Math.ceil(80 - ((L.t + ex.ph) % 80)) }); L.ch = 0; return; }
@@ -947,7 +961,7 @@ function lRivalTick(r) {
   } else {
     if (!r.tgt || r.tgt.open) { let b = null, bd = 1e9; for (const o of L.spots) { if (o.open || o.t === 'kraut' || o.t === 'versteck' || LCH[o.t].lock || o.relic) continue; const d = Math.hypot(o.x - r.x, o.y - r.y); if (d < bd) { bd = d; b = o; } } r.tgt = b; r.lt = 0; }
     if (r.tgt) {
-      const dx = r.tgt.x - r.x, dy = r.tgt.y - r.y, d = Math.hypot(dx, dy);
+      const dx = r.tgt.x - r.x, dy = r.tgt.y - r.y, d = Math.hypot(dx, dy); r.tx = r.tgt.x;
       if (d > 14) { r.x += dx / d * 30 * .2; r.y += dy / d * 30 * .2; }
       else if ((r.lt += .2) > 2.5) { const o = r.tgt; o.open = 1; o.by = r.name; if (r.loot.length < 8) for (const e of lRollSpot(o).slice(0, 3)) r.loot.push(e); r.tgt = null; if (Math.hypot(o.x - P.x, o.y - P.y) < 320) lMsg('rloot', _t('{name} plündert eine Truhe vor deiner Nase!', { name: r.name }), '#ff8a3a', 6); }
     }
@@ -1006,11 +1020,9 @@ function lDraw(o) {
   const x = Math.round(o.x - CX), y = Math.round(o.y - CY);
   switch (o.k) {
     case 'prop': {
-      if (o.t === 'saeule') { lShadow(x, y + 1, 9); ctx.drawImage(SHEET, 80, 80, 16, 48, x - 8, y - 44, 16, 48); return; }
-      const s = lSpr(o.t, o.v); lShadow(x, y, o.t === 'wagen' ? 15 : o.t === 'zelt' ? 13 : o.t === 'tanne' || o.t === 'schnee' ? 7 : Math.max(5, s.width * .36));
-      // Spieler hinter Baumkrone: Krone durchsichtig
-      const behind = (o.t === 'eiche' || o.t === 'herbst' || o.t === 'tanne' || o.t === 'schnee' || o.t === 'tot' || o.t === 'kohle') && P.y < o.y && P.y > o.y - s.height && Math.abs(P.x - o.x) < s.width / 2;
-      if (behind) ctx.globalAlpha = .5; ctx.drawImage(s, x - Math.floor(s.width / 2), y - s.height + 2); ctx.globalAlpha = 1;
+      // Bild mit eingebackenem Schatten (ein drawImage je Baum); Spieler hinter der Krone: durchsichtig
+      const s = lPropImg(o.t, o.v), behind = s.tree && P.y < o.y && P.y > o.y - s.h && Math.abs(P.x - o.x) < s.c.width / 2;
+      if (behind) ctx.globalAlpha = .5; ctx.drawImage(s.c, x - s.ox, y - s.oy); ctx.globalAlpha = 1;
       return;
     }
     case 'mark': {
@@ -1056,10 +1068,19 @@ function lDraw(o) {
     }
   }
 }
+// Rivale als Held gezeichnet (charStrip): Bild 0–3 Ruhe, 4–7 Laufen, 8 Treffer
+function lHero(look, x, y, face, moving, hit) {
+  const st = charStrip(look), fi = hit && st.hasHit ? 8 : moving ? 4 + Math.floor(T * 10) % 4 : Math.floor(T * 6) % 4;
+  ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.scale(face < 0 ? -1 : 1, 1); ctx.drawImage(hit ? st.sil : st.c, fi * st.w, 0, st.w, st.h, -st.w / 2, -st.h, st.w, st.h); ctx.restore();
+  return st.h;
+}
 function lDrawTok(r, rival) {
   const x = Math.round(r.x - CX), y = Math.round(r.y - CY); if (x < -30 || y < -40 || x > VW + 30 || y > VH + 30) return;
-  const sp = EN[r.type] ? EN[r.type].sp : 'knight', fr = frameRect(sp, 'run', Math.floor(T * 10)); lShadow(x, y, 5);
-  ctx.drawImage(SHEET, fr[0], fr[1], fr[2], fr[3], x - fr[2] / 2, y - fr[3], fr[2], fr[3]);
+  lShadow(x, y, 5);
+  let h;
+  if (r.look) h = lHero(r.look, x, y, r.tx != null && r.tx < r.x ? -1 : 1, true, false);
+  else { const sp = EN[r.type] ? EN[r.type].sp : 'knight', fr = frameRect(sp, 'run', Math.floor(T * 10)); h = fr[3]; ctx.drawImage(SHEET, fr[0], fr[1], fr[2], fr[3], x - fr[2] / 2, y - fr[3], fr[2], fr[3]); }
+  const fr = [0, 0, 0, h];
   if (rival) { ctx.font = '8px "VT323", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillStyle = '#000'; ctx.fillText(r.name, x + 1, y - fr[3] - 1); ctx.fillStyle = '#ff8a3a'; ctx.fillText(r.name, x, y - fr[3] - 2); }
 }
 function lPickDraw(c) {
@@ -1083,6 +1104,7 @@ HOOK.draw.push(list => {
 });
 HOOK.drawEnemy.push(e => {
   if (!LW || !LW.on || !(e.rival || (e.boss && e.lw))) return;
+  if (e.rival && e.rival.look && e.st !== 'spawn') lHero(e.rival.look, e.x - CX, e.y - CY - (e.z || 0), e.turn, e.moving, e.flash > 0);
   const x = Math.round(e.x - CX), y = Math.round(e.y - CY) - Math.round((SP[e.sp].h + 6) * e.sc) - Math.round(e.z);
   ctx.font = '8px "VT323", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillStyle = '#000'; ctx.fillText(e.name, x + 1, y + 1); ctx.fillStyle = e.rival ? '#ff8a3a' : '#ff5a4a'; ctx.fillText(e.name, x, y);
 });
@@ -1156,7 +1178,9 @@ body.lande #bossbar{top:calc(var(--sat) + 56px);left:max(16px,var(--sal));transf
 .lrules div{background:var(--stone-lo);padding:6px 8px;font-size:17px;line-height:1.1;box-shadow:inset 3px 0 0 var(--c)}
 .lbar{height:8px;background:var(--stone-lo);box-shadow:0 0 0 2px var(--night);margin:4px 0 8px}
 .lbar i{display:block;height:100%;background:#57c7e6}
-.lmap{display:block;width:100%;max-width:440px;margin:0 auto 8px;image-rendering:pixelated;box-shadow:0 0 0 2px var(--night),0 0 0 3px var(--parch-dim)}
+.lmap{display:block;width:min(100%,440px);margin:0 auto 8px;image-rendering:pixelated;box-shadow:0 0 0 2px var(--night),0 0 0 3px var(--parch-dim)}
+.lmapw{display:grid;gap:10px;align-items:start}
+@media (orientation:landscape){.lmapw{grid-template-columns:auto minmax(0,1fr)}.lmap{width:min(440px,calc(100vh - 110px),calc(100dvh - 110px));margin:0}.lleg{justify-content:flex-start}}
 .lleg{display:flex;flex-wrap:wrap;gap:8px;font-size:16px;color:var(--parch-dim);justify-content:center;margin-bottom:6px}
 .lleg i{display:inline-block;width:9px;height:9px;margin-right:4px;box-shadow:0 0 0 1px #000;vertical-align:0}
 .lslot{position:relative;aspect-ratio:1;background:var(--stone-lo);border:0;display:grid;place-items:center;cursor:pointer;padding:0}
@@ -1164,12 +1188,16 @@ body.lande #bossbar{top:calc(var(--sat) + 56px);left:max(16px,var(--sal));transf
 .lslot .n{position:absolute;right:3px;bottom:2px;font-family:var(--f-display);font-size:7px;text-shadow:1px 1px 0 #000;color:var(--parch)}
 .lslot.empty{cursor:default;background:rgba(10,8,14,.35);box-shadow:inset 0 0 0 2px var(--stone-hi)}
 .lgear .lslot{width:60px;height:60px;margin:4px auto 0}
+.lnw+.lpk{margin-top:10px}.side .lwd{margin-bottom:10px}
+.lgmini{padding:6px}.lgmini .lgear>div:first-child{display:none}.lgmini .lgear .lslot{width:46px;height:46px;margin:0 auto}
+@media (min-width:600px){.lnw{display:none}}
+@media (max-width:599px){.lwd{display:none}}
 body.touch .lslot .n{font-size:8px}
 .lmis{background:var(--stone-lo);padding:7px 9px;margin-bottom:6px;box-shadow:inset 3px 0 0 var(--c)}
 .lmis .nm{font-size:19px;line-height:1.05}
 .lmis .st{font-size:15px;color:var(--parch-dim)}
 </style>`);
-document.body.insertAdjacentHTML('beforeend', `<div id="lhud" hidden><canvas id="lhMap" width="128" height="128" aria-label="${_t('Karte')}"></canvas><div class="lc"><div class="lp"><span id="lhT">0:00</span><b id="lhD">${LDNG[0].n}</b></div><button class="lp" id="lhPack" aria-label="${_t('Rucksack')}"><img src="" alt=""><span id="lhP">0/12</span></button><div class="lp" id="lhK" hidden><img src="" alt=""><span id="lhKn">0</span></div><div id="lhMis"></div></div></div>`);
+document.body.insertAdjacentHTML('beforeend', `<div id="lhud" hidden><canvas id="lhMap" width="96" height="96" aria-label="${_t('Karte')}"></canvas><div class="lc"><div class="lp"><span id="lhT">0:00</span><b id="lhD">${LDNG[0].n}</b></div><button class="lp" id="lhPack" aria-label="${_t('Rucksack')}"><img src="" alt=""><span id="lhP">0/12</span></button><div class="lp" id="lhK" hidden><img src="" alt=""><span id="lhKn">0</span></div><div id="lhMis"></div></div></div>`);
 const LH = { on: false, c: {} };
 function lHudShow(on) { if (LH.on === on) return; LH.on = on; $('lhud').hidden = !on; if (on) { $('lhPack').querySelector('img').src = iconURL(['pa', 'l_pack']); $('lhK').querySelector('img').src = iconURL(['pa', 'l_schl']); LH.c = {}; } }
 function lSetH(id, v) { if (LH.c[id] !== v) { LH.c[id] = v; $(id).textContent = v; } }
@@ -1182,7 +1210,7 @@ function lHudTick() {
   const m = !L.misOn ? _t('Sprich mit Elwa') : L.misDone ? _t('Belohnung bei Elwa') : (L.mis.find(x => !x.done) || {}).txt || '';
   const mt = L.mis.find(x => !x.done && x.n > 1); lSetH('lhMis', m + (mt && L.misOn && !L.misDone && m === mt.txt ? ' ' + mt.c + '/' + mt.n : ''));
   L.misDone = L.misOn && L.mis.some(x => x.done && !x.paid && x.t !== 'mats');
-  if ((L.mapT -= .2) <= 0) { L.mapT = .2; lMiniDraw($('lhMap'), 128, false); }
+  if ((L.mapT -= .2) <= 0) { L.mapT = .2; lMiniDraw($('lhMap'), 96, false); }
 }
 // Karte zeichnen: klein im HUD (Spieler in der Mitte) oder groß (ganze Welt)
 function lMiniDraw(cv, sz, full) {
@@ -1192,17 +1220,21 @@ function lMiniDraw(cv, sz, full) {
   g.drawImage(L.mini, ox / LTS, oy / LTS, view / LTS, view / LTS, 0, 0, sz, sz);
   if (L.cr > 0) { g.fillStyle = 'rgba(150,60,220,.38)'; g.beginPath(); g.arc(X(L.rift.x), Y(L.rift.y), L.cr * sc, 0, 6.283); g.fill(); }
   g.drawImage(L.fogc, ox / LFC, oy / LFC, view / LFC, view / LFC, 0, 0, sz, sz);
-  const dot = (x, y, c, s) => { const px_ = Math.round(X(x)), py = Math.round(Y(y)); if (px_ < -4 || py < -4 || px_ > sz + 4 || py > sz + 4) return; g.fillStyle = '#000'; g.fillRect(px_ - s / 2 - 1, py - s / 2 - 1, s + 2, s + 2); g.fillStyle = c; g.fillRect(px_ - s / 2, py - s / 2, s, s); };
-  const s1 = full ? 4 : 3;
-  for (const o of L.spots) if (!o.open && o.t !== 'versteck' && o.t !== 'kraut' && (lKnown(o) || (o.relic && L.misOn))) dot(o.x, o.y, o.relic ? '#57c7e6' : LCH[o.t].lock ? '#9aa2ae' : o.t === 'fluch' ? '#c060ff' : o.t === 'gold' ? '#ffd24a' : '#e8b04a', o.relic ? s1 + 1 : s1 - 1);
-  for (const c of L.camps) if (c.state !== 'done' && (lKnown(c) || c.mis)) dot(c.x, c.y, c.mis ? '#57c7e6' : '#c8463c', s1);
-  for (const m of L.marks) if (lKnown(m)) dot(m.x, m.y, '#efe2bf', s1);
-  for (const r in L.npcs) { const o = L.npcs[r]; if (o.known || lKnown(o)) { o.known = true; dot(o.x, o.y, LNPC[r].c, s1 + 1); } }
-  for (const ex of L.exits) dot(ex.x, ex.y, lExitOpen(ex) ? '#6ae08a' : ex.t === 'schluessel' ? '#ffd24a' : '#8ab8ff', s1 + 2);
-  for (const r of L.rivals) if (r.state === 'roam' && Math.hypot(r.x - P.x, r.y - P.y) < 340) dot(r.x, r.y, '#ff8a3a', s1);
-  for (const B of L.bosses) if (B.state === 'roam' || B.state === 'act') { const e = B.state === 'act' ? enemies.find(x => x.lw && x.lw.src === B) : null, bx = e ? e.x : B.x, by = e ? e.y : B.y, p = Math.floor(T * 3) % 2; const x = Math.round(X(bx)), y = Math.round(Y(by)), s = full ? 3 : 2; if (x > -8 && y > -8 && x < sz + 8 && y < sz + 8) { g.fillStyle = '#000'; g.fillRect(x - 3 * s / 2 - 1, y - 3 * s / 2 - 1, 3 * s + 2, 3 * s + 2); g.fillStyle = p ? '#ff4a3a' : '#e8e2cf'; g.fillRect(x - 3 * s / 2, y - 3 * s / 2, 3 * s, 2 * s); g.fillRect(x - s / 2, y + s / 2, s, s); g.fillStyle = '#000'; g.fillRect(x - s, y - s / 2, s / 1, s / 1); g.fillRect(x + s / 2 - s / 2, y - s / 2, s / 1, s / 1); } else if (!full) { const a = Math.atan2(by - P.y, bx - P.x); g.fillStyle = '#ff4a3a'; g.fillRect(Math.round(sz / 2 + Math.cos(a) * (sz / 2 - 4)) - 2, Math.round(sz / 2 + Math.sin(a) * (sz / 2 - 4)) - 2, 4, 4); } }
-  // Held als Pfeil
-  const hx = Math.round(X(P.x)), hy = Math.round(Y(P.y)), f = P.face || 1; g.fillStyle = '#000'; g.fillRect(hx - 3, hy - 3, 7, 7); g.fillStyle = '#ffffff'; g.fillRect(hx - 2, hy - 2, 5, 5); g.fillStyle = '#ffd24a'; g.fillRect(hx + (f > 0 ? 3 : -4), hy - 1, 1, 3);
+  // kleine Pixelzeichen mit dunklem Rand, gut lesbar auch auf dem Handy
+  const icon = (x, y, pat, col, edge) => { const X0 = Math.round(X(x)), Y0 = Math.round(Y(y)), m = full ? 2 : 1, w = pat[0].length, h = pat.length; if (X0 < -w * m || Y0 < -h * m || X0 > sz + w * m || Y0 > sz + h * m) return false; const ox_ = X0 - Math.floor(w * m / 2), oy_ = Y0 - Math.floor(h * m / 2); for (const [dx, dy, c] of [[-1, 0, '#000'], [1, 0, '#000'], [0, -1, '#000'], [0, 1, '#000'], [0, 0, col]]) { g.fillStyle = c; for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (pat[j][i] === '#') g.fillRect(ox_ + i * m + dx, oy_ + j * m + dy, m, m); } if (edge) { g.fillStyle = edge; for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (pat[j][i] === 'o') g.fillRect(ox_ + i * m, oy_ + j * m, m, m); } return true; };
+  const DOT = ['##', '##'], RING = ['.###.', '#ooo#', '#ooo#', '#ooo#', '.###.'], DIA = ['..#..', '.###.', '#####', '.###.', '..#..'], CAMP = ['#.#', '.#.', '#.#'], SKULL = ['.###.', '#####', '#o#o#', '#####', '.#.#.'], STAR = ['..#..', '.###.', '#####', '.#.#.'];
+  for (const o of L.spots) if (!o.open && o.t !== 'versteck' && o.t !== 'kraut' && (lKnown(o) || (o.relic && L.misOn))) icon(o.x, o.y, o.relic ? STAR : DOT, o.relic ? '#57c7e6' : LCH[o.t].lock ? '#9aa2ae' : o.t === 'fluch' ? '#c060ff' : o.t === 'gold' ? '#ffd24a' : '#e8b04a');
+  for (const c of L.camps) if (c.state !== 'done' && (lKnown(c) || c.mis)) icon(c.x, c.y, c.mis ? STAR : CAMP, c.mis ? '#57c7e6' : '#e8463c');
+  for (const m of L.marks) if (lKnown(m)) icon(m.x, m.y, DIA, '#efe2bf');
+  for (const r in L.npcs) { const o = L.npcs[r]; if (o.known || lKnown(o)) { o.known = true; icon(o.x, o.y, DIA, LNPC[r].c); } }
+  for (const ex of L.exits) if (!ex.gone) icon(ex.x, ex.y, RING, lExitOpen(ex) ? '#6ae08a' : ex.t === 'schluessel' ? '#ffd24a' : '#8ab8ff', lExitOpen(ex) ? '#1e6a3a' : '#1a1420');
+  for (const r of L.rivals) if (r.state === 'roam' && Math.hypot(r.x - P.x, r.y - P.y) < 340) icon(r.x, r.y, DIA, '#ff8a3a');
+  for (const B of L.bosses) if (B.state === 'roam' || B.state === 'act') {
+    const e = B.state === 'act' ? enemies.find(x => x.lw && x.lw.src === B) : null, bx = e ? e.x : B.x, by = e ? e.y : B.y, p = Math.floor(T * 3) % 2;
+    if (!icon(bx, by, SKULL, p ? '#ffffff' : '#ff6a5a', '#c8342c') && !full) { const a = Math.atan2(by - P.y, bx - P.x), ex_ = Math.round(sz / 2 + Math.cos(a) * (sz / 2 - 5)), ey = Math.round(sz / 2 + Math.sin(a) * (sz / 2 - 5)); g.fillStyle = '#000'; g.fillRect(ex_ - 3, ey - 3, 6, 6); g.fillStyle = p ? '#ff4a3a' : '#ffffff'; g.fillRect(ex_ - 2, ey - 2, 4, 4); }
+  }
+  // Held als Pfeil in Laufrichtung
+  { const hx = X(P.x), hy = Y(P.y), a = Math.hypot(P.vx, P.vy) > 8 ? Math.atan2(P.vy, P.vx) : (P.face || 1) > 0 ? 0 : Math.PI, k = full ? 1.3 : 1.1; g.save(); g.translate(hx, hy); g.rotate(a); g.scale(k, k); g.beginPath(); g.moveTo(5, 0); g.lineTo(-3, -4); g.lineTo(-1, 0); g.lineTo(-3, 4); g.closePath(); g.lineWidth = 2; g.strokeStyle = '#000'; g.stroke(); g.fillStyle = '#ffffff'; g.fill(); g.restore(); }
   if (!full) { g.strokeStyle = 'rgba(239,226,191,.3)'; g.lineWidth = 1; g.strokeRect(.5, .5, sz - 1, sz - 1); }
 }
 // „click“ statt „pointerdown“: sonst trifft der nachfolgende Klick einen Knopf der eben geöffneten Tafel
@@ -1247,7 +1279,9 @@ function lInv() {
   const gear = ['weapon', 'armor', 'helm'].map(sl => `<div class="gearslot lgear"><div style="font-size:14px;color:var(--parch-dim)">${sl === 'weapon' ? _t('Waffe') : AR[sl].label}</div>${lSlot(P.gear[sl] ? { t: 'item', it: P.gear[sl] } : null, 'g:' + sl, LG.sel === 'g:' + sl)}</div>`).join('');
   const packG = Array.from({ length: cap }, (_, i) => lSlot(L.pack[i], 'p:' + i, LG.sel === 'p:' + i)).join('');
   const bagG = pet ? Array.from({ length: bs }, (_, i) => lSlot(bag[i], 'b:' + i, LG.sel === 'b:' + i)).join('') : '';
-  let side = `<div class="side"><p class="sub" style="margin-top:0">${_t('Tippe etwas an: anlegen, in die Begleiter-Tasche legen oder wegwerfen.')}</p></div>`;
+  // Ausrüstung: im Hochformat oben links, im Querformat rechts über den Details (sonst rutscht der Rucksack aus dem Bild)
+  const gearBox = cls => `<div class="box ${cls}"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${gear}</div></div>`;
+  let side = `<div class="side">${gearBox('lwd')}<p class="sub">${_t('Tippe etwas an: anlegen, in die Begleiter-Tasche legen oder wegwerfen.')}</p></div>`;
   if (s) {
     const e = s.e, it = e.t === 'item' ? e.it : null, petFree = pet && bag.length < bs, packFree = L.pack.length < cap;
     let acts = '';
@@ -1256,13 +1290,13 @@ function lInv() {
     if (s.where === 'b') acts += `<button class="btn alt sm" data-act="l_topack" ${packFree ? '' : 'disabled'}>${_t('In den Rucksack')}</button>`;
     if (s.where !== 'g' && e.t !== 'gold') acts += `<button class="btn ${LG.arm === LG.sel ? 'red' : 'alt'} sm" data-act="l_drop">${LG.arm === LG.sel ? _t('Wirklich wegwerfen?') : _t('Wegwerfen')}</button>`;
     const val = `<p class="sub" style="margin:4px 0">${_t('Wert: {n} Gold', { n: fmt(lVal(e)) })}${s.where === 'b' ? ' · <b style="color:var(--moss)">' + _t('sicher in der Tasche') + '</b>' : s.where === 'g' ? ' · <b style="color:var(--blood)">' + _t('geht beim Tod verloren') + '</b>' : ''}</p>`;
-    side = `<div class="side sheet"><button class="btn alt sm sheetx" data-act="l_sel" data-id="" aria-label="${_t('Schließen')}"><span class="x">×</span></button>${it ? itemDetail(it, acts) + (s.where !== 'g' ? compareHTML(it) : '') : `<div class="detail"><div style="display:flex;gap:10px;align-items:center"><div class="ic big" style="box-shadow:inset 0 0 0 2px ${lCol(e)}"><img src="${lIcon(e)}" alt=""></div><div class="nm" style="color:${lCol(e)}">${esc(lName(e))}${lCount(e) > 1 ? ' ×' + lCount(e) : ''}</div></div><div class="acts" style="justify-content:flex-start;margin-top:8px">${acts}</div></div>`}${val}</div>`;
+    side = `<div class="side sheet">${gearBox('lwd lgmini')}<button class="btn alt sm sheetx" data-act="l_sel" data-id="" aria-label="${_t('Schließen')}"><span class="x">×</span></button>${it ? itemDetail(it, acts) + (s.where !== 'g' ? compareHTML(it) : '') : `<div class="detail"><div style="display:flex;gap:10px;align-items:center"><div class="ic big" style="box-shadow:inset 0 0 0 2px ${lCol(e)}"><img src="${lIcon(e)}" alt=""></div><div class="nm" style="color:${lCol(e)}">${esc(lName(e))}${lCount(e) > 1 ? ' ×' + lCount(e) : ''}</div></div><div class="acts" style="justify-content:flex-start;margin-top:8px">${acts}</div></div>`}${val}</div>`;
   }
   const petBox = pet ? `<div class="box" style="margin-top:10px;box-shadow:inset 0 0 0 2px var(--moss)"><div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><img class="px" src="${lPetIcon(pet)}" alt="" style="width:32px;height:32px;object-fit:contain"><div><h3 style="margin:0">${_t('BEGLEITER-TASCHE {n}/{max}', { n: bag.length, max: bs })}</h3><div class="sub" style="margin:2px 0 0;font-size:16px">${_t('{name} bringt das heim – auch wenn du fällst.', { name: esc(lPetName(pet)) })}</div></div></div><div class="grid">${bagG || `<p class="sub">${_t('Keine Plätze.')}</p>`}</div></div>`
     : `<div class="box" style="margin-top:10px"><p class="sub" style="margin:0">${lPetApi() ? _t('Kein Begleiter dabei: Stirbst du, ist alles verloren.') : _t('Ohne Begleiter-Tasche: Stirbst du, ist alles verloren.')}</p></div>`;
   showOverlay(`${lHead(_t('RUCKSACK {n}/{max}', { n: L.pack.length, max: cap }), 'l_resume', `<span class="pill dim">${_t('{n} G', { n: fmt(lSum(L.pack)) })}</span>`)}
-  <div class="split"><div><div class="box"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${gear}</div></div>
-  <div class="box" style="margin-top:10px"><h3 style="margin-top:0">${_t('RUCKSACK – GEHT BEIM TOD VERLOREN')}</h3><div class="grid">${packG}</div><div class="acts" style="justify-content:flex-start;margin-top:8px">${lJunk().length ? `<button class="btn ${LG.arm === 'junk' ? 'red' : 'alt'} sm" data-act="l_junk">${LG.arm === 'junk' ? _t('Wirklich {n} wegwerfen?', { n: lJunk().length }) : _t('Plunder wegwerfen ({n})', { n: lJunk().length })}</button>` : ''}${L.scrolls ? `<button class="btn alt sm" data-act="l_scroll">${_t('Rückkehrrolle lesen ({n})', { n: L.scrolls })}</button>` : ''}</div></div>${petBox}</div>${side}</div>`, true);
+  <div class="split"><div>${gearBox('lnw')}
+  <div class="box lpk"><h3 style="margin-top:0;line-height:1.6">${_t('Rucksack').toLocaleUpperCase(LOCALE)} <span style="font-family:var(--f-body);font-size:17px;color:#ff8a7a">${_t('geht beim Tod verloren')}</span></h3><div class="grid">${packG}</div><div class="acts" style="justify-content:flex-start;margin-top:8px">${lJunk().length ? `<button class="btn ${LG.arm === 'junk' ? 'red' : 'alt'} sm" data-act="l_junk">${LG.arm === 'junk' ? _t('Wirklich {n} wegwerfen?', { n: lJunk().length }) : _t('Plunder wegwerfen ({n})', { n: lJunk().length })}</button>` : ''}${L.scrolls ? `<button class="btn alt sm" data-act="l_scroll">${_t('Rückkehrrolle lesen ({n})', { n: L.scrolls })}</button>` : ''}</div></div>${petBox}</div>${side}</div>`, true);
 }
 // Plunder: gewöhnliche Gegenstände, die schlechter sind als das Angelegte, und einfache Materialien
 function lJunk() { const low = MATORDER.slice(0, 4); return LW.pack.filter(e => (e.t === 'item' && e.it.rar === 0 && (!canEquip(e.it) || !P.gear[e.it.slot] || itemScore(e.it) <= itemScore(P.gear[e.it.slot]))) || (e.t === 'mat' && low.includes(e.k))); }
@@ -1274,7 +1308,7 @@ function lMoveSel(to) {
   else if (!lAdd(L.pack, s.e, lCap())) { sfx('deny'); return; }
   src.splice(s.i, 1); LG.sel = null; sfx('click'); persist();
 }
-ON.l_sel = id => { LG.sel = id || null; LG.arm = null; sfx('click'); lInv(); };
+ON.l_sel = id => { LG.sel = id && id !== LG.sel ? id : null; LG.arm = null; sfx('click'); lInv(); }; // nochmal tippen = abwählen
 ON.l_resume = () => lResume();
 ON.l_inv = () => { LG.sel = null; LG.arm = null; lInv(); };
 ON.l_map = () => lMapScreen();
@@ -1306,7 +1340,7 @@ function lMapScreen() {
   if (!LW || !LW.on) return; setState('menu'); showHud(false);
   const L = LW, leg = [['#6ae08a', _t('Ausgang offen')], ['#8ab8ff', _t('Mondtor')], ['#ffd24a', _t('Schlüsseltor / Goldtruhe')], ['#e8b04a', _t('Truhe')], ['#c060ff', _t('Verflucht / Verderbnis')], ['#c8463c', _t('Lager')], ['#57c7e6', _t('Auftrag')], ['#ff4a3a', _t('Ungeheuer')], ['#ff8a3a', _t('Rivale')]];
   showOverlay(`${lHead(_t('KARTE · {n}', { n: esc(L.TT.n).toLocaleUpperCase(LOCALE) }), 'l_resume', `<span class="pill" style="background:${LDNG[L.danger].c}">${LDNG[L.danger].n} · ${lClock(L.t)}</span>`)}
-  <canvas class="lmap" id="lmapBig" width="256" height="256"></canvas><div class="lleg">${leg.map(([c, n]) => `<span><i style="background:${c}"></i>${n}</span>`).join('')}</div>${lMisList(false)}`);
+  <div class="lmapw"><canvas class="lmap" id="lmapBig" width="256" height="256"></canvas><div><div class="lleg">${leg.map(([c, n]) => `<span><i style="background:${c}"></i>${n}</span>`).join('')}</div>${lMisList(false)}</div></div>`, true);
   lMiniDraw($('lmapBig'), 256, true);
 }
 function lMisList(claim) {
@@ -1317,6 +1351,7 @@ function lMisList(claim) {
 function lMisScreen() {
   const L = LW; setState('menu'); showHud(false);
   if (!L.misOn) { L.misOn = true; L.mis = lMisGen(); sfx('page'); }
+  lTip(4, _t('Tipp: Erfüllte Aufträge zahlen hier – oder automatisch, wenn du lebend durch einen Ausgang gehst.'));
   const M = lMeta(), r = lRank(M.rep), nx = LREP[r + 1];
   showOverlay(`${lHead(esc(LNPC.mis.n).toLocaleUpperCase(LOCALE), 'l_resume')}
   <div class="say"><img class="px" src="${iconURL(['sp', 'elff'])}" alt=""><div><b style="color:#57c7e6">${esc(LNPC.mis.n)}</b>${_t('„Der Orden braucht Augen hier draußen. Erledige, was du kannst – bezahlt wird, wenn du es mir bringst oder lebend durch ein Tor gehst.“')}</div></div>
