@@ -5,6 +5,8 @@
 //   await R.ev(() => { __vp(3.5); __fight(1, 5, ['skeleton', 'zombie'], { keepN: 6 }); __step(20); });
 //   await R.cap('kampf', 60, `i => { __keep(.8); if (i === 0) { P.rage = 100; doUlt(); } }`);
 //   await R.close();
+// Optionen: H.open({ out, seed: 5 }) – seed legt den Zufall fest; im Browser __seed(n) je Szene,
+// window.__txtOK = /SCHWÄCHE|RESISTENT/ zeigt zusätzlich solche schwebenden Texte.
 // Wichtig: Funktionen für jedes Bild (per) laufen im Browser. Sie dürfen keine Variablen aus Node
 // benutzen – Werte daher als Text einsetzen (Template-String) oder als zweites Argument an ev() geben.
 const { chromium } = require('playwright');
@@ -57,8 +59,10 @@ function setup() {
   // Bosse vor dem Helden halten (sonst laufen oder teleportieren sie aus dem Bild)
   window.__holdBoss = dy => { for (const e of enemies) if (e.boss) { e.tcd = 9; e.x += (P.x + 8 - e.x) * .45; e.y += (P.y - (dy || 40) - e.y) * .45; } };
   window.__off = () => { keys.KeyJ = keys.KeyA = keys.KeyD = keys.KeyW = keys.KeyS = false; };
-  // nur Schadenszahlen und Ultimative-Rufe zeigen, keine EP- und Beute-Texte
-  const _txt = window.txt; window.txt = function (x, y, s, c, big) { s = String(s); if (/EP|^\+\d+ \D/.test(s)) return; if (!big && !/^\d+$/.test(s)) return; return _txt.apply(this, arguments); };
+  // Zufall für eine Szene festlegen (gleiche Aufnahme bei jedem Lauf): __seed(7)
+  window.__seed = s => { let a = s >>> 0; Math.random = () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
+  // nur Schadenszahlen und Ultimative-Rufe zeigen, keine EP- und Beute-Texte; window.__txtOK (RegExp) lässt weitere Texte durch
+  const _txt = window.txt; window.txt = function (x, y, s, c, big) { s = String(s); if (window.__txtOK && window.__txtOK.test(s)) return _txt.apply(this, arguments); if (/EP|^\+\d+ \D/.test(s)) return; if (!big && !/^\d+$/.test(s)) return; return _txt.apply(this, arguments); };
 }
 
 async function open(o = {}) {
@@ -69,6 +73,8 @@ async function open(o = {}) {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 540, height: 960 }, deviceScaleFactor: 2, locale: 'de-DE' });
   const errs = []; page.on('pageerror', e => errs.push(e.message));
+  // o.seed: fester Zufall schon beim Laden (gleiche Helden-Ausrüstung bei jedem Lauf)
+  if (o.seed != null) await page.addInitScript(s => { let a = s >>> 0; Math.random = () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }, o.seed);
   await page.goto(base + 'index.html'); await page.waitForTimeout(1500);
   await page.evaluate(() => document.fonts.ready);
   await page.evaluate(setup);
