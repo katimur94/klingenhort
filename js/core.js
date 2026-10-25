@@ -42,31 +42,44 @@ function tintGrey(c, hex) { const g = c.getContext('2d'), d = g.getImageData(0, 
 function tintAll(c, hex, k) { const g = c.getContext('2d'), d = g.getImageData(0, 0, c.width, c.height), p = d.data, [r, gg, b] = hexRgb(hex); for (let i = 0; i < p.length; i += 4) { if (!p[i + 3]) continue; const l = (p[i] + p[i + 1] + p[i + 2]) / 3 / 170; p[i] = lerp(p[i], Math.min(255, r * l), k); p[i + 1] = lerp(p[i + 1], Math.min(255, gg * l), k); p[i + 2] = lerp(p[i + 2], Math.min(255, b * l), k); } g.putImageData(d, 0, 0); return c; }
 function silhouette(c, col) { return mk(c.width, c.height, g => { g.drawImage(c, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height); }); }
 
-/* Waffen-Sprites: zeigen nach oben, Griff unten */
+/* Gegner-Waffen aus dem Atlas: zeigen nach oben, Griff unten (Spieler-Waffen: art.js) */
 const WCACHE = {};
-function weaponSpr(type, tier) {
-  const k = type + tier; if (WCACHE[k]) return WCACHE[k];
-  const [nm, tg, ta] = WT[type].spr[tier], s = WSRC[nm];
-  const c = crop(...s); if (tg) tintGrey(c, tg); if (ta) tintAll(c, ta, .55);
-  const bow = type === 'bow';
-  return WCACHE[k] = { c, ox: s[2] / 2, oy: bow ? s[3] / 2 : s[3] - 3, bow };
-}
-function namedWeapon(nm) { const k = 'n_' + nm; if (WCACHE[k]) return WCACHE[k]; const s = WSRC[nm]; return WCACHE[k] = { c: crop(...s), ox: s[2] / 2, oy: s[3] - 3, bow: false }; }
+function namedWeapon(nm) { const k = 'n_' + nm; if (WCACHE[k]) return WCACHE[k]; const s = WSRC[nm], bow = nm.startsWith('bow'); return WCACHE[k] = { c: crop(...s), ox: s[2] / 2, oy: bow ? s[3] / 2 : s[3] - 3, bow }; }
 
-/* Charakter-Umfärbung je Klasse, Rüstung, Helm, Farbstoff */
+/* Aussehen eines Helden – alte Spielstände bekommen die Klassen-Standards */
+function lookOf(c) {
+  const L = (c && c.look) || {}, C = CLASSES[(c && c.cls) || 'knight'], n = v => (v == null || isNaN(v) ? -1 : +v);
+  return { body: BODIES[L.body] ? L.body : C.body, hair: n(L.hair), skin: n(L.skin), accent: n(L.accent), cape: n(L.cape), wings: COSM[L.wings] ? L.wings : null, aura: COSM[L.aura] ? L.aura : null, ccape: COSM[L.ccape] ? L.ccape : null };
+}
+function heroSpec(c, over) { const L = lookOf(c), g = c.gear || {}; return Object.assign({ body: L.body, hair: L.hair, skin: L.skin, accent: L.accent, at: g.armor ? g.armor.tier : 0, ht: g.helm ? g.helm.tier : 0, dye: c.dye || null }, over || {}); }
+
+/* Charakter-Umfärbung: Körper, Rüstungs-Material, Helm, Farbstoff, Haare, Haut */
 const CCACHE = {};
-function charStrip(cls, at, ht, dye) {
-  const key = cls + at + ht + (dye || ''); if (CCACHE[key]) return CCACHE[key];
-  const C = CLASSES[cls], s = SP[C.sp], hasHit = !!s.hit, n = hasHit ? 9 : 8, w = s.w, h = s.h;
-  const c = mk(n * w, h, g => { g.drawImage(SHEET, s.idle[0], s.idle[1], 4 * w, h, 0, 0, 4 * w, h); g.drawImage(SHEET, s.run[0], s.run[1], 4 * w, h, 4 * w, 0, 4 * w, h); if (hasHit) g.drawImage(SHEET, s.hit[0], s.hit[1], w, h, 8 * w, 0, w, h); });
+function charStrip(s) {
+  const key = [s.body, s.at, s.ht, s.dye || '', s.hair, s.skin, s.accent, s.np ? 1 : 0].join('|'); if (CCACHE[key]) return CCACHE[key];
+  const B = BODIES[s.body] || BODIES.knight_m, S = SP[B.sp], hasHit = !!S.hit, n = hasHit ? 9 : 8, w = S.w, h = S.h;
+  const c = mk(n * w, h, g => { g.drawImage(SHEET, S.idle[0], S.idle[1], 4 * w, h, 0, 0, 4 * w, h); g.drawImage(SHEET, S.run[0], S.run[1], 4 * w, h, 4 * w, 0, 4 * w, h); if (hasHit) g.drawImage(SHEET, S.hit[0], S.hit[1], w, h, 8 * w, 0, w, h); });
   const g = c.getContext('2d'), d = g.getImageData(0, 0, c.width, h), p = d.data;
-  const D = dye && DYES.find(x => x.id === dye && x.c);
-  const cols = D ? D.c : C.tiers[at];
-  const map = {}; map[C.pal.main] = cols[0]; map[C.pal.shade] = cols[1];
-  if (C.pal.plume) { const PL = [null, ['#9aa2ae', '#d0d6de'], ['#da4e38', '#ee8e2e'], ['#6a48c0', '#b892f4'], ['#ff6a2a', '#ffd24a']][ht]; map[C.pal.plume[0]] = PL ? PL[0] : null; map[C.pal.plume[1]] = PL ? PL[1] : null; if (at === 4 && !D) map['253,247,237'] = '#ffd24a'; }
+  const D = s.dye && DYES.find(x => x.id === s.dye && x.c), M = MAT[clamp(s.at || 0, 0, TIERS - 1)], H = MAT[clamp(s.ht || 0, 0, TIERS - 1)];
+  const cols = D ? D.c : M.c, map = {};
+  map[B.main[0]] = cols[0]; map[B.main[1]] = cols[1];
+  if (B.plume) { const pl = s.np ? null : s.accent >= 0 ? ACCENTS[s.accent].slice(1) : H.pl; map[B.plume[0]] = pl ? pl[0] : null; map[B.plume[1]] = pl ? pl[1] : null; if (B.hi && M.hi && !D) map[B.hi] = M.hi; }
+  if (B.hair && s.hair >= 0 && HAIRS[s.hair]) { map[B.hair[0]] = HAIRS[s.hair][1]; if (B.hair[1]) map[B.hair[1]] = HAIRS[s.hair][2]; }
+  if (B.skin && s.skin >= 0 && SKINS[s.skin]) { map[B.skin[0]] = SKINS[s.skin][1]; if (B.skin[1]) map[B.skin[1]] = SKINS[s.skin][2]; }
   for (let i = 0; i < p.length; i += 4) { if (!p[i + 3]) continue; const k = p[i] + ',' + p[i + 1] + ',' + p[i + 2]; if (k in map) { const v = map[k]; if (v === null) p[i + 3] = 0; else { const [r, gg, b] = hexRgb(v); p[i] = r; p[i + 1] = gg; p[i + 2] = b; } } }
   g.putImageData(d, 0, 0);
-  const res = { c, w, h, hasHit, sil: silhouette(c, '#ffffff') };
+  // Ankerpunkte je Bild: Kopf oben, Füße, Rücken (für Umhang, Flügel, Krone)
+  const meta = [], A = (x, y) => p[(y * c.width + x) * 4 + 3];
+  for (let f = 0; f < n; f++) {
+    let top = -1, feet = h - 1;
+    for (let y = 0; y < h && top < 0; y++) for (let x = 0; x < w; x++) if (A(f * w + x, y)) { top = y; break; }
+    for (let y = h - 1; y >= 0; y--) { let any = false; for (let x = 0; x < w; x++) if (A(f * w + x, y)) { any = true; break; } if (any) { feet = y; break; } }
+    let sx = 0, sn = 0; for (let y = top; y < top + 5 && y < h; y++) for (let x = 0; x < w; x++) if (A(f * w + x, y)) { sx += x; sn++; }
+    const sy = top + Math.round((feet - top) * .45); let back = w, front = 0;
+    for (let x = 0; x < w; x++) if (A(f * w + x, sy)) { back = Math.min(back, x); front = Math.max(front, x); }
+    meta.push({ top: Math.max(0, top), feet, cx: sn ? Math.round(sx / sn) : w / 2, sy, back: back === w ? 3 : back, front });
+  }
+  const res = { c, w, h, hasHit, meta, sil: silhouette(c, '#ffffff') };
   return CCACHE[key] = res;
 }
 
@@ -82,9 +95,11 @@ function iconCanvas(spec) {
   if (t === 'w') return namedWeapon(a).c;
   if (t === 'fx') { const r = fxRect(a, b || 0); return crop(...r, FXIMG); }
   if (t === 's') return crop(a, b, c, d);
-  if (t === 'sp') { const r = frameRect(a, 'idle', 0); return crop(...r); }
+  if (t === 'sp') { const r = frameRect(a, 'idle', 0), c = crop(...r); if (b) { const g = c.getContext('2d'); g.globalCompositeOperation = 'source-atop'; g.fillStyle = b; g.fillRect(0, 0, c.width, c.height); } return c; }
   if (t === 'mat') return matIcon(a);
   if (t === 'gem') return gemIcon(a, b);
+  if (t === 'pa') return artIcon(a, b);
+  if (t === 'body') { const st = charStrip({ body: a, at: b || 0, ht: 0, hair: -1, skin: -1, accent: -1 }); return mk(st.w, st.h, g => g.drawImage(st.c, 0, 0, st.w, st.h, 0, 0, st.w, st.h)); }
   return mk(8, 8);
 }
 function iconURL(spec) {
@@ -94,16 +109,10 @@ function iconURL(spec) {
   return ICON[key] = c.toDataURL();
 }
 function itemIconURL(it) {
-  if (it.slot === 'weapon') {
-    const wk = 'wi' + it.base + it.tier; if (ICON[wk]) return ICON[wk];
-    const s = weaponSpr(it.base, it.tier).c, sz = Math.max(s.width, s.height) + 2;
-    return ICON[wk] = mk(sz, sz, g => g.drawImage(s, Math.floor((sz - s.width) / 2), Math.floor((sz - s.height) / 2))).toDataURL();
-  }
-  const k = 'gear' + it.slot + it.tier + P.cls + (P.dye || '');
+  const k = 'it' + itemArtKey(it) + (it.slot !== 'weapon' ? P.cls : '');
   if (ICON[k]) return ICON[k];
-  const st = charStrip(P.cls, it.slot === 'armor' ? it.tier : (P.gear.armor ? P.gear.armor.tier : 0), it.slot === 'helm' ? it.tier : (P.gear.helm ? P.gear.helm.tier : 0), P.dye);
-  const c = mk(st.w + 2, st.h + 2, g => g.drawImage(st.c, 0, 0, st.w, st.h, 1, 1, st.w, st.h));
-  return ICON[k] = c.toDataURL();
+  const s = it.slot === 'weapon' ? weaponArt(it).c : armorArt(it, P.cls), sz = Math.max(s.width, s.height) + 2;
+  return ICON[k] = mk(sz, sz, g => g.drawImage(s, Math.floor((sz - s.width) / 2), Math.floor((sz - s.height) / 2))).toDataURL();
 }
 function matIcon(id) {
   const M = MATS[id], a = M.c, b = M.c2;
@@ -118,6 +127,9 @@ function matIcon(id) {
       case 'horn': px(g, 2, 9, 3, 2, b); px(g, 3, 7, 3, 3, a); px(g, 5, 4, 3, 4, a); px(g, 7, 2, 2, 3, a); px(g, 8, 1, 1, 2, '#fff0c0'); break;
       case 'glut': px(g, 2, 3, 8, 7, b); px(g, 3, 4, 6, 5, a); px(g, 5, 5, 2, 2, '#fff0a0'); break;
       case 'schuppe': px(g, 2, 2, 8, 8, b); px(g, 3, 2, 6, 7, a); px(g, 4, 9, 4, 1, a); px(g, 4, 3, 2, 4, '#fff6c0'); break;
+      case 'mithril': case 'adamant': px(g, 1, 5, 10, 5, '#4a4450'); px(g, 2, 4, 8, 2, '#5e5866'); px(g, 3, 5, 3, 3, a); px(g, 7, 6, 3, 3, a); px(g, 4, 8, 2, 1, b); px(g, 3, 5, 1, 1, '#fff'); px(g, 8, 6, 1, 1, '#fff'); break;
+      case 'stern': for (const [x, y, s] of [[5, 1, 2], [2, 5, 1], [8, 6, 2], [4, 8, 1], [9, 2, 1]]) { px(g, x, y, s, s, a); if (s > 1) { px(g, x - 1, y, 1, 1, b); px(g, x + s, y + 1, 1, 1, b); px(g, x, y, 1, 1, '#fff'); } } break;
+      case 'aether': px(g, 5, 0, 2, 12, b); px(g, 4, 2, 4, 8, a); px(g, 3, 4, 6, 4, a); px(g, 5, 2, 1, 6, '#fff'); px(g, 7, 6, 1, 3, b); break;
     }
   });
 }
@@ -173,6 +185,12 @@ function sfx(k) {
     case 'spike': tone(800, .05, 'square', .03, 300); break;
     case 'click': tone(1000, .03, 'square', .025); break;
     case 'ach': [880, 1175, 1568].forEach((f, i) => tone(f, .14, 'triangle', .06, 0, i * .1)); break;
+    case 'tick': tone(1400, .02, 'square', .02); break;
+    case 'build': noise(.12, .07, 500); [330, 440, 554, 660].forEach((f, i) => tone(f, .12, 'square', .04, 0, .08 + i * .08)); break;
+    case 'myth': [523, 659, 784, 1046, 1318, 1568, 2093].forEach((f, i) => tone(f, .22, 'triangle', .06, 0, i * .09)); noise(.5, .05, 3000); break;
+    case 'fuse': tone(220, .5, 'sawtooth', .05, 880); [660, 880, 1320].forEach((f, i) => tone(f, .16, 'triangle', .05, 0, .35 + i * .08)); break;
+    case 'page': noise(.15, .05, 2500); tone(700, .08, 'sine', .03, 900); break;
+    case 'dig': noise(.25, .06, 300); break;
   }
 }
 let mTimer = null, mNext = 0, mStep = 0, mRoot = 45, mBoss = false;
@@ -196,9 +214,19 @@ function setMusic(root, boss) { mRoot = root; mBoss = !!boss; }
 
 /* ---------- Speichern ---------- */
 let SAVE = null;
-function defaultMeta() { return { stats: {}, ach: {}, bestiary: {}, fallen: [], best: [], daily: {}, settings: { music: true, sfx: true } }; }
+function defaultMeta() { return { stats: {}, ach: {}, bestiary: {}, fallen: [], best: [], daily: {}, settings: { music: true, sfx: true }, hide: defaultHide(), luck: { spins: 0, pityL: 0, pityM: 0 }, lore: [], cos: [] }; }
+function defaultHide() { return { b: {}, stash: [], rooms: 0, mine: 0, garden: 0, intro: false }; }
+// Ältere Spielstände um neue Felder ergänzen, ohne etwas zu verlieren
+function fixMeta(m) {
+  const d = defaultMeta(); m = Object.assign(d, m || {});
+  m.settings = Object.assign({ music: true, sfx: true }, m.settings || {});
+  m.hide = Object.assign(defaultHide(), m.hide || {}); m.hide.b = m.hide.b || {}; if (!Array.isArray(m.hide.stash)) m.hide.stash = [];
+  m.luck = Object.assign({ spins: 0, pityL: 0, pityM: 0 }, m.luck || {});
+  if (!Array.isArray(m.lore)) m.lore = []; if (!Array.isArray(m.cos)) m.cos = [];
+  return m;
+}
 function loadAll() {
-  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (s && s.v === 3) { SAVE = s; SAVE.meta = Object.assign(defaultMeta(), SAVE.meta); return; } } catch (e) { }
+  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (s && s.v === 3) { SAVE = s; SAVE.meta = fixMeta(SAVE.meta); return; } } catch (e) { }
   SAVE = { v: 3, chars: [], active: -1, meta: defaultMeta() };
   try { const old = JSON.parse(localStorage.getItem('klingenhort.v1') || 'null'); if (old && old.lv) { SAVE.chars.push(migrateV1(old)); SAVE.active = 0; } } catch (e) { }
   persist();
@@ -226,7 +254,7 @@ function migrateV1(o) {
 function exportCode() { return btoa(unescape(encodeURIComponent(JSON.stringify(SAVE)))); }
 function importCode(code) {
   const s = JSON.parse(decodeURIComponent(escape(atob(code.trim()))));
-  if (s && s.v === 3 && Array.isArray(s.chars)) { SAVE = s; SAVE.meta = Object.assign(defaultMeta(), SAVE.meta); persist(); return 'ok'; }
+  if (s && s.v === 3 && Array.isArray(s.chars)) { SAVE = s; SAVE.meta = fixMeta(SAVE.meta); persist(); return 'ok'; }
   if (s && s.lv) { SAVE.chars.push(migrateV1(s)); SAVE.active = SAVE.chars.length - 1; persist(); return 'v1'; }
   throw new Error('bad');
 }

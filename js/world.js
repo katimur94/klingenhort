@@ -5,11 +5,12 @@
 
 let AW = 528, AH = 352, BD = { x0: 22, x1: 506, y0: WALL + 8, y1: 332 };
 let bg = null, vig = null, dark = null, G = null;
-let enemies = [], projs = [], parts = [], pickups = [], texts = [], rings = [], obs = [], spikes = [], corpses = [], ghosts = [], fx = [], hazards = [], allies = [], traps = [];
+let enemies = [], projs = [], parts = [], pickups = [], texts = [], rings = [], obs = [], spikes = [], corpses = [], ghosts = [], fx = [], hazards = [], allies = [], traps = [], pools = [];
 const cam = { x: 0, y: 0 }, shk = { m: 0, x: 0, y: 0 };
 
-function biomeOf(act) { return BIOMES[(act - 1) % 4]; }
-function qualOf(act) { return Math.max(0, act - 4); }
+function biomeOf(act) { return act === 0 ? HIDE_BIOME : BIOMES[(act - 1) % BIOMES.length]; }
+function qualOf(act) { return Math.max(0, act - STORY_ACTS); }
+function bossOf(act) { return BOSSES[(act - 1) % BOSSES.length]; }
 function stageNum() { if (G && G.daily) return G.dstage; const row = (G && G.row != null) ? G.row : (P.map && P.map.pos ? Math.max(0, P.map.pos.r) : 0); return (P.act - 1) * 7 + row + 1; }
 
 /* ---------- Arena-Grafik ---------- */
@@ -34,37 +35,58 @@ function genBg(act, seed) {
     const x = Math.floor(16 + R() * (AW - 40)), y = Math.floor(WALL + 8 + R() * (AH - WALL - 32)), r = R();
     if (b.key === 'gruft' && r < .35) g.drawImage(SHEET, 288, 432, 16, 16, x, y, 16, 16);
     else if (b.key === 'moss' && r < .4) { g.fillStyle = 'rgba(60,140,50,.35)'; g.beginPath(); g.ellipse(x, y, 6 + R() * 8, 2 + R() * 3, 0, 0, 7); g.fill(); }
-    else if (b.key === 'glut' && r < .4) { let cx = x, cy = y; for (let k = 0; k < 12; k++) { px(g, cx, cy, 2, 1, '#1a0e0c'); px(g, cx, cy, 1, 1, '#ff6a2a'); cx += Math.floor(R() * 3 - 1); cy += Math.floor(R() * 2); } }
+    else if ((b.key === 'glut' || b.key === 'hort') && r < .35) { let cx = x, cy = y; for (let k = 0; k < 12; k++) { px(g, cx, cy, 2, 1, '#1a0e0c'); px(g, cx, cy, 1, 1, '#ff6a2a'); cx += Math.floor(R() * 3 - 1); cy += Math.floor(R() * 2); } }
+    else if (b.key === 'hort' && r < .6) { for (let k = 0; k < 6; k++) px(g, x + R() * 10, y + R() * 5, 2, 1, R() < .5 ? '#e8b04a' : '#ffd24a'); px(g, x + 4, y + 1, 1, 1, '#fff3c0'); }
+    else if (b.key === 'frost' && r < .45) { g.fillStyle = 'rgba(230,245,255,.45)'; g.beginPath(); g.ellipse(x, y, 6 + R() * 10, 2 + R() * 4, 0, 0, 7); g.fill(); if (R() < .3) { px(g, x, y - 5, 2, 5, '#bfefff'); px(g, x + 2, y - 3, 2, 3, '#8ec8e6'); px(g, x, y - 5, 1, 2, '#fff'); } }
+    else if (b.key === 'sumpf' && r < .4) { if (R() < .5) { for (let k = -2; k <= 2; k += 2) px(g, x + k, y - 5 + Math.abs(k), 1, 6 - Math.abs(k), '#5a6a2a'); } else { g.fillStyle = 'rgba(90,110,40,.4)'; g.beginPath(); g.ellipse(x, y, 5 + R() * 6, 2 + R() * 2, 0, 0, 7); g.fill(); } }
+    else if (b.key === 'schatten' && r < .3) { px(g, x, y, 5, 1, '#6a48c0'); px(g, x + 2, y - 2, 1, 5, '#6a48c0'); px(g, x + 1, y - 1, 3, 3, 'rgba(184,146,244,.25)'); }
+    else if (b.key === 'versteck' && r < .5) { if (R() < .5) { px(g, x, y, 3, 2, '#8a5a32'); px(g, x + 1, y - 1, 1, 1, '#6a4224'); } else { g.fillStyle = 'rgba(200,170,110,.18)'; g.fillRect(x, y, 10 + R() * 8, 6 + R() * 4); } }
     else if (r < .1) g.drawImage(SHEET, 288, 432, 16, 16, x, y, 16, 16);
   }
+  if (b.key === 'versteck') { const cx = AW / 2, cy = (WALL + AH) / 2 + 10; g.fillStyle = '#5a1e22'; g.fillRect(cx - 60, cy - 24, 120, 48); g.fillStyle = '#7a2a2e'; g.fillRect(cx - 56, cy - 20, 112, 40); g.fillStyle = '#c8902a'; g.fillRect(cx - 56, cy - 20, 112, 1); g.fillRect(cx - 56, cy + 19, 112, 1); for (let k = 0; k < 6; k++) { g.fillStyle = '#9a3a3e'; g.fillRect(cx - 50 + k * 20, cy - 4, 8, 8); } }
   const d = g.getImageData(0, 0, AW, AH), p = d.data, [tr, tg, tb] = b.tint;
   if (tr !== 1 || tg !== 1 || tb !== 1) for (let i = 0; i < p.length; i += 4) { if (p[i] === 255 && p[i + 1] > 100 && p[i + 2] < 80) continue; p[i] = Math.min(255, p[i] * tr); p[i + 1] = Math.min(255, p[i + 1] * tg); p[i + 2] = Math.min(255, p[i + 2] * tb); }
   g.putImageData(d, 0, 0);
   g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(16, WALL, AW - 32, 4);
   return { c, b, fountains, torches };
 }
+/* Pfützen: Lava brennt, Gift vergiftet, Wasser und Eis bremsen */
+const POOLCOL = { lava: ['#3a120c', '#c8401e', '#ff8a3a'], gift: ['#1e2a12', '#5a7a2a', '#a0d050'], wasser: ['#14243a', '#2e5a7a', '#6ab0d8'], eis: ['#5a7898', '#a8d0e8', '#e8f8ff'] };
+function addPool(k, x, y, rx, ry) {
+  const p = { k, x, y, rx, ry }; pools.push(p);
+  const g = bg.c.getContext('2d'), C = POOLCOL[k];
+  g.fillStyle = C[0]; g.beginPath(); g.ellipse(x, y, rx + 2, ry + 1.5, 0, 0, 7); g.fill();
+  g.fillStyle = C[1]; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, 7); g.fill();
+  g.fillStyle = C[2]; g.globalAlpha = .6; g.beginPath(); g.ellipse(x - rx * .3, y - ry * .3, rx * .35, ry * .3, 0, 0, 7); g.fill(); g.globalAlpha = 1;
+  return p;
+}
+function inPool(x, y, pad) { for (const p of pools) { const dx = (x - p.x) / (p.rx + (pad || 0)), dy = (y - p.y) / (p.ry + (pad || 0) * .5); if (dx * dx + dy * dy < 1) return p; } return null; }
 function makeVig() { vig = mk(VW, VH, g => { const gr = g.createRadialGradient(VW / 2, VH / 2, Math.min(VW, VH) * .35, VW / 2, VH / 2, Math.max(VW, VH) * .75); gr.addColorStop(0, 'rgba(8,6,12,0)'); gr.addColorStop(1, 'rgba(8,6,12,.55)'); g.fillStyle = gr; g.fillRect(0, 0, VW, VH); }); dark = mk(VW, VH); }
 function prepArena(act, seed) {
   AW = Math.ceil(Math.max(528, VW + 64) / 16) * 16; AH = Math.ceil(Math.max(352, VH + 64) / 16) * 16;
   BD = { x0: 22, x1: AW - 22, y0: WALL + 8, y1: AH - 20 };
-  bg = genBg(act, seed); obs = []; spikes = []; hazards = []; traps = [];
+  bg = genBg(act, seed); obs = []; spikes = []; hazards = []; traps = []; pools = [];
 }
 function freeSpot(r, avoidCenter) {
   for (let k = 0; k < 40; k++) {
     const x = rnd(BD.x0 + 20, BD.x1 - 20), y = rnd(BD.y0 + 16, BD.y1 - 10);
     if (avoidCenter && Math.hypot(x - AW / 2, y - (BD.y0 + BD.y1) / 2) < 60) continue;
     if (obs.some(o => Math.hypot(o.x - x, o.y - y) < o.r + r + 14)) continue;
+    if (inPool(x, y, r + 6)) continue;
     return { x, y };
   }
   return null;
 }
 function placeProps(type, stage, R) {
+  const pk = bg.b.pool;
+  if (pk && type !== 'schatz') { const n = 1 + Math.floor(R() * (pk === 'lava' ? 2 : 3)); for (let i = 0; i < n; i++) { const s = freeSpot(26, true); if (s) addPool(pk, s.x, s.y, 14 + R() * 14, 6 + R() * 6); } }
+  if (R() < .12) { const s = freeSpot(10, true); if (s) obs.push({ k: 'quelle', x: s.x, y: s.y, r: 7, solid: true, used: false }); }
   const cols = 2 + Math.floor(R() * 3);
   for (let i = 0; i < cols; i++) { const s = freeSpot(8, true); if (s) obs.push({ k: 'col', x: s.x, y: s.y, r: 7, solid: true }); }
   const crates = type === 'schatz' ? 6 : 3 + Math.floor(R() * 4);
   for (let i = 0; i < crates; i++) { const s = freeSpot(6, true); if (s) obs.push({ k: R() < .3 ? 'xcrate' : 'crate', x: s.x, y: s.y, r: 6, hp: 1, solid: true, flash: 0, vx: 0, vy: 0 }); }
   const chests = type === 'schatz' ? 3 : (R() < .4 ? 1 : 0);
-  for (let i = 0; i < chests; i++) { const s = freeSpot(6, true); if (s) obs.push({ k: 'chest', x: s.x, y: s.y, r: 6, solid: true, mimic: stage >= 3 && R() < (type === 'schatz' ? .3 : .18), open: 0 }); }
+  for (let i = 0; i < chests; i++) { const s = freeSpot(6, true); if (s) obs.push({ k: 'chest', x: s.x, y: s.y, r: 6, solid: true, mimic: stage >= 3 && R() < (type === 'schatz' ? .3 : .18), gold: stage >= 8 && R() < .3, open: 0 }); }
   const veins = type === 'schatz' ? 3 : (R() < .7 ? 1 + Math.floor(R() * 2) : 0);
   for (let i = 0; i < veins; i++) { const s = freeSpot(7, true); if (s) obs.push({ k: 'vein', mat: bg.b.vein, x: s.x, y: s.y, r: 7, hp: 3, solid: true, flash: 0 }); }
   if (stage >= 2) {
@@ -86,14 +108,16 @@ function scaleOf(stage) {
 }
 function spawnEnemy(type, o) {
   o = o || {}; const D = EN[type], stage = stageNum(), S = scaleOf(stage);
-  const e = { t: type, def: D, sp: D.sp, ai: D.ai, x: 0, y: 0, z: 0, kbx: 0, kby: 0, r: D.r, sc: o.sc || 1, mass: D.mass || 1, st: o.instant ? 'move' : 'spawn', stT: .7, cd: rnd(.4, 1.3), turn: 1, face: 1, phase: rnd(0, 6), squash: 0, flash: 0, stun: 0, freeze: 0, seed: rnd(0, 9), spd: D.spd * rnd(.9, 1.1), reach: D.reach || 14, strafe: Math.random() < .5 ? 1 : -1, orb: rnd(0, 6.28), tcd: 0, sum: 0, casts: 0, elite: !!o.elite, boss: !!o.boss, name: o.name || D.name, alpha: o.instant ? null : 0, lean: 0, aim: 0, windDur: .5, moving: false, tint: o.tint || null, burn: 0, burnT: 0, burnDmg: 0, poison: 0, poisonT: 0, poisonDmg: 0, affixes: [], armor: 0, armorMax: 0, armorT: 0, healT: 2, telT: 3, trailT: 0, cdMul: 1, life: 0 };
+  const e = { t: type, def: D, sp: D.sp, ai: D.ai, x: 0, y: 0, z: 0, kbx: 0, kby: 0, r: D.r, sc: (o.sc || 1) * (D.sc || 1), mass: D.mass || 1, st: o.instant ? 'move' : 'spawn', stT: .7, cd: rnd(.4, 1.3), turn: 1, face: 1, phase: rnd(0, 6), squash: 0, flash: 0, stun: 0, freeze: 0, seed: rnd(0, 9), spd: D.spd * rnd(.9, 1.1), reach: D.reach || 14, strafe: Math.random() < .5 ? 1 : -1, orb: rnd(0, 6.28), tcd: 0, sum: 0, casts: 0, elite: !!o.elite, boss: !!o.boss, champ: !!o.champ, name: o.name || D.name, alpha: o.instant ? null : 0, lean: 0, aim: 0, windDur: .5, moving: false, tint: o.tint || D.tint || null, burn: 0, burnT: 0, burnDmg: 0, poison: 0, poisonT: 0, poisonDmg: 0, affixes: [], armor: 0, armorMax: 0, armorT: 0, healT: 2, telT: 3, trailT: 0, cdMul: 1, life: 0, under: 0, fade: 0, dps: 0 };
   let hp = D.hp * S.hm, atk = D.atk * S.am;
   if (e.elite) {
     hp *= 2.2; atk *= 1.35; e.sc *= 1.15;
-    const [a, b] = DIFFS[P.diff].affix, n = ri(a, b) + (qualOf(P.act) >= 3 ? 1 : 0);
+    const [a, b] = DIFFS[P.diff].affix, n = ri(a, b) + (qualOf(P.act) >= 3 ? 1 : 0) + (e.champ ? 1 : 0);
     e.affixes = Object.keys(AFFIX).sort(() => Math.random() - .5).slice(0, n);
     if (G && G.daily && G.dmod) e.affixes = [...new Set(e.affixes.concat(G.dmod))];
   } else if (G && G.daily && G.dmod && Math.random() < .3) e.affixes = G.dmod.slice();
+  if (D.aff) e.affixes = [...new Set(e.affixes.concat(D.aff))];
+  if (e.champ) { hp *= 2.4; atk *= 1.15; e.sc *= 1.25; e.mass = Math.max(e.mass, 3); }
   if (e.boss) { hp *= o.hpMul || 1; atk *= 1.15; e.mass = Math.max(e.mass, 6); }
   for (const a of e.affixes) {
     if (a === 'schnell') { e.spd *= 1.6; e.cdMul = .7; }
@@ -101,18 +125,22 @@ function spawnEnemy(type, o) {
     if (a === 'gepanzert') { e.armorMax = e.armor = hp * .6; }
   }
   e.hp = e.maxHp = Math.round(hp); e.atk = atk;
-  e.xp = Math.round(D.xp * S.rm * (e.elite ? 2.5 : 1) * (e.boss ? 8 : 1));
-  e.gold = Math.round(D.gold * S.rm * (e.elite ? 2.2 : 1) * (e.boss ? 6 : 1));
+  e.xp = Math.round(D.xp * S.rm * (e.elite ? 2.5 : 1) * (e.boss ? 8 : 1) * (e.champ ? 3 : 1));
+  e.gold = Math.round(D.gold * S.rm * (e.elite ? 2.2 : 1) * (e.boss ? 6 : 1) * (e.champ ? 3 : 1));
   if (D.ai === 'swoop') e.z = 14;
+  if (D.ai === 'ghost') e.z = 4;
   if (o.x != null) { e.x = o.x; e.y = o.y; } else placeFar(e);
   e.face = P.x >= e.x ? 1 : -1; e.turn = e.face;
   if (!o.instant) { burst(e.x, e.y, 4, '#6a5a7a', 10, 30); fx.push({ k: 'portal', x: e.x, y: e.y, life: .7, max: .7 }); }
   enemies.push(e); return e;
 }
+/* Gegner je Stufe; jedes Gebiet bevorzugt seine Bewohner */
+const BIOME_EN = { kerker: ['goblin', 'skeleton', 'gobarcher', 'bomber', 'orc', 'zwerg'], moss: ['slime', 'lizard', 'lizshaman', 'orc', 'toxslime', 'gobarcher'], gruft: ['skeleton', 'skelarcher', 'mage', 'geist', 'skelmage', 'zombie'], glut: ['imp', 'chort', 'pyro', 'glutschleim', 'lavadaemon', 'kuerbis'], frost: ['icez', 'eisgeist', 'frostoger', 'skelarcher', 'golem', 'elfe'], sumpf: ['toxslime', 'seuche', 'hexe', 'wurm', 'lizshaman', 'kuerbis'], schatten: ['todesritter', 'engel', 'schattenimp', 'elfe', 'skelmage', 'geist'], hort: ['jungdrache', 'lavadaemon', 'chort', 'imp', 'zwerg', 'golem'] };
 function poolFor(stage) { return Object.keys(EN).filter(k => !EN[k].boss && EN[k].from <= Math.max(stage, 1)); }
+function biomeFav(stage) { return (BIOME_EN[biomeOf(P.act).key] || []).filter(k => EN[k].from <= stage + 4); }
 function buildWave(stage, budget) {
-  const pool = poolFor(stage), list = [];
-  while (budget > .9 && list.length < 18) { const opts = pool.filter(k => EN[k].cost <= budget + .5); if (!opts.length) break; const k = pick(opts); list.push(k); budget -= EN[k].cost; }
+  const pool = poolFor(stage), fav = biomeFav(stage), list = [];
+  while (budget > .9 && list.length < 18) { const src = fav.length && Math.random() < .5 ? fav : pool, opts = src.filter(k => EN[k].cost <= budget + .5); if (!opts.length) break; const k = pick(opts); list.push(k); budget -= EN[k].cost; }
   return list;
 }
 
@@ -133,12 +161,13 @@ function startRoom(type, row, extra) {
   if (type === 'goblin') { G.waves.push({ list: buildWave(st, base * .4), goblin: 1 }); }
   if (type === 'schatz') { G.waves.push({ list: [] }); G.t = .8; }
   if (type === 'rescue') { G.waves.push({ list: buildWave(st, base) }); G.waves.push({ list: buildWave(st, base * .8), elites: 1 }); }
-  if (type === 'cursed') { G.waves.push({ list: buildWave(st, base * .5), elites: 2 }); G.lootMul = 2; }
-  if (type === 'boss') { G.waves.push({ list: buildWave(st, base) }); const B = BOSSES[(P.act - 1) % 4]; const minions = []; for (let i = 0; i < Math.min(6, 1 + Math.floor(st / 6)); i++) minions.push(pick(poolFor(st).slice(0, 4))); G.waves.push({ boss: B, list: minions }); }
+  if (type === 'cursed' || type === 'grave' || type === 'sphinx') { G.waves.push({ list: buildWave(st, base * .5), elites: 2 }); G.lootMul = 2; }
+  if (type === 'champion') { G.waves.push({ list: buildWave(st, base * .5), champ: 1 }); G.lootMul = 1.8; }
+  if (type === 'boss') { G.waves.push({ list: buildWave(st, base) }); const B = bossOf(P.act), fav = biomeFav(st).filter(k => EN[k].cost <= 3.5), minions = []; for (let i = 0; i < Math.min(6, 1 + Math.floor(st / 6)); i++) minions.push(pick(fav.length ? fav : poolFor(st).slice(0, 4))); G.waves.push({ boss: B, list: minions }); }
   if (G.daily) G.lootMul = 1.5;
   cam.x = clamp(P.x - VW / 2, 0, Math.max(0, AW - VW)); cam.y = clamp(P.y - VH / 2, 0, Math.max(0, AH - VH));
   const b = biomeOf(P.act); setMusic(b.root, false);
-  const label = G.daily ? 'TAGES-HERAUSFORDERUNG' : NODE[type] ? NODE[type].n.toUpperCase() : type === 'rescue' ? 'BEFREIUNG' : 'VERFLUCHTE TRUHE';
+  const label = G.daily ? 'TAGES-HERAUSFORDERUNG' : NODE[type] ? NODE[type].n.toUpperCase() : type === 'rescue' ? 'BEFREIUNG' : type === 'grave' ? 'GRABRÄUBER' : type === 'sphinx' ? 'ZORN DER SPHINX' : 'VERFLUCHTE TRUHE';
   banner(label, (G.daily ? 'Raum ' + (G.daily.i + 1) + ' / ' + G.daily.rooms.length : 'Akt ' + P.act + (qualOf(P.act) ? ' · Qual ' + qualOf(P.act) : '') + ' · ' + b.name + ' · Stufe ' + st) + (type === 'ueberleben' ? ' · Überlebe 45 s' : type === 'goblin' ? ' · Schnapp den Schatzgoblin!' : ''));
   $('bossbar').hidden = true; $('objective').textContent = '';
   setState('play'); showHud(true); hideOverlay();
@@ -146,22 +175,26 @@ function startRoom(type, row, extra) {
 }
 function queueWave() {
   const W = G.waves[G.wi]; let d = .2;
-  if (W.boss) { G.pending.push({ t: .6, type: W.boss.type, boss: W.boss }); banner('BOSS', W.boss.name); d = 1.4; $('bossName').textContent = W.boss.name.toUpperCase(); setMusic(biomeOf(P.act).root + 5, true); }
+  if (W.boss) { G.pending.push({ t: .6, type: W.boss.type, boss: W.boss }); const A = ACTS[(P.act - 1) % ACTS.length]; banner(W.boss.name.toUpperCase(), qualOf(P.act) ? 'Gestärkt von der Leere' : '„' + A.b + '“'); d = 1.4; $('bossName').textContent = W.boss.name.toUpperCase(); setMusic(biomeOf(P.act).root + 5, true); }
   if (W.goblin) G.pending.push({ t: .5, type: 'goldgob', goblin: true });
-  for (let i = 0; i < (W.elites || 0); i++) G.pending.push({ t: d + i * .5, type: pick(poolFor(G.stage).slice(-4)), elite: true });
+  if (W.champ) { const pool = poolFor(G.stage).filter(k => EN[k].cost >= 2 && EN[k].cost < 99), nm = pick(CHAMPS); G.pending.push({ t: .6, type: pick(pool.length ? pool : poolFor(G.stage)), champ: nm }); banner('CHAMPION', nm); d = 1.2; }
+  const fav = biomeFav(G.stage);
+  for (let i = 0; i < (W.elites || 0); i++) G.pending.push({ t: d + i * .5, type: pick(fav.length && Math.random() < .6 ? fav : poolFor(G.stage).slice(-4)), elite: true });
   const eliteP = DIFFS[P.diff].elite * (G.stage >= 3 ? 1 : 0);
   W.list.forEach((k, i) => G.pending.push({ t: d + .3 + i * .33, type: k, elite: Math.random() < eliteP }));
 }
 function updRoom(dt) {
+  if (G.type === 'versteck') { updHideout(dt); return; }
   if (G.spikeRush > 0) G.spikeRush -= dt;
-  if (G.phase === 'gap') { G.t -= dt; if (G.t <= 0) { G.wi++; queueWave(); G.phase = 'fight'; } return; }
+  if (G.phase === 'gap') { G.t -= dt; if (G.t <= 0) { G.wi++; if (!G.waves[G.wi]) { roomClear(); return; } queueWave(); G.phase = 'fight'; } return; }
   if (G.phase === 'fight') {
     for (const p of G.pending) {
       p.t -= dt;
       if (p.t <= 0 && !p.done) {
         p.done = true;
-        if (p.boss) { const B = p.boss; spawnEnemy(B.type, { boss: true, sc: B.sc, hpMul: B.hpMul, name: B.name, tint: B.tint, x: AW / 2, y: BD.y0 + 34 }); shake(7); sfx('boom'); $('bossbar').hidden = false; }
+        if (p.boss) { const B = p.boss; spawnEnemy(B.type, { boss: true, sc: B.sc, hpMul: B.hpMul * Math.pow(1.12, qualOf(P.act)), name: B.name, tint: B.tint, x: AW / 2, y: BD.y0 + 30 + B.sc * 18 }); shake(7); sfx('boom'); $('bossbar').hidden = false; }
         else if (p.goblin) { const e = spawnEnemy('goldgob', { tint: 'rgba(255,210,60,.45)' }); e.escape = 20; G.goldgob = e; }
+        else if (p.champ) { const e = spawnEnemy(p.type, { elite: true, champ: true, name: p.champ, tint: 'rgba(255,110,40,.35)' }); G.champ = e; $('bossName').textContent = p.champ.toUpperCase(); $('bossbar').hidden = false; shake(4); sfx('spec'); }
         else spawnEnemy(p.type, { elite: p.elite });
       }
     }
@@ -187,8 +220,11 @@ function roomClear() {
   G.phase = 'clear'; G.t = 2.6; $('objective').textContent = '';
   const st = G.stage, bonus = Math.round((12 + st * 9) * (1 + P.st.gold) * (G.daily ? 1.5 : 1));
   P.gold += bonus; stat('goldTotal', bonus); P.stats.rooms++;
+  if (!G.daily) { SAVE.meta.hide.rooms++; }
   txt(P.x, P.y - 30, '+' + bonus + ' GOLD', '#e8b04a', true);
-  if (G.type === 'elite' || G.type === 'cursed') dropLoot(P.x + rnd(-20, 20), P.y + 10, G.type === 'cursed' ? 3 : 2);
+  if (G.type === 'elite' || G.type === 'cursed' || G.type === 'grave') dropLoot(P.x + rnd(-20, 20), P.y + 10, G.type === 'elite' ? 2 : 3);
+  if (G.type === 'champion') { dropLoot(P.x - 10, P.y + 10, 3, .08); dropLoot(P.x + 10, P.y + 10, 2); stat('champs'); if (Math.random() < .45) gainFate(1, true); }
+  if (G.type === 'grave') { gainLore(); }
   if (G.type === 'rescue') { dropLoot(P.x, P.y + 10, 2); gainGem(randomGem(st)); toast('Der Händler schenkt dir einen Edelstein!'); }
   banner('RAUM GESCHAFFT', 'Bonus: ' + bonus + ' Gold'); sfx('clear');
   P.buffs = P.buffs.filter(b => b.rooms > 0); computeStats();
@@ -202,7 +238,8 @@ function afterRoom() {
   markNodeDone(); saveChar(); openMap();
 }
 function actComplete() {
-  const B = BOSSES[(P.act - 1) % 4]; stat('boss_' + B.type);
+  const B = bossOf(P.act); stat('boss_' + B.type);
+  gainFate(2 + (qualOf(P.act) ? 1 : 0), true);
   P.act++; P.maxAct = Math.max(P.maxAct, P.act); statMax('maxAct', P.act);
   P.map = null; P.hp = P.st.hp;
   saveChar(); checkAch();
@@ -214,7 +251,7 @@ function genMap(act) {
   const R = mulberry((P.created % 100000) + act * 7919 + P.rebirths * 31);
   const rows = [];
   const counts = [2 + (R() < .5 ? 1 : 0), 3, 3 + (R() < .4 ? 1 : 0), 3, 3 + (R() < .4 ? 1 : 0), 2 + (R() < .5 ? 1 : 0), 1];
-  const W = { kampf: 30, elite: 13, ueberleben: 9, schatz: 7, goblin: 7, dunkel: 7, haendler: 9, schrein: 8, werkbank: 8, event: 10 };
+  const W = { kampf: 27, elite: 11, champion: 6, ueberleben: 8, schatz: 7, goblin: 6, dunkel: 6, haendler: 8, schrein: 7, werkbank: 6, rast: 6, raetsel: 5, event: 10 };
   for (let r = 0; r < 7; r++) {
     const row = [];
     for (let i = 0; i < counts[r]; i++) {
@@ -245,14 +282,18 @@ function enterNode(i) {
   switch (n.t) {
     case 'haendler': openMerchant(); break;
     case 'schrein': openShrine(); break;
-    case 'werkbank': P.hp = Math.min(P.st.hp, P.hp + P.st.hp * .5); openWorkbench(true); break;
+    case 'werkbank': P.hp = Math.min(P.st.hp, P.hp + P.st.hp * .5); openWorkbench('node'); break;
     case 'event': openEvent(); break;
+    case 'rast': P.hp = Math.min(P.st.hp, P.hp + P.st.hp * .4); openRest(); break;
+    case 'raetsel': openRiddle(); break;
+    case 'boss': { const A = ACTS[(P.act - 1) % ACTS.length], B = bossOf(P.act); setState('menu'); dialog(qualOf(P.act) ? [['erz', B.name + ' erhebt sich erneut – verzerrt von der Leere.']] : [['erz', 'Vor dir: ' + B.name + '.'], [{ n: B.name, sp: EN[B.type].sp, c: '#ff6a5a' }, A.b]], () => startRoom('boss', r)); break; }
     default: startRoom(n.t, r);
   }
 }
+const UI_NODES = ['haendler', 'werkbank', 'schrein', 'event', 'rast', 'raetsel'];
 function resumeNode() {
   const n = P.map.rows[P.map.pos.r][P.map.pos.i];
-  if (n.t === 'haendler') openMerchant(); else if (n.t === 'schrein') openShrine(); else if (n.t === 'werkbank') openWorkbench(true); else if (n.t === 'event') openEvent(); else openMap();
+  if (n.t === 'haendler') openMerchant(); else if (n.t === 'schrein') openShrine(); else if (n.t === 'werkbank') openWorkbench('node'); else if (n.t === 'event') openEvent(); else if (n.t === 'rast') openRest(); else if (n.t === 'raetsel') openRiddle(); else openMap();
 }
 function markNodeDone() { const M = P.map; if (M && M.pos.r >= 0) M.rows[M.pos.r][M.pos.i].done = true; }
 function nodeLeave() { markNodeDone(); saveChar(); openMap(); }
@@ -265,7 +306,7 @@ function startDaily() {
   const mods = Object.keys(AFFIX).sort(() => R() - .5).slice(0, 2);
   const dstage = Math.max(3, Math.min(40, P.lv + 2));
   P._dailyBackup = { act: P.act, map: JSON.parse(JSON.stringify(P.map)) };
-  P.act = 1 + (seed % 4);
+  P.act = 1 + (seed % STORY_ACTS);
   const d = { seed, rooms: types, i: 0, mods, kills0: P.stats.kills, t0: T, dstage };
   startRoom(types[0], 0, { daily: d, dstage, dmod: mods });
 }
@@ -275,7 +316,7 @@ function dailyNext() {
     const time = T - d.t0, kills = P.stats.kills - d.kills0, score = Math.round(kills * 10 + Math.max(0, 600 - time) * 5 + d.dstage * 50);
     const key = String(d.seed), best = SAVE.meta.daily[key] || 0;
     if (score > best) SAVE.meta.daily[key] = score;
-    stat('dailies'); P.gold += 300; gainGem(randomGem(d.dstage + 8));
+    stat('dailies'); P.gold += 300; gainGem(randomGem(d.dstage + 8)); gainFate(2);
     restoreFromDaily(); saveChar(); checkAch();
     openDailyResult(score, best, kills, time);
     return;
