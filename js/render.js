@@ -17,7 +17,8 @@ function drawFxFrame(name, f, x, y, sc, rot, flipY, img) {
   if (img) ctx.drawImage(img, (f % FX[name][4]) * w, 0, w, h, -w / 2, -h / 2, w, h); else ctx.drawImage(FXIMG, sx, sy, w, h, -w / 2, -h / 2, w, h);
   ctx.restore();
 }
-function heroStrip() { const hg = headgearOf(P.gear.helm); return { strip: charStrip(heroSpec(P, { np: hg === 'crown' ? 1 : 0 })), hg }; }
+// Held mit dem gewählten Aussehen der Ausrüstung (visItem, js/trade.js)
+function heroStrip() { const hm = visItem(P.gear.helm), am = visItem(P.gear.armor), hg = headgearOf(hm); return { strip: charStrip(heroSpec(P, { np: hg === 'crown' ? 1 : 0, at: am ? am.tier : 0, ht: hm ? hm.tier : 0 })), hg, hm }; }
 
 /* ---------- Figuren ---------- */
 const HAND = { knight: [4, -9], knightf: [4, -9], wizard: [4, -9], wizf: [4, -9], elf: [4, -9], elff: [4, -9], dwarf: [4, -8], dwarff: [4, -8], lizard: [4, -9], lizardf: [4, -9], doc: [4, -7] };
@@ -35,7 +36,7 @@ function drawActor(e, isP) {
     if (L.wings && COSM[L.wings] && P.roll <= 0) drawWings(SG, ox, oy, m, COSM[L.wings], P.moving);
     if (cc) drawCape(SG, ox, oy, m, cc, P.moving, P.phase);
     SG.drawImage(strip.c, fi * fw, 0, fw, fh, ox, oy, fw, fh);
-    if (hs.hg) drawHeadgear(SG, ox, oy, m, hs.hg, P.gear.helm);
+    if (hs.hg) drawHeadgear(SG, ox, oy, m, hs.hg, hs.hm);
   } else {
     const anim = e.moving || e.st === 'act' ? 'run' : 'idle', spd = anim === 'run' ? 10 : 6;
     let r = frameRect(e.sp, anim, Math.floor(T * spd + e.seed));
@@ -93,7 +94,7 @@ function playerWeaponAng() {
   return P.face > 0 ? 1.05 + sw : Math.PI - 1.05 - sw;
 }
 function drawPlayer() {
-  const it = P.gear.weapon, spr = weaponArt(it), ang = playerWeaponAng(), gc = weaponGlow(it);
+  const it = P.gear.weapon, vw = visItem(it), spr = weaponArt(vw), ang = playerWeaponAng(), gc = weaponGlow(vw);
   let off = 0; if (P.atkT > 0 && it.base === 'dagger') { const p = 1 - P.atkT / P.atkDur; off = P.combo === 2 ? Math.abs(Math.sin(p * Math.PI * 2)) * 8 : Math.sin(p * Math.PI) * 7; }
   if (P.spin > 0) off = 10;
   const showW = P.roll <= 0 && !P.leap && state !== 'dead', behind = Math.sin(ang) < -.35 && P.spin <= 0 && it.base !== 'staff';
@@ -105,7 +106,7 @@ function drawPlayer() {
   if (L.wings === 'w_phoenix' && Math.random() < .3) part(P.x - P.turn * 7 + rnd(-4, 4), P.y, rnd(10, 22), 0, 0, rnd(10, 25), Math.random() < .5 ? '#ffd24a' : '#ff6a2a', .5, 1, -10, 1);
   const h = drawActor(P, true); if (h) P.hand = h;
   if (showW && !behind && h) { const q = wpos(h); drawWeapon(spr, q.x, q.y, ang, h.sc); }
-  if (h && (it.tier >= 3 || it.rar >= 3 || it.up >= 5)) { addLight(h.x, h.y, 30, .6); if ((it.up >= 7 || it.tier >= 5 || it.rar === 6) && Math.random() < .3) part(P.x + rnd(-6, 6), P.y, rnd(6, 16), 0, 0, 15, gc, .4, 1, 0, 1); }
+  if (h && (vw.tier >= 3 || it.rar >= 3 || it.up >= 5)) { addLight(h.x, h.y, 30, .6); if ((it.up >= 7 || vw.tier >= 5 || it.rar === 6) && Math.random() < .3) part(P.x + rnd(-6, 6), P.y, rnd(6, 16), 0, 0, 15, gc, .4, 1, 0, 1); }
   if (P.gear.armor && P.gear.armor.up >= 8 && Math.random() < .25) part(P.x + rnd(-7, 7), P.y + rnd(-2, 2), rnd(0, 6), 0, 0, rnd(15, 30), P.gear.armor.up >= 10 ? '#ffd24a' : RAR[P.gear.armor.rar].c, rnd(.4, .8), 1, -5, 1);
   if (P.rebirths && Math.random() < .15) part(P.x + rnd(-8, 8), P.y, 0, 0, 0, 25, '#ffd24a', .7, 1, 0, 1);
   if (P.spin > 0 && h) { ctx.strokeStyle = '#f0f4ff'; ctx.globalAlpha = .35; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(h.x, h.y + 4, 30, 15, 0, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1; }
