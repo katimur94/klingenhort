@@ -150,7 +150,7 @@ function showTitle() {
   const N = CHANGELOG[0], fresh = newsUnseen();
   showOverlay(`<div class="tgrid"><div><h1 class="logo">KLINGEN<br>HORT</h1>
   <p class="tag">Der Uralte Drache hat das Weltenfeuer gestohlen. Bau dein Versteck wieder auf, schmiede Klingen aus Mithril, Adamant und Drachenschuppen – und hol dir zurück, was dem Orden gehört.</p>
-  <button class="newsteaser" data-act="news"><b>NEU IN ${N.v}${fresh ? '<span class="badge">NEU</span>' : ''}</b>${esc(N.t)}: ${esc(N.items[0][1])} <span style="color:var(--gold)">Alle Neuigkeiten ›</span></button></div>
+  ${inAppHTML()}<button class="newsteaser" data-act="news"><b>NEU IN ${N.v}${fresh ? '<span class="badge">NEU</span>' : ''}</b>${esc(N.t)}: ${esc(N.items[0][1])} <span style="color:var(--gold)">Alle Neuigkeiten ›</span></button></div>
   <div>${chars ? '<h3 style="margin-top:0">DEINE HELDEN</h3>' + chars : ''}
   <div class="menu two" style="margin-top:10px">
     <button class="btn" data-act="new">Neuer Held</button>
@@ -561,6 +561,8 @@ panel.addEventListener('click', ev => {
     case 'ctledit': openCtlEditor(id); break;
     case 'backtitle': showTitle(); break;
     case 'install': if (window.__doInstall) window.__doInstall(); break;
+    case 'copylink': { const url = location.href.split('#')[0], done = () => { b.textContent = 'Kopiert'; }; try { navigator.clipboard.writeText(url).then(done, () => prompt('Link kopieren:', url)); } catch (_) { prompt('Link kopieren:', url); } break; }
+    case 'inappok': SAVE.meta.settings.inAppOk = true; persist(); showTitle(); break;
     case 'checkupd': checkUpdateNow(); break;
     case 'copycode': { const t = $('codeOut'); const done = () => { b.textContent = 'Kopiert'; }; try { navigator.clipboard.writeText(t.value).then(done, () => { t.select(); done(); }); } catch (_) { t.select(); done(); } break; }
     case 'loadcode': try { const r = importCode($('codeIn').value); P = null; if (SAVE.active >= 0 && SAVE.chars[SAVE.active]) activateChar(SAVE.active); titleScene(); showCode(r === 'v1' ? 'Alter Spielstand als Ritter übernommen.' : 'Spielstand geladen.'); } catch (_) { showCode('Der Code ist ungültig. Bitte vollständig kopieren und erneut einfügen.'); } break;
@@ -667,6 +669,12 @@ let deferredInstall = null;
 const standalone = matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone;
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; if (state === 'title') showTitle(); });
+// In-App-Browser von TikTok & Co.: drehen nicht immer, kein Installieren, Spielstand kann verloren gehen
+const INAPP = (() => { const u = navigator.userAgent; return /musical_ly|trill_|bytedance|tiktok/i.test(u) ? 'TikTok' : /instagram/i.test(u) ? 'Instagram' : /fban|fbav|fb_iab/i.test(u) ? 'Facebook' : /snapchat/i.test(u) ? 'Snapchat' : ''; })();
+function inAppHTML() {
+  if (!INAPP || SAVE.meta.settings.inAppOk) return '';
+  return `<div class="inapp"><b>DU SPIELST IM ${INAPP.toUpperCase()}-BROWSER</b>Das geht, aber dort lässt sich Klingenhort nicht installieren und dein Spielstand kann verloren gehen. Besser: oben rechts auf ••• tippen und „Im Browser öffnen“ wählen${isIOS ? ' (Safari)' : ''}.<div class="acts"><button class="btn sm" data-act="copylink">Link kopieren</button><button class="btn alt sm" data-act="inappok">Verstanden</button></div></div>`;
+}
 function installBtn() { if (standalone) return ''; if (deferredInstall) return '<button class="btn" data-act="install">Als App installieren</button>'; if (isIOS) return '<p class="help" style="border:0;padding:0;grid-column:1/-1">Als App: in Safari auf TEILEN und dann „Zum Home-Bildschirm“ tippen.</p>'; return ''; }
 window.__doInstall = async () => { if (!deferredInstall) return; deferredInstall.prompt(); try { await deferredInstall.userChoice; } catch (_) { } deferredInstall = null; showTitle(); };
 // Vollbild ohne feste Ausrichtung: Hoch- und Querformat werden beide unterstützt

@@ -277,11 +277,14 @@ details.legend img{width:16px;height:16px;image-rendering:pixelated;object-fit:c
   .sheetx{display:none}
 }
 @media (max-width:599px){
-  .split>.side.sheet{position:sticky;bottom:var(--stb,0px);z-index:3;max-height:52vh;overflow:auto;overscroll-behavior:contain;background:var(--stone);padding-top:6px;box-shadow:0 -3px 0 var(--gold-dk)}
+  .split>.side.sheet{position:sticky;bottom:var(--stb,0px);z-index:3;max-height:52vh;max-height:52dvh;overflow:auto;overscroll-behavior:contain;background:var(--stone);padding-top:6px;box-shadow:0 -3px 0 var(--gold-dk)}
 }
 /* Titel: zweispaltig im Querformat */
 .tgrid{display:grid;gap:12px}
 .newsteaser{display:block;width:100%;text-align:left;border:0;cursor:pointer;background:var(--stone-lo);color:var(--parch);padding:9px 10px;font-family:var(--f-body);font-size:18px;line-height:1.1;box-shadow:inset 3px 0 0 var(--moss)}
+.inapp{background:var(--stone-lo);padding:9px 10px;margin-bottom:10px;font-size:18px;line-height:1.15;box-shadow:inset 3px 0 0 var(--gold)}
+.inapp b{display:block;font-family:var(--f-display);font-weight:400;font-size:8px;color:var(--gold);margin-bottom:4px}
+.inapp .acts{justify-content:flex-start;margin-top:8px}
 .newsteaser b{display:block;font-family:var(--f-display);font-weight:400;font-size:8px;color:var(--moss);margin-bottom:4px}
 .badge{display:inline-block;font-family:var(--f-display);font-size:7px;background:var(--blood);color:var(--parch);padding:3px 4px;margin-left:6px;vertical-align:1px;animation:pulse2 .8s steps(2) infinite}
 @media (min-width:600px) and (max-height:620px){.tgrid{grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);align-items:start}.tgrid .menu.two{grid-template-columns:1fr 1fr}}
@@ -303,7 +306,7 @@ details.news li{font-size:18px;line-height:1.15;margin-bottom:6px;display:grid;g
 .mapinfo img{width:28px;height:28px;object-fit:contain;image-rendering:pixelated;flex:none}
 .mapinfo .nm{font-size:19px;line-height:1}
 .mapinfo .st{font-size:16px;color:var(--parch-dim);line-height:1.05}
-@media (orientation:portrait){.mapwrap{height:clamp(280px,calc(100vh - 370px),640px)}}
+@media (orientation:portrait){.mapwrap{height:clamp(280px,calc(100vh - 370px),640px);height:clamp(280px,calc(100dvh - 370px),640px)}}
 @media (max-width:599px){.tree{grid-template-columns:1fr}.branch h4{text-align:left;margin-top:6px}}
 /* Touch: größere Ziele, lesbare Pixelschrift */
 body.touch .btn{min-height:44px}

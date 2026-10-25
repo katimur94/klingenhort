@@ -8,7 +8,7 @@
 const CHANGELOG = [
   {
     v: '4.1.0', d: '2026-10-25', t: 'Das Handy-Update', items: [
-      ['neu', 'Hochformat: Klingenhort lässt sich jetzt auch hochkant spielen – Menüs, Weltkarte und Kämpfe.'],
+      ['neu', 'Hochformat: Klingenhort lässt sich jetzt auch hochkant spielen – Menüs, Weltkarte und Kämpfe. Drehen ist kein Muss mehr.'],
       ['neu', 'Eigene Knopf-Anordnung für Hoch- und Querformat. Der Editor speichert beide getrennt.'],
       ['neu', 'Neuigkeiten: Hier siehst du ab sofort jedes Update und was als Nächstes kommt.'],
       ['besser', 'Wichtige Knöpfe wie Zurück, Betreten oder Aufwerten bleiben immer unten sichtbar – kein Suchen mehr.'],
@@ -16,6 +16,9 @@ const CHANGELOG = [
       ['besser', 'Größere Knöpfe, Reiter und Farbfelder, besser lesbare Schrift auf kleinen Bildschirmen.'],
       ['besser', 'Weltkarte: Ort antippen zeigt ihn direkt auf der Karte, zweites Antippen betritt ihn.'],
       ['besser', 'Hinweise erscheinen oben und verdecken keine Knöpfe mehr.'],
+      ['fix', 'iPhone: Wer das Handy nicht drehen konnte (Ausrichtungssperre oder TikTok-Browser), blieb beim Hinweis „Handy quer drehen“ hängen. Der Hinweis ist weg – es geht jetzt auch hochkant.'],
+      ['besser', 'Im TikTok-, Instagram- oder Facebook-Browser erklärt ein Hinweis, wie du Klingenhort im richtigen Browser öffnest.'],
+      ['besser', 'Touch-Knöpfe halten auf dem iPhone sicher Abstand zu Notch und Home-Balken.'],
       ['fix', 'Das Spiel hält nicht mehr an, wenn das Handy gedreht wird.']
     ]
   },

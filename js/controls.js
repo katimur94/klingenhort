@@ -44,7 +44,11 @@ function ctlSet() {
 }
 function layoutOf(k) { return Object.assign({}, (portrait() ? LAYOUT_DEF_P : LAYOUT_DEF)[k], myLayout()[k] || {}); }
 function ctlScale() { return clamp(Math.min(innerWidth, innerHeight) / 400, .72, 1.15) * ctlSet().scale; }
-function safeInset(side) { return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sa' + side)) || 0; }
+// Notch und Home-Balken: env() wird in einem Mess-Element zu Pixeln aufgelöst (CSS-Variablen liefern in Safari nicht immer Zahlen)
+const SAFE = document.createElement('div');
+SAFE.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
+document.body.appendChild(SAFE);
+function safeInset(side) { const cs = getComputedStyle(SAFE); return parseFloat(side === 't' ? cs.paddingTop : side === 'r' ? cs.paddingRight : side === 'b' ? cs.paddingBottom : cs.paddingLeft) || 0; }
 function ctlCenter(L) {
   const sc = ctlScale(), W = innerWidth, H = innerHeight;
   const x = L.ax === 'r' ? W - safeInset('r') - L.dx * sc : L.ax === 'l' ? safeInset('l') + L.dx * sc : W / 2 + L.dx * sc;

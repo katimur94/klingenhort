@@ -396,6 +396,7 @@ Angriffe zielen automatisch auf den nächsten Gegner – die goldene Markierung 
 
 - **Android (Chrome):** im Titelmenü „Als App installieren“
 - **iPhone (Safari):** Teilen → „Zum Home-Bildschirm“
+- **Aus TikTok, Instagram oder Facebook geöffnet:** Das Spiel läuft auch dort (hochkant oder quer). Zum Installieren und für einen sicheren Spielstand oben rechts auf ••• → „Im Browser öffnen“ – das Titelmenü zeigt dazu einen Hinweis mit „Link kopieren“.
 - Als App startet das Spiel im Vollbild und läuft offline – hoch oder quer, wie du das Handy hältst.
 - **Updates:** Die App sucht beim Öffnen, beim Zurückholen aus dem Hintergrund und alle 10 Minuten nach einer neuen Version. Sie wird im Titelmenü oder auf der Weltkarte automatisch geladen, nie mitten im Kampf. Von Hand: Einstellungen → „Nach Update suchen“. Die installierte Version steht unten im Titelmenü.
 - **Spielstand übertragen:** Titelmenü → „Spielstand übertragen“ – Code kopieren und auf dem anderen Gerät einfügen. Der Code enthält auch das Versteck. Codes aus Version 1 bis 3 funktionieren ebenfalls.
