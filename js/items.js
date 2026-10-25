@@ -103,7 +103,7 @@ function randomItem(stage, minRar, o) {
   if (o.tier != null) tier = o.tier;
   const lootMul = DIFFS[P.diff].loot * (1 + ((P.st && P.st.m.loot) || 0));
   const r = Math.random() / Math.sqrt(lootMul);
-  let rar = r < .03 ? 4 : r < .13 ? 3 : r < .38 ? 2 : r < .75 ? 1 : 0;
+  let rar = r < .008 ? 4 : r < .048 ? 3 : r < .188 ? 2 : r < .548 ? 1 : 0; // Legendär 0,8 %, Episch 4 %, Selten 14 %, Magisch 36 %
   rar = Math.max(rar, minRar || 0);
   const setChance = (o.setChance || 0) * lootMul;
   if (Math.random() < setChance) {
@@ -146,14 +146,14 @@ function computeStats() {
   for (const b of P.buffs) for (const k in b.buff) add(k, b.buff[k]);
   const w = P.gear.weapon, W = WT[w.base], F = wform(w);
   const st = { m };
-  st.wbase = weaponDmg(w) * (1 + (m.wdmg || 0)) + P.lv * 1.4;
+  st.wbase = weaponDmg(w) * (1 + (m.wdmg || 0)) + (lvPow(P.lv) + 1) * 1.4;
   st.dmgMul = 1 + (m.dmg || 0);
   st.cd = W.cd * (F.sp || 1) / (1 + (m.aspd || 0));
   st.crit = W.crit + (F.crit || 0) + (m.crit || 0);
   st.range = W.range + (F.range || 0); st.kb = W.kb * (F.kb || 1);
   st.critdmg = 1.8 + (m.critdmg || 0);
   st.def = def + (m.def || 0);
-  st.hp = Math.round((C.hp + (P.lv - 1) * C.hpLv + armHp) * (1 + (m.hp || 0)));
+  st.hp = Math.round((C.hp + lvPow(P.lv) * C.hpLv + armHp) * (1 + (m.hp || 0)));
   st.spd = C.spd * (1 + (m.spd || 0));
   st.resMax = C.res.max; st.resRegen = C.res.regen * (1 + (m.resreg || 0));
   st.cdr = Math.min(.6, m.cdr || 0); st.dr = Math.min(.6, m.dr || 0); st.dodge = Math.min(.4, m.dodge || 0);
@@ -163,7 +163,10 @@ function computeStats() {
 }
 const mod = k => (P.st && P.st.m[k]) || 0;
 const mod2 = (m, k) => m[k] || 0;
-function xpNext(l) { return Math.floor(20 * Math.pow(l, 1.65)); }
+// Erfahrung bis zum nächsten Level: alle Talente (Level 31) erst nach dem Ende der Geschichte, Level 50 im tiefen Endgame
+function xpNext(l) { return Math.floor(50 * Math.pow(l, 2.2)); }
+// Stärke aus dem Level: die ersten 25 Level bringen mehr, danach weniger – Level 50 ist so stark wie bisher
+function lvPow(l) { return 1.6 * Math.min(l - 1, 24) + .42 * Math.max(0, l - 25); }
 const PARAGON_XP = 25000;
 
 /* ---------- Talente ---------- */

@@ -227,10 +227,10 @@ function roomClear() {
   P.gold += bonus; stat('goldTotal', bonus); P.stats.rooms++;
   if (!G.daily) { SAVE.meta.hide.rooms++; }
   txt(P.x, P.y - 30, _t('+{n} GOLD', { n: bonus }), '#e8b04a', true);
-  if (G.type === 'elite' || G.type === 'cursed' || G.type === 'grave') dropLoot(P.x + rnd(-20, 20), P.y + 10, G.type === 'elite' ? 2 : 3);
-  if (G.type === 'champion') { dropLoot(P.x - 10, P.y + 10, 3, .08); dropLoot(P.x + 10, P.y + 10, 2); stat('champs'); if (Math.random() < .45) gainFate(1, true); }
+  if (G.type === 'elite' || G.type === 'cursed' || G.type === 'grave') dropLoot(P.x + rnd(-20, 20), P.y + 10, G.type === 'elite' ? 1 : 2);
+  if (G.type === 'champion') { dropLoot(P.x - 10, P.y + 10, 2, .03); dropLoot(P.x + 10, P.y + 10, 1); stat('champs'); if (Math.random() < .45) gainFate(1, true); }
   if (G.type === 'grave') { gainLore(); }
-  if (G.type === 'rescue') { dropLoot(P.x, P.y + 10, 2); gainGem(randomGem(st)); toast(_t('Der Händler schenkt dir einen Edelstein!')); }
+  if (G.type === 'rescue') { dropLoot(P.x, P.y + 10, 1); gainGem(randomGem(st)); toast(_t('Der Händler schenkt dir einen Edelstein!')); }
   banner(_t('RAUM GESCHAFFT'), _t('Bonus: {gold} Gold', { gold: bonus })); sfx('clear');
   P.buffs = P.buffs.filter(b => b.rooms > 0); computeStats();
   setMusic(biomeOf(P.act).root, false);

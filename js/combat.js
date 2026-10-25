@@ -38,7 +38,7 @@ function dropCoins(x, y, total, big) {
   const n = Math.min(big ? 14 : 8, Math.max(1, Math.ceil(total / 4))); let g = total;
   for (let i = 0; i < n; i++) { const v = i === n - 1 ? g : Math.floor(total / n); g -= v; if (v > 0) pickups.push({ k: 'coin', x, y, z: 6, vz: rnd(60, big ? 140 : 100), vx: rnd(-50, 50), vy: rnd(-30, 30), v, t: rnd(0, 6) }); }
 }
-function dropLoot(x, y, minRar, setChance) { const it = randomItem(stageNum(), minRar, { setChance: setChance || .015 }); dropItem(x, y, it); }
+function dropLoot(x, y, minRar, setChance) { const it = randomItem(stageNum(), minRar, { setChance: setChance || .006 }); dropItem(x, y, it); }
 function dropItem(x, y, it) { pickups.push({ k: 'loot', it, x, y, z: 8, vz: 120, vx: rnd(-30, 30), vy: rnd(-15, 15), t: 0 }); }
 function dropMat(x, y, k, n) { pickups.push({ k: 'mat', m: k, n, x, y, z: 6, vz: rnd(60, 100), vx: rnd(-40, 40), vy: rnd(-25, 25), t: 0 }); }
 function dropGem(x, y, gk) { pickups.push({ k: 'gem', g: gk, x, y, z: 8, vz: 110, vx: rnd(-30, 30), vy: rnd(-20, 20), t: 0 }); }
@@ -300,11 +300,11 @@ function killEnemy(e, nx, ny) {
   for (const k in (e.def.drop || {})) { const v = e.def.drop[k]; if (v >= 1) dropMat(e.x, e.y, k, Math.round(v * (e.boss ? 1 : 1))); else if (Math.random() < v * lm * (e.elite ? 2 : 1)) dropMat(e.x, e.y, k, e.elite ? 2 : 1); }
   if (qm && Math.random() < .03 * lm * (e.elite ? 3 : 1)) dropMat(e.x, e.y, 'aether', 1);
   if (weekFx('dragon') && !e.boss && Math.random() < (e.elite ? .12 : .03) * lm) dropMat(e.x, e.y, 'schuppe', 1);
-  if (e.boss) { dropLoot(e.x, e.y, 2, .25); dropLoot(e.x + 10, e.y, 1, .1); if (qm) dropLoot(e.x - 10, e.y, 3, .1); dropGem(e.x, e.y, randomGem(stageNum() + 10)); dropMat(e.x, e.y, 'schuppe', ri(1, 3)); if (qm && Math.random() < .01 + qm * .002) dropItem(e.x, e.y, makeMythic()); if (!gainLore()) gainFate(1, true); }
-  else if (e.elite) { if (Math.random() < .35 * lm) dropLoot(e.x, e.y, 1, .03); if (Math.random() < .14 * lm * gemMul()) dropGem(e.x, e.y, randomGem(stageNum())); if (Math.random() < .03 * loreChance()) gainLore(); if (Math.random() < .02 * (1 + weekFx('fate'))) gainFate(1, true); }
-  else if (Math.random() < .03 * lm) dropLoot(e.x, e.y, 0);
+  if (e.boss) { dropLoot(e.x, e.y, 2, .06); dropLoot(e.x + 10, e.y, 1, .03); if (qm) dropLoot(e.x - 10, e.y, 3, .04); dropGem(e.x, e.y, randomGem(stageNum() + 10)); dropMat(e.x, e.y, 'schuppe', ri(1, 3)); if (qm && Math.random() < .01 + qm * .002) dropItem(e.x, e.y, makeMythic()); if (!gainLore()) gainFate(1, true); }
+  else if (e.elite) { if (Math.random() < .25 * lm) dropLoot(e.x, e.y, 1, .01); if (Math.random() < .14 * lm * gemMul()) dropGem(e.x, e.y, randomGem(stageNum())); if (Math.random() < .03 * loreChance()) gainLore(); if (Math.random() < .02 * (1 + weekFx('fate'))) gainFate(1, true); }
+  else if (Math.random() < .02 * lm) dropLoot(e.x, e.y, 0);
   if (e.champ) { $('bossbar').hidden = true; banner(_t('CHAMPION BESIEGT'), e.name); slowmo = .6; }
-  if (e.t === 'mimic' || e.t === 'goldmimik') dropLoot(e.x, e.y, e.t === 'goldmimik' ? 3 : 2, .05);
+  if (e.t === 'mimic' || e.t === 'goldmimik') dropLoot(e.x, e.y, e.t === 'goldmimik' ? 2 : 1, .02);
   if (e.def.boomDeath) { const x = e.x, y = e.y, dmg = e.atk * 1.2; fx.push({ k: 'warn', x, y, r: 26, life: .5, max: .5 }); setTimeout(() => { if (G && state === 'play') explode(x, y, 26, dmg, 'e'); }, 500); }
   if (mod('my_soul')) { P.hp = Math.min(P.st.hp, P.hp + P.st.hp * .04); P.res = Math.min(P.st.resMax, P.res + 10); }
   if (e.t === 'goldgob') { dropCoins(e.x, e.y, e.gold + 80 * stageNum(), true); dropGem(e.x, e.y, randomGem(stageNum() + 5)); dropLoot(e.x, e.y, 2); toast(_t('Schatzgoblin erwischt!'), '#e8d04a'); }

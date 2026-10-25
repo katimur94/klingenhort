@@ -7,6 +7,13 @@
 
 const CHANGELOG = [
   {
+    v: '4.3.1', d: '2026-10-25', t: 'Langer Weg nach oben', items: [
+      ['besser', 'Aufsteigen dauert länger: Alle Talente hast du erst nach dem Ende der Geschichte voll, Level 50 ist ein Ziel für das Endgame.'],
+      ['besser', 'Dafür bringt jedes Level mehr Lebenspunkte und Schaden – die Kämpfe unterwegs bleiben fair.'],
+      ['besser', 'Seltene Beute ist wieder etwas Besonderes: Selten, Episch, Legendär und Set-Teile fallen deutlich seltener. Bosse, Champions und Truhen bleiben die besten Quellen.']
+    ]
+  },
+  {
     v: '4.3.0', d: '2026-10-25', t: 'Sechs Sprachen', items: [
       ['neu', 'Klingenhort spricht jetzt sechs Sprachen: Deutsch, Englisch, Türkisch, Spanisch, Italienisch und Französisch.'],
       ['neu', 'Das Spiel startet in der Sprache deines Handys. Wechseln geht jederzeit über 🌐 im Titelmenü oder in den Einstellungen – dein Spielstand bleibt erhalten.'],

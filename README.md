@@ -7,7 +7,7 @@ Vier Klassen, frei gestaltbare Helden, ein Versteck zum Ausbauen, Waffen aus Mit
 
 ### ▶ [Jetzt spielen: katimur94.github.io/klingenhort](https://katimur94.github.io/klingenhort/)
 
-Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 4.3 · jede Woche neue Inhalte
+Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 4.3.1 · jede Woche neue Inhalte
 
 🌐 Deutsch · English · Türkçe · Español · Italiano · Français – *the game starts in your device language*
 
@@ -85,6 +85,8 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Vers
 ## Neuigkeiten & Wochenplan
 
 Klingenhort wird jede Woche erweitert. Im Spiel zeigt **Neuigkeiten** (Titelmenü, Einstellungen oder Weltkarte → Mehr) alle Updates und was als Nächstes kommt; nach einem Update öffnet sich die Seite einmal von selbst.
+
+**4.3.1 – Langer Weg nach oben:** Aufsteigen dauert deutlich länger (alle Talente erst nach der Geschichte), dafür bringt jedes Level mehr Lebenspunkte und Schaden. Selten, Episch, Legendär und Set-Teile fallen viel seltener.
 
 **Neu in 4.3 – Sechs Sprachen**
 - Klingenhort spricht jetzt **Deutsch, Englisch, Türkisch, Spanisch, Italienisch und Französisch** – Menüs, Kämpfe, Gegenstände, Geschichte, Erfolge und Neuigkeiten
@@ -294,7 +296,7 @@ Mit jeder Stufe hängen mehr Banner an der Wand, die Stationen bekommen neue Det
 
 Namen entstehen aus Material und Form: *Adamant-Hellebarde*, *Drachen-Zweihänder*, *Mithril-Stilette* …
 
-**Seltenheiten:** Gewöhnlich, Magisch, Selten, Episch, Legendär, Set, **Mythisch**
+**Seltenheiten:** Gewöhnlich, Magisch, Selten, Episch, Legendär, Set, **Mythisch**. Von Gegnern fallen etwa 45 % Gewöhnlich, 36 % Magisch, 14 % Selten, 4 % Episch und 0,8 % Legendär; Set-Teile sind noch seltener. Bosse lassen immer mindestens einen seltenen Gegenstand fallen.
 
 | Mythisch | Platz | Kraft |
 |---|---|---|
@@ -381,6 +383,7 @@ Bezahlt wird mit **Glücksmünzen** – von Bossen, Champions, seltenen Truhen, 
 
 - **Hardcore:** Ein Tod löscht den Helden. Sein Name kommt in die Ruhmeshalle.
 - **Qual-Stufen:** Ab Akt 9 wird jeder Akt 30 % härter – ohne Obergrenze. Bosse sind gestärkt, es gibt Ätherkristalle und eine kleine Chance auf mythische Beute.
+- **Aufstieg:** Jedes Level bringt einen Talentpunkt, Lebenspunkte und Schaden. Alle 30 Talentpunkte hat man etwa nach dem Ende der Geschichte (Level 31), Level 50 ist ein Ziel für die Qual-Stufen.
 - **Paragon:** Ab Level 50 unbegrenzte Punkte für Schaden, LP, Verteidigung und Krit.
 - **Wiedergeburt:** Zurück auf Level 1 mit dauerhaftem Bonus und goldener Aura.
 - **Tages-Challenge:** Jeden Tag fünf feste Räume mit zufälligen Gegner-Affixen, Punktewertung und Glücksmünzen.
