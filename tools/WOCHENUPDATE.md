@@ -26,7 +26,9 @@ Jede Woche entsteht ein neues, getestetes Update, geht live und bekommt einen Ti
 - **Jeder neue Text in alle Sprachen** (Englisch, Türkisch, Spanisch, Italienisch, Französisch): `node tools/i18n/check.js --todo /tmp/i18n`, die leeren Werte in `/tmp/i18n/<sprache>.json` übersetzen (Begriffe wie in der vorhandenen Sprachdatei), dann `node tools/i18n/merge.js <sprache> /tmp/i18n/<sprache>.json`. Das gilt auch für Neuigkeiten (`CHANGELOG`, `COMING`) und Wochen-Ereignisse.
 - **Alte Spielstände müssen laden:** neue Felder immer mit Standardwert ergänzen (`fixMeta`, `activateChar`).
 - **Handy zuerst:** Hoch- und Querformat, Touch-Ziele mindestens 44 px, Zurück/Hauptaktion in der Kopfleiste (`.head` mit `.hbtns`) oder Fußleiste (`.foot`), Listen mit Details nebeneinander (`.split` + `.side.sheet`).
+- Größere neue Systeme in eine eigene Datei `js/<system>.js` und über `HOOK`/`ON` (siehe `js/core.js`) andocken, statt Kern-Dateien umzubauen. Vorhandene Systeme: Begleiter (`pets.js`), Elemente (`elements.js`), Schmiede der Meister (`forge.js`), Meisterschaft (`mastery.js`), Tauschen/Aussehen (`trade.js`) – neue Inhalte dort ergänzen (z. B. neue Begleiter-Art, neues Bauteil).
 - Neue Skripte in `index.html` laden und in `sw.js` (`SHELL`) eintragen.
+- Für das neue System einen eigenen Test `tools/test/<system>.js` anlegen und in `tools/test/run.sh` eintragen.
 - Code im Stil des umgebenden Codes: kompakt, kurze deutsche Kommentare.
 
 ## 3. Version, Neuigkeiten, Doku

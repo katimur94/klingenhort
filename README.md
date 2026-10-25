@@ -3,11 +3,11 @@
 # ⚔ KLINGENHORT
 
 **16-Bit Hack & Slash im Browser – für Handy (Hoch- und Querformat) und PC.**
-Vier Klassen, frei gestaltbare Helden, ein Versteck zum Ausbauen, Waffen aus Mithril, Adamant und Drachenschuppen, Verschmelzen, ein Glückstempel, acht Akte Geschichte – und danach endlose Qual-Stufen.
+Vier Klassen, frei gestaltbare Helden, **Begleiter, die mit dir wachsen**, sechs **Elemente**, eine **Schmiede mit Bauteilen** für eigene Meisterwerke, **Fähigkeiten, die durch Benutzen stärker werden** und ihr Aussehen ändern, **Tauschen** mit Freunden, ein Versteck zum Ausbauen, acht Akte Geschichte – und danach endlose Qual-Stufen.
 
 ### ▶ [Jetzt spielen: katimur94.github.io/klingenhort](https://katimur94.github.io/klingenhort/)
 
-Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 4.3.1 · jede Woche neue Inhalte
+Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 5.0 · jede Woche neue Inhalte
 
 🌐 Deutsch · English · Türkçe · Español · Italiano · Français – *the game starts in your device language*
 
@@ -85,6 +85,17 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Vers
 ## Neuigkeiten & Wochenplan
 
 Klingenhort wird jede Woche erweitert. Im Spiel zeigt **Neuigkeiten** (Titelmenü, Einstellungen oder Weltkarte → Mehr) alle Updates und was als Nächstes kommt; nach einem Update öffnet sich die Seite einmal von selbst.
+
+**Neu in 5.0 – Meisterwerk**
+
+| System | Was es kann | Langzeit-Ziel |
+|---|---|---|
+| **Begleiter** | Glutdrache, Geisterkatze, Goldkäfer, Frosteule, Giftnatter, Sturmfunke – jeder mit eigenem Element, eigenem Angriff und eigener Pixel-Grafik. Folgt dir, kämpft mit, sammelt ab Level 10 Beute ein, ab 25 eine Fähigkeit, ab 50 eine Spezialattacke. Füttern mit Materialien, umbenennen, Farbe wählen. Jeder bekommt einen Starter, weitere schlüpfen aus Eiern (Bosse, Drachentruhe), 1 % schillernd | Level 1–100, sechs Entwicklungsstufen: Baby, Jung, Stark, Erwachsen, Uralt, Mythisch |
+| **Elemente** | Feuer, Frost, Blitz, Gift, Licht, Schatten. Gegensätze (Feuer↔Frost, Blitz↔Gift, Licht↔Schatten) treffen ×1,5, gleiches Element ×0,5. Jeder Gegner zeigt sein Element, das Bestiarium seine Schwäche. Effekte: Brand, Kälte, Überschlag, Gift, Heilung, Schattenstoß. Rüstungen mit Element schützen | die richtige Ausrüstung für jedes Gebiet |
+| **Schmiede der Meister** | Bauteile Klinge, Griff, Elementkern (Waffen) und Panzerplatte, Polsterung, Rune (Rüstung, Helm) in zehn Stufen von Roh bis Göttlich. Drei gleiche ergeben eins der nächsten Stufe. Aus Material + Bauteilen ein **Meisterwerk** schmieden, später umbauen. **Zerlegen** macht aus alten Gegenständen Bauteile | Schmiedemeisterschaft 1–100; ein göttliches Bauteil = 19 683 rohe |
+| **Meisterschaft** | Jede der 16 Fähigkeiten wird durch Benutzen stärker: Schaden, Abklingzeit, Kosten. Sechs Ränge (Lehrling, Geselle, Experte, Meister, Großmeister, Legende) – jeder Rang hat eine neue Farbe und Spur, ab Rang IV größere Effekte, Rang VI golden, dazu je ein Extra (mehr Projektile, Sprünge, Radius …) | Level 1–50 je Fähigkeit |
+| **Tauschen** | Gegenstand, Bündel (Materialien, Edelsteine, Bauteile) oder Begleiter per Code oder Link verschenken – teilen über WhatsApp & Co. Jeder Code gilt einmal, manipulierte Codes werden erkannt. Tauschhändlerin Ssira mit drei Angeboten pro Tag | – |
+| **Aussehen** | Jede Waffe und Rüstung, die du je besessen hast, landet in der Sammlung. Am Spiegel wählst du das Aussehen für Waffe, Rüstung und Helm – die Werte bleiben | 234 Looks sammeln |
 
 **4.3.1 – Langer Weg nach oben:** Aufsteigen dauert deutlich länger (alle Talente erst nach der Geschichte), dafür bringt jedes Level mehr Lebenspunkte und Schaden. Selten, Episch, Legendär und Set-Teile fallen viel seltener.
 
@@ -438,6 +449,11 @@ js/story.js            Prolog, Akte, Boss-Sprüche, Gespräche, Chronikseiten
 js/news.js             Neuigkeiten: Changelog und Vorschau („Demnächst“)
 js/weekly.js           Wochen-Ereignisse
 js/i18n.js             Sprachen: Auswahl, _t('Text'), Übersetzen der Spieldaten
+js/elements.js         Elemente: Schwächen, Resistenzen, Treffer-Effekte, Element der Gegner
+js/forge.js            Schmiede der Meister: Bauteile, Zerlegen, Meisterwerke, Schmiedemeisterschaft
+js/pets.js             Begleiter: Arten, Entwicklung, Kampf, Eier, Pixel-Grafik
+js/mastery.js          Meisterschaft der Fähigkeiten: Level, Ränge, Aussehen
+js/trade.js            Tauschen per Code/Link, Tauschhändlerin, Aussehen-Sammlung
 js/lang/               Übersetzungen (en, tr, es, it, fr) – Schlüssel ist der deutsche Text
 js/core.js             Helfer, Grafik laden, Charakter-Umfärbung, Ton & Musik, Speichern
 js/art.js              prozedurale Pixel-Grafik: Waffen, Rüstungen, Umhänge, Flügel, Karte, Stationen
@@ -458,6 +474,8 @@ tools/i18n/            Sprach-Werkzeuge: fehlende Übersetzungen finden und übe
 tools/promo/           TikTok-Clips aus echten Spielszenen (Aufnahme, Schnitt, Musik)
 tools/WOCHENUPDATE.md  Ablauf für das wöchentliche Update
 ```
+
+**Andocken:** Neue Spielsysteme hängen sich über `HOOK` und `ON` (in `js/core.js` beschrieben) ins Spiel ein – Werte, Treffer, Kills, Zeichnen, Reiter im Charakter und in der Werkbank, Knöpfe – ohne die Kern-Dateien umzubauen.
 
 **Erweitern:** Neue Gegner, Materialien, Waffenformen, Gebäude, Ereignisse, Rätsel oder Erfolge sind reine Daten in `js/data.js`, Texte stehen in `js/story.js`. Sichtbare Texte im Code stehen als `_t('Deutscher Text')` und brauchen eine Übersetzung in jeder Sprache – `node tools/i18n/check.js` zeigt, was fehlt.
 
