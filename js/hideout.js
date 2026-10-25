@@ -219,7 +219,7 @@ function openChestLuck(id) {
   const r = Math.random(); let res;
   if (id === 'bronze') { res = { c: '#c8902a', t: _t('Bronzetruhe') }; const rar = r < .02 ? 4 : r < .12 ? 3 : r < .45 ? 2 : 1; res.it = randomItem(st, rar); res.it.rar = Math.max(res.it.rar, rar); }
   else if (id === 'gold') { res = { c: '#ffd24a', t: _t('Schicksalstruhe') }; if (r < .01) res.it = makeMythic(); else if (r < .06) res.t = grantCosmetic(); else res.it = randomItem(st, r < .16 ? 4 : 3); }
-  else { res = { c: '#ff6a3a', t: _t('Drachentruhe') }; if (r < .06) res.it = makeMythic(); else res.it = randomItem(st + 6, 4, { setChance: .1 }); if (Math.random() < .15) res.t = grantCosmetic(); }
+  else { res = { c: '#ff6a3a', t: _t('Drachentruhe') }; if (r < .06) res.it = makeMythic(); else res.it = randomItem(st + 6, 4, { setChance: .1 }); if (Math.random() < .15) res.t = grantCosmetic(); if (typeof eggGive === 'function' && Math.random() < .1 && eggGive(null, true)) res.t += ' · ' + _t('Ein Begleiter-Ei!'); }
   if (res.it) { if (res.it.rar === 4 && !res.it.name) res.it.name = pick(LEGEND[res.it.slot === 'weapon' ? res.it.base : res.it.slot]); addToBag(res.it); if (res.it.rar === 4) stat('legs'); res.c = RAR[res.it.rar].c; }
   sfx(res.it && res.it.rar === 6 ? 'myth' : 'chest'); saveChar(); persist(); checkAch(); openTemple(res);
 }
