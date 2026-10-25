@@ -64,18 +64,22 @@ function rollAffixes(it) {
   const keys = Object.keys(pool).sort(() => Math.random() - .5).slice(0, n);
   it.aff = {}; for (const k of keys) it.aff[k] = +pool[k].f(it.rar).toFixed(3);
   it.suf = keys.length && it.rar < 4 && !it.set ? pool[keys[0]].suf : null;
+  if (typeof elRoll === 'function') elRoll(it); // Element für seltene Beute (js/elements.js)
 }
 function itemName(it, cls) {
   cls = cls || (P && P.cls) || 'knight';
   let base = _t(it.name);
   if (!base) base = it.slot === 'weapon' ? _t('{mat}-{form}', { mat: MAT[it.tier].n, form: wform(it).n }) : CLASSES[cls].names[it.tier][it.slot === 'armor' ? 0 : 1];
   if (!it.name && it.suf) base = _t('{name} {suf}', { name: base, suf: _t(it.suf) });
-  return base + (it.fz ? ' ' + '★'.repeat(it.fz) : '') + (it.up ? ' +' + it.up : '');
+  // ⚒ = Meisterwerk, dazu das Zeichen des Elements (js/forge.js, js/elements.js)
+  const pre = (it.mw ? '⚒' : '') + (it.el && typeof ELEM !== 'undefined' && ELEM[it.el] ? ELEM[it.el].g : '');
+  return (pre ? pre + ' ' : '') + base + (it.fz ? ' ' + '★'.repeat(it.fz) : '') + (it.up ? ' +' + it.up : '');
 }
 function itemColor(it) { return RAR[it.rar].c; }
-function weaponDmg(it) { return WT[it.base].dmg * TMUL[it.tier] * RAR[it.rar].m * (1 + it.up * .08) * (wform(it).dm || 1) * (1 + (it.fz || 0) * .06); }
-function armorDef(it) { return AR[it.slot].def[it.tier] * RAR[it.rar].m * (1 + it.up * .1) * (1 + (it.fz || 0) * .06); }
-function armorHp(it) { return AR[it.slot].hp[it.tier] * (1 + it.up * .1) * (1 + (it.fz || 0) * .06); }
+// Meisterwerk (it.mw): Klinge +6 % Schaden, Panzerplatte +6 % Verteidigung, Polsterung +6 % LP (und etwas fest) je Stufe
+function weaponDmg(it) { return WT[it.base].dmg * TMUL[it.tier] * RAR[it.rar].m * (1 + it.up * .08) * (wform(it).dm || 1) * (1 + (it.fz || 0) * .06) * (1 + (it.mw ? it.mw.klinge || 0 : 0) * .06); }
+function armorDef(it) { return AR[it.slot].def[it.tier] * RAR[it.rar].m * (1 + it.up * .1) * (1 + (it.fz || 0) * .06) * (1 + (it.mw ? it.mw.platte || 0 : 0) * .06); }
+function armorHp(it) { const p = it.mw ? it.mw.polster || 0 : 0; return (AR[it.slot].hp[it.tier] + p * (it.slot === 'armor' ? 3 : 2)) * (1 + it.up * .1) * (1 + (it.fz || 0) * .06) * (1 + p * .06); }
 function itemLines(it) {
   const L = [];
   if (it.slot === 'weapon') {
@@ -94,8 +98,9 @@ function itemLines(it) {
 }
 function itemPrice(it) { return Math.max(8, Math.round(PRICE[it.tier] * .22 * (1 + Math.min(it.rar, 5) * .6 + (it.rar === 6 ? 3 : 0)) * (1 + it.up * .3) * (1 + (it.fz || 0) * .2))); }
 function itemScore(it) {
-  if (it.slot === 'weapon') return weaponDmg(it) / (wform(it).sp || 1) * (1 + (it.aff.wucht || 0)) * (1 + (it.aff.krit || 0) + (wform(it).crit || 0)) * (1 + (it.aff.tempo || 0)) * (1 + it.gems.length * .05) * (it.myth ? 1.3 : 1);
-  return armorDef(it) * 2 + armorHp(it) * .5 + (it.aff.leben || 0) * 120 + (it.aff.panzer || 0) * 2 + (it.aff.schutz || 0) * 200 + it.gems.length * 6 + (it.myth ? 40 : 0);
+  const gr = it.mw ? it.mw.griff || 0 : 0;
+  if (it.slot === 'weapon') return weaponDmg(it) / (wform(it).sp || 1) * (1 + (it.aff.wucht || 0)) * (1 + (it.aff.krit || 0) + (wform(it).crit || 0) + gr * .006) * (1 + (it.aff.tempo || 0) + gr * .015) * (1 + it.gems.length * .05) * (it.myth ? 1.3 : 1) * (it.el ? 1.06 : 1);
+  return armorDef(it) * 2 + armorHp(it) * .5 + (it.aff.leben || 0) * 120 + (it.aff.panzer || 0) * 2 + (it.aff.schutz || 0) * 200 + it.gems.length * 6 + (it.myth ? 40 : 0) + (it.el ? 8 : 0) + (it.mw ? (it.mw.rune || 0) * 4 : 0);
 }
 function randomItem(stage, minRar, o) {
   o = o || {};
