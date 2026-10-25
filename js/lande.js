@@ -199,7 +199,7 @@ function lDeliver(list) {
       case 'gem': P.gems[e.k] = (P.gems[e.k] || 0) + e.n; break;
       case 'part': if (typeof padd === 'function' && P.parts) padd(e.k, e.n); else if (M.box.length < LBOX) { M.box.push(e); r.box++; } break;
       case 'gold': P.gold += e.n; break;
-      case 'egg': { let ok = false; try { ok = typeof petImport === 'function' && petImport(Object.assign({ egg: 1 }, e.d)); } catch (_) { } if (ok) r.eggs++; else if (M.box.length < LBOX) { M.box.push(e); r.box++; } else { const g = lVal(e); P.gold += g; r.sold += g; } break; }
+      case 'egg': { let ok = false; try { ok = typeof eggGive === 'function' ? !!eggGive(e.d.sp, true, { tier: e.d.tier }) : typeof petImport === 'function' && petImport(Object.assign({ egg: 1 }, e.d)); } catch (_) { } if (ok) r.eggs++; else if (M.box.length < LBOX) { M.box.push(e); r.box++; } else { const g = lVal(e); P.gold += g; r.sold += g; } break; }
     }
   }
   return r;
@@ -210,7 +210,9 @@ function lDeliverHTML(r) {
   return p.length ? `<p class="sub">${p.join(' · ')}</p>` : '';
 }
 // Was der Begleiter in der Tasche trägt, kommt heim (und die Tasche wird leer)
-function lPetBagTake(p) { if (!p || !Array.isArray(p.bag)) return []; const l = p.bag.splice(0); persist(); return l; }
+function lPetBagTake(p) { if (!p || !Array.isArray(p.bag)) return []; try { if (typeof petBagTake === 'function') return petBagTake(p).filter(lEntryOk); } catch (_) { } const l = p.bag.splice(0); persist(); return l.filter(lEntryOk); }
+// Passt ein Eintrag ins gemeinsame Beute-Format des Begleiter-Beutels (sonst ginge er beim Laden verloren)?
+function lBagOk(e) { try { return typeof petLootFix !== 'function' || !!petLootFix(e); } catch (_) { return false; } }
 
 /* ---------- Seltenheit in der Freiwelt (benutzt von randomItem in js/items.js) ---------- */
 function landeLuck() { if (!LW || !LW.on) return 0; return LW.rollL || lLuckAt(P.x, P.y); }
@@ -981,14 +983,19 @@ function lRivalTick(r) {
   }
 }
 // Kill: Bauteile (aus js/forge.js) wandern in den Rucksack, Lager/Bosse/Rivalen, Extra-Beute
-function lKillPre() { if (LW && LW.on) LW.pk = Object.assign({}, P.parts || {}); }
+// Was andere Systeme beim Sieg direkt dem Helden geben (Bauteile, Begleiter-Eier), wird in der Freiwelt zur Beute am Boden
+function lEggIds() { const E = SAVE && SAVE.meta.pets && SAVE.meta.pets.eggs; return Array.isArray(E) ? new Set(E.map(g => g.id)) : null; }
+function lKillPre() { if (LW && LW.on) { LW.pk = Object.assign({}, P.parts || {}); LW.ek = lEggIds(); } }
 HOOK.kill.unshift(lKillPre);
 HOOK.kill.push(lKillPost);
 function lKillPost(e) {
   if (!LW || !LW.on) return;
   const L = LW, M = lMeta(); L.kills++; M.kills++; lMisEvent('kill');
-  if (L.pk && P.parts) for (const k in P.parts) { const d = P.parts[k] - (L.pk[k] || 0); if (d > 0 && lPackAdd({ t: 'part', k, n: d }) && typeof padd === 'function') padd(k, -d); }
+  if (L.pk && P.parts) for (const k in P.parts) { const d = P.parts[k] - (L.pk[k] || 0); if (d > 0) { if (typeof padd === 'function') padd(k, -d); else P.parts[k] -= d; if (!lPackAdd({ t: 'part', k, n: d })) lDrop(e.x, e.y, { t: 'part', k, n: d }); } }
   L.pk = null;
+  const E = SAVE.meta.pets && SAVE.meta.pets.eggs;
+  if (L.ek && Array.isArray(E)) { const nw = E.filter(g => !L.ek.has(g.id)); if (nw.length) { SAVE.meta.pets.eggs = E.filter(g => L.ek.has(g.id)); for (const g of nw) lDrop(e.x, e.y, { t: 'egg', d: { egg: 1, sp: g.sp, tier: g.tier } }, .6); $('toast').classList.remove('show'); persist(); } }
+  L.ek = null;
   const s = e.lw && e.lw.src;
   if (e.elite && !e.boss && Math.random() < .3) lDrop(e.x, e.y, { t: 'key' });
   if (e.elite && Math.random() < .25) lDrop(e.x, e.y, { t: 'item', it: lItem(2, 1.5) });
@@ -1308,7 +1315,7 @@ ON.l_junk = () => { if (LG.arm !== 'junk') { LG.arm = 'junk'; lInv(); return; } 
 function lMoveSel(to) {
   const s = lGetSel(LG.sel); if (!s) return;
   const L = LW, bag = L.pet ? lBag(L.pet) : null, src = s.where === 'p' ? L.pack : bag;
-  if (to === 'b') { if (!bag || !lAdd(bag, s.e, L.petBag)) { sfx('deny'); return; } }
+  if (to === 'b') { if (!bag || !lBagOk(s.e) || !lAdd(bag, s.e, L.petBag)) { sfx('deny'); return; } }
   else if (!lAdd(L.pack, s.e, lCap())) { sfx('deny'); return; }
   src.splice(s.i, 1); LG.sel = null; sfx('click'); persist();
 }
@@ -1434,7 +1441,7 @@ function lGate(from) {
   const gear = ['weapon', 'armor', 'helm'].map(s => P.gear[s]).filter(Boolean), gv = lSum(gear.map(it => ({ t: 'item', it })));
   const pet = lPet(), anyPet = lPetAny(), bs = pet ? lBagSize(pet) : 0;
   const petHTML = pet ? `<div class="row" style="cursor:default;box-shadow:inset 3px 0 0 var(--moss)"><div class="ic"><img src="${lPetIcon(pet)}" alt=""></div><div><div class="nm" style="color:var(--moss)">${esc(lPetName(pet))}</div><div class="st">${bs ? _t('Tasche mit {n} Plätzen – was darin liegt, überlebt deinen Tod.', { n: bs }) : _t('Hat keine Tasche.')}</div></div><span class="pill">${_t('{n} PLÄTZE', { n: bs })}</span></div>`
-    : `<div class="row" style="cursor:default;box-shadow:inset 3px 0 0 var(--blood)"><div class="ic"><img src="${iconURL(['pa', 'l_ei'])}" alt=""></div><div><div class="nm">${anyPet && lPetHurt(anyPet) ? _t('{name} ist verletzt', { name: esc(lPetName(anyPet)) }) : _t('Kein Begleiter dabei')}</div><div class="st">${_t('Ohne Begleiter-Tasche ist bei deinem Tod alles verloren.')}</div></div><span></span></div>`;
+    : `<div class="row" style="cursor:default;box-shadow:inset 3px 0 0 var(--blood)"><div class="ic"><img src="${iconURL(['pa', 'l_ei'])}" alt=""></div><div><div class="nm">${anyPet && lPetHurt(anyPet) ? _t('{name} ist verletzt', { name: esc(lPetName(anyPet)) }) : _t('Kein Begleiter dabei')}</div><div class="st">${anyPet && lPetHurt(anyPet) && typeof petHurtLeft === 'function' ? _t('Ruht sich noch {n} Minuten im Versteck aus.', { n: Math.max(1, Math.ceil(petHurtLeft(anyPet) / 60000)) }) + ' ' : ''}${_t('Ohne Begleiter-Tasche ist bei deinem Tod alles verloren.')}</div></div><span></span></div>`;
   const r = lRank(M.rep), nx = LREP[r + 1];
   const box = M.box.length ? `<h3>${_t('FUNDKISTE ({n})', { n: M.box.length })}</h3><p class="sub" style="margin-top:0">${_t('Was beim letzten Mal keinen Platz mehr hatte.')}</p>${M.box.slice(0, 6).map(e => landeLootHTML(e)).join('')}<button class="btn alt sm" data-act="l_box">${_t('Alles abholen')}</button>` : '';
   const body = `<div class="ltier"><h3 style="margin-top:4px">${_t('WELTSTUFE')}</h3><div class="opts">${tiers}</div><p class="sub" style="margin-top:0">${esc(TT.d)} ${_t('Glück auf Legendär und Mythisch: ×{n}', { n: TT.luck.toLocaleString(LOCALE, { maximumFractionDigits: 1 }) })}</p></div>

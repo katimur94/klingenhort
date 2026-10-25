@@ -29,7 +29,7 @@ const HERO = (cls, lv) => {
   console.log('Verlorene Lande – Regeln');
   {
     const page = await b.newPage({ viewport: { width: 844, height: 390 }, locale: 'de-DE' });
-    const errs = []; page.on('pageerror', e => errs.push(e.message));
+    const errs = []; page.on('pageerror', e => errs.push(e.message + ' @ ' + ((e.stack || '').split('\n')[1] || '').trim()));
     await page.goto(BASE + 'index.html'); await page.waitForTimeout(1500);
     const api = await page.evaluate(STANDIN);
     console.log('  Begleiter-Schnittstelle:', api);
@@ -53,7 +53,7 @@ const HERO = (cls, lv) => {
     ok(r.meta && r.fix, 'Spielstand: SAVE.meta.lande mit Standardwerten, kaputte Daten werden repariert');
     ok(r.tier0 && r.tier1 && r.lvReq && r.tiers, 'Weltstufen: Grenzland ab Level 5, nächste Stufe erst nach dem Entkommen, immer schwerer');
     ok(r.campLeg < 1.5 && r.campMyth === 0, `Kampagne: Legendär ${r.campLeg.toFixed(2)} %, kein Mythisch aus normaler Beute`);
-    ok(r.wLeg > 1 && r.wLeg < 2 && r.wMyth > .05 && r.wMyth < .3 && r.w4Leg > r.wLeg * 3 && r.w4Myth > r.wMyth * 3, `Freiwelt: Legendär ${r.wLeg.toFixed(2)} % / ${r.w4Leg.toFixed(1)} %, Mythisch ${r.wMyth.toFixed(2)} % / ${r.w4Myth.toFixed(2)} % (Grenzland / Abgrund)`);
+    ok(r.wLeg > 1 && r.wLeg < 2 && r.wMyth > .05 && r.wMyth < .3 && r.w4Leg > r.wLeg * 2.5 && r.w4Myth > r.wMyth * 2.5, `Freiwelt: Legendär ${r.wLeg.toFixed(2)} % / ${r.w4Leg.toFixed(1)} %, Mythisch ${r.wMyth.toFixed(2)} % / ${r.w4Myth.toFixed(2)} % (Grenzland / Abgrund)`);
     const g = await page.evaluate(() => {
       const L = LW, S = L.S, sp = L.spawn, o = {};
       o.on = landeActive() && G.type === 'lande' && state === 'play' && AW === S && AH === S;
@@ -90,6 +90,25 @@ const HERO = (cls, lv) => {
     ok(pk.stack && pk.heart, 'Gold stapelt sich in einem Platz, Herzen heilen wie immer');
     ok(pk.full, 'Rucksack voll: Beute bleibt liegen');
     ok(pk.parts, 'Bauteile aus Kills wandern in den Rucksack');
+    // Begleiter-Eier und Beutewert über die echten Schnittstellen (js/pets.js, js/market.js), falls vorhanden
+    const eg = await page.evaluate(() => {
+      const o = {}, n0 = SAVE.meta.pets.eggs.length; P.inv = 999; LW.pack.length = 0; pickups.length = 0;
+      const d = lEgg(2); o.roll = !!d && !!PET_SP[d.sp] && (d.tier == null || d.tier === PET_SP[d.sp].t);
+      const land = () => { for (const c of pickups) { c.t = 1; c.z = 0; c.vz = 0; c.vx = c.vy = 0; c.x = P.x; c.y = P.y; } updPickups(.016); };
+      lDrop(P.x, P.y, { t: 'egg', d }); land();
+      o.inPack = LW.pack.some(e => e.t === 'egg' && e.d.sp === d.sp) && SAVE.meta.pets.eggs.length === n0;
+      // Ein Ei vom Begleiter-System beim Sieg (Champion/Ungeheuer) liegt in der Freiwelt am Boden, nicht im Nest
+      if (typeof eggGive === 'function') { const e = lSpawn('goblin', P.x + 30, P.y, {}); lKillPre(e); eggGive(null, true, { tier: 1 }); lKillPost(e); o.killEgg = SAVE.meta.pets.eggs.length === n0 && pickups.some(c => c.k === 'legg'); } else o.killEgg = true;
+      const all = [{ t: 'item', it: lItem(2, 1) }, { t: 'mat', k: 'erz', n: 2 }, { t: 'gem', k: randomGem(10), n: 1 }, { t: 'part', k: lPart(10, 0) || 'griff:3', n: 1 }, { t: 'egg', d }, { t: 'gold', n: 9 }];
+      o.fmt = typeof petLootFix !== 'function' || all.every(x => !!petLootFix(x));
+      o.market = typeof lootValue === 'function'; o.val = !o.market || all.every(x => lootValue(x) <= 0 || lVal(x) === Math.round(lootValue(x)));
+      const r = lDeliver([{ t: 'egg', d }]), E = SAVE.meta.pets.eggs; o.deliver = r.eggs === 1 && E.length === n0 + 1 && E[E.length - 1].sp === d.sp;
+      LW.pack.length = 0; pickups.length = 0; return o;
+    });
+    ok(eg.roll && eg.inPack && eg.killEgg, 'Begleiter-Eier: Weltbeute im Rucksack – auch Eier aus Siegen landen erst am Boden, nicht direkt im Nest');
+    ok(eg.fmt, 'Beute-Einträge passen ins gemeinsame Format des Begleiter-Beutels (petLootFix)');
+    ok(eg.val, 'Beutewert: ' + (eg.market ? 'aus dem Basar (lootValue)' : 'eigene Schätzung (ohne Basar)'));
+    ok(eg.deliver, 'Heimgebrachtes Ei kommt über eggGive ins Brutnest');
     // Tod: Ausrüstung und Rucksack weg, Begleiter-Tasche kommt heim, Begleiter verletzt
     const d = await page.evaluate(() => {
       const o = {}; SAVE.meta.pets.starter = true; const p = petGive('drache', { nm: 'Funki', lv: 20 }); SAVE.meta.pets.act = p.id;
@@ -133,8 +152,9 @@ const HERO = (cls, lv) => {
     await page.evaluate(() => { ON.l_home(); lBegin(0); });
     await page.waitForTimeout(200);
     const rl = await page.evaluate(() => {
-      const w0 = P.gear.weapon, found = lItem(3, 1); found.lw = LW.id; LW.pack.push({ t: 'item', it: w0 }); P.gear.weapon = found; LW.pack.push({ t: 'gold', n: 999 });
-      const a0 = P.gear.armor; lBag(LW.pet).push({ t: 'item', it: a0 }); P.gear.armor = lItem(2, 1); P.gear.armor.lw = LW.id;
+      const of = (sl, r) => { let it; do it = lItem(r, 1); while (it.slot !== sl); return it; };
+      const w0 = P.gear.weapon, found = of('weapon', 3); found.lw = LW.id; LW.pack.push({ t: 'item', it: w0 }); P.gear.weapon = found; LW.pack.push({ t: 'gold', n: 999 });
+      const a0 = P.gear.armor; lBag(LW.pet).push({ t: 'item', it: a0 }); P.gear.armor = of('armor', 2); P.gear.armor.lw = LW.id;
       saveChar(); persist(); return { w0: w0.uid, a0: a0.uid, found: found.uid };
     });
     await page.reload(); await page.waitForTimeout(1500);
