@@ -54,7 +54,7 @@ const PFEED = {}; MATORDER.forEach((k, i) => { PFEED[k] = Math.round(15 * Math.p
 
 /* ---------- Werte ---------- */
 // EP bis zum nächsten Level ≈ 100·LV^2,6 (die ersten Level billiger): LV 10 nach etwa einer Stunde, LV 25 nach einem Spieltag, LV 100 nach Hunderten Stunden
-function petNeed(lv) { return Math.round(100 * Math.pow(lv, 2.6) * Math.min(1, .25 + .075 * (lv - 1))); }
+function petNeed(lv) { return Math.round(100 * Math.pow(lv, 2.6) * Math.min(1, Math.max(.05, Math.pow(lv / 11, 1.5)))); }
 function petStage(lv) { let s = 0; for (let i = 1; i < 6; i++) if (lv >= PSTAGE[i]) s = i; return s; }
 function petPasK(lv) { return clamp((lv - 25) / 75, 0, 1); }
 function petPas(p) { const S = PSP[p.sp], r = {}; if (p.lv < 25) return r; const k = petPasK(p.lv); for (const s in S.pas) r[s] = S.pas[s][0] + (S.pas[s][1] - S.pas[s][0]) * k; return r; }
@@ -209,25 +209,30 @@ const PART = {
     if (s === 5) { b.set(hx - hr * .55, hy - hr * 1.6, 'y'); b.set(hx + hr * .52, hy - hr * 1.6, 'y'); }
   },
   kaefer(b, s, f, mv, bl) {
-    const bz = 1 + s * .2, hz = 1 + s * .1, fl = [0, 1, 2, 1][f], cx = PCX, gy = PGY, rx = 4.6 * bz, ry = 3.7 * bz, bx = cx - .9 * bz, by = gy - 2 * bz - ry + (fl === 2 ? -1 : 0);
-    const hr = 2.5 * hz, hx = bx + rx * .92, hy = by + ry * .05;
-    const wing = (far) => { const a = [-2.2, -2.7, -3.2][fl] + (far ? .3 : 0), L = rx * (1.05 + s * .05), r0 = [bx - rx * .1, by - ry * .55], tip = [r0[0] + Math.cos(a) * L, r0[1] + Math.sin(a) * L], n = [Math.cos(a + 1.57) * 1.6 * bz, Math.sin(a + 1.57) * 1.6 * bz]; pPoly(b, [r0, [lerp(r0[0], tip[0], .5) + n[0], lerp(r0[1], tip[1], .5) + n[1]], tip, [lerp(r0[0], tip[0], .6) - n[0] * .5, lerp(r0[1], tip[1], .6) - n[1] * .5]], far ? 'w0' : 'w1'); if (!far) b.line(r0[0], r0[1], tip[0], tip[1], 'w2'); };
+    // Nashornkäfer: gewölbter Panzer, Halsschild, kleiner Kopf mit Horn nach oben, ab Stark zweites Horn vom Halsschild
+    const bz = 1 + s * .2, hz = 1 + s * .1, fl = [0, 1, 2, 1][f], cx = PCX, gy = PGY, rx = 4.2 * bz, ry = 3.7 * bz, bx = cx - 1.5 * bz, by = gy - 2.2 * bz - ry + (fl === 2 ? -1 : 0);
+    const px_ = bx + rx * .78, py_ = by + ry * .1, prx = rx * .3, pry = ry * .5, hr = 2.7 * hz, hx = px_ + prx * .9 + hr * .45, hy = py_ + pry * .45;
+    const wing = far => { const a = [-1.95, -2.45, -2.95][fl] + (far ? .32 : 0), Lw = rx * (1.1 + s * .04), r0 = [bx + rx * .05, by - ry * .65], tip = [r0[0] + Math.cos(a) * Lw, r0[1] + Math.sin(a) * Lw], n = [Math.cos(a + 1.57) * 1.7 * bz, Math.sin(a + 1.57) * 1.7 * bz]; pPoly(b, [r0, [lerp(r0[0], tip[0], .5) + n[0], lerp(r0[1], tip[1], .5) + n[1]], tip, [lerp(r0[0], tip[0], .55) - n[0] * .45, lerp(r0[1], tip[1], .55) - n[1] * .45]], far ? 'w0' : 'w1'); if (!far) b.line(r0[0], r0[1], lerp(r0[0], tip[0], .9), lerp(r0[1], tip[1], .9), 'w2'); };
     wing(true);
-    for (let i = 0; i < 3; i++) { const x = bx - rx * .45 + i * rx * .42, y = by + ry * .55, k = (f + i) % 2; b.line(x, y, x + 1 + k, y + 2.2 * bz, 'b0'); b.set(x + 2 + k, y + 2.2 * bz, 'b1'); }
-    pE(b, bx, by + ry * .22, rx * .95, ry * .72, 'b');
-    pE(b, bx - .3, by - ry * .12, rx, ry * .86, 'm', 4);
-    b.line(bx - rx * .85, by + ry * .25, bx + rx * .7, by + ry * .32, 'm0');
-    if (s >= 3) for (const [dx, dy] of [[-.45, -.1], [.05, -.45], [.1, .05], [-.6, -.5]].slice(0, s - 1)) pF(b, bx + rx * dx, by + ry * dy, 1 + s * .1, .9 + s * .08, 'a1');
-    if (s >= 4) { b.set(bx - rx * .15, by - ry * .3, f % 2 ? 'g' : 'h'); b.set(bx + rx * .4, by - ry * .05, f % 2 ? 'h' : 'g'); }
-    if (s >= 2) { const hb = [bx + rx * .55, by - ry * .7]; pTube(b, qb(hb, [hb[0] + 1, hb[1] - 1.5], [hb[0] + 2.2, hb[1] - 2 - s * .3], 4), 1, .6, 'm'); }
+    for (let i = 0; i < 3; i++) { const x = bx - rx * .35 + i * rx * .48, y = by + ry * .62, k = (f + i) % 2; b.line(x, y, x - 1 + k, y + 1.6 * bz, 'b0'); b.line(x - 1 + k, y + 1.6 * bz, x + k, y + 2.4 * bz, 'b0'); }
+    pE(b, bx, by + ry * .28, rx * .96, ry * .68, 'b');
+    pE(b, bx, by - ry * .1, rx, ry * .86, 'm', 4);
+    b.line(bx - rx * .9, by + ry * .32, bx + rx * .55, by + ry * .4, 'm0');
+    for (let i = 0; i < 2 + s; i++) b.set(bx - rx * .45 + i * .9, by - ry * .72 + Math.abs(i - (2 + s) / 2) * .4, 'm3');
+    if (s >= 3) for (const [dx, dy] of [[-.4, -.05], [.12, -.42], [-.75, -.35], [.2, .05]].slice(0, s - 1)) pF(b, bx + rx * dx, by + ry * dy, .8 + s * .12, .7 + s * .1, 'a1');
+    if (s >= 4) for (const [dx, dy, o] of [[-.15, -.3, 0], [.4, -.1, 1], [-.55, .05, 0]]) b.set(bx + rx * dx, by + ry * dy, (f + o) % 2 ? 'g' : 'h');
+    pE(b, px_, py_, prx, pry, 'm', 4);
+    b.line(px_ - prx * .9, py_ - pry * .55, px_ - prx * .7, py_ + pry * .7, 'm0');
+    if (s >= 3) { const hb = [px_ + prx * .2, py_ - pry * .8], hl = 1.5 + s * .5; pTube(b, qb(hb, [hb[0] + hl * .6, hb[1] - hl * .5], [hb[0] + hl, hb[1] - hl * .2], 5), .8 + s * .1, .5, 'm'); }
     wing(false);
-    pE(b, hx, hy, hr * 1.1, hr, 'b');
-    if (s >= 1) { const hl = [0, 2.2, 3.4, 4.6, 5.6, 6.6][s], hb = [hx + hr * .55, hy - hr * .35]; pTube(b, qb(hb, [hb[0] + hl * .55, hb[1] - hl * .1], [hb[0] + hl * .55, hb[1] - hl], 6), 1 + s * .15, .6, 'm'); }
-    const at = [0, 1, 0, -1][f];
-    for (const o of [0, 1.4]) { const r0 = [hx + o - .5, hy - hr * .8], al = 3 + s * .5, tip = [r0[0] + al * .8 + o, r0[1] - al + at * (o ? 1 : -1) * .5]; b.line(r0[0], r0[1], tip[0], tip[1], 'b1'); b.set(tip[0], tip[1], 'm2'); b.set(tip[0] + 1, tip[1], 'm3'); }
-    if (bl) b.line(hx - hr * .1, hy - hr * .05, hx + hr * .6, hy - hr * .05, 'k'); else { pF(b, hx + hr * .25, hy - hr * .2, 1.6 + s * .15, 1.6 + s * .15, 'h'); b.rect(hx + hr * .25, hy - hr * .3, 2, 2, 'k'); }
-    if (s <= 1) b.set(hx - hr * .55, hy + hr * .45, 'p');
-    if (s === 5) pCrown(b, hx - hr * .2, hy - hr * 1.5, 5);
+    pE(b, hx, hy, hr * 1.05, hr, 'b');
+    if (s >= 1) { const hl = [0, 2.6, 3.8, 4.8, 5.8, 6.8][s], hb = [hx + hr * .55, hy - hr * .45]; pTube(b, qb(hb, [hb[0] + hl * .55, hb[1] - hl * .25], [hb[0] + hl * .6, hb[1] - hl], 7), 1 + s * .15, .6, 'm'); }
+    const at = [0, 1, 0, -1][f], ar = [hx - hr * .2, hy - hr * .85], al = 2.5 + s * .5, atip = [ar[0] + al * .35, ar[1] - al + at * .5];
+    b.line(ar[0], ar[1], atip[0], atip[1], 'b1'); b.rect(atip[0], atip[1] - 1, 2, 2, 'm2'); b.set(atip[0], atip[1] - 1, 'm3');
+    const ex = hx - hr * .05, ey = hy - hr * .2, er = 1.5 + s * .12;
+    if (bl) b.line(ex - er, ey, ex + er, ey, 'k'); else { pF(b, ex, ey, er, er, 'h'); b.rect(ex, ey - 1, 2, 2, 'k'); b.set(ex, ey - 1, 'h'); }
+    if (s <= 1) b.set(hx + hr * .45, hy + hr * .45, 'p');
+    if (s === 5) pCrown(b, px_ - prx * .2, py_ - pry * 1.35, 5);
   },
   eule(b, s, f, mv, bl) {
     const bz = 1 + s * .19, hz = 1 + s * .11, fl = [0, 1, 2, 1][f], cx = PCX, gy = PGY, rx = 3.8 * bz, ry = 4.3 * bz, bx = cx - .5, by = gy - 1.4 * bz - ry + (fl === 2 ? -1 : 0);
@@ -281,8 +286,8 @@ const PART = {
     for (let k = 0; k < n; k++) { const a = k / n * 6.283 + f * .26 + .3, ca = Math.cos(a), sa = Math.sin(a), l = r + sp + (k % 2) * (1 + s * .2); pPoly(b, [[bx + Math.cos(a - .32) * r * .8, by + Math.sin(a - .32) * r * .8], [bx + ca * l, by + sa * l], [bx + Math.cos(a + .32) * r * .8, by + Math.sin(a + .32) * r * .8]], k % 2 ? 'a1' : 'a0'); b.set(bx + ca * (l - .5), by + sa * (l - .5), 'a2'); }
     pE(b, bx, by, r, r, 'm', 4);
     pF(b, bx - r * .25, by - r * .3, r * .3, r * .3, 'm3');
-    const ey = by - r * .25, eh = s <= 1 ? 3 : 2;
-    pEye(b, bx + r * .05, ey, 2, eh, bl, null); pEye(b, bx + r * .55, ey, 2, eh, bl, null);
+    const ey = by - r * .3, ew = s >= 3 ? 3 : 2, eh = s <= 1 || s >= 3 ? 3 : 2;
+    pEye(b, bx, ey, ew, eh, bl, null); pEye(b, bx + r * .5 + (ew - 2), ey, ew, eh, bl, null);
     b.set(bx + r * .3, by + r * .42, 'k'); b.set(bx + r * .42, by + r * .5, 'k'); b.set(bx + r * .54, by + r * .42, 'k');
     if (s <= 2) { b.set(bx - r * .2, by + r * .25, 'p'); b.set(bx + r * .85, by + r * .25, 'p'); }
     if (s >= 2) for (let k = 0; k < (s >= 4 ? 3 : 2); k++) { const a = f * 1.57 + k * 6.283 / (s >= 4 ? 3 : 2), x = bx + Math.cos(a) * (r + 3), y = by + Math.sin(a) * (r + 2) * .7; b.rect(x, y, 2, 2, 'a2'); b.set(x, y, 'h'); }
@@ -758,8 +763,8 @@ function petPasText(v) { const r = []; for (const k in v) r.push(PASTXT[k](pct(v
 function petStarter(back) {
   const M = petM(); if (!M || M.starter) return;
   if (back) PS.back = back; if (!PSTARTERS.includes(PS.sel)) PS.sel = PSTARTERS[0];
-  const sc = innerHeight < 520 ? 3 : 4, Sl = PSP[PS.sel], B = SPEAKERS.borin;
-  const cards = PSTARTERS.map(sp => { const S = PSP[sp], U = petImgURL(sp, 0, 0, false, true), E = PEL[S.el]; return `<button class="pcard${PS.sel === sp ? ' sel' : ''}" data-act="petpick" data-id="${sp}" aria-label="${S.n}"><span class="pp" style="--ph:${(U.H + 8) * sc}px">${sprHTML(U, sc, S.fly)}</span><b>${S.n.toLocaleUpperCase(LOCALE)}</b><span class="pel" style="background:${E.c}">${E.n}</span><small>${S.st}</small><small style="color:var(--parch)">${_t('Später: {a} und {b}', { a: S.pn, b: S.sn })}</small></button>`; }).join('');
+  const sc = innerHeight < 520 ? 3 : 4, Sl = PSP[PS.sel], B = SPEAKERS.borin, ph = Math.max(...PSTARTERS.map(sp => petImgURL(sp, 0, 0, false, true).H * sc + (PSP[sp].fly ? 44 : 14)));
+  const cards = PSTARTERS.map(sp => { const S = PSP[sp], U = petImgURL(sp, 0, 0, false, true), E = PEL[S.el]; return `<button class="pcard${PS.sel === sp ? ' sel' : ''}" data-act="petpick" data-id="${sp}" aria-label="${S.n}"><span class="pp" style="--ph:${ph}px">${sprHTML(U, sc, S.fly)}</span><b>${S.n.toLocaleUpperCase(LOCALE)}</b><span class="pel" style="background:${E.c}">${E.n}</span><small>${S.st}</small><small style="color:var(--parch)">${_t('Später: {a} und {b}', { a: S.pn, b: S.sn })}</small></button>`; }).join('');
   showOverlay(`<div class="petstart"><h2 class="center">${_t('EIN TREUER GEFÄHRTE')}</h2>
   <div class="say" style="margin-top:8px"><img class="px" src="${iconURL(['sp', B.sp])}" alt=""><div><b style="color:${B.c}">${B.n}</b>${_t('„Allein kommt hier keiner weit. Such dir einen aus – er kämpft an deiner Seite, sammelt Beute und wächst mit dir.“')}</div></div>
   <div class="pcards">${cards}</div><div class="menu foot"><button class="btn" data-act="dlgnext">${_t('Mit {name} losziehen', { name: Sl.n })}</button></div></div>`, true);
