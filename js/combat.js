@@ -770,7 +770,7 @@ function updPickups(dt) {
     const magR = c.k === 'loot' ? 0 : 48;
     if (state === 'play' && (d < magR || c.mag) && c.t > .3) { const sp = c.mag ? 260 : 170; c.x += dx / d * sp * dt; c.y += dy / d * sp * dt; }
     if (state === 'play' && d < (c.k === 'loot' ? 10 : 8) && c.t > .4) {
-      if (HOOK.collect && hookVal('collect', false, c)) continue; // ein System nimmt die Beute selbst (Verlorene Lande: in den Rucksack)
+      if (hookVal('collect', false, c)) continue; // ein System nimmt die Beute selbst (Verlorene Lande: in den Rucksack)
       c.got = true;
       if (c.k === 'coin') { P.gold += c.v; stat('goldTotal', c.v); sfx('coin'); part(c.x, c.y, 4, 0, 0, 40, '#e8b04a', .3, 1, 0, 1); }
       else if (c.k === 'heart') { const h = Math.round(P.st.hp * .15); P.hp = Math.min(P.st.hp, P.hp + h); txt(P.x, P.y - 24, '+' + h, '#79c24e'); sfx('heal'); }

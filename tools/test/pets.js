@@ -181,7 +181,7 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     await ctx.close();
   }
 
-  // Handy: neuer Held → erster Boss → Ei → Hedda → Brutnest → pflegen → Schlüpfen → Reiter → Versteck
+  // Handy: neuer Held → erster Boss → Ei → Gunda → Brutnest → pflegen → Schlüpfen → Reiter → Versteck
   for (const [W, H, tag] of [[390, 844, 'hoch'], [844, 390, 'quer']]) {
     console.log(`Begleiter: Handy ${W}x${H}`);
     const ctx = await b.newContext({ viewport: { width: W, height: H }, isMobile: true, hasTouch: true, locale: 'de-DE', deviceScaleFactor: 2 });
@@ -204,10 +204,10 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     ok(egg && await pg.evaluate(() => SAVE.meta.pets.first && SAVE.meta.pets.eggs[0].tier >= 1), 'erster Boss besiegt: garantiertes Begleiter-Ei');
     let hedda = false;
     for (let i = 0; i < 14 && !(await pg.locator('.nestscr').count()); i++) {
-      if (await pg.evaluate(() => panel.textContent.includes('Nestmutter Hedda') && !!panel.querySelector('.dlg'))) { if (!hedda) await shot('03_hedda'); hedda = true; }
+      if (await pg.evaluate(() => panel.textContent.includes('Nestmutter Gunda') && !!panel.querySelector('.dlg'))) { if (!hedda) await shot('03_hedda'); hedda = true; }
       const btn = pg.locator('#panel [data-act="dlgnext"], #panel [data-act="actnext"], #panel .btn:not(:disabled)').first(); if (await btn.count()) await btn.tap().catch(() => { }); await pg.waitForTimeout(450);
     }
-    ok(hedda && await pg.locator('.nestscr').count() === 1, 'Hedda erklärt das erste Ei, danach öffnet sich das Brutnest');
+    ok(hedda && await pg.locator('.nestscr').count() === 1, 'Gunda erklärt das erste Ei, danach öffnet sich das Brutnest');
     await shot('04_nest_erstes_ei');
     ok(await inView('[data-act="nestall"]') && await inView('.negg'), 'Brutnest: „Alle wärmen und füttern“ und das Ei ohne Scrollen sichtbar');
     ok(await pg.evaluate(() => panel.textContent.includes('Pausiert')), 'Ei ohne Pflege: „Pausiert“ mit Grund');
@@ -270,7 +270,7 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     await tap('[data-act="nestback"]');
     ok(await pg.evaluate(() => !!panel.querySelector('.petcard')), 'Brutnest → zurück in den Reiter');
     await tap('[data-act="cback"]');
-    // Versteck: Brutnest-Station mit Eiern und Hedda, Interagieren öffnet das Nest
+    // Versteck: Brutnest-Station mit Eiern und Gunda, Interagieren öffnet das Nest
     await pg.evaluate(() => { SAVE.meta.hide.intro = true; });
     await tap('[data-act="hide"]', 1200);
     await shot('14_versteck', () => { const p = hidePos('brutnest'); P.x = p.x + 60; P.y = p.y - 40; }, 900);

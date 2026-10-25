@@ -724,7 +724,7 @@ function lOpenSpot(o) {
 }
 
 /* ---------- Einsammeln (über HOOK.collect in js/combat.js) ---------- */
-if (!HOOK.collect) HOOK.collect = [];   // collect(handled, pickup) → true, wenn ein System die Beute selbst nimmt
+// collect(handled, pickup) → true, wenn die Freiwelt die Beute selbst in den Rucksack nimmt
 HOOK.collect.push((h, c) => {
   if (h || !LW || !LW.on) return h;
   let e = null;

@@ -4,7 +4,7 @@
    24 Kreaturen in sieben Seltenheiten (Plunder … Mythisch), jede mit eigener Pixel-Grafik und sechs Entwicklungsstufen.
    Hängt sich über HOOK/ON (js/core.js) ins Spiel ein: Brutnest-Station im Versteck (Bild, Symbol, Bildschirm).
    Konto: SAVE.meta.pets = { list: [{ id, sp, nm, lv, xp, col, c0, shiny, k, born, nw, bag: [Beute], hurt: Zeit }], act: id,
-     eggs: [{ id, v: 2, sp, tier, got, need, nest, w, f, z, t, born }], hatched, first, intro, seen: [sp], cw, starter (alt) }
+     eggs: [{ id, v: 2, sp, tier, got, need, nest, w, f, z, t, born }], hatched, first, intro, fromBoss, seen: [sp], cw, starter (alt) }
    Schnittstelle: petActive() · petSel() · petBagSize(p) · p.bag · petBagAdd/petBagTake · petHurt(p, min) · petIsHurt(p)
      eggGive(sp, quiet, { tier, luck }) · eggRoll(tier) · eggTierRoll(luck) · PET_TIERS · petGive(sp, o)
      petExport(i, keep) · eggExport(i, keep) · petImport(data) · petLabel(d) · petIconURL(d) · openNest(back)
@@ -896,7 +896,7 @@ function eggFix(o) {
   if (o.v !== 2) { const q = clamp(n(o.got) / Math.max(1, n(o.need) || EGG_NEED), 0, 1); return { id: uid(), v: 2, sp: o.sp, tier, got: Math.round(q * need), need, nest: 1, w: 0, f: 0, z: 0, t: now, born: now }; } // ins Nest, solange Platz ist (siehe meta)
   return { id: typeof o.id === 'string' && o.id ? o.id.slice(0, 24) : uid(), v: 2, sp: o.sp, tier, got: clamp(n(o.got), 0, need), need, nest: o.nest ? 1 : 0, w: clamp(n(o.w), 0, 1), f: clamp(n(o.f), 0, 1), z: clamp(n(o.z), 0, 1), t: Math.min(now, n(o.t) || now), born: n(o.born) || now };
 }
-// intro: false = Hedda erklärt das Brutnest beim nächsten Blick auf die Weltkarte (nur nach dem ersten Ei vom Boss; alte Stände bekommen Hinweise beim Start)
+// intro: false = Gunda erklärt das Brutnest beim nächsten Blick auf die Weltkarte (nur nach dem ersten Ei vom Boss; alte Stände bekommen Hinweise beim Start)
 // Sammel-Belohnungen: bei so vielen entdeckten Arten gibt es Glücksmünzen
 const PET_CW = [[4, 2], [8, 3], [12, 5], [16, 8], [20, 12], [24, 25]];
 function petCwLevel(n) { let l = 0; for (const [k] of PET_CW) if (n >= k) l++; return l; }
@@ -911,7 +911,7 @@ HOOK.meta.push(m => {
     const seen = new Set((Array.isArray(d.seen) ? d.seen : []).filter(sp => typeof sp === 'string' && PET_SP[sp])); for (const p of list) seen.add(p.sp);
     const hatched = Math.max(0, Math.floor(+d.hatched) || 0);
     // Wer schon Begleiter, Eier oder Geschlüpfte hat, bekommt das garantierte erste Ei nicht noch einmal
-    m.pets = { list, eggs, act: list.some(p => p.id === d.act) ? d.act : null, starter: !!d.starter, hatched, first: d.first != null ? !!d.first : (list.length > 0 || eggs.length > 0 || hatched > 0), intro: d.intro != null ? !!d.intro : true, seen: [...seen], cw: d.cw != null ? clamp(Math.floor(+d.cw) || 0, 0, PET_CW.length) : petCwLevel(seen.size) };
+    m.pets = { list, eggs, act: list.some(p => p.id === d.act) ? d.act : null, starter: !!d.starter, hatched, first: d.first != null ? !!d.first : (list.length > 0 || eggs.length > 0 || hatched > 0), intro: d.intro != null ? !!d.intro : true, fromBoss: !!d.fromBoss, seen: [...seen], cw: d.cw != null ? clamp(Math.floor(+d.cw) || 0, 0, PET_CW.length) : petCwLevel(seen.size) };
     if (d.bad) m.pets.bad = d.bad;
   } catch (e) { console.error('Begleiter (meta):', e); m.pets = { list: [], eggs: [], act: null, starter: !!d.starter, hatched: 0, first: true, intro: true, seen: [], cw: 0, bad: d }; }
 });
@@ -942,7 +942,10 @@ function eggGive(sp, quiet, o) {
   const M = petM(); if (!M) return false; o = o || {};
   if (!PET_SP[sp]) sp = eggRoll(o.tier != null ? o.tier : eggTierRoll(o.luck || 0));
   if (M.eggs.length >= EGG_MAX) { if (!quiet) toast(_t('Dein Brutnest ist voll – mehr als {n} Eier passen nicht hinein.', { n: EGG_MAX }), '#ff6a5a'); return false; }
-  const g = eggNew(sp); M.eggs.push(g); persist();
+  const g = eggNew(sp); M.eggs.push(g);
+  // das allererste Ei, egal woher (Champion, Verlorene Lande, Tausch …): Gunda erklärt das Brutnest
+  if (!M.first) { M.first = true; M.intro = false; }
+  persist();
   if (!quiet) { toast(_t('{egg}! Pflege es im Brutnest, dann schlüpft es.', { egg: PET_TIERS[g.tier].egg }), PET_TIERS[g.tier].c); sfx('loot'); }
   return g;
 }
@@ -1097,7 +1100,7 @@ function petKill(e) {
   if (!e.boss) return;
   // Das erste Ei: garantiert vom ersten besiegten Boss der Geschichte (meist gewöhnlich)
   if (!M.first && G && G.type === 'boss' && !G.daily) {
-    M.first = true; M.intro = false; const g = eggGive(null, true, { tier: +wpick({ 1: 70, 2: 25, 3: 5 }) });
+    M.first = true; M.intro = false; M.fromBoss = true; const g = eggGive(null, true, { tier: +wpick({ 1: 70, 2: 25, 3: 5 }) });
     if (g) { txt(e.x, e.y - 34, _t('BEGLEITER-EI!'), PET_TIERS[g.tier].c, true); toast(_t('{egg}! Bring es ins Brutnest im Versteck.', { egg: PET_TIERS[g.tier].egg }), PET_TIERS[g.tier].c); sfx('loot'); }
     persist(); return;
   }
@@ -1399,14 +1402,14 @@ const PET_HURT = { y: 0, x: 0, draw() {
 } };
 
 /* ---------- Brutnest im Versteck: Nest aus Stroh über glühenden Kohlen, darin die Eier ---------- */
-SPEAKERS.hedda = { n: _t('Nestmutter Hedda'), sp: 'dwarff', c: '#ffb878' };
-BUILD.brutnest.npc = SPEAKERS.hedda.n; BUILD.brutnest.body = 'dwarff';
+SPEAKERS.gunda = { n: _t('Nestmutter Gunda'), sp: 'lizardf', c: '#ffb878' };
+BUILD.brutnest.npc = SPEAKERS.gunda.n; BUILD.brutnest.body = 'lizardf';
 NPCTALK.brutnest = [
-  [1, 'hedda', _t('Wärme, Futter, Zuwendung. Fehlt eins davon, schläft das Küken im Ei einfach weiter.')],
-  [1, 'hedda', _t('Sind alle drei Bedürfnisse gut gefüllt, wächst ein Ei anderthalbmal so schnell.')],
-  [1, 'hedda', _t('Streichle die Eier ruhig. Die spüren das. Wirklich.')],
-  [2, 'hedda', _t('Aus einem schmutzigen Ei schlüpft meist eine Schnecke. Aber man liebt sie trotzdem.')],
-  [4, 'hedda', _t('Ein mythisches Ei braucht Tage. Und Sternenstaub. Und Geduld. Vor allem Geduld.')]
+  [1, 'gunda', _t('Wärme, Futter, Zuwendung. Fehlt eins davon, schläft das Küken im Ei einfach weiter.')],
+  [1, 'gunda', _t('Sind alle drei Bedürfnisse gut gefüllt, wächst ein Ei anderthalbmal so schnell.')],
+  [1, 'gunda', _t('Streichle die Eier ruhig. Die spüren das. Wirklich.')],
+  [2, 'gunda', _t('Aus einem schmutzigen Ei schlüpft meist eine Schnecke. Aber man liebt sie trotzdem.')],
+  [4, 'gunda', _t('Ein mythisches Ei braucht Tage. Und Sternenstaub. Und Geduld. Vor allem Geduld.')]
 ];
 let NEST_A = { t: 0, v: null };
 // Zustand des Nests höchstens zweimal pro Sekunde neu rechnen
@@ -1459,7 +1462,7 @@ HOOK.stats.push(petSafe('stats', add => { const p = petActive(); if (!p) return;
 HOOK.afterHit.push(petSafe('afterHit', (e, w, dmg) => { if (!e || e.dead || (w && w.pet)) return; const c = mod('pgift'); if (c && Math.random() < c) { e.poison = Math.max(e.poison || 0, 3); e.poisonDmg = Math.max(e.poisonDmg || 0, Math.max(1, Math.round(dmg * .2))); } }));
 HOOK.draw.push(petSafe('draw', list => {
   const M = petM(); if (!M || !P) return;
-  // erstes Ei (oder erstes Ei seit dem Brutnest): Hedda erklärt es auf der Weltkarte
+  // erstes Ei (oder erstes Ei seit dem Brutnest): Gunda erklärt es auf der Weltkarte
   if (M.intro === false && M.eggs.length && !PET_UI.introQ && state === 'map' && !ov.hidden && $('mapcv') && !DLG) { PET_UI.introQ = true; setTimeout(petIntro, 0); }
   const sel = petSel();
   if (sel && petIsHurt(sel) && G && G.type === 'versteck' && typeof hidePos === 'function') { const h = hidePos('brutnest'); PET_HURT.x = h.x - 26; PET_HURT.y = h.y + 3; list.push(PET_HURT); }
@@ -1491,8 +1494,8 @@ function petIntro() {
   const M = petM(); if (!M || M.intro !== false || !M.eggs.length || state !== 'map' || DLG) return;
   M.intro = true; persist(); setState('menu');
   const first = !M.list.length && !M.hatched;
-  dialog(first ? [['hedda', _t('Ein Ei! Das hast du dem Boss abgenommen? Bring es zu mir ins Brutnest – ich wohne jetzt im Versteck.')], ['hedda', _t('Halt es warm, füttere es und schenk ihm Zuwendung. Dann wächst es – auch während du unterwegs bist.')], ['hedda', _t('Irgendwann schlüpft daraus dein erster Begleiter. Komm, ich zeig dir das Nest.')]]
-    : [['hedda', _t('Ich bin Hedda und kümmere mich ab jetzt um das Brutnest im Versteck.')], ['hedda', _t('Eier schlüpfen nicht mehr von allein: Halt sie warm, füttere sie und schenk ihnen Zuwendung. Dann wachsen sie, auch während du unterwegs bist.')]],
+  dialog(first ? [['gunda', M.fromBoss ? _t('Ein Ei! Das hast du dem Boss abgenommen? Bring es zu mir ins Brutnest – ich wohne jetzt im Versteck.') : _t('Ein Ei! Wo hast du das denn gefunden? Bring es zu mir ins Brutnest – ich wohne jetzt im Versteck.')], ['gunda', _t('Halt es warm, füttere es und schenk ihm Zuwendung. Dann wächst es – auch während du unterwegs bist.')], ['gunda', _t('Irgendwann schlüpft daraus dein erster Begleiter. Komm, ich zeig dir das Nest.')]]
+    : [['gunda', _t('Ich bin Gunda und kümmere mich ab jetzt um das Brutnest im Versteck.')], ['gunda', _t('Eier schlüpfen nicht mehr von allein: Halt sie warm, füttere sie und schenk ihnen Zuwendung. Dann wachsen sie, auch während du unterwegs bist.')]],
   () => openNest('map'), first ? _t('DEIN ERSTES EI') : _t('NEU: DAS BRUTNEST'));
 }
 
@@ -1672,7 +1675,7 @@ function openNest(back) {
   const M = petM(), eggs = nestEggs(), basket = M.eggs.filter(g => !g.nest), A = nestAlert(), sel = petSel();
   let cards = eggs.map(nestCardHTML).join('');
   for (let i = eggs.length; i < NEST_MAX; i++) cards += `<div class="ncard" style="--tc:var(--stone-hi)"><div class="nfree">${basket.length ? _t('Freier Brutplatz – leg ein Ei aus dem Korb hinein.') : _t('Freier Brutplatz')}</div></div>`;
-  const brows = basket.map(g => { const T0 = PET_TIERS[g.tier], sell = NEST_SELL === g.id; return `<div class="row" style="cursor:default"><div class="ic"><img src="${eggURL(g.tier, 0)}" alt=""></div><div><div class="nm" style="color:${T0.c}">${T0.egg}</div><div class="st">${g.got > 0 ? _t('{p} % gebrütet · ', { p: Math.floor(g.got / g.need * 100) }) : ''}${_t('Ruht – wächst nur im Nest. Pflegezeit {t}.', { t: petDur(T0.care * 1000) })}</div></div><div class="acts">${sell ? `<button class="btn red sm" data-act="nestsellok" data-id="${g.id}">+${EGG_GOLD[g.tier]} <i class="coin"></i></button><button class="btn alt sm" data-act="nestsellno">${_t('Nein')}</button>` : `<button class="btn sm" data-act="nestput" data-id="${g.id}" ${eggs.length < NEST_MAX ? '' : 'disabled'}>${_t('Ins Nest')}</button><button class="btn alt sm" data-act="nestsell" data-id="${g.id}" aria-label="${_t('Hedda geben')}">${_t('Abgeben')}</button>`}</div></div>`; }).join('');
+  const brows = basket.map(g => { const T0 = PET_TIERS[g.tier], sell = NEST_SELL === g.id; return `<div class="row" style="cursor:default"><div class="ic"><img src="${eggURL(g.tier, 0)}" alt=""></div><div><div class="nm" style="color:${T0.c}">${T0.egg}</div><div class="st">${g.got > 0 ? _t('{p} % gebrütet · ', { p: Math.floor(g.got / g.need * 100) }) : ''}${_t('Ruht – wächst nur im Nest. Pflegezeit {t}.', { t: petDur(T0.care * 1000) })}</div></div><div class="acts">${sell ? `<button class="btn red sm" data-act="nestsellok" data-id="${g.id}">+${EGG_GOLD[g.tier]} <i class="coin"></i></button><button class="btn alt sm" data-act="nestsellno">${_t('Nein')}</button>` : `<button class="btn sm" data-act="nestput" data-id="${g.id}" ${eggs.length < NEST_MAX ? '' : 'disabled'}>${_t('Ins Nest')}</button><button class="btn alt sm" data-act="nestsell" data-id="${g.id}" aria-label="${_t('Gunda geben')}">${_t('Abgeben')}</button>`}</div></div>`; }).join('');
   const tiers = PET_TIERS.map(T0 => `<div style="--tc:${T0.c}"><b>${T0.n}</b>${_t('Pflege {t} · Stärke ×{m} · Beutel {n}', { t: petDur(T0.care * 1000), m: T0.mul.toLocaleString(LOCALE), n: T0.bag })}<br>${_t('Futter: {list}', { list: T0.food.map(([k]) => k === 'gold' ? _t('Gold') : MATS[k].n).join(', ') })}</div>`).join('');
   const hurt = sel && petIsHurt(sel) ? `<div class="box" style="margin-bottom:8px;box-shadow:inset 3px 0 0 #ff8a7a"><b style="font-size:19px;font-weight:400">${esc(petName(sel))}</b>${petHurtHTML(sel)}</div>` : '';
   showOverlay(`<div class="head"><h2>${_t('BRUTNEST')}</h2><div class="hbtns"><div class="gold"><i class="coin"></i>${fmt(P.gold)}</div><button class="btn alt sm" data-act="nestback">${_t('Zurück')}</button></div></div>
@@ -1800,7 +1803,7 @@ ON.nestput = id => { const g = nestEgg(id); if (!g || nestEggs().length >= NEST_
 ON.nestout = id => { const g = nestEgg(id); if (!g) return; eggSim(g); g.nest = 0; persist(); sfx('click'); openNest(); };
 ON.nestsell = id => { NEST_SELL = id; sfx('click'); openNest(); };
 ON.nestsellno = () => { NEST_SELL = null; openNest(); };
-ON.nestsellok = id => { const M = petM(), i = M.eggs.findIndex(g => g.id === id); NEST_SELL = null; if (i < 0) return; const g = M.eggs[i]; M.eggs.splice(i, 1); P.gold += EGG_GOLD[g.tier]; saveChar(); sfx('coin'); toast(_t('Hedda nimmt das Ei und gibt dir {n} Gold.', { n: EGG_GOLD[g.tier] }), '#ffd24a'); openNest(); };
+ON.nestsellok = id => { const M = petM(), i = M.eggs.findIndex(g => g.id === id); NEST_SELL = null; if (i < 0) return; const g = M.eggs[i]; M.eggs.splice(i, 1); P.gold += EGG_GOLD[g.tier]; saveChar(); sfx('coin'); toast(_t('Gunda nimmt das Ei und gibt dir {n} Gold.', { n: EGG_GOLD[g.tier] }), '#ffd24a'); openNest(); };
 ON.nesthatch = id => hatchStart(id);
 ON.hatchskip = () => { const H = HATCH; if (H && performance.now() - H.t0 < (HATCH_T + .5) / H.sp * 1000) H.t0 = performance.now() - (HATCH_T + .05) / H.sp * 1000; };
 ON.hatchtake = () => { const H = HATCH, M = petM(); if (H && M.list.includes(H.p)) { M.act = H.p.id; persist(); computeStats(); petPlace(false); toast(_t('{name} begleitet dich ab jetzt!', { name: PET_SP[H.p.sp].n }), PET_EL[PET_SP[H.p.sp].el].c); } HATCH = null; openNest(); };

@@ -13,8 +13,9 @@ translateData(); translateStatic();
    charTabs/wbTabs: { k, label, body(…), modes } · boot() nach dem Titelmenü
    station(handled, id) → true wenn eine Versteck-Station selbst geöffnet wurde · drawStation(o, x, y, r, lv) · artIcon(name, b)
    roomUpd(handled, dt) → true wenn ein eigener Raum (z. B. Freiwelt) selbst aktualisiert wird · die(handled) → true wenn ein System den Tod selbst behandelt
-   postRender() zeichnet über die Spielwelt (Bildschirm-Koordinaten), unter Vignette und Blitz */
-const HOOK = { meta: [], activate: [], stats: [], statsPost: [], hit: [], afterHit: [], kill: [], hurt: [], skill: [], update: [], room: [], draw: [], drawEnemy: [], pickup: [], itemLines: [], itemActions: [], skillRow: [], titleBtns: [], mapMore: [], mirror: [], charTabs: [], wbTabs: [], boot: [], station: [], drawStation: [], artIcon: [], roomUpd: [], die: [], postRender: [] };
+   postRender() zeichnet über die Spielwelt (Bildschirm-Koordinaten), unter Vignette und Blitz
+   collect(handled, pickup) → true wenn ein System eine Beute am Boden selbst einsammelt (Freiwelt: in den Rucksack) */
+const HOOK = { meta: [], activate: [], stats: [], statsPost: [], hit: [], afterHit: [], kill: [], hurt: [], skill: [], update: [], room: [], draw: [], drawEnemy: [], pickup: [], itemLines: [], itemActions: [], skillRow: [], titleBtns: [], mapMore: [], mirror: [], charTabs: [], wbTabs: [], boot: [], station: [], drawStation: [], artIcon: [], roomUpd: [], die: [], postRender: [], collect: [] };
 const ON = {};
 function hook(n, ...a) { for (const f of HOOK[n]) f(...a); }
 function hookVal(n, v, ...a) { for (const f of HOOK[n]) v = f(v, ...a); return v; }
