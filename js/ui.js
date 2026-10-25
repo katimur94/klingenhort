@@ -41,10 +41,10 @@ function fitPanel() {
 const HPCACHE = {};
 function heroPreviewURL(c) {
   // Ausrüstung im gewählten Aussehen (visItem, js/trade.js), dazu die Waffe seitlich hinter dem Körper
-  const L = lookOf(c), g = c.gear || {}, hm = visItem(g.helm), am = visItem(g.armor), wv = visItem(g.weapon), hg = headgearOf(hm), spec = heroSpec(c, { np: hg === 'crown' ? 1 : 0, at: am ? am.tier : 0, ht: hm ? hm.tier : 0 }), key = JSON.stringify([spec, L.cape, L.ccape, L.wings, hg, hm ? hm.tier : 0, wv && wv.base ? itemArtKey(wv) : '']);
+  const L = lookOf(c), g = c.gear || {}, hm = visItem(g.helm), am = visItem(g.armor), wv = visItem(g.weapon), hg = headgearOf(hm), spec = heroSpec(c, { np: hgNoPlume(hg), at: am ? am.tier : 0, ht: hm ? hm.tier : 0 }), key = JSON.stringify([spec, L.cape, L.ccape, L.wings, hg, hm ? hm.tier : 0, wv && wv.base ? itemArtKey(wv) : '', auraKey(c)]);
   if (HPCACHE[key]) return HPCACHE[key];
   const st = charStrip(spec), FW = 40, FH = 44, cc = capeCols(L);
-  const cv = mk(FW * 4, FH, gg => { for (let f = 0; f < 4; f++) { const ox = f * FW + (FW - st.w) / 2, oy = FH - st.h - 1, m = st.meta[f]; if (L.wings && COSM[L.wings]) drawWings(gg, ox, oy, m, COSM[L.wings], false); if (cc) drawCape(gg, ox, oy, m, cc, false, 0); drawHeldWeapon(gg, wv, f * FW, FW, FH, spec.body); gg.drawImage(st.c, f * st.w, 0, st.w, st.h, ox, oy, st.w, st.h); if (hg) drawHeadgear(gg, ox, oy, m, hg, hm); } });
+  const cv = mk(FW * 4, FH, gg => { for (let f = 0; f < 4; f++) { const ox = f * FW + (FW - st.w) / 2, oy = FH - st.h - 1, m = st.meta[f]; auraPreview(gg, ox, oy, m, c, 0, f * FW, FW, FH); if (L.wings && COSM[L.wings]) drawWings(gg, ox, oy, m, COSM[L.wings], false); if (cc) drawCape(gg, ox, oy, m, cc, false, 0); drawHeldWeapon(gg, wv, f * FW, FW, FH, spec.body); gg.drawImage(st.c, f * st.w, 0, st.w, st.h, ox, oy, st.w, st.h); if (hg) drawHeadgear(gg, ox, oy, m, hg, hm); auraPreview(gg, ox, oy, m, c, 1, f * FW, FW, FH); } });
   return HPCACHE[key] = { url: cv.toDataURL(), w: FW, h: FH };
 }
 function heroHTML(c, s) { const H = heroPreviewURL(c); return `<i class="spr" style="width:${H.w * s}px;height:${H.h * s}px;background-image:url(${H.url});background-size:${H.w * 4 * s}px ${H.h * s}px;--to:-${H.w * 4 * s}px;animation:idle4 .7s steps(4) infinite"></i>`; }
