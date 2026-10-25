@@ -5,7 +5,7 @@
    Neue Klassen, Gegner, Talente, Rezepte: hier ergänzen.
    ========================================================= */
 
-const VERSION = '3.0.0';
+const VERSION = '3.0.1';
 const SAVE_KEY = 'klingenhort.v3';
 const WALL = 32;
 

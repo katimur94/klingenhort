@@ -499,9 +499,15 @@ function loop(now) {
   render();
 }
 loadAssets().then(() => {
-  loadAll(); resize();
-  if (SAVE.active >= 0 && SAVE.chars[SAVE.active]) activateChar(SAVE.active);
-  titleScene(); showTitle(); checkAch();
+  try {
+    loadAll(); resize();
+    if (SAVE.active >= 0 && SAVE.chars[SAVE.active]) activateChar(SAVE.active);
+    titleScene(); showTitle(); checkAch();
+  } catch (e) {
+    console.error(e);
+    panel.innerHTML = '<p class="sub">Beim Starten ist ein Fehler aufgetreten (' + esc(e.message) + '). Bitte Seite neu laden.</p>';
+    return;
+  }
   if (document.fonts && document.fonts.load) document.fonts.load('8px "Press Start 2P"').catch(() => { });
   requestAnimationFrame(loop);
-}).catch(() => { panel.innerHTML = '<p class="sub">Die Grafik konnte nicht geladen werden. Bitte Seite neu laden.</p>'; });
+}, () => { panel.innerHTML = '<p class="sub">Die Grafik konnte nicht geladen werden. Bitte Seite neu laden.</p>'; });

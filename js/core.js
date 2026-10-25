@@ -208,14 +208,16 @@ function migrateV1(o) {
   const c = newChar('knight', 'Ritter', 'normal', false);
   c.lv = o.lv || 1; c.xp = o.xp || 0; c.gold = o.gold || 0; c.potions = Math.min(5, o.potions || 2);
   c.sp = Math.max(0, c.lv - 1);
-  const eq = o.eq || {};
-  const best = ['sword', 'axe'].filter(t => eq[t] !== undefined).sort((a, b) => eq[b] - eq[a])[0];
-  if (best) c.gear.weapon = makeItem({ slot: 'weapon', base: best, tier: eq[best], rar: 0 });
-  if (eq.armor !== undefined) c.gear.armor = makeItem({ slot: 'armor', base: 'armor', tier: eq.armor, rar: 0 });
-  if (eq.helm !== undefined) c.gear.helm = makeItem({ slot: 'helm', base: 'helm', tier: eq.helm, rar: 0 });
-  for (const L of (o.loot || [])) {
-    if (L.type === 'sword' || L.type === 'axe') { const it = makeItem({ slot: 'weapon', base: L.type, tier: L.tier, rar: Math.min(4, L.rar) }); it.name = L.name; c.bag.push(it); }
-    else c.gold += 50 + L.rar * 40;
+  const tr = v => clamp(Math.floor(+v) || 0, 0, 4), has = v => v !== undefined && v !== null && !isNaN(+v);
+  const eq = o.eq && typeof o.eq === 'object' ? o.eq : {};
+  const best = ['sword', 'axe'].filter(t => has(eq[t])).sort((a, b) => eq[b] - eq[a])[0];
+  if (best) c.gear.weapon = makeItem({ slot: 'weapon', base: best, tier: tr(eq[best]), rar: 0 });
+  if (has(eq.armor)) c.gear.armor = makeItem({ slot: 'armor', base: 'armor', tier: tr(eq.armor), rar: 0 });
+  if (has(eq.helm)) c.gear.helm = makeItem({ slot: 'helm', base: 'helm', tier: tr(eq.helm), rar: 0 });
+  for (const L of (Array.isArray(o.loot) ? o.loot : [])) {
+    if (!L) continue;
+    if ((L.type === 'sword' || L.type === 'axe') && c.bag.length < 30) { const it = makeItem({ slot: 'weapon', base: L.type, tier: tr(L.tier), rar: tr(L.rar) }); if (L.name) it.name = String(L.name); c.bag.push(it); }
+    else c.gold += 50 + tr(L.rar) * 40;
   }
   c.act = Math.max(1, Math.floor(((o.stage || 1) - 1) / 7) + 1);
   c.mats.erz = 6; c.mats.leder = 4;
