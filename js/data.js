@@ -172,7 +172,7 @@ const CLASSES = {
   }
 };
 const DYES = [
-  {id:'natur',n:'Material',c:null,cost:{}},
+  {id:'natur',n:'Naturfarbe',c:null,cost:{}},
   {id:'purpur',n:'Purpur',c:['#9a4ad8','#4a1a7a'],cost:{kristall:2}},
   {id:'smaragd',n:'Smaragd',c:['#3ac87a','#1a6a3a'],cost:{schleim:4}},
   {id:'gold',n:'Gold',c:['#f0c040','#a0701a'],cost:{erz:6,glut:1}},
