@@ -431,6 +431,6 @@ function drawDummy(e) {
   const r = (dx, dy, ww, h, c) => { ctx.fillStyle = e.flash > 0 ? '#ffffff' : c; ctx.fillRect(dx, dy, ww, h); };
   r(-1, -10, 2, 10, WOOD[1]); r(-5, -22, 10, 12, '#c8a878'); r(-9, -20, 18, 3, '#a8865a'); r(-3, -28, 6, 6, '#c8a878'); r(-2, -26, 1, 1, '#1a1420'); r(1, -26, 1, 1, '#1a1420');
   r(-2, -18, 4, 4, '#c8342c'); r(-1, -17, 2, 2, '#efe2bf'); ctx.restore();
-  if (e.dps > 0) ptext(Math.round(e.dps) + ' SCH/s', x, y - 36, '#ffd24a', 6);
+  if (e.dps > 0) ptext(_t('{n} SCH/s', { n: Math.round(e.dps) }), x, y - 36, '#ffd24a', 6);
   void w;
 }

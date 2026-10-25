@@ -170,17 +170,17 @@ function startRoom(type, row, extra) {
   G.lootMul *= 1 + weekFx('loot');
   cam.x = clamp(P.x - VW / 2, 0, Math.max(0, AW - VW)); cam.y = clamp(P.y - VH / 2, 0, Math.max(0, AH - VH));
   const b = biomeOf(P.act); setMusic(b.root, false);
-  const label = G.daily ? 'TAGES-HERAUSFORDERUNG' : NODE[type] ? NODE[type].n.toUpperCase() : type === 'rescue' ? 'BEFREIUNG' : type === 'grave' ? 'GRABRÄUBER' : type === 'sphinx' ? 'ZORN DER SPHINX' : 'VERFLUCHTE TRUHE';
-  banner(label, (G.daily ? 'Raum ' + (G.daily.i + 1) + ' / ' + G.daily.rooms.length : 'Akt ' + P.act + (qualOf(P.act) ? ' · Qual ' + qualOf(P.act) : '') + ' · ' + b.name + ' · Stufe ' + st) + (type === 'ueberleben' ? ' · Überlebe 45 s' : type === 'goblin' ? ' · Schnapp den Schatzgoblin!' : ''));
+  const label = G.daily ? _t('TAGES-HERAUSFORDERUNG') : NODE[type] ? NODE[type].n.toLocaleUpperCase(LOCALE) : type === 'rescue' ? _t('BEFREIUNG') : type === 'grave' ? _t('GRABRÄUBER') : type === 'sphinx' ? _t('ZORN DER SPHINX') : _t('VERFLUCHTE TRUHE');
+  banner(label, (G.daily ? _t('Raum {i} / {n}', { i: G.daily.i + 1, n: G.daily.rooms.length }) : _t('Akt {act}', { act: P.act }) + (qualOf(P.act) ? ' · ' + _t('Qual {q}', { q: qualOf(P.act) }) : '') + ' · ' + b.name + ' · ' + _t('Stufe {st}', { st })) + (type === 'ueberleben' ? ' · ' + _t('Überlebe {n} s', { n: 45 }) : type === 'goblin' ? ' · ' + _t('Schnapp den Schatzgoblin!') : ''));
   $('bossbar').hidden = true; $('objective').textContent = '';
   setState('play'); showHud(true); hideOverlay();
   for (const bf of P.buffs) bf.rooms--;
 }
 function queueWave() {
   const W = G.waves[G.wi]; let d = .2;
-  if (W.boss) { G.pending.push({ t: .6, type: W.boss.type, boss: W.boss }); const A = ACTS[(P.act - 1) % ACTS.length]; banner(W.boss.name.toUpperCase(), qualOf(P.act) ? 'Gestärkt von der Leere' : '„' + A.b + '“'); d = 1.4; $('bossName').textContent = W.boss.name.toUpperCase(); setMusic(biomeOf(P.act).root + 5, true); }
+  if (W.boss) { G.pending.push({ t: .6, type: W.boss.type, boss: W.boss }); const A = ACTS[(P.act - 1) % ACTS.length]; banner(W.boss.name.toLocaleUpperCase(LOCALE), qualOf(P.act) ? _t('Gestärkt von der Leere') : _t('„{line}“', { line: A.b })); d = 1.4; $('bossName').textContent = W.boss.name.toLocaleUpperCase(LOCALE); setMusic(biomeOf(P.act).root + 5, true); }
   if (W.goblin) G.pending.push({ t: .5, type: 'goldgob', goblin: true });
-  if (W.champ) { const pool = poolFor(G.stage).filter(k => EN[k].cost >= 2 && EN[k].cost < 99), nm = pick(CHAMPS); G.pending.push({ t: .6, type: pick(pool.length ? pool : poolFor(G.stage)), champ: nm }); banner('CHAMPION', nm); d = 1.2; }
+  if (W.champ) { const pool = poolFor(G.stage).filter(k => EN[k].cost >= 2 && EN[k].cost < 99), nm = pick(CHAMPS); G.pending.push({ t: .6, type: pick(pool.length ? pool : poolFor(G.stage)), champ: nm }); banner(_t('CHAMPION'), nm); d = 1.2; }
   const fav = biomeFav(G.stage);
   for (let i = 0; i < (W.elites || 0); i++) G.pending.push({ t: d + i * .5, type: pick(fav.length && Math.random() < .6 ? fav : poolFor(G.stage).slice(-4)), elite: true });
   const eliteP = DIFFS[P.diff].elite * (G.stage >= 3 ? 1 : 0) * (1 + weekFx('elite'));
@@ -199,24 +199,24 @@ function updRoom(dt) {
         p.done = true;
         if (p.boss) { const B = p.boss; spawnEnemy(B.type, { boss: true, sc: B.sc, hpMul: B.hpMul * Math.pow(1.12, qualOf(P.act)), name: B.name, tint: B.tint, x: AW / 2, y: BD.y0 + 30 + B.sc * 18 }); shake(7); sfx('boom'); $('bossbar').hidden = false; }
         else if (p.goblin) { const e = spawnEnemy('goldgob', { tint: 'rgba(255,210,60,.45)' }); e.escape = 20; G.goldgob = e; }
-        else if (p.champ) { const e = spawnEnemy(p.type, { elite: true, champ: true, name: p.champ, tint: 'rgba(255,110,40,.35)' }); G.champ = e; $('bossName').textContent = p.champ.toUpperCase(); $('bossbar').hidden = false; shake(4); sfx('spec'); }
+        else if (p.champ) { const e = spawnEnemy(p.type, { elite: true, champ: true, name: p.champ, tint: 'rgba(255,110,40,.35)' }); G.champ = e; $('bossName').textContent = p.champ.toLocaleUpperCase(LOCALE); $('bossbar').hidden = false; shake(4); sfx('spec'); }
         else spawnEnemy(p.type, { elite: p.elite });
       }
     }
     G.pending = G.pending.filter(p => !p.done);
     if (G.type === 'ueberleben') {
       G.timer -= dt; G.spawnT -= dt;
-      $('objective').textContent = 'Überlebe ' + Math.max(0, Math.ceil(G.timer)) + ' s';
+      $('objective').textContent = _t('Überlebe {n} s', { n: Math.max(0, Math.ceil(G.timer)) });
       if (G.spawnT <= 0 && enemies.length < 16 && G.timer > 3) { G.spawnT = Math.max(.7, 1.8 - G.stage * .03); const pool = poolFor(G.stage); spawnEnemy(pick(pool), { elite: Math.random() < .06 }); }
       if (G.timer <= 0) { for (const e of enemies.slice()) { burst(e.x, e.y, 6, '#6a5a7a', 10, 40); e.dead = true; } enemies = []; G.pending = []; roomClear(); }
       return;
     }
-    if (G.goldgob && !G.goldgob.dead) { $('objective').textContent = 'Schatzgoblin: ' + Math.max(0, Math.ceil(G.goldgob.escape)) + ' s'; }
+    if (G.goldgob && !G.goldgob.dead) { $('objective').textContent = _t('Schatzgoblin: {n} s', { n: Math.max(0, Math.ceil(G.goldgob.escape)) }); }
     else if (G.type === 'goblin') $('objective').textContent = '';
     const chestsLeft = G.type === 'schatz' && obs.some(o => o.k === 'chest' && !o.open && !o.dead);
-    if (G.type === 'schatz') $('objective').textContent = chestsLeft ? 'Öffne alle Truhen' : '';
+    if (G.type === 'schatz') $('objective').textContent = chestsLeft ? _t('Öffne alle Truhen') : '';
     if (!G.pending.length && !enemies.length && !chestsLeft) {
-      if (G.wi < G.waves.length - 1) { G.phase = 'gap'; G.t = 1.4; banner('WELLE ' + (G.wi + 2) + ' / ' + G.waves.length, 'Neue Gegner nahen'); }
+      if (G.wi < G.waves.length - 1) { G.phase = 'gap'; G.t = 1.4; banner(_t('WELLE {i} / {n}', { i: G.wi + 2, n: G.waves.length }), _t('Neue Gegner nahen')); }
       else roomClear();
     }
   } else if (G.phase === 'clear') { G.t -= dt; for (const c of pickups) c.mag = 1; if (G.t <= 0) { G.phase = 'done'; afterRoom(); } }
@@ -226,12 +226,12 @@ function roomClear() {
   const st = G.stage, bonus = Math.round((12 + st * 9) * (1 + P.st.gold) * (G.daily ? 1.5 : 1));
   P.gold += bonus; stat('goldTotal', bonus); P.stats.rooms++;
   if (!G.daily) { SAVE.meta.hide.rooms++; }
-  txt(P.x, P.y - 30, '+' + bonus + ' GOLD', '#e8b04a', true);
+  txt(P.x, P.y - 30, _t('+{n} GOLD', { n: bonus }), '#e8b04a', true);
   if (G.type === 'elite' || G.type === 'cursed' || G.type === 'grave') dropLoot(P.x + rnd(-20, 20), P.y + 10, G.type === 'elite' ? 2 : 3);
   if (G.type === 'champion') { dropLoot(P.x - 10, P.y + 10, 3, .08); dropLoot(P.x + 10, P.y + 10, 2); stat('champs'); if (Math.random() < .45) gainFate(1, true); }
   if (G.type === 'grave') { gainLore(); }
-  if (G.type === 'rescue') { dropLoot(P.x, P.y + 10, 2); gainGem(randomGem(st)); toast('Der Händler schenkt dir einen Edelstein!'); }
-  banner('RAUM GESCHAFFT', 'Bonus: ' + bonus + ' Gold'); sfx('clear');
+  if (G.type === 'rescue') { dropLoot(P.x, P.y + 10, 2); gainGem(randomGem(st)); toast(_t('Der Händler schenkt dir einen Edelstein!')); }
+  banner(_t('RAUM GESCHAFFT'), _t('Bonus: {gold} Gold', { gold: bonus })); sfx('clear');
   P.buffs = P.buffs.filter(b => b.rooms > 0); computeStats();
   setMusic(biomeOf(P.act).root, false);
   saveChar();
@@ -291,7 +291,7 @@ function enterNode(i) {
     case 'event': openEvent(); break;
     case 'rast': P.hp = Math.min(P.st.hp, P.hp + P.st.hp * .4); openRest(); break;
     case 'raetsel': openRiddle(); break;
-    case 'boss': { const A = ACTS[(P.act - 1) % ACTS.length], B = bossOf(P.act); setState('menu'); dialog(qualOf(P.act) ? [['erz', B.name + ' erhebt sich erneut – verzerrt von der Leere.']] : [['erz', 'Vor dir: ' + B.name + '.'], [{ n: B.name, sp: EN[B.type].sp, c: '#ff6a5a' }, A.b]], () => startRoom('boss', r)); break; }
+    case 'boss': { const A = ACTS[(P.act - 1) % ACTS.length], B = bossOf(P.act); setState('menu'); dialog(qualOf(P.act) ? [['erz', _t('{name} erhebt sich erneut – verzerrt von der Leere.', { name: B.name })]] : [['erz', _t('Vor dir: {name}.', { name: B.name })], [{ n: B.name, sp: EN[B.type].sp, c: '#ff6a5a' }, A.b]], () => startRoom('boss', r)); break; }
     default: startRoom(n.t, r);
   }
 }

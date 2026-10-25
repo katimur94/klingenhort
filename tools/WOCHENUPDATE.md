@@ -22,7 +22,8 @@ Jede Woche entsteht ein neues, getestetes Update, geht live und bekommt einen Ti
 ## 2. Umsetzen
 
 - Reines HTML und JavaScript, keine Abhängigkeiten, kein Build-Schritt. Inhalte sind Daten in `js/data.js`, Texte in `js/story.js`.
-- Spieltexte auf Deutsch, im Ton des Spiels.
+- Spieltexte auf Deutsch, im Ton des Spiels – im Code immer als `_t('Text')` bzw. `_t('Text mit {x}', { x })`, neue Datenfelder in `translateData()` (`js/i18n.js`) eintragen. Regeln: `tools/i18n/README.md`.
+- **Jeder neue Text in alle Sprachen** (Englisch, Türkisch, Spanisch, Italienisch, Französisch): `node tools/i18n/check.js --todo /tmp/i18n`, die leeren Werte in `/tmp/i18n/<sprache>.json` übersetzen (Begriffe wie in der vorhandenen Sprachdatei), dann `node tools/i18n/merge.js <sprache> /tmp/i18n/<sprache>.json`. Das gilt auch für Neuigkeiten (`CHANGELOG`, `COMING`) und Wochen-Ereignisse.
 - **Alte Spielstände müssen laden:** neue Felder immer mit Standardwert ergänzen (`fixMeta`, `activateChar`).
 - **Handy zuerst:** Hoch- und Querformat, Touch-Ziele mindestens 44 px, Zurück/Hauptaktion in der Kopfleiste (`.head` mit `.hbtns`) oder Fußleiste (`.foot`), Listen mit Details nebeneinander (`.split` + `.side.sheet`).
 - Neue Skripte in `index.html` laden und in `sw.js` (`SHELL`) eintragen.
@@ -31,15 +32,15 @@ Jede Woche entsteht ein neues, getestetes Update, geht live und bekommt einen Ti
 ## 3. Version, Neuigkeiten, Doku
 
 - `VERSION` in `js/data.js` **und** `sw.js` anheben: neues Feature = Minor (4.2.0 → 4.3.0), nur Korrekturen = Patch.
-- `js/news.js`: neuen Eintrag **oben** in `CHANGELOG` (`v`, `d` = heutiges Datum, `t` = kurzer Titel, `items` mit `neu` / `besser` / `fix`). Aus Spielersicht schreiben, keine Technik. `COMING`: diese Woche entfernen, die übernächste aus der Roadmap hinten anfügen (immer vier Einträge).
+- `js/news.js`: neuen Eintrag **oben** in `CHANGELOG` (`v`, `d` = heutiges Datum, `t` = kurzer Titel, `items` mit `neu` / `besser` / `fix`). Aus Spielersicht schreiben, keine Technik. `COMING`: diese Woche entfernen, die übernächste aus der Roadmap hinten anfügen (immer vier Einträge, Form `['4.6', 'Text']`).
 - `ROADMAP.md`: Status der Woche auf „✅ 4.x“, erledigte Handy-Punkte mit ✅ markieren.
 - `README.md`: im Abschnitt „Neuigkeiten & Wochenplan“ den Block „Neu in …“ ersetzen, betroffene Abschnitte ergänzen (z. B. Gegner, Steuerung), Versionszeile oben anpassen.
 
 ## 4. Testen
 
-- `bash tools/test/run.sh` muss **„ALLE TESTS GRÜN“** melden (prüft Handy hoch/quer, iPhone, TikTok-Browser, alte Spielstände aus der Live-Version, alle Bildschirme).
+- `bash tools/test/run.sh` muss **„ALLE TESTS GRÜN“** melden (prüft Handy hoch/quer, iPhone, TikTok-Browser, alte Spielstände aus der Live-Version, alle Bildschirme, jede Sprache: nichts fehlt, kein Deutsch auf dem Bildschirm).
 - Für das neue Feature eigene Prüfungen ergänzen: Spielregeln in `tools/test/rules.js` (z. B. Belohnung stimmt, Wirkung greift), Bedienung mit Antippen in `tools/test/flows.js` (z. B. neues Menü öffnet sich, neue Station funktioniert).
-- Die Screenshots in `/tmp/klingenhort-test/screens-hoch`, `-quer`, `-pc` und eigene Screenshots der neuen Bildschirme **ansehen**: abgeschnittener Text? Knöpfe erreichbar? Sieht es gut aus?
+- Die Screenshots in `/tmp/klingenhort-test/screens-hoch`, `-quer`, `-pc` und eigene Screenshots der neuen Bildschirme **ansehen**: abgeschnittener Text? Knöpfe erreichbar? Sieht es gut aus? Neue Bildschirme auch in einer zweiten Sprache ansehen (`/tmp/klingenhort-test/lang-tr` – Türkisch und Französisch sind oft am längsten).
 - Bleibt ein Test rot und lässt sich nicht beheben: **nicht live stellen** (siehe Abschnitt 7).
 
 ## 5. Veröffentlichen

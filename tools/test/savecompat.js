@@ -7,7 +7,7 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
 
 (async () => {
   const b = await chromium.launch();
-  const page = await b.newPage({ viewport: { width: 844, height: 390 } });
+  const page = await b.newPage({ viewport: { width: 844, height: 390 }, locale: 'de-DE' });
   const errs = []; page.on('pageerror', e => errs.push(e.message));
   console.log('Spielstand von', OLD, '→', BASE);
   try { await page.goto(OLD + 'index.html', { timeout: 20000 }); } catch (e) { console.log('  ok   Live-Seite nicht erreichbar – Test übersprungen'); await b.close(); return; }

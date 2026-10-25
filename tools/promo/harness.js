@@ -67,7 +67,7 @@ async function open(o = {}) {
   const only = o.only || (process.argv[2] ? process.argv[2].split(',') : null);
   fs.mkdirSync(out, { recursive: true });
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 540, height: 960 }, deviceScaleFactor: 2 });
+  const page = await browser.newPage({ viewport: { width: 540, height: 960 }, deviceScaleFactor: 2, locale: 'de-DE' });
   const errs = []; page.on('pageerror', e => errs.push(e.message));
   await page.goto(base + 'index.html'); await page.waitForTimeout(1500);
   await page.evaluate(() => document.fonts.ready);

@@ -3,6 +3,8 @@
    KLINGENHORT – Kern: Helfer, Grafik, Ton, Speichern
    ========================================================= */
 
+// Spieldaten und feste Texte der Seite in der gewählten Sprache (js/i18n.js)
+translateData(); translateStatic();
 const $ = id => document.getElementById(id);
 const cv = $('game'), ctx = cv.getContext('2d');
 let VW = 320, VH = 200, SCALE = 3;

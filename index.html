@@ -194,6 +194,7 @@ h3{font-family:var(--f-display);font-weight:400;font-size:9px;color:var(--gold);
 .opts{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .opt{flex:1;border:0;background:var(--stone-lo);color:var(--parch);padding:9px 6px;cursor:pointer;font-family:var(--f-display);font-size:8px;min-width:90px}
 .opt small{display:block;font-family:var(--f-body);font-size:15px;color:var(--parch-dim);margin-top:4px}
+.opts.langs .opt{flex:1 1 40%;font-size:10px;min-height:52px}
 .opt.sel{box-shadow:inset 0 0 0 3px var(--gold);background:var(--stone-hi)}
 input[type=text]{font:20px var(--f-body);background:var(--night);color:var(--parch);border:2px solid var(--stone-hi);padding:8px;width:100%;box-sizing:border-box}
 textarea{width:100%;box-sizing:border-box;font:16px var(--f-body);background:var(--night);color:var(--parch);border:2px solid var(--stone-hi);padding:8px}
@@ -356,7 +357,7 @@ body.bigui h3{font-size:10px}body.bigui h2{font-size:17px}
 </style>
 </head>
 <body>
-<canvas id="game" aria-label="Spielfeld"></canvas>
+<canvas id="game" aria-label="Spielfeld" data-ta="Spielfeld"></canvas>
 
 <div id="hud" hidden>
   <div class="hud-l">
@@ -374,12 +375,12 @@ body.bigui h3{font-size:10px}body.bigui h2{font-size:17px}
       <div id="hudRoom">KAMPF</div>
       <div><i class="coin"></i><span id="hudGold">0</span></div>
     </div>
-    <button id="pauseBtn" aria-label="Pause">II</button>
+    <button id="pauseBtn" aria-label="Pause" data-ta="Pause">II</button>
   </div>
 </div>
 <div id="objective"></div>
-<div id="bossbar" hidden><div id="bossName">BOSS</div><div class="bar"><i id="bossFill"></i></div></div>
-<div id="combo"><b id="comboN">0</b><small>TREFFER</small></div>
+<div id="bossbar" hidden><div id="bossName" data-t="BOSS">BOSS</div><div class="bar"><i id="bossFill"></i></div></div>
+<div id="combo"><b id="comboN">0</b><small data-t="TREFFER">TREFFER</small></div>
 <div id="banner"><b id="banTitle"></b><small id="banSub"></small></div>
 <div id="toast"></div>
 <div id="skillbar" hidden></div>
@@ -389,20 +390,22 @@ body.bigui h3{font-size:10px}body.bigui h2{font-size:17px}
   <div id="stickHome"></div>
   <div id="stick"><div id="knob"></div></div>
   <div id="btns">
-    <button class="tb" id="bAtk" aria-label="Angriff"><img id="atkImg" alt=""></button>
-    <button class="tb" id="bRoll" aria-label="Ausweichen">ROLLE</button>
-    <button class="tb" id="bS1" aria-label="Fähigkeit 1"><img alt=""><i class="cdv"></i></button>
-    <button class="tb" id="bS2" aria-label="Fähigkeit 2"><img alt=""><i class="cdv"></i></button>
-    <button class="tb" id="bS3" aria-label="Fähigkeit 3"><img alt=""><i class="cdv"></i></button>
-    <button class="tb" id="bUlt" aria-label="Ultimative Fähigkeit"><img alt=""></button>
-    <button class="tb" id="bPot" aria-label="Heiltrank"><img alt=""><i class="cdv"></i><b id="potN">3</b></button>
-    <button class="tb" id="bAct" aria-label="Interagieren" hidden><img alt=""></button>
+    <button class="tb" id="bAtk" aria-label="Angriff" data-ta="Angriff"><img id="atkImg" alt=""></button>
+    <button class="tb" id="bRoll" aria-label="Ausweichen" data-ta="Ausweichen" data-t="ROLLE">ROLLE</button>
+    <button class="tb" id="bS1" aria-label="Fähigkeit 1" data-ta="Fähigkeit 1"><img alt=""><i class="cdv"></i></button>
+    <button class="tb" id="bS2" aria-label="Fähigkeit 2" data-ta="Fähigkeit 2"><img alt=""><i class="cdv"></i></button>
+    <button class="tb" id="bS3" aria-label="Fähigkeit 3" data-ta="Fähigkeit 3"><img alt=""><i class="cdv"></i></button>
+    <button class="tb" id="bUlt" aria-label="Ultimative Fähigkeit" data-ta="Ultimative Fähigkeit"><img alt=""></button>
+    <button class="tb" id="bPot" aria-label="Heiltrank" data-ta="Heiltrank"><img alt=""><i class="cdv"></i><b id="potN">3</b></button>
+    <button class="tb" id="bAct" aria-label="Interagieren" data-ta="Interagieren" hidden><img alt=""></button>
   </div>
 </div>
 <div id="ctlbar" hidden></div>
 
-<div id="ov"><div class="panel" id="panel"><p class="sub">Lade …</p></div></div>
+<div id="ov"><div class="panel" id="panel"><p class="sub" data-t="Lade …">Lade …</p></div></div>
 
+<script src="js/i18n.js"></script>
+<script>if (LANG !== 'de') document.write('<script src="js/lang/' + LANG + '.js"><\/script>');</script>
 <script src="js/data.js"></script>
 <script src="js/story.js"></script>
 <script src="js/news.js"></script>

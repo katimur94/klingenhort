@@ -7,7 +7,9 @@ Vier Klassen, frei gestaltbare Helden, ein Versteck zum Ausbauen, Waffen aus Mit
 
 ### ▶ [Jetzt spielen: katimur94.github.io/klingenhort](https://katimur94.github.io/klingenhort/)
 
-Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 4.2 · jede Woche neue Inhalte
+Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 4.3 · jede Woche neue Inhalte
+
+🌐 Deutsch · English · Türkçe · Español · Italiano · Français – *the game starts in your device language*
 
 ![Gameplay](docs/gameplay.gif)
 
@@ -84,7 +86,11 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Vers
 
 Klingenhort wird jede Woche erweitert. Im Spiel zeigt **Neuigkeiten** (Titelmenü, Einstellungen oder Weltkarte → Mehr) alle Updates und was als Nächstes kommt; nach einem Update öffnet sich die Seite einmal von selbst.
 
-**Neu in 4.2 – Wochen-Ereignisse**
+**Neu in 4.3 – Sechs Sprachen**
+- Klingenhort spricht jetzt **Deutsch, Englisch, Türkisch, Spanisch, Italienisch und Französisch** – Menüs, Kämpfe, Gegenstände, Geschichte, Erfolge und Neuigkeiten
+- Das Spiel startet in der Sprache des Handys; wechseln jederzeit im Titelmenü oder in den Einstellungen (🌐). Der Spielstand bleibt dabei erhalten
+
+**4.2 – Wochen-Ereignisse**
 - Jede Kalenderwoche gilt automatisch eine andere Regel, für alle Spieler gleich, Wechsel montags:
 
 | Ereignis | Wirkung |
@@ -427,6 +433,9 @@ js/data.js             Klassen, Körper, Materialien, Waffenformen, Gegner, Boss
                        Ereignisse, Rätsel, Gebäude, Glücksrad, Mythisch, Kosmetik, Erfolge
 js/story.js            Prolog, Akte, Boss-Sprüche, Gespräche, Chronikseiten
 js/news.js             Neuigkeiten: Changelog und Vorschau („Demnächst“)
+js/weekly.js           Wochen-Ereignisse
+js/i18n.js             Sprachen: Auswahl, _t('Text'), Übersetzen der Spieldaten
+js/lang/               Übersetzungen (en, tr, es, it, fr) – Schlüssel ist der deutsche Text
 js/core.js             Helfer, Grafik laden, Charakter-Umfärbung, Ton & Musik, Speichern
 js/art.js              prozedurale Pixel-Grafik: Waffen, Rüstungen, Umhänge, Flügel, Karte, Stationen
 js/items.js            Charaktere, Gegenstände, Werte, Talente, Werkbank, Verschmelzen
@@ -441,12 +450,13 @@ assets/fx.png          Effekt-Atlas (Zauber, Explosionen, Blitze, Hiebe)
 manifest.webmanifest   App-Manifest (Vollbild, Hoch- und Querformat)
 sw.js                  Service Worker (Offline)
 docs/                  Screenshots, GIF, Werbevideo
-tools/test/            automatische Tests (Handy, iPhone, TikTok-Browser, alte Spielstände): bash tools/test/run.sh
+tools/test/            automatische Tests (Handy, iPhone, TikTok-Browser, alte Spielstände, alle Sprachen): bash tools/test/run.sh
+tools/i18n/            Sprach-Werkzeuge: fehlende Übersetzungen finden und übernehmen (siehe tools/i18n/README.md)
 tools/promo/           TikTok-Clips aus echten Spielszenen (Aufnahme, Schnitt, Musik)
 tools/WOCHENUPDATE.md  Ablauf für das wöchentliche Update
 ```
 
-**Erweitern:** Neue Gegner, Materialien, Waffenformen, Gebäude, Ereignisse, Rätsel oder Erfolge sind reine Daten in `js/data.js`, Texte stehen in `js/story.js`.
+**Erweitern:** Neue Gegner, Materialien, Waffenformen, Gebäude, Ereignisse, Rätsel oder Erfolge sind reine Daten in `js/data.js`, Texte stehen in `js/story.js`. Sichtbare Texte im Code stehen als `_t('Deutscher Text')` und brauchen eine Übersetzung in jeder Sprache – `node tools/i18n/check.js` zeigt, was fehlt.
 
 **Ein Update veröffentlichen:** `VERSION` in `js/data.js` und `sw.js` anheben, oben in `CHANGELOG` (`js/news.js`) einen Eintrag ergänzen und `COMING` nachziehen. Spieler sehen dann im Titelmenü „NEU“, die installierte App lädt die Version von selbst.
 

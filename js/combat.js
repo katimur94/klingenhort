@@ -43,11 +43,11 @@ function dropItem(x, y, it) { pickups.push({ k: 'loot', it, x, y, z: 8, vz: 120,
 function dropMat(x, y, k, n) { pickups.push({ k: 'mat', m: k, n, x, y, z: 6, vz: rnd(60, 100), vx: rnd(-40, 40), vy: rnd(-25, 25), t: 0 }); }
 function dropGem(x, y, gk) { pickups.push({ k: 'gem', g: gk, x, y, z: 8, vz: 110, vx: rnd(-30, 30), vy: rnd(-20, 20), t: 0 }); }
 function gemMul() { return (mod('my_midas') ? 2 : 1) * (hideLv('juwelier') >= 3 ? 1.5 : 1); }
-function gainFate(n, show) { P.fate = (P.fate || 0) + n; if (show) { toast('+' + n + ' Glücksmünze' + (n > 1 ? 'n' : ''), '#ffd24a'); sfx('coin'); } }
+function gainFate(n, show) { P.fate = (P.fate || 0) + n; if (show) { toast(n > 1 ? _t('+{n} Glücksmünzen', { n }) : _t('+{n} Glücksmünze', { n }), '#ffd24a'); sfx('coin'); } }
 /* Chronikseite finden (account-weit) */
 function gainLore() {
   const have = SAVE.meta.lore, free = LORE.map((_, i) => i).filter(i => !have.includes(i)); if (!free.length) return false;
-  const i = free[0]; have.push(i); statMax('lore', have.length); toast('Chronikseite: „' + LORE[i][0] + '“', '#b892f4'); sfx('page'); persist(); return true;
+  const i = free[0]; have.push(i); statMax('lore', have.length); toast(_t('Chronikseite: „{title}“', { title: LORE[i][0] }), '#b892f4'); sfx('page'); persist(); return true;
 }
 function loreChance() { return hideLv('bibliothek') >= 3 ? 1.6 : 1; }
 
@@ -57,7 +57,7 @@ function hitObs(o, dmg, nx, ny, boom) {
   if (o.k === 'col' || o.k === 'station' || o.k === 'npc') return;
   if (o.k === 'quelle') { useFountain(o); return; }
   if (o.k === 'chest') { openChest(o); return; }
-  if (o.k === 'lever') { if (o.cd > 0) return; o.on = !o.on; o.cd = 1; G.spikeRush = 4; sfx('spike'); shake(2); toast('Die Fallen sind scharf!'); return; }
+  if (o.k === 'lever') { if (o.cd > 0) return; o.on = !o.on; o.cd = 1; G.spikeRush = 4; sfx('spike'); shake(2); toast(_t('Die Fallen sind scharf!')); return; }
   if (o.k === 'vein') {
     o.hp--; o.flash = .12; sfx('mine'); for (let i = 0; i < 6; i++) part(o.x, o.y, 8, rnd(-50, 50), rnd(-30, 30), rnd(30, 80), MATS[o.mat].c, rnd(.3, .6), 1, 220, 1);
     if (o.hp <= 0) { o.dead = true; dropMat(o.x, o.y, o.mat, ri(2, 4)); if (Math.random() < .5) dropMat(o.x, o.y, 'erz', ri(1, 2)); if (Math.random() < .08) dropGem(o.x, o.y, randomGem(stageNum())); burst(o.x, o.y, 6, '#6a5e52', 12, 60); }
@@ -74,13 +74,13 @@ function hitObs(o, dmg, nx, ny, boom) {
 }
 function openChest(o) {
   if (o.open) return; o.open = .001;
-  if (o.mimic) { o.dead = true; spawnEnemy(o.gold ? 'goldmimik' : 'mimic', { x: o.x, y: o.y, instant: true, elite: Math.random() < .3 }); toast(o.gold ? 'Eine Goldmimik!' : 'Ein Mimik!', '#ff6a5a'); shake(4); sfx('lunge'); return; }
+  if (o.mimic) { o.dead = true; spawnEnemy(o.gold ? 'goldmimik' : 'mimic', { x: o.x, y: o.y, instant: true, elite: Math.random() < .3 }); toast(o.gold ? _t('Eine Goldmimik!') : _t('Ein Mimik!'), '#ff6a5a'); shake(4); sfx('lunge'); return; }
   sfx('chest');
   setTimeout(() => { if (!G) return; const st = stageNum(), mats = MATORDER.slice(0, Math.min(MATORDER.length, 6 + Math.floor(st / 8))); dropCoins(o.x, o.y, (10 + st * 5) * (o.gold ? 2.5 : 1), true); if (Math.random() < (o.gold ? 1 : .55) * G.lootMul) dropLoot(o.x, o.y, o.gold ? 2 : 1); if (Math.random() < .25 * gemMul()) dropGem(o.x, o.y, randomGem(st)); dropMat(o.x, o.y, pick(mats), ri(1, 3)); if (Math.random() < .25) pickups.push({ k: 'flask', x: o.x, y: o.y, z: 8, vz: 90, vx: rnd(-30, 30), vy: rnd(-10, 20), t: 0 }); if (Math.random() < .04 * loreChance()) gainLore(); if (Math.random() < (o.gold ? .1 : .02) * (1 + weekFx('fate'))) gainFate(1, true); }, 250);
 }
 function useFountain(o) {
   if (o.used) return; o.used = true; const h = Math.round(P.st.hp * .35); P.hp = Math.min(P.st.hp, P.hp + h);
-  txt(P.x, P.y - 24, '+' + h, '#79c24e', true); sfx('heal'); toast('Heilquelle: +' + h + ' LP', '#79c24e'); rings.push({ x: o.x, y: o.y, r: 4, max: 34, life: .5, max2: .5, col: '#8ecbff' });
+  txt(P.x, P.y - 24, '+' + h, '#79c24e', true); sfx('heal'); toast(_t('Heilquelle: +{n} LP', { n: h }), '#79c24e'); rings.push({ x: o.x, y: o.y, r: 4, max: 34, life: .5, max2: .5, col: '#8ecbff' });
   for (let i = 0; i < 16; i++) part(P.x + rnd(-6, 6), P.y, rnd(0, 14), 0, 0, rnd(20, 40), '#8ecbff', rnd(.5, .9), 1, -10, 1);
 }
 function solidPush(e, r) { for (const o of obs) { if (!o.solid || o.dead) continue; const dx = e.x - o.x, dy = e.y - o.y, d = Math.hypot(dx, dy) || .01, m = o.r + r; if (d < m) { e.x = o.x + dx / d * m; e.y = o.y + dy / d * m; if (e === P && o.k === 'chest' && !o.open) openChest(o); if (e === P && o.k === 'quelle' && !o.used) useFountain(o); } } }
@@ -152,11 +152,11 @@ function doRoll() {
 function drinkPotion(auto) {
   if (state !== 'play' || (G && G.type === 'versteck')) return;
   if (!auto && P.rollT && T - P.rollT < .4) return;
-  if (P.potions <= 0) { if (!auto) { toast('Keine Tränke – im Alchemielabor brauen oder beim Händler kaufen'); sfx('deny'); } return; }
-  if (P.potCd > 0) { if (!auto) toast('Trank noch nicht bereit'); return; }
-  if (P.hp >= P.st.hp) { if (!auto) toast('Lebenspunkte sind voll'); return; }
+  if (P.potions <= 0) { if (!auto) { toast(_t('Keine Tränke – im Alchemielabor brauen oder beim Händler kaufen')); sfx('deny'); } return; }
+  if (P.potCd > 0) { if (!auto) toast(_t('Trank noch nicht bereit')); return; }
+  if (P.hp >= P.st.hp) { if (!auto) toast(_t('Lebenspunkte sind voll')); return; }
   P.potions--; P.potCd = 6; const h = Math.round(P.st.hp * potHeal()); P.hp = Math.min(P.st.hp, P.hp + h);
-  txt(P.x, P.y - 22, '+' + h, '#79c24e', true); sfx('heal'); if (auto) toast('Auto-Trank: +' + h + ' LP', '#79c24e');
+  txt(P.x, P.y - 22, '+' + h, '#79c24e', true); sfx('heal'); if (auto) toast(_t('Auto-Trank: +{n} LP', { n: h }), '#79c24e');
   for (let i = 0; i < 16; i++) part(P.x + rnd(-6, 6), P.y, rnd(0, 14), 0, 0, rnd(20, 40), '#79c24e', rnd(.5, .9), 1, -10, 1);
 }
 function weaponHit(e, w, mul, nx, ny, kbMul, forceCrit) {
@@ -224,9 +224,9 @@ function useSkill(i) {
   if (state !== 'play' || busy() || P.roll > 0) return;
   const id = CLASSES[P.cls].skills[i], S = SKILLS[id], cost = skillCost(i);
   if (P.cds[i] > 0) { sfx('deny'); return; }
-  if (P.res < cost) { toast(CLASSES[P.cls].res.name + ' reicht nicht'); sfx('deny'); return; }
+  if (P.res < cost) { toast(_t('{res} reicht nicht', { res: CLASSES[P.cls].res.name })); sfx('deny'); return; }
   const inp = readInput(), w = playerW();
-  if (id === 'a2' && traps.length >= 2 + mod('a2Max')) { toast('Maximale Anzahl Fallen gelegt'); return; }
+  if (id === 'a2' && traps.length >= 2 + mod('a2Max')) { toast(_t('Maximale Anzahl Fallen gelegt')); return; }
   P.res -= cost; P.cds[i] = skillCd(i); P.atkT = 0; buzz(8);
   txt(P.x, P.y - 30, S.n, '#efe2bf');
   switch (id) {
@@ -248,7 +248,7 @@ function useSkill(i) {
         weaponHit(t, w, mul, (t.x - from.x) / 50, (t.y - from.y) / 50, .4); mul *= .85; from = t;
         let nt = null, b = 80; for (const e of enemies) { if (hit.has(e) || e.st === 'spawn' || e.dead) continue; const d = Math.hypot(e.x - from.x, e.y - from.y); if (d < b) { b = d; nt = e; } } t = nt;
       }
-      if (pts.length > 1) fx.push({ k: 'zap', pts, life: .28, max: .28 }); else toast('Kein Ziel in Reichweite');
+      if (pts.length > 1) fx.push({ k: 'zap', pts, life: .28, max: .28 }); else toast(_t('Kein Ziel in Reichweite'));
       sfx('zap'); break;
     }
     case 'r1': { const a = autoAim(160, inp); P.aim = a; P.face = Math.cos(a) >= 0 ? 1 : -1; P.dash = { t: 0, dur: .2, dx: Math.cos(a), dy: Math.sin(a), hit: new Set(), kind: 'shadow', sp: 560 }; sfx('lunge'); break; }
@@ -261,10 +261,10 @@ function useSkill(i) {
 }
 function doUlt() {
   if (state !== 'play' || busy() || P.roll > 0) return;
-  if (P.rage < 100) { toast('Wut noch nicht voll – triff Gegner!'); sfx('deny'); return; }
+  if (P.rage < 100) { toast(_t('Wut noch nicht voll – triff Gegner!')); sfx('deny'); return; }
   P.rage = 0; P.atkT = 0; sfx('spec'); flash = { a: .2, c: '255,220,140' };
   const inp = readInput(), w = playerW(), id = CLASSES[P.cls].ult;
-  txt(P.x, P.y - 34, SKILLS[id].n.toUpperCase() + '!', '#ffd24a', true);
+  txt(P.x, P.y - 34, SKILLS[id].n.toLocaleUpperCase(LOCALE) + '!', '#ffd24a', true);
   if (id === 'ku') { const a = autoAim(160, inp), t = nearestEnemy(999), d = Math.min(70, t ? dist(t, P) : 70); P.leap = { t: 0, dur: .5, sx: P.x, sy: P.y, tx: clamp(P.x + Math.cos(a) * d, BD.x0, BD.x1), ty: clamp(P.y + Math.sin(a) * d, BD.y0, BD.y1) }; P.face = Math.cos(a) >= 0 ? 1 : -1; }
   else if (id === 'mu') { const n = 10 + mod('uCount'); for (let k = 0; k < n; k++) { const t = enemies.length ? pick(enemies) : null; const x = clamp((t ? t.x : P.x) + rnd(-30, 30), BD.x0, BD.x1), y = clamp((t ? t.y : P.y) + rnd(-20, 20), BD.y0, BD.y1); projs.push({ k: 'meteor', fxn: 'firebomb', x, y, tx: x, ty: y, h: 140, vx: 0, vy: 0, life: 9, max: 9, delay: k * .13, from: 'p', r: 0, w, hit: new Set() }); } }
   else if (id === 'ru') { const n = 3 + mod('uCount'); for (let k = 0; k < n; k++) { const a = k / n * 6.283; allies.push({ k: 'clone', x: P.x + Math.cos(a) * 16, y: P.y + Math.sin(a) * 10, life: 7, atkT: 0, phase: 0, face: 1, seed: rnd(0, 9) }); burst(P.x + Math.cos(a) * 16, P.y + Math.sin(a) * 10, 8, '#3a3448', 10, 40); } }
@@ -272,9 +272,9 @@ function doUlt() {
 }
 function hurtEnemy(e, dmg, nx, ny, kb, crit, noRage) {
   if (e.dead) return;
-  if (e.under > 0 || e.fade > .6) { if (e.fade > .6) txt(e.x, e.y - 14, 'VERFEHLT', '#bfefff'); return; }
+  if (e.under > 0 || e.fade > .6) { if (e.fade > .6) txt(e.x, e.y - 14, _t('VERFEHLT'), '#bfefff'); return; }
   if (e.ai === 'dummy') { e.flash = .1; e.squash = .25; e.kbx = nx; e.dmgLog.push([T, dmg]); txt(e.x + rnd(-3, 3), e.y - 30, String(Math.round(dmg)), crit ? '#ffd24a' : '#ffffff', crit); sfx(crit ? 'crit' : 'hit'); spark(e.x, e.y - 16, Math.atan2(ny, nx), crit ? '#ffd24a' : '#fff'); if (!noRage) { P.rage = Math.min(100, P.rage + 4); const R = CLASSES[P.cls].res; if (R.onHit) P.res = Math.min(P.st.resMax, P.res + R.onHit); } return; }
-  if (e.armor > 0) { const a = Math.min(e.armor, dmg * .7); e.armor -= a; dmg -= a; e.armorT = 4; if (e.armor <= 0) { burst(e.x, e.y, 10, '#c8c8d8', 14, 60); toast('Panzer gebrochen!'); } }
+  if (e.armor > 0) { const a = Math.min(e.armor, dmg * .7); e.armor -= a; dmg -= a; e.armorT = 4; if (e.armor <= 0) { burst(e.x, e.y, 10, '#c8c8d8', 14, 60); toast(_t('Panzer gebrochen!')); } }
   dmg = Math.round(dmg);
   e.hp -= dmg; e.flash = .1; e.squash = .18;
   if (e.ai === 'ghost' && !(e.hide > 0) && e.hp > 0 && Math.random() < .35) e.hide = 1.1;
@@ -303,11 +303,11 @@ function killEnemy(e, nx, ny) {
   if (e.boss) { dropLoot(e.x, e.y, 2, .25); dropLoot(e.x + 10, e.y, 1, .1); if (qm) dropLoot(e.x - 10, e.y, 3, .1); dropGem(e.x, e.y, randomGem(stageNum() + 10)); dropMat(e.x, e.y, 'schuppe', ri(1, 3)); if (qm && Math.random() < .01 + qm * .002) dropItem(e.x, e.y, makeMythic()); if (!gainLore()) gainFate(1, true); }
   else if (e.elite) { if (Math.random() < .35 * lm) dropLoot(e.x, e.y, 1, .03); if (Math.random() < .14 * lm * gemMul()) dropGem(e.x, e.y, randomGem(stageNum())); if (Math.random() < .03 * loreChance()) gainLore(); if (Math.random() < .02 * (1 + weekFx('fate'))) gainFate(1, true); }
   else if (Math.random() < .03 * lm) dropLoot(e.x, e.y, 0);
-  if (e.champ) { $('bossbar').hidden = true; banner('CHAMPION BESIEGT', e.name); slowmo = .6; }
+  if (e.champ) { $('bossbar').hidden = true; banner(_t('CHAMPION BESIEGT'), e.name); slowmo = .6; }
   if (e.t === 'mimic' || e.t === 'goldmimik') dropLoot(e.x, e.y, e.t === 'goldmimik' ? 3 : 2, .05);
   if (e.def.boomDeath) { const x = e.x, y = e.y, dmg = e.atk * 1.2; fx.push({ k: 'warn', x, y, r: 26, life: .5, max: .5 }); setTimeout(() => { if (G && state === 'play') explode(x, y, 26, dmg, 'e'); }, 500); }
   if (mod('my_soul')) { P.hp = Math.min(P.st.hp, P.hp + P.st.hp * .04); P.res = Math.min(P.st.resMax, P.res + 10); }
-  if (e.t === 'goldgob') { dropCoins(e.x, e.y, e.gold + 80 * stageNum(), true); dropGem(e.x, e.y, randomGem(stageNum() + 5)); dropLoot(e.x, e.y, 2); toast('Schatzgoblin erwischt!', '#e8d04a'); }
+  if (e.t === 'goldgob') { dropCoins(e.x, e.y, e.gold + 80 * stageNum(), true); dropGem(e.x, e.y, randomGem(stageNum() + 5)); dropLoot(e.x, e.y, 2); toast(_t('Schatzgoblin erwischt!'), '#e8d04a'); }
   P.rage = Math.min(100, P.rage + 8 * (1 + P.st.rage));
   const [fx0, fy0, fw, fh] = frameRect(e.sp, 'idle', 0);
   corpses.push({ sp: e.sp, fr: [fx0, fy0, fw, fh], x: e.x, y: e.y, z: e.z, vz: e.boss ? 60 : 110, vx: (nx || 0) * 80, vy: (ny || 0) * 40, rot: 0, vr: (nx || 1) * rnd(6, 12), turn: e.turn, sc: e.sc, life: e.boss ? 1.4 : .55, max: e.boss ? 1.4 : .55, blood: e.def.blood, boss: e.boss, tint: e.tint });
@@ -316,16 +316,16 @@ function killEnemy(e, nx, ny) {
   if (e.def.split) for (let i = 0; i < 2; i++) spawnEnemy('minislime', { x: e.x + rnd(-6, 6), y: e.y + rnd(-4, 4), instant: true });
   if (e.affixes.includes('explosiv')) { const x = e.x, y = e.y, dmg = e.atk * 1.6; fx.push({ k: 'warn', x, y, r: 32, life: .8, max: .8 }); setTimeout(() => { if (G && state === 'play') explode(x, y, 32, dmg, 'e'); }, 800); }
   if (e.poison > 0 && mod('plague')) for (const o of enemies) if (!o.dead && o !== e && Math.hypot(o.x - e.x, o.y - e.y) < 50) { o.poison = 4; o.poisonDmg = e.poisonDmg; }
-  if (e.boss) { banner('BOSS BESIEGT', e.name); $('bossbar').hidden = true; hitStop = .2; slowmo = 1.2; flash = { a: .6, c: '255,255,255' }; setTimeout(() => { if (G && state === 'play') explode(e.x, e.y, 40, 0, 'p'); }, 350); }
+  if (e.boss) { banner(_t('BOSS BESIEGT'), e.name); $('bossbar').hidden = true; hitStop = .2; slowmo = 1.2; flash = { a: .6, c: '255,255,255' }; setTimeout(() => { if (G && state === 'play') explode(e.x, e.y, 40, 0, 'p'); }, 350); }
 }
 function gainXP(v, e) {
-  v = Math.round(v * (1 + mod('xp'))); if (e) txt(e.x, e.y - 24 * e.sc, '+' + v + ' EP', '#57a7d6');
-  if (P.lv >= 50) { P.pxp += v; while (P.pxp >= PARAGON_XP) { P.pxp -= PARAGON_XP; P.paragon++; statMax('maxPar', P.paragon); banner('PARAGON ' + P.paragon, '+1 Paragonpunkt'); sfx('lvl'); } return; }
+  v = Math.round(v * (1 + mod('xp'))); if (e) txt(e.x, e.y - 24 * e.sc, _t('+{n} EP', { n: v }), '#57a7d6');
+  if (P.lv >= 50) { P.pxp += v; while (P.pxp >= PARAGON_XP) { P.pxp -= PARAGON_XP; P.paragon++; statMax('maxPar', P.paragon); banner(_t('PARAGON {n}', { n: P.paragon }), _t('+1 Paragonpunkt')); sfx('lvl'); } return; }
   P.xp += v;
   while (P.xp >= xpNext(P.lv) && P.lv < 50) {
     P.xp -= xpNext(P.lv); P.lv++; P.sp++; computeStats(); P.hp = P.st.hp; P.res = P.st.resMax;
     statMax('maxLv', P.lv); if (P.hc) statMax('hcLv', P.lv);
-    banner('LEVEL ' + P.lv, '+1 Talentpunkt · Mehr Lebenspunkte'); sfx('lvl');
+    banner(_t('LEVEL {lv}', { lv: P.lv }), _t('+1 Talentpunkt · Mehr Lebenspunkte')); sfx('lvl');
     fx.push({ k: 'pillar', x: P.x, y: P.y, life: 1, max: 1 });
     rings.push({ x: P.x, y: P.y, r: 2, max: 44, life: .5, max2: .5, col: '#e8b04a' });
     for (let i = 0; i < 30; i++) part(P.x, P.y, rnd(0, 10), rnd(-50, 50), rnd(-30, 30), rnd(40, 120), '#ffd24a', rnd(.5, 1), 1, 120, 1);
@@ -334,7 +334,7 @@ function gainXP(v, e) {
 }
 function hurtPlayer(dmg, src) {
   if (P.inv > 0 || state !== 'play' || P.hp <= 0) return;
-  if (Math.random() < P.st.dodge) { txt(P.x, P.y - 24, 'AUSGEWICHEN', '#8ee6ea'); P.inv = .25; return; }
+  if (Math.random() < P.st.dodge) { txt(P.x, P.y - 24, _t('AUSGEWICHEN'), '#8ee6ea'); P.inv = .25; return; }
   if (src && src.t && src.affixes) { if (src.affixes.includes('frostig') || (src.def && src.def.frosty)) P.slowT = 2; if (src.affixes.includes('vampir')) src.hp = Math.min(src.maxHp, src.hp + dmg * .5); if (mod('chill')) src.chill = 2; }
   let d = dmg * rnd(.9, 1.1) * 40 / (40 + P.st.def) * (1 - P.st.dr);
   if (P.wall > 0) { d *= .3; fxAnim('shield', P.x, P.y - 12, { dur: .25, alpha: .5 }); }
@@ -344,7 +344,7 @@ function hurtPlayer(dmg, src) {
   if (src && src.x != null) { const dx = P.x - src.x, dy = P.y - src.y, n = Math.hypot(dx, dy) || 1; P.vx += dx / n * 140; P.vy += dy / n * 140; }
   txt(P.x, P.y - 24, '-' + t, '#ff6a5a', true); shake(4); hitStop = .05; sfx('hurt'); flash = { a: .35, c: '200,40,40' };
   for (let i = 0; i < 8; i++) part(P.x, P.y, 10, rnd(-50, 50), rnd(-20, 20), rnd(30, 70), '#b8302a', rnd(.3, .6), 1);
-  if (P.hp <= 0 && mod('my_phoenix') && G && !G.phoenix) { G.phoenix = true; P.hp = P.st.hp * .5; P.inv = 2; banner('PHÖNIX', 'Du erhebst dich aus der Asche!'); explode(P.x, P.y, 50, P.st.wbase * 3, 'p', { burn: true, col: '#ffd24a' }); sfx('spec'); return; }
+  if (P.hp <= 0 && mod('my_phoenix') && G && !G.phoenix) { G.phoenix = true; P.hp = P.st.hp * .5; P.inv = 2; banner(_t('PHÖNIX'), _t('Du erhebst dich aus der Asche!')); explode(P.x, P.y, 50, P.st.wbase * 3, 'p', { burn: true, col: '#ffd24a' }); sfx('spec'); return; }
   if (P.hp <= 0) playerDie();
 }
 function playerDie() {
@@ -530,7 +530,7 @@ function updEnemy(e, dt) {
       if (e.x < BD.x0 + 30 || e.x > BD.x1 - 30) tx = -tx * .3 + (e.y < AH / 2 ? .7 : -.7) * 0; if (e.y < BD.y0 + 20 || e.y > BD.y1 - 20) ty = -ty * .3;
       mvx = (tx + Math.sin(T * 2 + e.seed) * .5) * spd * (d < 90 ? 1 : .5); mvy = (ty + Math.cos(T * 1.7 + e.seed) * .5) * spd * (d < 90 ? 1 : .5);
       if (Math.random() < .2) part(e.x, e.y, 6, 0, 0, 10, '#ffd24a', .4, 1, 0, 1);
-      if (e.escape <= 0) { e.dead = true; fxAnim('ring', e.x, e.y - 6, { sc: .8, dur: .5, add: true }); burst(e.x, e.y, 8, '#b892f4', 20, 60, 1); toast('Der Schatzgoblin ist entkommen!', '#ff6a5a'); sfx('cast'); }
+      if (e.escape <= 0) { e.dead = true; fxAnim('ring', e.x, e.y - 6, { sc: .8, dur: .5, add: true }); burst(e.x, e.y, 8, '#b892f4', 20, 60, 1); toast(_t('Der Schatzgoblin ist entkommen!'), '#ff6a5a'); sfx('cast'); }
       break;
     }
     case 'bomber':
@@ -553,7 +553,7 @@ function updEnemy(e, dt) {
     case 'slam':
       if (e.st === 'move') {
         mvx = dx / d * spd; mvy = dy / d * spd;
-        if (e.boss && e.sum < 2 && e.hp < e.maxHp * (e.sum === 0 ? .66 : .33)) { e.sum++; const k = e.t === 'zombie' ? 'tinyz' : 'goblin'; for (let i = 0; i < 4; i++) spawnEnemy(k, { x: clamp(e.x + rnd(-30, 30), BD.x0, BD.x1), y: clamp(e.y + rnd(-20, 20), BD.y0, BD.y1) }); toast(e.name.split(' ')[0] + ' ruft Verstärkung!'); }
+        if (e.boss && e.sum < 2 && e.hp < e.maxHp * (e.sum === 0 ? .66 : .33)) { e.sum++; const k = e.t === 'zombie' ? 'tinyz' : 'goblin'; for (let i = 0; i < 4; i++) spawnEnemy(k, { x: clamp(e.x + rnd(-30, 30), BD.x0, BD.x1), y: clamp(e.y + rnd(-20, 20), BD.y0, BD.y1) }); toast(_t('{name} ruft Verstärkung!', { name: e.name })); }
         if (d < R + P.r + 14 && e.cd <= 0) { e.st = 'wind'; e.stT = e.windDur = e.boss ? .62 : .78; }
       }
       else if (e.st === 'wind') {
@@ -571,7 +571,7 @@ function updEnemy(e, dt) {
       else if (e.st === 'rec') { e.stT -= dt; if (e.stT <= 0) { e.st = 'move'; e.cd = e.boss ? 1.05 : 1.6; } }
       break;
     case 'charge':
-      if (e.st === 'move' && e.boss && D.summon && e.sum < 2 && e.hp < e.maxHp * (e.sum === 0 ? .66 : .33)) { e.sum++; for (let i = 0; i < 3; i++) spawnEnemy(D.summon, { x: clamp(e.x + rnd(-40, 40), BD.x0, BD.x1), y: clamp(e.y + rnd(-24, 24), BD.y0, BD.y1) }); toast(e.name.split(' ').pop() + ' ruft seine Garde!'); }
+      if (e.st === 'move' && e.boss && D.summon && e.sum < 2 && e.hp < e.maxHp * (e.sum === 0 ? .66 : .33)) { e.sum++; for (let i = 0; i < 3; i++) spawnEnemy(D.summon, { x: clamp(e.x + rnd(-40, 40), BD.x0, BD.x1), y: clamp(e.y + rnd(-24, 24), BD.y0, BD.y1) }); toast(_t('{name} ruft seine Garde!', { name: e.name })); }
       if (e.st === 'move') { mvx = dx / d * spd; mvy = dy / d * spd; if (e.cd <= 0) { if (d < R + P.r + 12) { e.st = 'wind'; e.mode = 'melee'; e.stT = e.windDur = .45; } else if (d < 170) { e.st = 'wind'; e.mode = 'charge'; e.stT = e.windDur = .6; } } }
       else if (e.st === 'wind') {
         e.stT -= dt; if (e.mode === 'charge') { e.ldx = dx / d; e.ldy = dy / d; if (Math.random() < .4) dust(e.x - e.face * 4, e.y, 1); }
@@ -626,7 +626,7 @@ function updEnemy(e, dt) {
     case 'dragon':
       if (e.st === 'move') {
         if (d > 80) { mvx = dx / d * spd; mvy = dy / d * spd; } else if (d < 50) { mvx = -dx / d * spd * .6; mvy = -dy / d * spd * .6; }
-        if (e.boss && e.sum < 2 && e.hp < e.maxHp * (e.sum === 0 ? .66 : .33)) { e.sum++; for (let i = 0; i < (D.summon === 'jungdrache' ? 1 : 3); i++) spawnEnemy(D.summon || 'imp', {}); toast(e.name.split(' ').pop() + ' ruft Verstärkung!'); }
+        if (e.boss && e.sum < 2 && e.hp < e.maxHp * (e.sum === 0 ? .66 : .33)) { e.sum++; for (let i = 0; i < (D.summon === 'jungdrache' ? 1 : 3); i++) spawnEnemy(D.summon || 'imp', {}); toast(_t('{name} ruft Verstärkung!', { name: e.name })); }
         if (e.cd <= 0) { if (d < R + P.r + 22) { e.st = 'wind'; e.mode = 'stomp'; e.stT = e.windDur = .6; } else { e.st = 'wind'; e.mode = 'breath'; e.stT = e.windDur = .8; } }
       } else if (e.st === 'wind') {
         e.stT -= dt; if (e.mode === 'breath' && Math.random() < .5) part(e.x + e.face * 14 * e.sc, e.y, 18 * e.sc, 0, 0, 10, '#ffb03a', .3, 1, 0, 1);
@@ -731,7 +731,7 @@ function updPickups(dt) {
       c.got = true;
       if (c.k === 'coin') { P.gold += c.v; stat('goldTotal', c.v); sfx('coin'); part(c.x, c.y, 4, 0, 0, 40, '#e8b04a', .3, 1, 0, 1); }
       else if (c.k === 'heart') { const h = Math.round(P.st.hp * .15); P.hp = Math.min(P.st.hp, P.hp + h); txt(P.x, P.y - 24, '+' + h, '#79c24e'); sfx('heal'); }
-      else if (c.k === 'flask') { P.potions = Math.min(potMax(), P.potions + 1); toast('Heiltrank +1'); sfx('heal'); }
+      else if (c.k === 'flask') { P.potions = Math.min(potMax(), P.potions + 1); toast(_t('Heiltrank +1')); sfx('heal'); }
       else if (c.k === 'mat') { gainMat(c.m, c.n); txt(P.x, P.y - 22, '+' + c.n + ' ' + MATS[c.m].n, MATS[c.m].c); sfx('coin'); }
       else if (c.k === 'gem') { gainGem(c.g); const [id, gr] = c.g.split(':'); toast(GEMGRADE[+gr] + ' ' + GEMS[id].n + '!', GEMS[id].c); sfx('loot'); }
       else if (c.k === 'loot') pickItem(c.it);
@@ -740,15 +740,15 @@ function updPickups(dt) {
   pickups = pickups.filter(c => !c.got);
 }
 function pickItem(it) {
-  sfx(it.rar === 6 ? 'myth' : 'loot'); if (it.rar === 4) stat('legs'); if (it.rar === 6) { statMax('myths', 1); banner('MYTHISCH!', it.name); }
+  sfx(it.rar === 6 ? 'myth' : 'loot'); if (it.rar === 4) stat('legs'); if (it.rar === 6) { statMax('myths', 1); banner(_t('MYTHISCH!'), _t(it.name)); }
   const cur = P.gear[it.slot];
   if (canEquip(it) && (!cur || itemScore(it) > itemScore(cur) * 1.05) && (!cur || !cur.set || it.set)) {
     P.gear[it.slot] = it; if (cur) addToBag(cur); computeStats(); P.hp = Math.min(P.hp, P.st.hp);
-    toast(RAR[it.rar].n.toUpperCase() + ': ' + itemName(it) + ' angelegt', RAR[it.rar].c);
+    toast(_t('{rar}: {item} angelegt', { rar: RAR[it.rar].n.toLocaleUpperCase(LOCALE), item: itemName(it) }), RAR[it.rar].c);
     if (it.set && setCount(it.set) >= 3) stat('fullset');
   } else {
     const g = addToBag(it);
-    toast(g ? 'Beutel voll – für ' + g + ' Gold verkauft' : RAR[it.rar].n.toUpperCase() + ': ' + itemName(it) + ' (Beutel)', RAR[it.rar].c);
+    toast(g ? _t('Beutel voll – für {gold} Gold verkauft', { gold: g }) : _t('{rar}: {item} (Beutel)', { rar: RAR[it.rar].n.toLocaleUpperCase(LOCALE), item: itemName(it) }), RAR[it.rar].c);
   }
   for (let i = 0; i < 20; i++) part(P.x, P.y, rnd(0, 16), rnd(-30, 30), rnd(-15, 15), rnd(30, 80), RAR[it.rar].c, rnd(.4, .8), 1, 80, 1);
   updWeaponUI();

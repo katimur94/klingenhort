@@ -1,15 +1,25 @@
 // Fotografiert alle Bildschirme zum Ansehen: node screens.js <breite> <höhe> <ausgabeordner> [pc]
 // Ohne „pc“ als Touch-Handy. metrics.txt zeigt, wie weit jede Tafel gescrollt werden muss.
+// Mit KH_LANG=en (tr, es, it, fr) in dieser Sprache: prüft zusätzlich, dass kein Text fehlt
+// (fehlt.txt) und nirgends Deutsch stehen bleibt – im Menü, im HUD und auf dem Spielfeld (deutsch.txt).
 const { chromium } = require('playwright');
 const fs = require('fs');
 const [W, H, OUT] = [+process.argv[2] || 844, +process.argv[3] || 390, process.argv[4] || '/tmp/klingenhort-test/screens'];
+const LG = process.env.KH_LANG || 'de', LOC = { de: 'de-DE', en: 'en-US', tr: 'tr-TR', es: 'es-ES', it: 'it-IT', fr: 'fr-FR' }[LG];
+// typisch deutsche Wörter (keine, die es auch in einer der anderen Sprachen gibt)
+const DE_WORDS = new Set('und nicht eine einen einem einer für ist mit sich noch wird werden oder auch kein keine keinen mehr zurück schaden gegner stufe gegenstand gegenstände fähigkeit fähigkeiten kosten kaufen verkaufen wählen neue neuer neues spielen dein deine deinen deiner ihr wenn jetzt beim zum zur vom über gegen durch ohne sehr schon immer hier dann weil sind habe kann diese dieser dieses leben abklingzeit wut trank heiltrank weiter schließen anlegen ablegen verschmelzen aufwerten versteck helden karte weltkarte'.split(' '));
+const DE_CHARS = LG === 'tr' ? /[äÄß]/ : /[äöüÄÖÜß]/;
 const PC = process.argv[5] === 'pc', BASE = (process.env.BASE || 'http://localhost:8777/').replace(/\/?$/, '/');
 (async () => {
   fs.rmSync(OUT, { recursive: true, force: true }); fs.mkdirSync(OUT, { recursive: true });
   const b = await chromium.launch();
-  const ctx = await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: PC ? 1 : 2, isMobile: !PC, hasTouch: !PC });
+  const ctx = await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: PC ? 1 : 2, isMobile: !PC, hasTouch: !PC, locale: LOC });
+  if (LG !== 'de') await ctx.addInitScript(() => {
+    window.__I18N_MISS = 1; window.__CTXT = new Set();
+    for (const f of ['fillText', 'strokeText']) { const o = CanvasRenderingContext2D.prototype[f]; CanvasRenderingContext2D.prototype[f] = function (t, ...a) { if (window.__CTXT.size < 5000) window.__CTXT.add(String(t)); return o.call(this, t, ...a); }; }
+  });
   const page = await ctx.newPage();
-  const errs = []; page.on('pageerror', e => errs.push(e.message)); page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+  const german = [], errs = []; page.on('pageerror', e => errs.push(e.message)); page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   await page.goto(BASE + 'index.html'); await page.waitForTimeout(1500);
   await page.evaluate(() => {
     localStorage.clear(); loadAll();
@@ -27,6 +37,19 @@ const PC = process.argv[5] === 'pc', BASE = (process.env.BASE || 'http://localho
     try { if (fn) await page.evaluate(fn); } catch (e) { errs.push(name + ': ' + e.message); }
     await page.waitForTimeout(wait || 350);
     await page.screenshot({ path: `${OUT}/${name}.png` });
+    if (LG !== 'de') {
+      const texts = await page.evaluate(() => {
+        const r = [], vis = el => el && !el.hidden && el.offsetParent !== null;
+        for (const id of ['ov', 'hud', 'objective', 'banner', 'toast', 'bossbar', 'ctlbar', 'skillbar', 'combo']) { const el = document.getElementById(id); if (vis(el) || (el && id === 'ov' && !el.hidden)) r.push(el.innerText); }
+        for (const el of document.querySelectorAll('[aria-label]')) if (vis(el)) r.push(el.getAttribute('aria-label'));
+        r.push(...window.__CTXT); window.__CTXT.clear();
+        return r;
+      });
+      for (const t of texts) for (const line of String(t).split('\n')) {
+        const w = line.toLowerCase().split(/[^\p{L}]+/u).find(x => DE_WORDS.has(x));
+        if (w || DE_CHARS.test(line)) german.push(`${name}: ${w ? '„' + w + '“' : 'Umlaut'} in: ${line.trim().slice(0, 140)}`);
+      }
+    }
     // Höhe des Inhalts im Panel: zeigt, wie viel gescrollt werden muss
     const m = await page.evaluate(() => { const p = document.getElementById('panel'); const ov = document.getElementById('ov'); return ov.hidden ? null : { sh: p.scrollHeight, ch: p.clientHeight, w: p.clientWidth }; });
     fs.appendFileSync(`${OUT}/metrics.txt`, `${name} ${m ? `scroll ${m.sh}/${m.ch} (${(m.sh / m.ch).toFixed(1)}x) w ${m.w}` : '-'}\n`);
@@ -53,6 +76,7 @@ const PC = process.argv[5] === 'pc', BASE = (process.env.BASE || 'http://localho
   await shot('17_rest', () => { openRest(); });
   await shot('18_riddle', () => { openRiddle(); });
   await shot('19_settings', () => { showSettings(); });
+  await shot('19b_lang', () => { showLang('settings'); });
   await shot('20_controls', () => { showControls(); });
   await shot('21_hideout', () => { enterHideout(); }, 1200);
   await shot('22_hide_station', () => { openStation('schmiede'); });
@@ -71,7 +95,15 @@ const PC = process.argv[5] === 'pc', BASE = (process.env.BASE || 'http://localho
   await shot('35_best', () => { showBestiary(); });
   await shot('36_hall', () => { showHall(); });
   await shot('37_code', () => { showCode(); });
-  console.log(errs.length ? '  FAIL Fehler: ' + errs.slice(0, 3).join(' | ') : '  ok   ' + W + 'x' + H + ' alle Bildschirme ohne Fehler → ' + OUT);
+  console.log(errs.length ? '  FAIL Fehler: ' + errs.slice(0, 3).join(' | ') : '  ok   ' + W + 'x' + H + (LG !== 'de' ? ' ' + LG : '') + ' alle Bildschirme ohne Fehler → ' + OUT);
+  let bad = errs.length;
+  if (LG !== 'de') {
+    const miss = await page.evaluate(() => [...I18N_MISS]), uniq = [...new Set(german)];
+    fs.writeFileSync(`${OUT}/fehlt.txt`, miss.join('\n')); fs.writeFileSync(`${OUT}/deutsch.txt`, uniq.join('\n'));
+    console.log(miss.length ? `  FAIL ${miss.length} Texte ohne Übersetzung (${LG}): ${miss.slice(0, 3).map(x => JSON.stringify(x.slice(0, 50))).join(', ')} → fehlt.txt` : `  ok   alle Texte übersetzt (${LG})`);
+    console.log(uniq.length ? `  FAIL ${uniq.length}× Deutsch auf dem Bildschirm (${LG}): ${uniq.slice(0, 3).join(' | ')} → deutsch.txt` : `  ok   kein Deutsch auf dem Bildschirm (${LG})`);
+    bad += miss.length + uniq.length;
+  }
   await b.close();
-  process.exit(errs.length ? 1 : 0);
+  process.exit(bad ? 1 : 0);
 })();

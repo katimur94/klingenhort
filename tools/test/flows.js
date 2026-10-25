@@ -8,7 +8,7 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
 
 (async () => {
   const b = await chromium.launch();
-  const ctx = await b.newContext({ viewport: { width: W, height: H }, isMobile: true, hasTouch: true });
+  const ctx = await b.newContext({ viewport: { width: W, height: H }, isMobile: true, hasTouch: true, locale: 'de-DE' });
   const page = await ctx.newPage();
   const errs = []; page.on('pageerror', e => errs.push(e.message)); page.on('console', m => { if (m.type() === 'error' && !/favicon|net::ERR/.test(m.text())) errs.push('console: ' + m.text()); });
   await page.goto(BASE + 'index.html'); await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForTimeout(1500);

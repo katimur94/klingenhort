@@ -289,20 +289,20 @@ const RAR = [
   {n:'Mythisch',c:'#ff4fd8',m:2.15,aff:4,sock:[2,3]}
 ];
 const AFFW = {
-  krit:{suf:'der Präzision',f:r=>.04+r*.015,s:v=>'Krit +'+pct(v)},
-  tempo:{suf:'des Windes',f:r=>.06+r*.02,s:v=>'Tempo +'+pct(v)},
-  raub:{suf:'des Blutes',f:r=>.02+r*.008,s:v=>'Lebensraub '+pct(v)},
-  feuer:{suf:'der Glut',f:r=>.15+r*.05,s:v=>'Brand '+pct(v)},
-  frost:{suf:'des Frostes',f:r=>.06+r*.02,s:v=>'Frost '+pct(v)},
-  wucht:{suf:'der Wucht',f:r=>.08+r*.04,s:v=>'Schaden +'+pct(v)}
+  krit:{suf:'der Präzision',f:r=>.04+r*.015,s:v=>_t('Krit +{v}',{v:pct(v)})},
+  tempo:{suf:'des Windes',f:r=>.06+r*.02,s:v=>_t('Tempo +{v}',{v:pct(v)})},
+  raub:{suf:'des Blutes',f:r=>.02+r*.008,s:v=>_t('Lebensraub {v}',{v:pct(v)})},
+  feuer:{suf:'der Glut',f:r=>.15+r*.05,s:v=>_t('Brand {v}',{v:pct(v)})},
+  frost:{suf:'des Frostes',f:r=>.06+r*.02,s:v=>_t('Frost {v}',{v:pct(v)})},
+  wucht:{suf:'der Wucht',f:r=>.08+r*.04,s:v=>_t('Schaden +{v}',{v:pct(v)})}
 };
 const AFFA = {
-  leben:{suf:'des Lebens',f:r=>.05+r*.03,s:v=>'LP +'+pct(v)},
-  panzer:{suf:'des Panzers',f:r=>2+r*1.5,s:v=>'VER +'+Math.round(v)},
-  heil:{suf:'der Heilung',f:r=>.3+r*.2,s:v=>'Regeneration +'+v.toFixed(1)},
-  schutz:{suf:'des Schutzes',f:r=>.03+r*.015,s:v=>'Schadensminderung '+pct(v)},
-  eile:{suf:'der Eile',f:r=>.03+r*.015,s:v=>'Lauftempo +'+pct(v)},
-  glueck:{suf:'des Glücks',f:r=>.08+r*.05,s:v=>'Gold +'+pct(v)}
+  leben:{suf:'des Lebens',f:r=>.05+r*.03,s:v=>_t('LP +{v}',{v:pct(v)})},
+  panzer:{suf:'des Panzers',f:r=>2+r*1.5,s:v=>_t('VER +{v}',{v:Math.round(v)})},
+  heil:{suf:'der Heilung',f:r=>.3+r*.2,s:v=>_t('Regeneration +{v}',{v:v.toLocaleString(LOCALE,{minimumFractionDigits:1,maximumFractionDigits:1})})},
+  schutz:{suf:'des Schutzes',f:r=>.03+r*.015,s:v=>_t('Schadensminderung {v}',{v:pct(v)})},
+  eile:{suf:'der Eile',f:r=>.03+r*.015,s:v=>_t('Lauftempo +{v}',{v:pct(v)})},
+  glueck:{suf:'des Glücks',f:r=>.08+r*.05,s:v=>_t('Gold +{v}',{v:pct(v)})}
 };
 const LEGEND = {dagger:['Nachtzahn','Viperbiss','Schattenkuss'],sword:['Sonnenklinge','Morgenrot','Sturmbrecher'],axe:['Weltspalter','Donnerkeil','Bergfäller'],bow:['Sternenfall','Himmelsbogen','Windflüsterer'],staff:['Sternenfeuer','Eiswind','Weltenauge'],armor:['Ewige Wacht','Phönixherz','Bollwerk der Ahnen'],helm:['Krone der Ahnen','Drachenblick','Löwenhaupt']};
 const SETS = {
@@ -357,11 +357,11 @@ const MATS = {
 };
 const MATORDER = ['erz','leder','knochen','schleim','zahn','kristall','horn','glut','mithril','adamant','schuppe','stern','aether'];
 const GEMS = {
-  rubin:{n:'Rubin',c:'#e8402a',eff:'dmg',v:[.03,.05,.08,.12,.18],s:v=>'Schaden +'+pct(v)},
-  saphir:{n:'Saphir',c:'#57a7d6',eff:'def',v:[2,4,7,11,16],s:v=>'VER +'+v},
-  smaragd:{n:'Smaragd',c:'#3ac87a',eff:'crit',v:[.01,.02,.035,.05,.07],s:v=>'Krit +'+pct(v)},
-  amethyst:{n:'Amethyst',c:'#b892f4',eff:'hp',v:[.03,.05,.08,.12,.17],s:v=>'LP +'+pct(v)},
-  topas:{n:'Topas',c:'#e8d04a',eff:'gold',v:[.05,.1,.16,.24,.35],s:v=>'Gold +'+pct(v)}
+  rubin:{n:'Rubin',c:'#e8402a',eff:'dmg',v:[.03,.05,.08,.12,.18],s:v=>_t('Schaden +{v}',{v:pct(v)})},
+  saphir:{n:'Saphir',c:'#57a7d6',eff:'def',v:[2,4,7,11,16],s:v=>_t('VER +{v}',{v})},
+  smaragd:{n:'Smaragd',c:'#3ac87a',eff:'crit',v:[.01,.02,.035,.05,.07],s:v=>_t('Krit +{v}',{v:pct(v)})},
+  amethyst:{n:'Amethyst',c:'#b892f4',eff:'hp',v:[.03,.05,.08,.12,.17],s:v=>_t('LP +{v}',{v:pct(v)})},
+  topas:{n:'Topas',c:'#e8d04a',eff:'gold',v:[.05,.1,.16,.24,.35],s:v=>_t('Gold +{v}',{v:pct(v)})}
 };
 const GEMORDER = ['rubin','saphir','smaragd','amethyst','topas'];
 const GEMGRADE = ['Splitter','Kleiner','Feiner','Makelloser','Königlicher'];
@@ -617,4 +617,4 @@ const ACH = [
   {id:'allcls',n:'Vielseitig',d:'Bringe alle vier Klassen auf Level 10',t:s=>s.clsLv10>=4,r:800}
 ];
 
-function pct(v){return Math.round(v*100)+' %'}
+function pct(v){return _t('{n} %',{n:Math.round(v*100)})}

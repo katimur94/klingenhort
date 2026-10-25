@@ -8,7 +8,7 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
 
 (async () => {
   const b = await chromium.launch();
-  const d = Object.assign({}, devices[dev]); delete d.defaultBrowserType;
+  const d = Object.assign({}, devices[dev]); delete d.defaultBrowserType; d.locale = 'de-DE';
   if (tiktok) d.userAgent += ' musical_ly_31.5.0 JsSdk/2.0 NetType/WIFI Channel/App Store ByteLocale/de BytedanceWebview/d8a21c6';
   const ctx = await b.newContext(d); const page = await ctx.newPage();
   const errs = []; page.on('pageerror', e => errs.push(e.message));

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Alle automatischen Tests. Aufruf aus dem Repo: bash tools/test/run.sh
 # Startet das Spiel lokal auf Port 8777, prüft Handy (hoch/quer), iPhone, TikTok-Browser,
-# alte Spielstände und fotografiert alle Bildschirme nach /tmp/klingenhort-test/screens-*.
+# alte Spielstände, alle Sprachen und fotografiert alle Bildschirme nach /tmp/klingenhort-test/screens-*.
 # Rückgabe 0 = alles grün, sonst 1.
 cd "$(dirname "$0")/../.."
 PORT=8777; export BASE="http://localhost:$PORT/"
@@ -24,6 +24,13 @@ run node tools/test/savecompat.js
 run node tools/test/screens.js 390 844 /tmp/klingenhort-test/screens-hoch
 run node tools/test/screens.js 844 390 /tmp/klingenhort-test/screens-quer
 run node tools/test/screens.js 1280 720 /tmp/klingenhort-test/screens-pc pc
+run node tools/i18n/check.js
+# jede Sprache im Hochformat (gleichzeitig): nichts fehlt, kein Deutsch, nichts abgeschnitten
+echo; echo "== Sprachen"
+mkdir -p /tmp/klingenhort-test; PIDS=""
+for l in en tr es it fr; do KH_LANG=$l node tools/test/screens.js 390 844 /tmp/klingenhort-test/lang-$l > /tmp/klingenhort-test/lang-$l.log 2>&1 & PIDS="$PIDS $!"; done
+for j in $PIDS; do wait $j || FAIL=1; done
+for l in en tr es it fr; do cat /tmp/klingenhort-test/lang-$l.log; done
 echo
 if [ $FAIL = 0 ]; then echo "ALLE TESTS GRÜN"; else echo "TESTS FEHLGESCHLAGEN"; fi
 exit $FAIL

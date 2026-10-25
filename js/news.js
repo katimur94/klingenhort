@@ -72,12 +72,12 @@ const CHANGELOG = [
   }
 ];
 
-// Vorschau: was in den nächsten Wochen kommt (siehe ROADMAP.md)
+// Vorschau: was in den nächsten Wochen kommt (Version, Text – siehe ROADMAP.md)
 const COMING = [
-  ['Update 4.3', 'Tägliche und wöchentliche Aufträge mit Belohnungen im Versteck'],
-  ['Update 4.4', 'Neues Gebiet: der Sturmgipfel mit eigenem Boss und vier neuen Gegnern'],
-  ['Update 5.0', 'Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste'],
-  ['Update 5.1', 'Begleiter: Mini-Drache, Geisterkatze und Goldkäfer sammeln Beute für dich']
+  ['4.4', 'Tägliche und wöchentliche Aufträge mit Belohnungen im Versteck'],
+  ['4.5', 'Neues Gebiet: der Sturmgipfel mit eigenem Boss und vier neuen Gegnern'],
+  ['5.0', 'Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste'],
+  ['5.1', 'Begleiter: Mini-Drache, Geisterkatze und Goldkäfer sammeln Beute für dich']
 ];
 
 const NEWS_KIND = { neu: ['NEU', '#79c24e'], besser: ['BESSER', '#57a7d6'], fix: ['BEHOBEN', '#e8b04a'] };
@@ -99,7 +99,7 @@ function showNews(back) {
   newsBack = back || 'title';
   const html = `<div class="head"><h2>NEUIGKEITEN</h2><div class="hbtns"><span class="pill dim">VERSION ${VERSION}</span><button class="btn alt sm" data-act="newsback">Zurück</button></div></div>
   <div class="newsgrid"><div>${newsHTML()}</div>
-  <div class="box"><h3 style="margin-top:0">DEMNÄCHST</h3>${COMING.map(([w, t]) => `<div class="soon"><b>${w}</b>${esc(t)}</div>`).join('')}<p class="sub" style="font-size:16px;margin-bottom:0">Klingenhort wird jede Woche erweitert. Die installierte App aktualisiert sich von selbst.</p></div></div>`;
+  <div class="box"><h3 style="margin-top:0">DEMNÄCHST</h3>${COMING.map(([v, t]) => `<div class="soon"><b>${_t('Update {v}', { v })}</b>${esc(t)}</div>`).join('')}<p class="sub" style="font-size:16px;margin-bottom:0">Klingenhort wird jede Woche erweitert. Die installierte App aktualisiert sich von selbst.</p></div></div>`;
   newsSeen();
   showOverlay(html, true);
 }

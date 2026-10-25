@@ -163,6 +163,7 @@ function showTitle() {
     <button class="btn alt" data-act="hall">Ruhmeshalle</button>
     <button class="btn alt" data-act="code">Spielstand übertragen</button>
     <button class="btn alt" data-act="settings">Einstellungen</button>
+    <button class="btn alt" data-act="langs" data-id="title">🌐 ${LANGS[LANG]}</button>
     ${installBtn()}
   </div></div></div>
   <div class="help">${HELP}</div>${CREDIT}<p class="credit">Version ${VERSION}</p>`, true);
@@ -508,7 +509,7 @@ function showHall() {
   const days = Object.keys(SAVE.meta.daily).sort().reverse().slice(0, 7);
   showOverlay(`<div class="head"><h2>RUHMESHALLE</h2><button class="btn alt sm" data-act="backtitle">Zurück</button></div>
   <h3>LEBENDE HELDEN</h3>${heroes.map(c => `<div class="cardrow">${heroHTML(c, 1.4)}<div><div style="font-size:20px">${esc(c.name)} ${c.hc ? '<span class="pill hc">HC</span>' : ''}</div><div style="font-size:15px;color:var(--parch-dim)">${CLASSES[c.cls].name} · LV ${c.lv} · Höchster Akt ${c.maxAct} · ${fmt(c.stats.kills)} Kills · ${DIFFS[c.diff].n}</div></div><span></span></div>`).join('') || '<p class="sub">Noch keine Helden.</p>'}
-  <h3>GEFALLENE HARDCORE-HELDEN</h3>${SAVE.meta.fallen.map(f => `<div class="cardrow"><img class="px" src="${iconURL(['s', 288, 432, 16, 16])}" alt="" style="width:40px"><div><div style="font-size:20px">${esc(f.name)}</div><div style="font-size:15px;color:var(--parch-dim)">${CLASSES[f.cls].name} · LV ${f.lv} · Akt ${f.act} · ${fmt(f.kills)} Kills · ${new Date(f.date).toLocaleDateString('de-DE')}</div></div><span></span></div>`).join('') || '<p class="sub">Niemand. Noch nicht.</p>'}
+  <h3>GEFALLENE HARDCORE-HELDEN</h3>${SAVE.meta.fallen.map(f => `<div class="cardrow"><img class="px" src="${iconURL(['s', 288, 432, 16, 16])}" alt="" style="width:40px"><div><div style="font-size:20px">${esc(f.name)}</div><div style="font-size:15px;color:var(--parch-dim)">${CLASSES[f.cls].name} · LV ${f.lv} · Akt ${f.act} · ${fmt(f.kills)} Kills · ${new Date(f.date).toLocaleDateString(LOCALE)}</div></div><span></span></div>`).join('') || '<p class="sub">Niemand. Noch nicht.</p>'}
   <h3>TAGES-CHALLENGE</h3>${days.map(d => `<div style="font-size:18px">${d.slice(6, 8)}.${d.slice(4, 6)}.${d.slice(0, 4)}: <b style="color:var(--gold)">${SAVE.meta.daily[d]}</b> Punkte</div>`).join('') || '<p class="sub">Noch nicht gespielt.</p>'}`, true);
 }
 function showCode(msg) {
@@ -521,7 +522,14 @@ function showCode(msg) {
 }
 function showSettings() {
   const s = SAVE.meta.settings;
-  showOverlay(`<h2>EINSTELLUNGEN</h2><div class="menu" style="margin-top:12px"><button class="btn alt" data-act="music">Musik: ${s.music !== false ? 'AN' : 'AUS'}</button><button class="btn alt" data-act="sfx">Soundeffekte: ${s.sfx !== false ? 'AN' : 'AUS'}</button><button class="btn alt" data-act="bigui">Schrift: ${s.bigui ? 'GROSS' : 'NORMAL'}</button><button class="btn alt" data-act="calm">Wackeln & Blitzen: ${s.calm ? 'AUS' : 'AN'}</button><button class="btn alt" data-act="controls">Steuerung</button><button class="btn alt" data-act="news" data-id="settings">Neuigkeiten</button>${UPD.on ? '<button class="btn alt" data-act="checkupd">Nach Update suchen</button>' : ''}<button class="btn" data-act="backtitle">Zurück</button></div><p class="sub" id="updmsg">Version ${VERSION}</p>`);
+  showOverlay(`<h2>EINSTELLUNGEN</h2><div class="menu" style="margin-top:12px"><button class="btn alt" data-act="music">Musik: ${s.music !== false ? 'AN' : 'AUS'}</button><button class="btn alt" data-act="sfx">Soundeffekte: ${s.sfx !== false ? 'AN' : 'AUS'}</button><button class="btn alt" data-act="bigui">Schrift: ${s.bigui ? 'GROSS' : 'NORMAL'}</button><button class="btn alt" data-act="calm">Wackeln & Blitzen: ${s.calm ? 'AUS' : 'AN'}</button><button class="btn alt" data-act="controls">Steuerung</button><button class="btn alt" data-act="news" data-id="settings">Neuigkeiten</button><button class="btn alt" data-act="langs" data-id="settings">🌐 ${LANGS[LANG]}</button>${UPD.on ? '<button class="btn alt" data-act="checkupd">Nach Update suchen</button>' : ''}<button class="btn" data-act="backtitle">Zurück</button></div><p class="sub" id="updmsg">Version ${VERSION}</p>`);
+}
+// Sprache: jede in ihrer eigenen Schreibweise, der Wechsel lädt die Seite neu
+let langBack = 'title';
+function showLang(back) {
+  langBack = back || 'title';
+  showOverlay(`<div class="head"><h2>${_t('SPRACHE')}</h2><div class="hbtns"><button class="btn alt sm" data-act="langback">${_t('Zurück')}</button></div></div>
+  <div class="opts langs">${Object.keys(LANGS).map(c => `<button class="opt${c === LANG ? ' sel' : ''}" data-act="setlang" data-id="${c}" lang="${c}">${LANGS[c]}</button>`).join('')}</div>`);
 }
 function showControls() {
   const c = ctlSet(), opt = (act, on, label, small) => `<button class="opt${on ? ' sel' : ''}" data-act="${act}">${label}<small>${small}</small></button>`;
@@ -560,6 +568,9 @@ panel.addEventListener('click', ev => {
     case 'code': showCode(); break;
     case 'settings': showSettings(); break;
     case 'bigui': SAVE.meta.settings.bigui = !SAVE.meta.settings.bigui; persist(); applyUiPrefs(); showSettings(); break;
+    case 'langs': showLang(id); break;
+    case 'langback': if (langBack === 'settings') showSettings(); else showTitle(); break;
+    case 'setlang': if (id === LANG) { b.blur(); break; } try { persist(); } catch (_) { } setLang(id); break;
     case 'calm': SAVE.meta.settings.calm = !SAVE.meta.settings.calm; persist(); showSettings(); break;
     case 'controls': showControls(); break;
     case 'ctledit': openCtlEditor(id); break;

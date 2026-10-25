@@ -66,9 +66,9 @@ function rollAffixes(it) {
 }
 function itemName(it, cls) {
   cls = cls || (P && P.cls) || 'knight';
-  let base = it.name;
-  if (!base) base = it.slot === 'weapon' ? MAT[it.tier].n + '-' + wform(it).n : CLASSES[cls].names[it.tier][it.slot === 'armor' ? 0 : 1];
-  if (!it.name && it.suf) base += ' ' + it.suf;
+  let base = _t(it.name);
+  if (!base) base = it.slot === 'weapon' ? _t('{mat}-{form}', { mat: MAT[it.tier].n, form: wform(it).n }) : CLASSES[cls].names[it.tier][it.slot === 'armor' ? 0 : 1];
+  if (!it.name && it.suf) base = _t('{name} {suf}', { name: base, suf: _t(it.suf) });
   return base + (it.fz ? ' ' + '★'.repeat(it.fz) : '') + (it.up ? ' +' + it.up : '');
 }
 function itemColor(it) { return RAR[it.rar].c; }
@@ -78,16 +78,16 @@ function armorHp(it) { return AR[it.slot].hp[it.tier] * (1 + it.up * .1) * (1 + 
 function itemLines(it) {
   const L = [];
   if (it.slot === 'weapon') {
-    const F = wform(it); L.push('Schaden ' + Math.round(weaponDmg(it) * (1 + (it.aff.wucht || 0))) + ' · ' + (1 / (WT[it.base].cd * (F.sp || 1))).toFixed(1) + ' Angriffe/s');
-    const fx = []; if (F.crit) fx.push('Krit +' + pct(F.crit)); if (F.range) fx.push('Reichweite +' + F.range); if (F.kb) fx.push('Wucht +' + pct(F.kb - 1)); if (fx.length) L.push(F.n + ': ' + fx.join(', '));
-  } else L.push('VER ' + Math.round(armorDef(it)) + (armorHp(it) ? ' · LP +' + Math.round(armorHp(it)) : ''));
+    const F = wform(it); L.push(_t('Schaden {dmg} · {aps} Angriffe/s', { dmg: Math.round(weaponDmg(it) * (1 + (it.aff.wucht || 0))), aps: (1 / (WT[it.base].cd * (F.sp || 1))).toLocaleString(LOCALE, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) }));
+    const fx = []; if (F.crit) fx.push(_t('Krit +{v}', { v: pct(F.crit) })); if (F.range) fx.push(_t('Reichweite +{v}', { v: F.range })); if (F.kb) fx.push(_t('Wucht +{v}', { v: pct(F.kb - 1) })); if (fx.length) L.push(_t('{form}: {fx}', { form: F.n, fx: fx.join(', ') }));
+  } else L.push(armorHp(it) ? _t('VER {def} · LP +{hp}', { def: Math.round(armorDef(it)), hp: Math.round(armorHp(it)) }) : _t('VER {def}', { def: Math.round(armorDef(it)) }));
   if (it.myth) L.push('✦ ' + MYTHIC[it.myth].d);
   const pool = it.slot === 'weapon' ? AFFW : AFFA;
   for (const k in it.aff) L.push(pool[k].s(it.aff[k]));
-  for (const g of it.gems) { const [id, gr] = g.split(':'); L.push(GEMGRADE[+gr] + ' ' + GEMS[id].n + ': ' + GEMS[id].s(GEMS[id].v[+gr])); }
-  if (it.sockets > it.gems.length) L.push('◇'.repeat(it.sockets - it.gems.length) + ' freie Sockel');
-  if (it.fz) L.push('★ ' + it.fz + '× verschmolzen: +' + it.fz * 6 + ' % Grundwerte');
-  if (it.set) { const S = SETS[it.set], have = setCount(it.set); L.push(S.n + ' (' + have + '/3): 2 – ' + S.d2 + '; 3 – ' + S.d3); }
+  for (const g of it.gems) { const [id, gr] = g.split(':'); L.push(_t('{grade} {gem}: {fx}', { grade: GEMGRADE[+gr], gem: GEMS[id].n, fx: GEMS[id].s(GEMS[id].v[+gr]) })); }
+  if (it.sockets > it.gems.length) L.push(_t('{icons} freie Sockel', { icons: '◇'.repeat(it.sockets - it.gems.length) }));
+  if (it.fz) L.push(_t('★ {n}× verschmolzen: +{p} % Grundwerte', { n: it.fz, p: it.fz * 6 }));
+  if (it.set) { const S = SETS[it.set], have = setCount(it.set); L.push(_t('{set} ({n}/3): 2 – {d2}; 3 – {d3}', { set: S.n, n: have, d2: S.d2, d3: S.d3 })); }
   return L;
 }
 function itemPrice(it) { return Math.max(8, Math.round(PRICE[it.tier] * .22 * (1 + Math.min(it.rar, 5) * .6 + (it.rar === 6 ? 3 : 0)) * (1 + it.up * .3) * (1 + (it.fz || 0) * .2))); }
@@ -205,10 +205,10 @@ function craft(id, it) {
   if (id === 'socket' && it.sockets >= 3) return { r: 'max' };
   payMats(R.cost); P.gold -= R.gold;
   switch (id) {
-    case 'potion': P.potions = Math.min(P.potions + 2, potMax()); return { r: 'ok', msg: 'Zwei Heiltränke gebraut' };
-    case 'reroll': rollAffixes(it); computeStats(); return { r: 'ok', msg: 'Neue Zusatzwerte' };
-    case 'socket': if (Math.random() < .75) { it.sockets++; return { r: 'ok', msg: 'Sockel gebohrt' }; } return { r: 'fail', msg: 'Der Bohrer ist abgerutscht' };
-    case 'gem': { const g = pick(GEMORDER) + ':0'; P.gems[g] = (P.gems[g] || 0) + 1; return { r: 'ok', msg: 'Splitter hergestellt' }; }
+    case 'potion': P.potions = Math.min(P.potions + 2, potMax()); return { r: 'ok', msg: _t('Zwei Heiltränke gebraut') };
+    case 'reroll': rollAffixes(it); computeStats(); return { r: 'ok', msg: _t('Neue Zusatzwerte') };
+    case 'socket': if (Math.random() < .75) { it.sockets++; return { r: 'ok', msg: _t('Sockel gebohrt') }; } return { r: 'fail', msg: _t('Der Bohrer ist abgerutscht') };
+    case 'gem': { const g = pick(GEMORDER) + ':0'; P.gems[g] = (P.gems[g] || 0) + 1; return { r: 'ok', msg: _t('Splitter hergestellt') }; }
   }
   return { r: 'ok' };
 }
@@ -232,11 +232,11 @@ function forgeItem(tier, slot) {
    Ergebnis: höhere Stufe und Aufwertung, beste Zusatzwerte beider, ein Zusatzwert mehr, +6 % Grundwerte */
 function fuseMax() { return hideLv('schmiede') >= 4 ? 5 : 3; }
 function fuseCheck(a, b) {
-  if (!a) return 'Wähle zuerst den Hauptgegenstand.';
-  if ((a.fz || 0) >= fuseMax()) return 'Dieser Gegenstand ist maximal verschmolzen (' + fuseMax() + ' ★).';
-  if (!b) return 'Wähle jetzt einen Gegenstand aus dem Beutel, der geopfert wird.';
-  if (a === b) return 'Ein Gegenstand kann nicht mit sich selbst verschmelzen.';
-  if (a.slot !== b.slot) return 'Nur gleiche Art: Waffe mit Waffe, Rüstung mit Rüstung, Helm mit Helm.';
+  if (!a) return _t('Wähle zuerst den Hauptgegenstand.');
+  if ((a.fz || 0) >= fuseMax()) return _t('Dieser Gegenstand ist maximal verschmolzen ({n} ★).', { n: fuseMax() });
+  if (!b) return _t('Wähle jetzt einen Gegenstand aus dem Beutel, der geopfert wird.');
+  if (a === b) return _t('Ein Gegenstand kann nicht mit sich selbst verschmelzen.');
+  if (a.slot !== b.slot) return _t('Nur gleiche Art: Waffe mit Waffe, Rüstung mit Rüstung, Helm mit Helm.');
   return null;
 }
 function fuseChance(a, b) {
@@ -265,7 +265,7 @@ function fusePreview(a, b) {
 function fuseItems(a, b) {
   const err = fuseCheck(a, b); if (err) return { r: 'err', msg: err };
   const c = fuseCost(a, b); if (!canAfford(c.mats, c.gold)) return { r: 'poor' };
-  const bi = P.bag.indexOf(b); if (bi < 0) return { r: 'err', msg: 'Das Opfer muss im Beutel liegen.' };
+  const bi = P.bag.indexOf(b); if (bi < 0) return { r: 'err', msg: _t('Das Opfer muss im Beutel liegen.') };
   payMats(c.mats); P.gold -= c.gold;
   const ch = fuseChance(a, b), res = fusePreview(a, b), lucky = ch < 1 && ch > 0 && Math.random() < ch;
   if (lucky) {

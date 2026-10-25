@@ -35,7 +35,7 @@ const LAYOUT_DEF_P = {
 function layoutKey() { return portrait() ? 'layoutP' : 'layout'; }
 function myLayout() { const c = ctlSet(); if (!c[layoutKey()]) c[layoutKey()] = {}; return c[layoutKey()]; }
 const CTL_KEYS = Object.keys(LAYOUT_DEF);
-const CTL_NAMES = { bAtk: 'Angriff', bRoll: 'Rolle', bS1: 'Fähigkeit 1', bS2: 'Fähigkeit 2', bS3: 'Fähigkeit 3', bUlt: 'Ultimative', bPot: 'Trank', bAct: 'Interagieren', stick: 'Joystick' };
+const CTL_NAMES = { bAtk: _t('Angriff'), bRoll: _t('Rolle'), bS1: _t('Fähigkeit 1'), bS2: _t('Fähigkeit 2'), bS3: _t('Fähigkeit 3'), bUlt: _t('Ultimative'), bPot: _t('Trank'), bAct: _t('Interagieren'), stick: _t('Joystick') };
 function ctlSet() {
   if (!SAVE) return CTL_DEF;
   const s = SAVE.meta.settings; if (!s.ctl) s.ctl = {};
@@ -127,12 +127,12 @@ function closeCtlEditor() {
 function edUI() {
   const c = ctlSet(), L = layoutOf(edSel);
   for (const k of CTL_KEYS) { const el = $(k === 'stick' ? 'stickHome' : k); if (el) el.classList.toggle('sel', k === edSel); }
-  $('ctlbar').innerHTML = `<b>${CTL_NAMES[edSel]}</b> <span style="color:var(--parch-dim)">${portrait() ? 'HOCHFORMAT' : 'QUERFORMAT'}</span>
-    <span class="grp">Größe <button data-e="z-">−</button><i>${Math.round((L.z || 1) * 100)}%</i><button data-e="z+">+</button></span>
-    <span class="grp">Alle <button data-e="s-">−</button><i>${Math.round(c.scale * 100)}%</i><button data-e="s+">+</button></span>
-    <span class="grp">Deckkraft <button data-e="a-">−</button><i>${Math.round(c.alpha * 100)}%</i><button data-e="a+">+</button></span>
-    <span class="grp"><button data-e="stick">Joystick: ${c.stick === 'fixed' ? 'FEST' : 'FREI'}</button><button data-e="mirror">Spiegeln</button><button data-e="reset">Standard</button><button data-e="done" class="ok">Fertig</button></span>
-    <small>Knöpfe ziehen zum Verschieben · antippen zum Auswählen</small>`;
+  $('ctlbar').innerHTML = `<b>${CTL_NAMES[edSel]}</b> <span style="color:var(--parch-dim)">${portrait() ? _t('HOCHFORMAT') : _t('QUERFORMAT')}</span>
+    <span class="grp">${_t('Größe')} <button data-e="z-">−</button><i>${Math.round((L.z || 1) * 100)}%</i><button data-e="z+">+</button></span>
+    <span class="grp">${_t('Alle')} <button data-e="s-">−</button><i>${Math.round(c.scale * 100)}%</i><button data-e="s+">+</button></span>
+    <span class="grp">${_t('Deckkraft')} <button data-e="a-">−</button><i>${Math.round(c.alpha * 100)}%</i><button data-e="a+">+</button></span>
+    <span class="grp"><button data-e="stick">${c.stick === 'fixed' ? _t('Joystick: FEST') : _t('Joystick: FREI')}</button><button data-e="mirror">${_t('Spiegeln')}</button><button data-e="reset">${_t('Standard')}</button><button data-e="done" class="ok">${_t('Fertig')}</button></span>
+    <small>${_t('Knöpfe ziehen zum Verschieben · antippen zum Auswählen')}</small>`;
 }
 $('ctlbar').addEventListener('click', ev => {
   const b = ev.target.closest('[data-e]'); if (!b) return; const c = ctlSet(), a = b.dataset.e; sfx('click');

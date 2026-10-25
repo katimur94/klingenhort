@@ -38,7 +38,7 @@ const ACTS = [
   {t:'Der Verräter',i:'Varkas, einst Großmeister des Ordens, öffnete Pyraxis die Tore. Seine Schattenzitadelle ist das letzte Bollwerk vor dem Drachenhort.',b:'Ich habe dem Orden Ewigkeit geschenkt, Schüler. Als Asche. Und dir schenke ich dasselbe.',o:'Varkas\' Klinge zerbricht. „Er … wird dich … verschlingen“, keucht er. Hinter ihm glüht der Eingang zum Drachenhort.'},
   {t:'Das Weltenfeuer',i:'Im Drachenhort liegt das Weltenfeuer – und darauf, auf einem Berg aus Gold und Knochen, Pyraxis, der Uralte.',b:'Ein Funke wagt es, das Feuer herauszufordern? Ich habe deinen Orden verschlungen, Kind. Du bist nur der Nachtisch.',o:'Pyraxis stürzt. Das Weltenfeuer gehört wieder dem Orden! Doch aus dem Riss, den der Drache hinterlässt, quillt die Leere. Die Qual beginnt.'}
 ];
-const QUAL_INTRO = 'Die Leere frisst sich durch die Welt und verzerrt alle Gebiete. Jede Qual-Stufe ist härter – und die Beute besser. Wie weit kommst du?';
+const QUAL_INTRO = _t('Die Leere frisst sich durch die Welt und verzerrt alle Gebiete. Jede Qual-Stufe ist härter – und die Beute besser. Wie weit kommst du?');
 
 /* Gespräche im Versteck: je Figur mehrere Sätze, abhängig vom Fortschritt (ab Akt) */
 const NPCTALK = {
