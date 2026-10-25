@@ -126,10 +126,10 @@ const CHANGELOG = [
 
 // Vorschau: was in den nächsten Wochen kommt (Version, Text – siehe ROADMAP.md)
 const COMING = [
-  ['6.1', 'Aufträge & Ruf: Tages- und Wochenaufträge, Fraktionen mit Ruf-Stufen und besseren Tauschangeboten'],
-  ['6.2', 'Neues Gebiet: der Sturmgipfel mit Blitz-Gegnern, eigenem Boss und Sturmsilber – auch in den Verlorenen Landen'],
-  ['7.0', 'Online: Basar und Tausch mit echten Spielern'],
-  ['7.1', 'Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste']
+  ['6.1', 'Die Endlosen Lande: eine riesige Welt für alle – 24 Stunden Fußmarsch bis zum Rand, 1200 Bosse, 5000 Artefakte mit Geschichten, Zucht und Mods'],
+  ['6.2', 'Aufträge & Ruf: Tages- und Wochenaufträge, Fraktionen mit Ruf-Stufen und besseren Tauschangeboten'],
+  ['6.3', 'Neues Gebiet: der Sturmgipfel mit Blitz-Gegnern, eigenem Boss und Sturmsilber'],
+  ['6.4', 'Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste']
 ];
 
 const NEWS_KIND = { neu: [_t('NEU'), '#79c24e'], besser: [_t('BESSER'), '#57a7d6'], fix: [_t('BEHOBEN'), '#e8b04a'] };

@@ -100,7 +100,7 @@ const save = (name, url) => { if (OUT) fs.writeFileSync(`${OUT}/${name}.png`, Bu
     P.gear = { weapon: M('weapon', 'zorn'), armor: M('armor', 'phoenix'), helm: M('helm', 'eisherz') }; computeStats();
     const sim = calm => { SAVE.meta.settings.calm = calm; parts = []; for (const k in AUE) AUE[k] = 0; AUt = T; let made = 0; for (let f = 0; f < 360; f++) { T += 1 / 60; const n0 = parts.length; render(); made += parts.length - n0; if (parts.length > 600) parts = []; } return made; };
     const loud = sim(false), quiet = sim(true); SAVE.meta.settings.calm = false;
-    o.calm = loud > 120 && quiet < loud * .62; o.loud = loud; o.quiet = quiet;
+    o.calm = loud > 120 && quiet < loud * .75; o.loud = loud; o.quiet = quiet;   // Aura-Teilchen ×0,35, dazu ungedämpftes Rauschen (Begleiter, Spur)
     const time = () => { const t0 = performance.now(); for (let f = 0; f < 120; f++) { T += 1 / 60; render(); } return (performance.now() - t0) / 120; };
     time(); const tMyth = time(); P.gear = { weapon: makeItem({ slot: 'weapon', base: 'sword', tier: 3, rar: 1 }), armor: makeItem({ slot: 'armor', tier: 3, rar: 1 }), helm: makeItem({ slot: 'helm', tier: 3, rar: 1 }) }; computeStats(); time(); const tPlain = time();
     o.perf = [tPlain.toFixed(2), tMyth.toFixed(2)]; o.cheap = tMyth < tPlain + 1.5;

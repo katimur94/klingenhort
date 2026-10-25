@@ -13,7 +13,7 @@ Ausführlich für den automatischen Lauf: [`tools/WOCHENUPDATE.md`](tools/WOCHEN
 1. **Auswählen:** ein großes Thema aus dem Plan unten plus ein bis zwei Handy-Verbesserungen aus der Liste weiter unten
 2. **Bauen und auf dem Handy ansehen:** Hoch- und Querformat, kleines Handy (z. B. iPhone SE) und großes Handy
 3. **Testen:** `bash tools/test/run.sh` muss grün sein
-4. **Version anheben:** `VERSION` in `js/data.js` und `sw.js` (Feature: 4.4.0, kleine Korrektur: 4.4.1)
+4. **Version anheben:** `VERSION` in `js/data.js` und `sw.js` – immer in 0.1-Schritten (Feature: 6.2.0, kleine Korrektur: 6.2.1), keine großen Sprünge
 5. **Neuigkeiten schreiben:** oben in `CHANGELOG` (`js/news.js`) einen Eintrag mit `neu` / `besser` / `fix`, dann `COMING` um eine Woche weiterschieben. Alle neuen Texte in die fünf anderen Sprachen übersetzen (`tools/i18n/README.md`)
 6. **Live stellen:** auf `main` und `gh-pages` pushen. Die installierte App holt sich das Update selbst, im Titelmenü erscheint „NEU“
 7. **Zeigen:** 12–20 Sekunden Clip vom neuen Feature für TikTok (`tools/promo`, Vorlage `tools/promo/update`)
@@ -40,17 +40,18 @@ Ausführlich für den automatischen Lauf: [`tools/WOCHENUPDATE.md`](tools/WOCHEN
 | – | 4.3 | **Sechs Sprachen** | Deutsch, Englisch, Türkisch, Spanisch, Italienisch, Französisch. Sprache des Geräts beim Start, Auswahl im Titelmenü und in den Einstellungen | mittel | ✅ 4.3 |
 | – | 5.0 | **Meisterwerk** | Begleiter (6 Arten, Level 1–100, 6 Entwicklungsstufen), Elemente (Schwächen und Resistenzen), Schmiede der Meister (Bauteile Stufe 1–10, Zerlegen, Meisterwerke, Schmiedemeisterschaft 1–100), Fähigkeiten-Meisterschaft (Level 1–50, 6 Ränge mit neuem Aussehen), Tauschen per Code/Link, Tauschhändler, Aussehen tauschen (Sammlung) | sehr groß | ✅ 5.0 |
 | – | 6.0 | **Die Verlorenen Lande** | Freiwelt mit Extraktion: zufällige Beute, NPC-Händler mit Tausch, Missionen und Ruf, Rivalen, zufällige Bosse zum Weglaufen, Ausgänge. Wer stirbt, verliert alles Angelegte – nur die Tasche des Begleiters kommt mit heim. Begleiter nur noch aus Eiern mit Pflege (≈ 24 Kreaturen von wertlos bis mythisch). Einzigartige Optik für besondere Gegenstände, Auren am Helden. Schmiede einfach bedienbar. Basar mit Auktionen (offline) | riesig | ✅ 6.0 |
-| 2 | 6.1 | **Aufträge & Ruf** | Tages- und Wochenaufträge für Kampagne und Freiwelt, Fraktionen mit Ruf-Stufen und besseren Tauschangeboten | mittel | offen |
-| 3 | 6.2 | **Neues Gebiet: Sturmgipfel** | Kampagnen-Gebiet 9 und neue Freiwelt-Region mit Blitz-Gegnern, Boss *Sturmkönig Aerok*, Material *Sturmsilber* | groß | offen |
-| 4 | 7.0 | **Online: Konto & Marktplatz** | Spielstand in der Cloud, echter Marktplatz mit Auktionen zwischen Spielern, Online-Tausch. **Braucht einen Server (z. B. Supabase) – Entscheidung des Besitzers** | groß | offen |
-| 5 | 7.1 | **Saison 1** | Saison-Helden ab Level 1, Saison-Rangliste, kostenloser Saison-Pass mit 30 Stufen | groß | offen |
-| 6 | 7.2 | **Begleiter-Expeditionen & Zucht** | Begleiter allein in die Verlorenen Lande schicken (läuft auch offline), zwei Begleiter kreuzen → neue Farben und Mischformen | mittel | offen |
-| 7 | 7.3 | **Der Abgrund** | Endlos-Turm mit Bestwert pro Klasse | mittel | offen |
-| 8 | 7.4 | **Neue Klasse: Nekromant** | Skelette, Knochenspeer, Leichenexplosion, *Armee der Toten* | groß | offen |
-| 9 | 7.5 | **Runenwörter & Legendäre Kräfte 2.0** | Runen in Sockeln ergeben Runenwörter, neue legendäre Kräfte | mittel | offen |
-| 10 | 7.6 | **Verzaubern & Element-Reaktionen** | Zusatzwert gezielt neu würfeln; Dampfexplosion, Giftwolke … | mittel | offen |
-| 11 | 7.7 | **Weltboss der Woche** | Riesiger Boss in den Verlorenen Landen, nur diese Woche | mittel | offen |
-| 12 | 7.8 | **Versteck 2.0** | Dekorieren, Trophäen, Begleiter-Nest ausbauen, Versteck teilen | mittel | offen |
+| – | 6.1 | **Die Endlosen Lande** | Eine feste Welt für alle: 24 Stunden Fußmarsch bis zum Rand, 40+ Biome, Brücken und Barrieren nur mit gefundenen Werkzeugen, Leuchtfeuer als Checkpoint (Karte, Startpunkt, Ausgang). 1200 Bosse von leicht bis fast unmöglich mit Boss-Kodex und Trophäen (Rückkehr nach 3 Tagen). 5000 Artefakte in Geschichten, deren Spuren zu Schatzorten führen, mystische Begegnungen. Kreaturen: viel mehr Arten, Zucht, Mutationen, Ausrüstung, Talente, Magie. Gegenstände frei modifizieren: Runen, Glyphen, Essenzen, Kerne, Resonanzen, Umschmieden | riesig | in Arbeit |
+| 2 | 6.2 | **Aufträge & Ruf** | Tages- und Wochenaufträge für Kampagne und Endlose Lande, Fraktionen mit Ruf-Stufen und besseren Tauschangeboten | mittel | offen |
+| 3 | 6.3 | **Neues Gebiet: Sturmgipfel** | Kampagnen-Gebiet 9 und Sturm-Biome in den Endlosen Landen mit Blitz-Gegnern, Boss *Sturmkönig Aerok*, Material *Sturmsilber* | groß | offen |
+| 4 | 6.4 | **Saison 1** | Saison-Helden ab Level 1, Saison-Rangliste, kostenloser Saison-Pass mit 30 Stufen | groß | offen |
+| 5 | 6.5 | **Begleiter-Expeditionen** | Begleiter allein in die Endlosen Lande schicken (läuft auch offline), bringen Beute, Eier und Artefakte mit | mittel | offen |
+| 6 | 6.6 | **Der Abgrund** | Endlos-Turm mit Bestwert pro Klasse | mittel | offen |
+| 7 | 6.7 | **Neue Klasse: Nekromant** | Skelette, Knochenspeer, Leichenexplosion, *Armee der Toten* | groß | offen |
+| 8 | 6.8 | **Legendäre Kräfte 2.0** | Neue legendäre und mythische Kräfte, die mit Resonanzen zusammenspielen | mittel | offen |
+| 9 | 6.9 | **Element-Reaktionen** | Dampfexplosion, Giftwolke, Frostbruch … wenn Elemente aufeinandertreffen | mittel | offen |
+| 10 | 7.0 | **Weltboss der Woche** | Riesiger Boss in den Endlosen Landen, nur diese Woche | mittel | offen |
+| 11 | 7.1 | **Versteck 2.0** | Dekorieren, Trophäenhalle für Boss-Trophäen, Zuchtgehege ausbauen, Versteck teilen | mittel | offen |
+| 12 | 7.2 | **Online: Konto, Marktplatz, Begegnungen** | Spielstand in der Cloud, echter Basar mit Auktionen zwischen Spielern, Online-Tausch, andere Spieler in den Endlosen Landen treffen, gemeinsam kämpfen oder gegeneinander. **Erst wenn offline alles perfekt ist; braucht einen Server (z. B. Supabase) – Entscheidung des Besitzers** | riesig | offen |
 
 > Faustregel: Wochen mit „groß“ wechseln sich mit kleinen und mittleren ab. Fällt eine Woche aus, lieber ein kleines Update als gar keins – Ereignisse und Aufträge laufen ab Woche 2 auch ohne neue Inhalte weiter.
 

@@ -26,14 +26,14 @@ Jede Woche entsteht ein neues, getestetes Update, geht live und bekommt einen Ti
 - **Jeder neue Text in alle Sprachen** (Englisch, Türkisch, Spanisch, Italienisch, Französisch): `node tools/i18n/check.js --todo /tmp/i18n`, die leeren Werte in `/tmp/i18n/<sprache>.json` übersetzen (Begriffe wie in der vorhandenen Sprachdatei), dann `node tools/i18n/merge.js <sprache> /tmp/i18n/<sprache>.json`. Das gilt auch für Neuigkeiten (`CHANGELOG`, `COMING`) und Wochen-Ereignisse.
 - **Alte Spielstände müssen laden:** neue Felder immer mit Standardwert ergänzen (`fixMeta`, `activateChar`).
 - **Handy zuerst:** Hoch- und Querformat, Touch-Ziele mindestens 44 px, Zurück/Hauptaktion in der Kopfleiste (`.head` mit `.hbtns`) oder Fußleiste (`.foot`), Listen mit Details nebeneinander (`.split` + `.side.sheet`).
-- Größere neue Systeme in eine eigene Datei `js/<system>.js` und über `HOOK`/`ON` (siehe `js/core.js`) andocken, statt Kern-Dateien umzubauen. Vorhandene Systeme: Begleiter & Brutnest (`pets.js`), Elemente (`elements.js`), Schmiede (`forge.js`), Meisterschaft (`mastery.js`), Tauschen/Aussehen (`trade.js`), Aussehen der Beute & Auren (`auras.js`), Verlorene Lande (`lande.js`), Basar (`market.js`) – neue Inhalte dort ergänzen (z. B. neue Kreatur, neues Bauteil, neue Weltstufe oder Freiwelt-Gegend). Der Basar läuft offline über das Objekt `MARKET`; für den Online-Basar (7.0) wird nur diese Schnittstelle durch einen Server ersetzt.
+- Größere neue Systeme in eine eigene Datei `js/<system>.js` und über `HOOK`/`ON` (siehe `js/core.js`) andocken, statt Kern-Dateien umzubauen. Vorhandene Systeme: Begleiter & Brutnest (`pets.js`), Elemente (`elements.js`), Schmiede (`forge.js`), Meisterschaft (`mastery.js`), Tauschen/Aussehen (`trade.js`), Aussehen der Beute & Auren (`auras.js`), Verlorene Lande (`lande.js`), Basar (`market.js`) – neue Inhalte dort ergänzen (z. B. neue Kreatur, neues Bauteil, neue Weltstufe oder Freiwelt-Gegend). Der Basar läuft offline über das Objekt `MARKET`; für den Online-Basar (später) wird nur diese Schnittstelle durch einen Server ersetzt.
 - Neue Skripte in `index.html` laden und in `sw.js` (`SHELL`) eintragen.
 - Für das neue System einen eigenen Test `tools/test/<system>.js` anlegen und in `tools/test/run.sh` eintragen.
 - Code im Stil des umgebenden Codes: kompakt, kurze deutsche Kommentare.
 
 ## 3. Version, Neuigkeiten, Doku
 
-- `VERSION` in `js/data.js` **und** `sw.js` anheben: neues Feature = Minor (4.2.0 → 4.3.0), nur Korrekturen = Patch.
+- `VERSION` in `js/data.js` **und** `sw.js` anheben: neues Feature = immer genau 0.1 weiter (6.1.0 → 6.2.0, nach 6.9 kommt 7.0), nur Korrekturen = Patch (6.1.1). Keine großen Sprünge – auch nicht bei riesigen Updates.
 - `js/news.js`: neuen Eintrag **oben** in `CHANGELOG` (`v`, `d` = heutiges Datum, `t` = kurzer Titel, `items` mit `neu` / `besser` / `fix`). Aus Spielersicht schreiben, keine Technik. `COMING`: diese Woche entfernen, die übernächste aus der Roadmap hinten anfügen (immer vier Einträge, Form `['4.6', 'Text']`).
 - `ROADMAP.md`: Status der Woche auf „✅ 4.x“, erledigte Handy-Punkte mit ✅ markieren.
 - `README.md`: im Abschnitt „Neuigkeiten & Wochenplan“ den Block „Neu in …“ ersetzen, betroffene Abschnitte ergänzen (z. B. Gegner, Steuerung), Versionszeile oben anpassen.
