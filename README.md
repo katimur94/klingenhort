@@ -3,11 +3,11 @@
 # ⚔ KLINGENHORT
 
 **16-Bit Hack & Slash im Browser – für Handy (Querformat) und PC.**
-Kombos, Spezialangriffe, Explosionen, Beute in fünf Seltenheiten und alle fünf Stufen ein Boss.
+Vier Klassen, Talentbäume, Werkbank mit Aufwertungen bis +10, eine Weltkarte voller Entscheidungen, vier Bosse – und danach endlose Qual-Stufen.
 
 ### ▶ [Jetzt spielen: katimur94.github.io/klingenhort](https://katimur94.github.io/klingenhort/)
 
-Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar
+Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 3
 
 ![Gameplay](docs/gameplay.gif)
 
@@ -17,16 +17,17 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar
 
 ## Inhalt
 - [Screenshots](#screenshots)
-- [Features](#features)
+- [Was ist neu in Version 3](#was-ist-neu-in-version-3)
+- [Klassen](#klassen)
+- [Talentbäume](#talentbäume)
+- [Weltkarte & Räume](#weltkarte--räume)
+- [Werkbank & Crafting](#werkbank--crafting)
+- [Ausrüstung, Beute & Sets](#ausrüstung-beute--sets)
+- [Gegner, Affixe & Bosse](#gegner-affixe--bosse)
+- [Schwierigkeit, Hardcore & Endgame](#schwierigkeit-hardcore--endgame)
 - [Steuerung](#steuerung)
-- [Waffen & Spezialangriffe](#waffen--spezialangriffe)
-- [Rüstung](#rüstung)
-- [Beute & Seltenheiten](#beute--seltenheiten)
-- [Gegner & Bosse](#gegner--bosse)
-- [Gebiete](#gebiete)
-- [Als App installieren](#als-app-installieren)
-- [Spielstand übertragen](#spielstand-übertragen)
-- [Technik](#technik)
+- [Als App installieren & Spielstand übertragen](#als-app-installieren--spielstand-übertragen)
+- [Technik & Projektstruktur](#technik--projektstruktur)
 - [Werbevideo](#werbevideo)
 - [Credits](#credits)
 
@@ -34,37 +35,145 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar
 
 ## Screenshots
 
-| Kampf mit Kombo-Zähler | Spezialangriff „Erdbeben“ |
+| Ritter mit +10-Aura | Magier: Meteorhagel |
 |---|---|
-| ![Kampf](docs/kampf.png) | ![Spezialangriff](docs/spezial.png) |
+| ![Ritter](docs/ritter.png) | ![Magier](docs/magier.png) |
 
-| Glutfeste – Explosionen & Fallen | Boss „Höllenschlund Ignaroth“ |
+| Assassine: Schattenklone | Bogenschütze: Pfeilsturm |
 |---|---|
-| ![Glutfeste](docs/glutfeste.png) | ![Boss](docs/boss.png) |
+| ![Assassine](docs/assassine.png) | ![Bogenschütze](docs/bogenschuetze.png) |
 
-| Schmiede – Beute | Schmiede – Waffen |
+| Weltkarte | Bosskampf |
 |---|---|
-| ![Beute](docs/beute.png) | ![Schmiede](docs/schmiede.png) |
+| ![Weltkarte](docs/weltkarte.png) | ![Boss](docs/boss2.png) |
 
-| Handy im Querformat mit Touch-Steuerung | Titelbildschirm |
+| Werkbank | Talentbaum |
 |---|---|
-| ![Handy](docs/handy.png) | ![Titel](docs/title.png) |
+| ![Werkbank](docs/werkbank.png) | ![Talente](docs/talente.png) |
+
+| Klassenwahl | Ausrüstung & Beutel |
+|---|---|
+| ![Klassenwahl](docs/klassenwahl.png) | ![Ausrüstung](docs/ausruestung.png) |
+
+| Handy im Querformat | Titel mit mehreren Helden |
+|---|---|
+| ![Handy](docs/handy.png) | ![Titel](docs/titel.png) |
 
 ---
 
-## Features
+## Was ist neu in Version 3
 
-- **Pixel-Art mit 3D-Gefühl** – animierte Sprites, die sich beim Richtungswechsel um die eigene Achse drehen, sich in Laufrichtung neigen, bei Schritten und Treffern stauchen und strecken, mit Schattenwurf und Tiefenstaffelung
-- **Kampfsystem** – 3er-Kombos mit Finisher, Wut-Leiste, ein Spezialangriff pro Waffe, Ausweichrolle mit Unverwundbarkeit, Zauberkugeln lassen sich wegschlagen
-- **Level-System** – Erfahrungspunkte, Level-Ups mit mehr Lebenspunkten und Angriff; Gegner werden mit jeder Stufe stärker
-- **Endlose Stufen** – mehrere Wellen pro Stufe, Elite-Gegner (goldene Krone) ab Stufe 7, alle 5 Stufen ein Boss
-- **Ausrüstung** – vier Waffentypen und Rüstung/Helm in je fünf Stufen (Eisen bis Drachen), freigeschaltet über dein Level
-- **Beute** – Waffen in fünf Seltenheiten mit Zusatzwerten, Lichtstrahl beim Fallenlassen, automatisches Anlegen besserer Funde
-- **Lebendige Arenen** – Säulen, zerschlagbare Kisten, Sprengkisten mit Kettenreaktion, Stachelfallen, Truhen (manchmal ein Mimik)
-- **Atmosphäre** – Licht und Schatten, flackernde Fackeln, Lava-Brunnen, Partikel, Bildschirmwackeln, Trefferstopps, Zeitlupe beim Boss-Kill
-- **Sound** – Retro-Soundeffekte und Chiptune-Musik pro Gebiet, beim Boss schneller
-- **Handy & PC** – Touch-Steuerung mit virtuellem Stick und Auto-Zielen, Tastatur und Maus am PC
-- **PWA** – installierbar, Vollbild im Querformat, offline spielbar
+- **Vier wählbare Klassen** mit eigener Ressource, eigenen Waffen, drei Fähigkeiten und einer Ultimativen
+- **Talentbäume** mit drei Zweigen pro Klasse, 1 Punkt pro Level, jederzeit zurücksetzbar
+- **Werkbank:** Aufwerten bis +10 (sichtbares Leuchten ab +5, Aura ab +8), Schmieden, Umschmieden, Sockel bohren, Edelsteine verschmelzen, Farbstoffe
+- **Materialien** von Gegnern, Kisten, Truhen und Erzadern
+- **Weltkarte** mit 11 Ortstypen statt endloser Wellen
+- **Interaktive Arenen:** kickbare Sprengkisten, Hebel für Fallen, Erzadern, Mimiks
+- **Gegner-Affixe** und **Elite-Gegner**, **Schwierigkeitsgrade** und **Hardcore**
+- **Endgame:** Qual-Stufen ohne Ende, Paragon ab Level 50, Wiedergeburt, Tages-Challenge, 26 Erfolge, Bestiarium, Ruhmeshalle
+- **Mehrere Helden** gleichzeitig; der alte Spielstand wird automatisch zum Ritter
+- **Neue Effekte:** Pixel-Explosionen, Blitzeinschläge, Schockwellen, Schwerthiebe, 15 Zaubergeschosse
+- Spiel ist jetzt in mehrere Dateien aufgeteilt und leicht erweiterbar
+
+---
+
+## Klassen
+
+| Klasse | Ressource | Waffen | Fähigkeit 1 | Fähigkeit 2 | Fähigkeit 3 | Ultimative |
+|---|---|---|---|---|---|---|
+| **Ritter** | Ausdauer (lädt auch durch Treffer) | Schwert, Axt | Sturmangriff – betäubt alles auf dem Weg | Wirbelklinge – Rundumschlag | Schildwall – 70 % weniger Schaden | Erdbeben – Sprung mit Schockwelle |
+| **Magier** | Mana | Stab (magische Geschosse) | Feuerball – explodiert | Frostnova – friert ein | Kettenblitz – springt über | Meteorhagel |
+| **Assassine** | Energie | Dolche | Schattenschritt – Sprint mit Krits | Giftklingen – Wurfmesser und Gift | Rauchbombe – unsichtbar, doppelter Schaden | Schattenklone |
+| **Bogenschütze** | Fokus | Bogen | Fächerschuss – 7 Pfeile | Sprengfalle | Waldgeist – Begleiter schießt mit | Pfeilsturm |
+
+Alle Klassen haben eine 3er-Kombo mit Finisher, eine Ausweichrolle und eine Wut-Leiste für die Ultimative.
+
+## Talentbäume
+
+Jede Klasse hat drei Zweige mit je vier Talenten (das letzte ist ein starker Abschluss):
+
+| Klasse | Zweige |
+|---|---|
+| Ritter | Waffenmeister · Bollwerk · Kriegsherr |
+| Magier | Feuer · Frost · Arkan |
+| Assassine | Klingen · Gift · Schatten |
+| Bogenschütze | Schütze · Fallensteller · Wildnis |
+
+Beispiele: *Feuersturm* (Feuerball teilt sich), *Spiegelschild* (Schildwall wirft Geschosse zurück), *Endlose Schatten* (Schattenschritt lädt bei Kills neu), *Zwillingsgeister* (zwei Waldgeister).
+
+---
+
+## Weltkarte & Räume
+
+Jeder Akt ist eine Karte mit sieben Reihen. Du wählst deinen Weg selbst:
+
+| Ort | Was passiert |
+|---|---|
+| Kampf | mehrere Gegnerwellen |
+| Elite | Gegner mit Affixen, garantierte Beute |
+| Überleben | 45 Sekunden durchhalten |
+| Schatzkammer | Truhen, Erzadern – und vielleicht ein Mimik |
+| Schatzgoblin | er flieht mit seinem Gold – schnapp ihn in 20 Sekunden |
+| Dunkelkammer | nur dein eigenes Licht, mehr Beute |
+| Händler | Ausrüstung, Tränke, Edelsteine, Materialien |
+| Schrein | Segen für drei Räume – oder ein lohnender Fluch |
+| Werkbank | aufwerten, schmieden, sockeln; heilt 50 % |
+| Ereignis | Brunnen, Gefangener, verfluchte Truhe, wandernder Schmied, Alchemistin |
+| Boss | der Herrscher des Gebiets |
+
+In den Arenen: **Sprengkisten** lassen sich auf Gegner kicken, **Hebel** fahren alle Stachelfallen aus, **Erzadern** liefern Materialien, **Säulen** stoppen Sturmangriffe.
+
+---
+
+## Werkbank & Crafting
+
+| Funktion | Beschreibung |
+|---|---|
+| Aufwerten | +1 bis +10, je Stufe mehr Schaden bzw. Verteidigung. Bis +5 sicher, danach sinkt die Chance (85 % → 35 %). Ab +5 leuchtet die Ausrüstung, ab +8 Aura, bei +10 golden |
+| Schmieden | zufällige magische Waffe, Rüstung oder Helm für deine Klasse |
+| Umschmieden | Zusatzwerte neu würfeln |
+| Sockel bohren | bis zu 3 Sockel pro Gegenstand |
+| Edelsteine | Rubin (Schaden), Saphir (Verteidigung), Smaragd (Krit), Amethyst (LP), Topas (Gold) in 5 Stufen; 3 gleiche → 1 besserer |
+| Farbstoffe | Natur, Purpur, Smaragd, Gold, Schatten, Blut, Eis |
+| Brauen | Heiltränke aus Schleimkernen |
+
+**Materialien:** Eisenerz, Leder, Knochenstaub, Schleimkern, Orkzahn, Seelenkristall, Dämonenhorn, Glutstein, Drachenschuppe. Welcher Gegner was fallen lässt, steht im Bestiarium.
+
+---
+
+## Ausrüstung, Beute & Sets
+
+- Drei Slots: **Waffe, Rüstung, Helm** – jeweils in fünf Stufen; Rüstung und Helm verändern das Aussehen
+- **Seltenheiten:** Gewöhnlich, Magisch, Selten, Episch, Legendär, Set
+- **Zusatzwerte** Waffe: Krit, Tempo, Lebensraub, Brand, Frost, Schaden · Rüstung: LP, Verteidigung, Regeneration, Schadensminderung, Lauftempo, Gold
+- **Sets** (3 Teile): *Erbe des Löwen* (Ritter), *Glutweber* (Magier), *Nachtschatten* (Assassine), *Waldläufer* (Bogenschütze), *Drachenfürst* (alle) – mit Boni ab 2 und 3 Teilen
+
+---
+
+## Gegner, Affixe & Bosse
+
+Goblin · Skelettkrieger · Echsenmensch · Wogol-Sprengmeister · Sumpfschleim · Nekromant · Orkkrieger · Oger · Ork-Berserker · Imp · Hornteufel · Moderriese · Frostgeist · Mimik · Schatzgoblin
+
+**Elite-Affixe:** Schnell, Explosiv, Gepanzert (Panzer-Leiste), Heiler, Vampir, Teleport, Frostig, Brennend, Riese
+
+**Bosse:** Ogerhäuptling Grausch (Kerker) · Schamane Vexhal (Moosgrotte) · Moderkönig Morgul (Knochengruft) · Höllenschlund Ignaroth (Glutfeste)
+
+---
+
+## Schwierigkeit, Hardcore & Endgame
+
+| Modus | Gegner-LP | Gegner-Schaden | Beute | Heilung nach Raum |
+|---|---|---|---|---|
+| Normal | ×1 | ×1 | ×1 | 25 % |
+| Albtraum | ×1,7 | ×1,55 | ×1,6 | 20 % |
+| Hölle | ×2,6 | ×2,2 | ×2,4 | 12 % |
+
+- **Hardcore:** Ein Tod löscht den Helden. Sein Name kommt in die Ruhmeshalle.
+- **Qual-Stufen:** Ab Akt 5 wird jeder Akt 30 % härter – ohne Obergrenze.
+- **Paragon:** Ab Level 50 unbegrenzte Punkte für Schaden, LP, Verteidigung und Krit.
+- **Wiedergeburt:** Zurück auf Level 1 mit dauerhaftem Bonus und goldener Aura.
+- **Tages-Challenge:** Jeden Tag fünf feste Räume mit zufälligen Gegner-Affixen und Punktewertung.
+- **Erfolge, Bestiarium, Ruhmeshalle** zum Sammeln.
 
 ---
 
@@ -72,131 +181,57 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar
 
 | Aktion | Handy | PC |
 |---|---|---|
-| Laufen | Linke Bildschirmhälfte ziehen | WASD / Pfeiltasten |
-| Angreifen (halten = Kombo) | Roter Knopf | J · Leertaste · Linksklick |
+| Laufen | linke Bildschirmhälfte ziehen | WASD / Pfeiltasten |
+| Angreifen (halten = Kombo) | roter Knopf | J · Leertaste · Linksklick |
 | Ausweichrolle | ROLLE | K · Shift · Rechtsklick |
-| Spezialangriff (Wut voll) | SPEZ | F · L · Mittelklick |
-| Waffe wechseln | WAFFE | Q / E |
-| Heiltrank | TRANK | H |
-| Pause | II oben rechts | Esc / P |
+| Fähigkeiten | drei Fähigkeitsknöpfe | 1 · 2 · 3 |
+| Ultimative (Wut voll) | goldener Knopf | F · Mittelklick |
+| Heiltrank | Trank-Knopf | H |
+| Charakter | Pause → Charakter | C |
+| Pause | II oben rechts | Esc |
 
-Angriffe zielen automatisch auf den nächsten Gegner. Am PC zielst du mit der Maus, solange du klickst.
-
----
-
-## Waffen & Spezialangriffe
-
-| Waffe | Stil | Kombo-Finisher | Spezialangriff |
-|---|---|---|---|
-| **Dolch** | sehr schnell, 20 % Krit | Doppelstich | **Schattenschritt** – Sprint durch alle Gegner, garantierte Krits |
-| **Schwert** | ausgewogen | großer Hieb mit Vorstoß | **Wirbelklinge** – drehende Klinge, trifft alles ringsum |
-| **Axt** | langsam, weiter Hieb, starker Rückstoß | Wucht-Hieb | **Erdbeben** – Sprung mit Schockwelle und Explosion |
-| **Bogen** | Fernkampf, ab Runen durchschlagend | Dreifachschuss | **Pfeilsturm** – Fächer aus durchschlagenden Pfeilen |
-
-Jede Waffe gibt es in fünf Stufen: **Eisen → Stahl → Mithril → Runen → Drachen**. Die Wut-Leiste füllt sich durch Treffer und Kills.
-
-## Rüstung
-
-| Stufe | Rüstung | Helm | ab Level |
-|---|---|---|---|
-| 1 | Lederwams | Lederkappe | 1 |
-| 2 | Kettenhemd | Eisenhelm | 4–5 |
-| 3 | Schuppenpanzer | Federhelm | 8–10 |
-| 4 | Plattenrüstung | Runenhelm | 13–15 |
-| 5 | Drachenpanzer | Drachenhelm | 20–22 |
-
-Rüstung und Helm verändern das Aussehen des Ritters.
+Angriffe zielen automatisch auf den nächsten Gegner.
 
 ---
 
-## Beute & Seltenheiten
+## Als App installieren & Spielstand übertragen
 
-| Seltenheit | Schadensbonus | Zusatzwerte |
-|---|---|---|
-| ⚪ Gewöhnlich | – | – |
-| 🔵 Magisch | +15 % | 1 |
-| 🟡 Selten | +30 % | 2 |
-| 🟣 Episch | +50 % | 2 |
-| 🟠 Legendär | +80 % | 3, eigener Name |
-
-**Zusatzwerte:** Krit · Tempo · Lebensraub · Glut (Brennschaden) · Wucht.
-Beute droppen Elite-Gegner, Truhen, Mimiks und Bosse. In der Schmiede kannst du sie anlegen oder verkaufen (max. 20 Stück).
+- **Android (Chrome):** im Titelmenü „Als App installieren“
+- **iPhone (Safari):** Teilen → „Zum Home-Bildschirm“
+- Als App startet das Spiel im Vollbild und Querformat und läuft offline.
+- **Spielstand übertragen:** Titelmenü → „Spielstand übertragen“ – Code kopieren und auf dem anderen Gerät einfügen. Codes aus Version 1 und 2 funktionieren ebenfalls.
 
 ---
 
-## Gegner & Bosse
+## Technik & Projektstruktur
 
-| Gegner | Verhalten | ab Stufe |
-|---|---|---|
-| Goblin | Nahkampf mit Messer | 1 |
-| Skelettkrieger | Nahkampf mit Schwert | 2 |
-| Echsenmensch | Sprungangriff mit Speer | 3 |
-| Wogol-Sprengmeister | wirft Bomben | 3 |
-| Sumpfschleim | teilt sich beim Tod | 4 |
-| Nekromant | Zauberkugeln, beschwört Zombies | 4 |
-| Orkkrieger | harter Nahkampf | 5 |
-| Oger | Hammerschlag mit Schockwelle | 6 |
-| Ork-Berserker | Sturmangriff (kracht gegen Säulen) | 7 |
-| Imp | fliegt und stürzt herab | 8 |
-| Hornteufel | schneller Sprungangriff | 9 |
-| Moderriese | schwerer Stampfer | 11 |
-| Mimik | versteckt sich in Truhen | – |
-
-**Bosse** (Stufe 5, 10, 15, dann im Wechsel und immer stärker):
-1. **Ogerhäuptling Grausch** – Schockwellen mit Felsbrocken, ruft Goblins
-2. **Schamane Vexhal** – Kugel-Salven, teleportiert sich, ruft Orks
-3. **Höllenschlund Ignaroth** – Feueratem, Stampf-Explosion, ruft Imps
-
-## Gebiete
-
-| Stufen | Gebiet |
-|---|---|
-| 1–5 | Kerker |
-| 6–10 | Moosgrotte |
-| 11–15 | Knochengruft |
-| 16–20 | Glutfeste |
-
-Danach wiederholen sich die Gebiete, die Gegner werden weiter stärker.
-
----
-
-## Als App installieren
-
-- **Android (Chrome):** Seite öffnen → im Titelmenü „Als App installieren“ (oder Chrome-Menü → „App installieren“)
-- **iPhone/iPad (Safari):** Teilen → „Zum Home-Bildschirm“
-- **PC (Chrome/Edge):** Installieren-Symbol in der Adressleiste
-
-Als App startet das Spiel im Vollbild und im Querformat. Hältst du das Handy hochkant, pausiert das Spiel automatisch.
-
-## Spielstand übertragen
-
-Der Spielstand liegt im Browser des jeweiligen Geräts. Unter **Titelmenü → Spielstand übertragen** bekommst du einen Code, den du auf einem anderen Gerät einfügen kannst.
-
----
-
-## Technik
-
-- Eine einzige `index.html` mit HTML5-Canvas und reinem JavaScript, keine Abhängigkeiten
-- Grafik als eingebettetes Sprite-Sheet; Musik und Soundeffekte werden live mit der Web Audio API erzeugt
-- Niedrige interne Auflösung (~200 px Höhe), pixelgenau hochskaliert
-- `manifest.webmanifest` + `sw.js` (Service Worker) für Installation und Offline-Betrieb
-- Gehostet über GitHub Pages
+Reines HTML5-Canvas und JavaScript, keine Abhängigkeiten, kein Build-Schritt.
 
 ```
-index.html             Spiel
+index.html             Oberfläche, Stile, lädt die Skripte
+js/data.js             Klassen, Fähigkeiten, Talente, Gegner, Affixe, Materialien, Rezepte, Sets, Erfolge
+js/core.js             Helfer, Grafik laden, Sprites umfärben, Ton & Musik, Speichern
+js/items.js            Charaktere, Gegenstände, Werte, Talente, Werkbank
+js/world.js            Arenen, Raumtypen, Weltkarte, Tages-Challenge
+js/combat.js           Spieler, Fähigkeiten, Gegner-KI, Schaden, Projektile, Beute
+js/render.js           Zeichnen, Licht & Schatten, Effekte
+js/ui.js               HUD, Menüs, Eingabe, Hauptschleife
+assets/sheet.png       Sprite-Atlas (Figuren, Gegner, Waffen, Kerker)
+assets/fx.png          Effekt-Atlas (Zauber, Explosionen, Blitze, Hiebe)
 manifest.webmanifest   App-Manifest (Vollbild, Querformat)
-sw.js                  Service Worker (Offline-Cache)
-icons/                 App-Icons
+sw.js                  Service Worker (Offline)
 docs/                  Screenshots, GIF, Werbevideo
 ```
 
-Lokal starten: Ordner mit einem beliebigen Webserver ausliefern, z. B. `python3 -m http.server`, dann `http://localhost:8000` öffnen.
+**Erweitern:** Neue Gegner, Talente, Rezepte oder Erfolge sind reine Daten in `js/data.js`.
+
+Lokal starten: `python3 -m http.server` im Ordner, dann `http://localhost:8000`.
 
 ---
 
 ## Werbevideo
 
-Ein 28-Sekunden-Clip im Hochformat (1080×1920) für TikTok und Instagram Reels: [docs/klingenhort_promo.mp4](docs/klingenhort_promo.mp4)
+30 Sekunden im Hochformat (1080×1920) für TikTok und Instagram Reels: [docs/klingenhort_promo.mp4](docs/klingenhort_promo.mp4)
 
 <img src="docs/poster.png" width="240" alt="Poster">
 
@@ -204,6 +239,12 @@ Ein 28-Sekunden-Clip im Hochformat (1080×1920) für TikTok und Instagram Reels:
 
 ## Credits
 
-- Grafik: [16x16 DungeonTileset II](https://0x72.itch.io/dungeontileset-ii) von **0x72** – CC0 (gemeinfrei)
-- Schriften: [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) und [VT323](https://fonts.google.com/specimen/VT323) – SIL Open Font License
-- Spiel, Code, Musik: Timur / katimur94
+Alle Grafiken sind CC0 (gemeinfrei):
+- [16x16 DungeonTileset II](https://0x72.itch.io/dungeontileset-ii) von **0x72** – Figuren, Gegner, Waffen, Kerker
+- [Pixel Art Spells](https://opengameart.org/content/pixel-art-spells) (OpenGameArt) – Zaubergeschosse, Schild, Spritzer
+- [Pixel Art Sword Slash](https://opengameart.org/content/pixel-art-sword-slash-effect) (OpenGameArt) – Schwerthiebe
+- [Explosion Effects and More](https://opengameart.org/content/explosion-effects-and-more) (OpenGameArt) – Explosion, Blitz, Schockwelle (auf Pixel-Auflösung umgerechnet)
+
+Schriften: [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) und [VT323](https://fonts.google.com/specimen/VT323) – SIL Open Font License.
+
+Spiel, Code und Musik: Timur / katimur94
