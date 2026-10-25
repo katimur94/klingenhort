@@ -168,6 +168,7 @@ function startRoom(type, row, extra) {
   if (type === 'boss') { G.waves.push({ list: buildWave(st, base) }); const B = bossOf(P.act), fav = biomeFav(st).filter(k => EN[k].cost <= 3.5), minions = []; for (let i = 0; i < Math.min(6, 1 + Math.floor(st / 6)); i++) minions.push(pick(fav.length ? fav : poolFor(st).slice(0, 4))); G.waves.push({ boss: B, list: minions }); }
   if (G.daily) G.lootMul = 1.5;
   G.lootMul *= 1 + weekFx('loot');
+  hook('room', type);
   cam.x = clamp(P.x - VW / 2, 0, Math.max(0, AW - VW)); cam.y = clamp(P.y - VH / 2, 0, Math.max(0, AH - VH));
   const b = biomeOf(P.act); setMusic(b.root, false);
   const label = G.daily ? _t('TAGES-HERAUSFORDERUNG') : NODE[type] ? NODE[type].n.toLocaleUpperCase(LOCALE) : type === 'rescue' ? _t('BEFREIUNG') : type === 'grave' ? _t('GRABRÄUBER') : type === 'sphinx' ? _t('ZORN DER SPHINX') : _t('VERFLUCHTE TRUHE');

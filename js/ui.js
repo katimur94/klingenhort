@@ -163,7 +163,7 @@ function showTitle() {
     <button class="btn alt" data-act="hall">${_t('Ruhmeshalle')}</button>
     <button class="btn alt" data-act="code">${_t('Spielstand übertragen')}</button>
     <button class="btn alt" data-act="settings">${_t('Einstellungen')}</button>
-    ${installBtn()}
+    ${hookHTML('titleBtns')}${installBtn()}
   </div></div></div>
   <div class="help">${HELP}</div>${CREDIT}<p class="credit">${_t('Version {v}', { v: VERSION })}</p>`, true);
   // Nach einem Update einmal die Neuigkeiten zeigen
@@ -212,7 +212,7 @@ function showCreate() {
   <div class="opts"><button class="opt${CS.hc ? ' sel' : ''}" data-act="chc">${_t('HARDCORE {v}', { v: CS.hc ? _t('AN') : _t('AUS') })}<small>${_t('Ein Tod löscht den Helden. Dafür Ruhm in der Ruhmeshalle.')}</small></button></div>
   <div class="menu foot"><button class="btn" data-act="cstart">${_t('Abenteuer beginnen')}</button></div>`, true);
 }
-function openMirror() { lkMode = 'mirror'; stationShell('spiegel', `<p class="sub">${_t('Der Spiegel zeigt, wer du sein willst. Änderungen sind kostenlos.')}</p>${lookEditorHTML()}`, true); }
+function openMirror() { lkMode = 'mirror'; stationShell('spiegel', `<p class="sub">${_t('Der Spiegel zeigt, wer du sein willst. Änderungen sind kostenlos.')}</p>${lookEditorHTML()}${hookHTML('mirror')}`, true); }
 
 /* ---------- Weltkarte ---------- */
 let mapSel = -1, mapTapped = false;
@@ -249,7 +249,7 @@ function openMap() {
 function showMapMore() {
   const legend = Object.keys(NODE).map(k => `<span><img src="${iconURL(NODE[k].icon)}" alt="">${NODE[k].n}</span>`).join('');
   showOverlay(`<div class="head"><h2>${_t('AKT {act}', { act: P.act })}</h2><div class="hbtns"><button class="btn alt sm" data-act="tomapview">${_t('Zurück')}</button></div></div>
-  <div class="menu two"><button class="btn alt" data-act="daily">${_t('Tages-Challenge')}</button><button class="btn alt" data-act="news" data-id="map">${_t('Neuigkeiten')}</button><button class="btn alt" data-act="title">${_t('Speichern & Hauptmenü')}</button></div>
+  <div class="menu two"><button class="btn alt" data-act="daily">${_t('Tages-Challenge')}</button><button class="btn alt" data-act="news" data-id="map">${_t('Neuigkeiten')}</button><button class="btn alt" data-act="title">${_t('Speichern & Hauptmenü')}</button>${hookHTML('mapMore')}</div>
   ${weekHTML()}<h3>${_t('LEGENDE')}</h3><div class="legend open">${legend}</div>`);
 }
 function hideReady() { return minePending('mine') > 0 || minePending('garden') > 0 || BUILDORDER.some(k => { const c = buildCost(k); return c && !BUILD[k].fixed && canAfford(c.mats, c.gold); }); }
@@ -295,7 +295,7 @@ function openChar(tab, back) {
     const sel = selItem && findItem(selItem);
     let gear = ''; for (const s of ['weapon', 'armor', 'helm']) { const it = P.gear[s]; gear += `<div class="gearslot"><div style="font-size:14px;color:var(--parch-dim)">${s === 'weapon' ? _t('Waffe') : AR[s].label}</div>${it ? itemSlot(it, 'isel', sel && sel.it === it) : ''}</div>`; }
     const sets = {}; for (const s of ['weapon', 'armor', 'helm']) { const it = P.gear[s]; if (it && it.set) sets[it.set] = (sets[it.set] || 0) + 1; }
-    const side = sel ? `<div class="side sheet"><button class="btn alt sm sheetx" data-act="isel" data-id="" aria-label="${_t('Schließen')}"><span class="x">×</span></button>${itemDetail(sel.it, sel.eq ? '' : `${canEquip(sel.it) ? `<button class="btn sm" data-act="equip" data-id="${sel.it.uid}">${_t('Anlegen')}</button>` : ''}<button class="btn alt sm" data-act="sell" data-id="${sel.it.uid}">${_t('Verkaufen')} <i class="coin"></i>${itemPrice(sel.it)}</button>`)}${sel.eq ? '' : compareHTML(sel.it)}</div>`
+    const side = sel ? `<div class="side sheet"><button class="btn alt sm sheetx" data-act="isel" data-id="" aria-label="${_t('Schließen')}"><span class="x">×</span></button>${itemDetail(sel.it, sel.eq ? '' : `${canEquip(sel.it) ? `<button class="btn sm" data-act="equip" data-id="${sel.it.uid}">${_t('Anlegen')}</button>` : ''}<button class="btn alt sm" data-act="sell" data-id="${sel.it.uid}">${_t('Verkaufen')} <i class="coin"></i>${itemPrice(sel.it)}</button>${hookHTML('itemActions', sel.it)}`)}${sel.eq ? '' : compareHTML(sel.it)}</div>`
       : `<div class="side"><p class="sub" style="margin-top:0">${_t('Tippe einen Gegenstand an, um Details, Vergleich und Aktionen zu sehen.')}</p></div>`;
     body = `<div class="split"><div><div class="box"><div style="display:flex;gap:12px;align-items:center">${heroHTML(P, 2.4)}<div class="stats" style="flex:1"><span>${_t('SCH {n}', { n: Math.round(st.wbase * st.dmgMul) })}</span><span>${_t('LP {n}', { n: st.hp })}</span><span>${_t('VER {n}', { n: Math.round(st.def) })}</span><span>${_t('KRIT {n}', { n: pct(st.crit) })}</span><span>${_t('KRIT-SCH {n}', { n: pct(st.critdmg) })}</span><span>${_t('TEMPO {n}/s', { n: (1 / st.cd).toFixed(1) })}</span>${st.dr ? `<span>${_t('MINDERUNG {n}', { n: pct(st.dr) })}</span>` : ''}${st.dodge ? `<span>${_t('AUSWEICHEN {n}', { n: pct(st.dodge) })}</span>` : ''}${st.regen ? `<span>${_t('REGEN {n}', { n: st.regen.toFixed(1) })}</span>` : ''}${st.leech ? `<span>${_t('LEBENSRAUB {n}', { n: pct(st.leech) })}</span>` : ''}${st.gold ? `<span>${_t('GOLD +{n}', { n: pct(st.gold) })}</span>` : ''}${st.m.xp ? `<span>${_t('EP +{n}', { n: pct(st.m.xp) })}</span>` : ''}</div></div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px">${gear}</div>
@@ -309,7 +309,7 @@ function openChar(tab, back) {
       body += '</div>';
     });
     body += '</div>';
-    body += `<h3>${_t('FÄHIGKEITEN')}</h3>${C.skills.concat([C.ult]).map(id => { const S = SKILLS[id]; return `<div class="row" style="cursor:default"><div class="ic"><img src="${iconURL(S.icon)}" alt=""></div><div><div class="nm">${S.n}${S.ult ? ' (' + _t('Ultimative') + ')' : ''}</div><div class="st">${S.d}${S.cost ? ' · ' + S.cost + ' ' + C.res.name + ' · ' + S.cd + ' s' : ' · ' + _t('bei voller Wut')}</div></div><span></span></div>`; }).join('')}`;
+    body += `<h3>${_t('FÄHIGKEITEN')}</h3>${C.skills.concat([C.ult]).map(id => { const S = SKILLS[id]; return `<div class="row" style="cursor:default"><div class="ic"><img src="${iconURL(S.icon)}" alt=""></div><div><div class="nm">${S.n}${S.ult ? ' (' + _t('Ultimative') + ')' : ''}</div><div class="st">${S.d}${S.cost ? ' · ' + S.cost + ' ' + C.res.name + ' · ' + S.cd + ' s' : ' · ' + _t('bei voller Wut')}</div>${hookHTML('skillRow', id)}</div><span></span></div>`; }).join('')}`;
   } else if (charTab === 'vorrat') {
     body = `<h3>${_t('MATERIALIEN')}</h3><div class="grid">${MATORDER.map(k => `<div class="slot" title="${MATS[k].n}" style="cursor:default"><img src="${iconURL(['mat', k])}" alt="${MATS[k].n}"><span class="n">${P.mats[k] || 0}</span></div>`).join('')}</div>
     <p style="font-size:15px;color:var(--parch-dim)">${MATORDER.map(k => MATS[k].n + ' ' + (P.mats[k] || 0)).join(' · ')}</p>
@@ -322,10 +322,10 @@ function openChar(tab, back) {
     ${[['dmg', _t('Schaden +1 %')], ['hp', _t('Lebenspunkte +1 %')], ['def', _t('Verteidigung +1')], ['crit', _t('Krit +0,2 %')]].map(([k, l]) => `<div class="row" style="cursor:default"><div class="ic" style="font-family:var(--f-display);font-size:9px">${P.pp[k]}</div><div><div class="nm">${l}</div></div><button class="btn sm" data-act="pp" data-id="${k}" ${free > 0 ? '' : 'disabled'}>+1</button></div>`).join('')}
     <h3>${_t('WIEDERGEBURT')}</h3><p class="sub">${_t('Ab Level 50 und Akt 5: zurück auf Level 1 und Akt 1. Ausrüstung, Materialien, Gold und Paragon bleiben. Dauerhaft +10 % Schaden und LP pro Wiedergeburt und eine goldene Aura. Bisher: {n}.', { n: P.rebirths })}</p>
     <button class="btn red" data-act="rebirth" ${P.lv >= 50 && P.maxAct >= 5 ? '' : 'disabled'}>${_t('Wiedergeburt')}</button>`;
-  }
+  } else { const t = HOOK.charTabs.find(t => t.k === charTab); if (t) body = t.body(); }
   showOverlay(`<div class="head"><h2>${esc(P.name).toLocaleUpperCase(LOCALE)}</h2><div class="hbtns"><div class="gold"><i class="coin"></i>${fmt(P.gold)} <span style="color:#ffd24a"><i class="fc"></i>${P.fate || 0}</span></div><button class="btn alt sm" data-act="cback">${_t('Zurück')}</button></div></div>
   <div class="stats"><span>${C.name}</span><span>${_t('LV {lv}', { lv: P.lv })}</span><span>${_t('EP {n}', { n: fmt(P.xp) + '/' + fmt(xpNext(P.lv)) })}</span><span>${DIFFS[P.diff].n}${P.hc ? ' · ' + _t('HARDCORE') : ''}</span><span>${_t('KILLS {n}', { n: fmt(P.stats.kills) })}</span></div>
-  <div class="tabs" role="tablist">${tab_('gear', _t('AUSRÜSTUNG'))}${tab_('tal', _t('TALENTE') + (P.sp ? ' (' + P.sp + ')' : ''))}${tab_('vorrat', _t('VORRAT'))}${tab_('look', _t('AUSSEHEN'))}${tab_('para', _t('PARAGON'))}</div>
+  <div class="tabs" role="tablist">${tab_('gear', _t('AUSRÜSTUNG'))}${tab_('tal', _t('TALENTE') + (P.sp ? ' (' + P.sp + ')' : ''))}${tab_('vorrat', _t('VORRAT'))}${tab_('look', _t('AUSSEHEN'))}${tab_('para', _t('PARAGON'))}${HOOK.charTabs.map(t => tab_(t.k, t.label())).join('')}</div>
   ${body}`, true);
 }
 /* Vergleich mit dem angelegten Gegenstand */
@@ -344,6 +344,7 @@ function gemListHTML(withAct) {
 let wbTab = 'up', wbFree = false, wbMode = 'node', fuseA = null, fuseB = null, forgeSlot = 'weapon';
 const WB_TABS = { node: ['up', 'fuse', 'forge', 'craft', 'sock', 'gems', 'dye'], act: ['up', 'fuse', 'forge', 'craft', 'sock', 'gems', 'dye'], smith: ['up', 'fuse', 'forge', 'craft', 'dye'], jewel: ['sock', 'gems', 'trans'] };
 const WB_LABEL = { up: _t('AUFWERTEN'), fuse: _t('VERSCHMELZEN'), forge: _t('SCHMIEDEN'), craft: _t('HERSTELLEN'), sock: _t('SOCKEL'), gems: _t('EDELSTEINE'), dye: _t('FARBEN'), trans: _t('VEREDELN') };
+for (const t of HOOK.wbTabs) { for (const m of t.modes) WB_TABS[m].push(t.k); WB_LABEL[t.k] = t.label(); }
 function openWorkbench(mode) {
   if (mode !== undefined) { wbMode = mode; wbFree = mode === 'node'; fuseA = fuseB = null; }
   if (!WB_TABS[wbMode].includes(wbTab)) wbTab = WB_TABS[wbMode][0];
@@ -377,6 +378,8 @@ function openWorkbench(mode) {
     body = `<p class="sub">${_t('Drei gleiche Edelsteine verschmelzen zu einem besseren.')}${hideLv('juwelier') >= 2 ? ' ' + _t('Juwelier-Rabatt aktiv.') : ''}</p>` + gemListHTML('comb');
   } else if (wbTab === 'trans') {
     body = '<p class="sub">' + _t('Veredle Materialien, die du übrig hast, zu selteneren.') + '</p>' + TRANSMUTE.map(([f, t, n, g], i) => `<div class="row" style="cursor:default"><div class="ic"><img src="${iconURL(['mat', t])}" alt=""></div><div><div class="nm">${n} ${MATS[f].n} → 1 ${MATS[t].n}</div>${costHTML({ [f]: n }, g)}</div><button class="btn sm" data-act="trans" data-i="${i}" ${(P.mats[f] || 0) >= n && P.gold >= g ? '' : 'disabled'}>${_t('Veredeln')}</button></div>`).join('');
+  } else if (HOOK.wbTabs.some(t => t.k === wbTab)) {
+    body = HOOK.wbTabs.find(t => t.k === wbTab).body(it, list, all);
   } else if (wbTab === 'dye') {
     body = `<div style="display:flex;gap:16px;align-items:center;margin-bottom:10px">${heroHTML(P, 2.4)}<p class="sub">${_t('Farbstoffe färben deine Rüstung. „Material“ zeigt die echte Farbe von Mithril, Adamant, Drachen … Einmal freigeschaltet, kannst du jederzeit wechseln.')}</p></div>` + DYES.map(D => { const have = P.dyes.includes(D.id); return `<div class="row${P.dye === D.id ? ' sel' : ''}" style="cursor:default"><div class="ic">${heroHTML(Object.assign({}, P, { dye: D.id, look: P.look }), .9)}</div><div><div class="nm">${D.n}</div>${have ? '<div class="st">' + _t('Freigeschaltet') + '</div>' : costHTML(D.cost, 0)}</div><button class="btn sm" data-act="dye" data-id="${D.id}" ${have || hasMats(D.cost) ? '' : 'disabled'}>${P.dye === D.id ? _t('Aktiv') : have ? _t('Anlegen') : _t('Freischalten')}</button></div>`; }).join('');
   }
@@ -544,6 +547,7 @@ function showControls() {
 panel.addEventListener('click', ev => {
   const b = ev.target.closest('[data-act]'); if (!b || b.disabled) return; audioOn();
   const a = b.dataset.act, id = b.dataset.id, i = b.dataset.i != null ? +b.dataset.i : -1;
+  if (ON[a]) { ON[a](id, b, i); return; }
   if (a.startsWith('ctl_')) { const c = ctlSet(); if (a === 'ctl_stick_float') c.stick = 'float'; if (a === 'ctl_stick_fixed') c.stick = 'fixed'; if (a === 'ctl_ss-') c.stickSize = clamp(c.stickSize - .1, .6, 1.6); if (a === 'ctl_ss+') c.stickSize = clamp(c.stickSize + .1, .6, 1.6); if (a.startsWith('ctl_pot_')) c.pot = a.slice(8); if (a === 'ctl_aim') c.aim = !c.aim; if (a === 'ctl_drag') c.aimDrag = !c.aimDrag; if (a === 'ctl_hap') { c.haptics = !c.haptics; buzz(30); } persist(); applyLayout(); sfx('click'); showControls(); return; }
   switch (a) {
     case 'new': CS = { cls: 'knight', diff: 'normal', hc: false, name: '', look: null }; showCreate(); break;
@@ -741,6 +745,7 @@ function update(dt) {
   separate();
   enemies = enemies.filter(e => !e.dead);
   updProjs(dt); updSpikes(); updObs(dt); updAllies(dt); updPickups(dt); updParts(dt); ambient(dt);
+  hook('update', dt);
   if (state === 'play' && G.phase !== 'done') updRoom(dt);
   if (state === 'dead') { deadT -= dt; if (deadT <= 0) showDeath(); }
   P.stats.playtime = (P.stats.playtime || 0) + dt;
@@ -767,7 +772,7 @@ loadAssets().then(() => {
   try {
     loadAll(); applyUiPrefs(); resize(); applyLayout();
     if (SAVE.active >= 0 && SAVE.chars[SAVE.active]) activateChar(SAVE.active);
-    titleScene(); showTitle(); checkAch();
+    titleScene(); showTitle(); checkAch(); hook('boot');
   } catch (e) {
     console.error(e);
     panel.innerHTML = '<p class="sub">' + _t('Beim Starten ist ein Fehler aufgetreten ({err}). Bitte Seite neu laden.', { err: esc(e.message) }) + '</p>';

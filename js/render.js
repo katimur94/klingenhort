@@ -135,6 +135,7 @@ function drawEnemy(e) {
   if (e.ai === 'swoop' || e.t === 'demon' || e.t === 'pyraxis' || e.t === 'jungdrache') addLight(sx, sy - 10 * e.sc - e.z, 26 * e.sc, .5);
   if (e.ai === 'ghost') addLight(sx, sy - 10 - e.z, 18, .4 * (1 - e.fade));
   if (e.t === 'goldgob') addLight(sx, sy - 8, 30, .7);
+  hook('drawEnemy', e);
 }
 function drawObs(o) {
   const x = Math.round(o.x - CX), y = Math.round(o.y - CY);
@@ -245,9 +246,10 @@ function render() {
   for (const c of corpses) if (c.z > 0) list.push({ y: c.y, c });
   for (const a of allies) list.push({ y: a.y, a });
   if (state !== 'dead' || deadT > 1.4) list.push({ y: P.y, p: true });
+  hook('draw', list);
   list.sort((a, b) => a.y - b.y);
   for (const g of ghosts) drawGhost(g);
-  for (const it of list) { if (it.p) drawPlayer(); else if (it.e) drawEnemy(it.e); else if (it.o) drawObs(it.o); else if (it.a) drawAlly(it.a); else drawCorpse(it.c); }
+  for (const it of list) { if (it.p) drawPlayer(); else if (it.e) drawEnemy(it.e); else if (it.o) drawObs(it.o); else if (it.a) drawAlly(it.a); else if (it.draw) it.draw(); else drawCorpse(it.c); }
   for (const p of projs) {
     if (p.delay > 0) continue;
     const x = p.x - CX, y = p.y - CY - p.h;

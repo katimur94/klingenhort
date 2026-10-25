@@ -5,6 +5,17 @@
 
 // Spieldaten und feste Texte der Seite in der gewählten Sprache (js/i18n.js)
 translateData(); translateStatic();
+/* Andockstellen für Spielsysteme in eigenen Dateien (Begleiter, Schmiede, Meisterschaft, Tausch …).
+   Ein System hängt sich ein mit HOOK.<name>.push(fn), Knöpfe mit data-act="x" bedient ON.x = (id, btn, i) => …
+   meta(m) Spielstand-Konto · activate(P) Held geladen · stats(add, m) / statsPost(st) Werte · hit(dmg, e, w, crit) → dmg
+   afterHit(e, w, dmg, crit) · kill(e) · hurt(dmg, src) → dmg · skill(id, w) · update(dt) · room(type) · draw(list) +{y, draw}
+   drawEnemy(e) · pickup(it) · itemLines(it, L) · itemActions(it) → HTML · skillRow(id) → HTML · titleBtns/mapMore/mirror → HTML
+   charTabs/wbTabs: { k, label, body(…), modes } · boot() nach dem Titelmenü */
+const HOOK = { meta: [], activate: [], stats: [], statsPost: [], hit: [], afterHit: [], kill: [], hurt: [], skill: [], update: [], room: [], draw: [], drawEnemy: [], pickup: [], itemLines: [], itemActions: [], skillRow: [], titleBtns: [], mapMore: [], mirror: [], charTabs: [], wbTabs: [], boot: [] };
+const ON = {};
+function hook(n, ...a) { for (const f of HOOK[n]) f(...a); }
+function hookVal(n, v, ...a) { for (const f of HOOK[n]) v = f(v, ...a); return v; }
+function hookHTML(n, ...a) { return HOOK[n].map(f => f(...a) || '').join(''); }
 const $ = id => document.getElementById(id);
 const cv = $('game'), ctx = cv.getContext('2d');
 let VW = 320, VH = 200, SCALE = 3;
@@ -226,11 +237,12 @@ function fixMeta(m) {
   m.hide = Object.assign(defaultHide(), m.hide || {}); m.hide.b = m.hide.b || {}; if (!Array.isArray(m.hide.stash)) m.hide.stash = [];
   m.luck = Object.assign({ spins: 0, pityL: 0, pityM: 0 }, m.luck || {});
   if (!Array.isArray(m.lore)) m.lore = []; if (!Array.isArray(m.cos)) m.cos = [];
+  hook('meta', m);
   return m;
 }
 function loadAll() {
   try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (s && s.v === 3) { SAVE = s; SAVE.meta = fixMeta(SAVE.meta); markSeen(); return; } } catch (e) { }
-  SAVE = { v: 3, chars: [], active: -1, meta: defaultMeta() };
+  SAVE = { v: 3, chars: [], active: -1, meta: fixMeta(defaultMeta()) };
   try { const old = JSON.parse(localStorage.getItem('klingenhort.v1') || 'null'); if (old && old.lv) { SAVE.chars.push(migrateV1(old)); SAVE.active = 0; } } catch (e) { }
   markSeen(); persist();
 }

@@ -4,7 +4,7 @@
    ========================================================= */
 
 let P = null; // aktiver Charakter (gespeicherte Felder + Laufzeit-Felder)
-const PERSIST = ['id', 'name', 'cls', 'diff', 'hc', 'lv', 'xp', 'gold', 'potions', 'sp', 'talents', 'paragon', 'pxp', 'pp', 'gear', 'bag', 'mats', 'gems', 'dyes', 'dye', 'act', 'map', 'rebirths', 'buffs', 'stats', 'created', 'dead', 'maxAct', 'res', 'rage', 'look', 'fate', 'story'];
+const PERSIST = ['id', 'name', 'cls', 'diff', 'hc', 'lv', 'xp', 'gold', 'potions', 'sp', 'talents', 'paragon', 'pxp', 'pp', 'gear', 'bag', 'mats', 'gems', 'dyes', 'dye', 'act', 'map', 'rebirths', 'buffs', 'stats', 'created', 'dead', 'maxAct', 'res', 'rage', 'look', 'fate', 'story', 'parts', 'mastery'];
 
 function newChar(cls, name, diff, hc, look) {
   const C = CLASSES[cls];
@@ -14,17 +14,18 @@ function newChar(cls, name, diff, hc, look) {
     gear: { weapon: makeItem({ slot: 'weapon', base: C.start, tier: 0, rar: 0, std: true }), armor: makeItem({ slot: 'armor', base: 'armor', tier: 0, rar: 0 }), helm: makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 0 }) },
     bag: [], mats: {}, gems: {}, dyes: ['natur'], dye: 'natur', act: 1, map: null, rebirths: 0, buffs: [],
     stats: { kills: 0, deaths: 0, rooms: 0, playtime: 0 }, created: Date.now(), dead: false, maxAct: 1, res: 100, rage: 0,
-    look: look || { body: C.body, hair: -1, skin: -1, accent: -1, cape: -1 }, fate: 0, story: {}
+    look: look || { body: C.body, hair: -1, skin: -1, accent: -1, cape: -1 }, fate: 0, story: {}, parts: {}, mastery: {}
   };
 }
 function activateChar(i) {
   SAVE.active = i; const c = SAVE.chars[i];
   P = Object.assign(newRuntime(), JSON.parse(JSON.stringify(c)));
-  for (const k of ['talents', 'pp', 'mats', 'gems', 'stats', 'story']) if (!P[k]) P[k] = {};
+  for (const k of ['talents', 'pp', 'mats', 'gems', 'stats', 'story', 'parts', 'mastery']) if (!P[k]) P[k] = {};
   if (!P.pp.dmg && P.pp.dmg !== 0) P.pp = { dmg: 0, hp: 0, def: 0, crit: 0 };
   if (!Array.isArray(P.buffs)) P.buffs = [];
   if (!Array.isArray(P.dyes)) P.dyes = ['natur'];
   P.look = lookOf(P); P.fate = P.fate || 0;
+  hook('activate', P);
   computeStats(); P.hp = P.st.hp; P.res = P.st.resMax;
 }
 function newRuntime() { return { x: 0, y: 0, z: 0, vx: 0, vy: 0, r: 5, turn: 1, face: 1, aim: 0, phase: 0, squash: 0, flash: 0, lean: 0, moving: false, hp: 1, atkT: 0, atkDur: 1, atkCd: 0, hitSet: null, struck: false, inv: 0, roll: 0, rollCd: 0, rdx: 1, rdy: 0, rollA: 0, hand: null, combo: 0, comboT: 0, chain: 0, chainT: 0, spin: 0, spinA: 0, spinTick: 0, leap: null, dash: null, volley: 0, volleyT: 0, ghostT: 0, cds: [0, 0, 0], potCd: 0, wall: 0, stealth: 0, poisonT: 0, slowT: 0, st: null, manAim: null, poolT: 0 }; }
@@ -88,6 +89,7 @@ function itemLines(it) {
   if (it.sockets > it.gems.length) L.push(_t('{icons} freie Sockel', { icons: '◇'.repeat(it.sockets - it.gems.length) }));
   if (it.fz) L.push(_t('★ {n}× verschmolzen: +{p} % Grundwerte', { n: it.fz, p: it.fz * 6 }));
   if (it.set) { const S = SETS[it.set], have = setCount(it.set); L.push(_t('{set} ({n}/3): 2 – {d2}; 3 – {d3}', { set: S.n, n: have, d2: S.d2, d3: S.d3 })); }
+  hook('itemLines', it, L);
   return L;
 }
 function itemPrice(it) { return Math.max(8, Math.round(PRICE[it.tier] * .22 * (1 + Math.min(it.rar, 5) * .6 + (it.rar === 6 ? 3 : 0)) * (1 + it.up * .3) * (1 + (it.fz || 0) * .2))); }
@@ -122,7 +124,7 @@ function equipFromBag(i) {
   if (setCount(it.set) >= 3) stat('fullset');
   return true;
 }
-function addToBag(it) { if (it.rar === 6) statMax('myths', 1); if (P.bag.length >= 30) { const g = itemPrice(it); P.gold += g; return g; } P.bag.push(it); return 0; }
+function addToBag(it) { hook('pickup', it); if (it.rar === 6) statMax('myths', 1); if (P.bag.length >= 30) { const g = itemPrice(it); P.gold += g; return g; } P.bag.push(it); return 0; }
 
 /* ---------- Werte berechnen ---------- */
 const AFFKEY = { krit: 'crit', tempo: 'aspd', raub: 'leech', feuer: 'burnW', frost: 'frostW', wucht: 'wdmg', leben: 'hp', panzer: 'def', heil: 'regen', schutz: 'dr', eile: 'spd', glueck: 'gold' };
@@ -144,6 +146,7 @@ function computeStats() {
   add('dmg', (P.pp.dmg || 0) * .01); add('hp', (P.pp.hp || 0) * .01); add('def', (P.pp.def || 0)); add('crit', (P.pp.crit || 0) * .002);
   add('dmg', P.rebirths * .1); add('hp', P.rebirths * .1);
   for (const b of P.buffs) for (const k in b.buff) add(k, b.buff[k]);
+  hook('stats', add, m);
   const w = P.gear.weapon, W = WT[w.base], F = wform(w);
   const st = { m };
   st.wbase = weaponDmg(w) * (1 + (m.wdmg || 0)) + (lvPow(P.lv) + 1) * 1.4;
@@ -158,6 +161,7 @@ function computeStats() {
   st.resMax = C.res.max; st.resRegen = C.res.regen * (1 + (m.resreg || 0));
   st.cdr = Math.min(.6, m.cdr || 0); st.dr = Math.min(.6, m.dr || 0); st.dodge = Math.min(.4, m.dodge || 0);
   st.regen = m.regen || 0; st.leech = m.leech || 0; st.gold = (m.gold || 0) + weekFx('gold'); st.rage = m.rage || 0;
+  hook('statsPost', st, m);
   P.st = st;
   return st;
 }

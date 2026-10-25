@@ -163,8 +163,9 @@ function weaponHit(e, w, mul, nx, ny, kbMul, forceCrit) {
   let crit = forceCrit || Math.random() < w.crit;
   let m = mul;
   if (P.stealth > 0) { m *= 2 + mod('stealth'); crit = true; P.stealth = 0; burst(P.x, P.y, 8, '#3a3448', 12, 50); }
-  const dmg = Math.round(w.dmg * m * rnd(.9, 1.1) * (crit ? w.critdmg : 1));
+  const dmg = Math.round(hookVal('hit', w.dmg * m * rnd(.9, 1.1) * (crit ? w.critdmg : 1), e, w, crit));
   hurtEnemy(e, dmg, nx, ny, w.kb * (kbMul || 1), crit);
+  hook('afterHit', e, w, dmg, crit);
   if (w.leech && state === 'play') P.hp = Math.min(P.st.hp, P.hp + dmg * w.leech);
   if (crit && mod('my_fireburst') && (P.fbT || 0) < T) { P.fbT = T + .35; const x = e.x, y = e.y; explode(x, y, 26, w.dmg * .9, 'p', { burn: true }); }
   if (mod('my_chain') && Math.random() < .2 && !w.chained) mythChain(e, w);
@@ -226,6 +227,7 @@ function useSkill(i) {
   if (P.cds[i] > 0) { sfx('deny'); return; }
   if (P.res < cost) { toast(_t('{res} reicht nicht', { res: CLASSES[P.cls].res.name })); sfx('deny'); return; }
   const inp = readInput(), w = playerW();
+  hook('skill', id, w);
   if (id === 'a2' && traps.length >= 2 + mod('a2Max')) { toast(_t('Maximale Anzahl Fallen gelegt')); return; }
   P.res -= cost; P.cds[i] = skillCd(i); P.atkT = 0; buzz(8);
   txt(P.x, P.y - 30, S.n, '#efe2bf');
@@ -264,6 +266,7 @@ function doUlt() {
   if (P.rage < 100) { toast(_t('Wut noch nicht voll – triff Gegner!')); sfx('deny'); return; }
   P.rage = 0; P.atkT = 0; sfx('spec'); flash = { a: .2, c: '255,220,140' };
   const inp = readInput(), w = playerW(), id = CLASSES[P.cls].ult;
+  hook('skill', id, w);
   txt(P.x, P.y - 34, SKILLS[id].n.toLocaleUpperCase(LOCALE) + '!', '#ffd24a', true);
   if (id === 'ku') { const a = autoAim(160, inp), t = nearestEnemy(999), d = Math.min(70, t ? dist(t, P) : 70); P.leap = { t: 0, dur: .5, sx: P.x, sy: P.y, tx: clamp(P.x + Math.cos(a) * d, BD.x0, BD.x1), ty: clamp(P.y + Math.sin(a) * d, BD.y0, BD.y1) }; P.face = Math.cos(a) >= 0 ? 1 : -1; }
   else if (id === 'mu') { const n = 10 + mod('uCount'); for (let k = 0; k < n; k++) { const t = enemies.length ? pick(enemies) : null; const x = clamp((t ? t.x : P.x) + rnd(-30, 30), BD.x0, BD.x1), y = clamp((t ? t.y : P.y) + rnd(-20, 20), BD.y0, BD.y1); projs.push({ k: 'meteor', fxn: 'firebomb', x, y, tx: x, ty: y, h: 140, vx: 0, vy: 0, life: 9, max: 9, delay: k * .13, from: 'p', r: 0, w, hit: new Set() }); } }
@@ -294,6 +297,7 @@ function killEnemy(e, nx, ny) {
   e.dead = true; G.kills++;
   P.stats.kills++; stat('kills'); stat('k_' + e.t); if (!SAVE.meta.bestiary[e.t]) statMax('bestiary', Object.keys(SAVE.meta.bestiary).length + 1); SAVE.meta.bestiary[e.t] = (SAVE.meta.bestiary[e.t] || 0) + 1;
   gainXP(e.xp, e);
+  hook('kill', e);
   const lm = G.lootMul * (1 + mod('loot')), qm = qualOf(P.act);
   dropCoins(e.x, e.y, e.gold * (1 + mod('loot')), e.boss);
   if (Math.random() < .06) pickups.push({ k: 'heart', x: e.x, y: e.y, z: 6, vz: 70, vx: rnd(-20, 20), vy: rnd(-10, 10), t: 0 });
@@ -336,7 +340,7 @@ function hurtPlayer(dmg, src) {
   if (P.inv > 0 || state !== 'play' || P.hp <= 0) return;
   if (Math.random() < P.st.dodge) { txt(P.x, P.y - 24, _t('AUSGEWICHEN'), '#8ee6ea'); P.inv = .25; return; }
   if (src && src.t && src.affixes) { if (src.affixes.includes('frostig') || (src.def && src.def.frosty)) P.slowT = 2; if (src.affixes.includes('vampir')) src.hp = Math.min(src.maxHp, src.hp + dmg * .5); if (mod('chill')) src.chill = 2; }
-  let d = dmg * rnd(.9, 1.1) * 40 / (40 + P.st.def) * (1 - P.st.dr);
+  let d = hookVal('hurt', dmg * rnd(.9, 1.1) * 40 / (40 + P.st.def) * (1 - P.st.dr), src);
   if (P.wall > 0) { d *= .3; fxAnim('shield', P.x, P.y - 12, { dur: .25, alpha: .5 }); }
   const t = Math.max(1, Math.round(d));
   P.hp -= t; P.inv = .7; P.flash = .2; P.squash = .15; P.chain = 0; comboUI(); buzz(25);
@@ -740,6 +744,7 @@ function updPickups(dt) {
   pickups = pickups.filter(c => !c.got);
 }
 function pickItem(it) {
+  hook('pickup', it);
   sfx(it.rar === 6 ? 'myth' : 'loot'); if (it.rar === 4) stat('legs'); if (it.rar === 6) { statMax('myths', 1); banner(_t('MYTHISCH!'), _t(it.name)); }
   const cur = P.gear[it.slot];
   if (canEquip(it) && (!cur || itemScore(it) > itemScore(cur) * 1.05) && (!cur || !cur.set || it.set)) {
