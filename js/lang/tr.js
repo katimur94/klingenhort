@@ -2005,8 +2005,5 @@ I18N.tr = {
   "TREFFER": "VURUŞ",
   "ROLLE": "TAKLA",
   "Ultimative Fähigkeit": "Nihai Yetenek",
-  "Lade …": "Yükleniyor …",
-  "Tägliche und wöchentliche Aufträge mit Belohnungen im Versteck": "Sığınakta ödüllü günlük ve haftalık görevler",
-  "Neues Gebiet: der Sturmgipfel mit eigenem Boss und vier neuen Gegnern": "Yeni bölge: kendi bossu ve dört yeni düşmanıyla Fırtına Zirvesi",
-  "Begleiter: Mini-Drache, Geisterkatze und Goldkäfer sammeln Beute für dich": "Yoldaşlar: Mini Ejder, Hayalet Kedi ve Altın Böcek senin için ganimet toplar"
+  "Lade …": "Yükleniyor …"
 };

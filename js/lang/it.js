@@ -2005,8 +2005,5 @@ I18N.it = {
   "TREFFER": "COLPI",
   "ROLLE": "SCHIVA",
   "Ultimative Fähigkeit": "Abilità suprema",
-  "Lade …": "Caricamento …",
-  "Tägliche und wöchentliche Aufträge mit Belohnungen im Versteck": "Missioni giornaliere e settimanali con ricompense nel Rifugio",
-  "Neues Gebiet: der Sturmgipfel mit eigenem Boss und vier neuen Gegnern": "Nuova regione: la Vetta delle Tempeste con un boss proprio e quattro nuovi nemici",
-  "Begleiter: Mini-Drache, Geisterkatze und Goldkäfer sammeln Beute für dich": "Compagni: mini-drago, gatto spettrale e scarabeo d'oro raccolgono il bottino per te"
+  "Lade …": "Caricamento …"
 };

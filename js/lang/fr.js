@@ -2005,8 +2005,5 @@ I18N.fr = {
   "TREFFER": "COUPS",
   "ROLLE": "ROULADE",
   "Ultimative Fähigkeit": "Compétence ultime",
-  "Lade …": "Chargement …",
-  "Tägliche und wöchentliche Aufträge mit Belohnungen im Versteck": "Quêtes quotidiennes et hebdomadaires avec récompenses au repaire",
-  "Neues Gebiet: der Sturmgipfel mit eigenem Boss und vier neuen Gegnern": "Nouvelle région : le Pic des tempêtes avec son propre boss et quatre nouveaux ennemis",
-  "Begleiter: Mini-Drache, Geisterkatze und Goldkäfer sammeln Beute für dich": "Compagnons : mini-dragon, chat fantôme et scarabée doré ramassent le butin pour toi"
+  "Lade …": "Chargement …"
 };

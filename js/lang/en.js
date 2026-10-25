@@ -2005,8 +2005,5 @@ I18N.en = {
   "TREFFER": "HITS",
   "ROLLE": "ROLL",
   "Ultimative Fähigkeit": "Ultimate skill",
-  "Lade …": "Loading …",
-  "Tägliche und wöchentliche Aufträge mit Belohnungen im Versteck": "Daily and weekly quests with rewards in the Hideout",
-  "Neues Gebiet: der Sturmgipfel mit eigenem Boss und vier neuen Gegnern": "New area: the Storm Peak with its own boss and four new enemies",
-  "Begleiter: Mini-Drache, Geisterkatze und Goldkäfer sammeln Beute für dich": "Companions: Mini Dragon, Ghost Cat and Gold Beetle collect loot for you"
+  "Lade …": "Loading …"
 };
