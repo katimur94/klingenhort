@@ -280,6 +280,22 @@ def world(k):
     return b
 
 
+# Zeitpunkte aus raw/<szene>/log.json (Eintrag i = Stand vor Bild i, also zu sehen in Bild i-1)
+def ev_at(scene, pred):
+    L = jload(scene + '/log.json')
+    return max(0, next(i for i, v in enumerate(L) if pred(v)) - 1)
+
+
+C_OPEN = ev_at('l_chest', lambda v: v[0] == 1) - 4         # Truhe offen (Teil zeigt Bild kk + 4)
+C_ITEM = ev_at('l_chest', lambda v: v[2] > 0) - 4          # Legendär liegt am Boden
+C_PACK = max(ev_at('l_chest', lambda v: v[1] > 0) - 4, C_ITEM + 16)   # erstes Teil im Rucksack („LEGENDÄR!“ bleibt mindestens 16 Bilder)
+D_OPEN = ev_at('l_dig', lambda v: v[0] == 1)
+D_OFF = max(0, min(23, D_OPEN - 38))                       # Schatz öffnet sich bei kk = D_OPEN - D_OFF
+R_DEAD = ev_at('n_rival', lambda v: v[0] == 'dead') - 4
+DIE = ev_at('d_die', lambda v: v == 'dead') - 4
+H_BURST = ev_at('e_hatch', lambda v: v[0] == 1)
+H_SHOW = ev_at('e_hatch', lambda v: v[1] == 1)
+
 # Truhen und Beute (192): Goldtruhe → Rucksack, vergrabener Schatz mit Ei, Rucksack und Begleiter-Tasche
 PACK = bx('l_chest', 'pack')
 
@@ -288,18 +304,18 @@ def loot(k):
     if k < 84:
         kk = k; b, m = gp('l_chest', kk + 4, kk)
         heads(b, kk, ('ÖFFNE', 'TRUHEN'), GOLD, s2=110)
-        if kk < 16: label(b, kk, 'GOLDTRUHE AM WEGESRAND', 54, GOLD, LY, 4)
-        elif kk < 32: label(b, kk, 'LEGENDÄR!', 72, ORANGE, LY, 16)
+        if kk < C_ITEM: label(b, kk, 'GOLDTRUHE AM WEGESRAND', 54, GOLD, LY, 4)
+        elif kk < C_PACK: label(b, kk, 'LEGENDÄR!', 72, ORANGE, LY, C_ITEM)
         else:
             x0, y0, x1, y1 = mbox(m, PACK); hl(b, x0, y0, x1, y1, kk, MOSS)
-            label(b, kk, 'ALLES LANDET IM RUCKSACK', 56, MOSS2, LY, 32)
-        if 16 <= kk < 22: flash(b, kk - 16, .45, 5, (255, 200, 120))
+            label(b, kk, 'ALLES LANDET IM RUCKSACK', 56, MOSS2, LY, C_PACK)
+        if C_ITEM <= kk < C_ITEM + 6: flash(b, kk - C_ITEM, .45, 5, (255, 200, 120))
     elif k < 144:
-        kk = k - 84; b, m = gp('l_dig', kk + 22, kk)
+        kk = k - 84; b, m = gp('l_dig', kk + D_OFF, kk); o = D_OPEN - D_OFF
         heads(b, kk, ('VERGRABENE', 'SCHÄTZE'), GOLD)
-        if kk < 38: label(b, kk, 'STEHEN BLEIBEN = GRABEN', 56, '#ffe08a', LY, 4)
-        else: label(b, kk, 'EIN BEGLEITER-EI!', 72, GOLD, LY, 38)
-        if 38 <= kk < 44: flash(b, kk - 38, .55, 5, (255, 230, 150))
+        if kk < o: label(b, kk, 'STEHEN BLEIBEN = GRABEN', 56, '#ffe08a', LY, 4)
+        else: label(b, kk, 'EIN BEGLEITER-EI!', 72, GOLD, LY, o)
+        if o <= kk < o + 6: flash(b, kk - o, .55, 5, (255, 230, 150))
     else:
         kk = k - 144
         if kk < 16:
@@ -351,9 +367,9 @@ def npcs(k):
     else:
         kk = k - 108; b, _ = gp('n_rival', kk + 4, kk)
         heads(b, kk, ('RIVALEN WOLLEN', 'DEINE BEUTE'), ORANGE, s1=56)
-        if kk < 43: label(b, kk, 'ULF STURMBART GREIFT AN', 58, ORANGE, LY, 6)
-        else: label(b, kk, 'BESIEGT: SEINE BEUTE FÄLLT RAUS', 54, GOLD, LY, 43)
-        if 43 <= kk < 48: flash(b, kk - 43, .4, 5)
+        if kk < R_DEAD: label(b, kk, 'ULF STURMBART GREIFT AN', 58, ORANGE, LY, 6)
+        else: label(b, kk, 'BESIEGT: SEINE BEUTE FÄLLT RAUS', 54, GOLD, LY, R_DEAD)
+        if R_DEAD <= kk < R_DEAD + 5: flash(b, kk - R_DEAD, .4, 5)
         chapter(b, k, 1); flash(b, kk, .5, 3)
         return b
     heads(b, k if k < 36 else k - 36 if k < 72 else k - 72, ('HELFER IN', 'DER WILDNIS'), '#57c7e6')
@@ -421,9 +437,9 @@ def death(k):
     if k < 60:
         kk = k; b, _ = gp('d_die', kk + 4, kk, drift=.03)
         heads(b, kk, ('ABER WER HIER', 'FÄLLT …'), BLOOD, s1=56, s2=100)
-        if kk < 25: label(b, kk, 'MITTEN IM KAMPF MIT VARKAS', 56, '#ff9a8a', LY, 4)
-        else: label(b, kk, 'GEFALLEN!', 72, BLOOD, LY, 25)
-        if 25 <= kk < 31: flash(b, kk - 25, .7, 6, (255, 40, 30))
+        if kk < DIE: label(b, kk, 'MITTEN IM KAMPF MIT VARKAS', 56, '#ff9a8a', LY, 4)
+        else: label(b, kk, 'GEFALLEN!', 72, BLOOD, LY, DIE)
+        if DIE <= kk < DIE + 6: flash(b, kk - DIE, .7, 6, (255, 40, 30))
     else:
         kk = k - 60; b = bgd('d_screen/screen.jpg').copy()
         m = ui(b, 'd_screen/screen.jpg', (40, 556, 1040, 1250), W / 2, 985, 1.0, kk if kk < 60 else 99, (255, 90, 70))
@@ -458,18 +474,19 @@ def nest(k):
         heads(b, kk, ('BEGLEITER AUS', 'EIERN'), GOLD, s1=56, s2=110)
         label(b, kk, 'WÄRMEN · FÜTTERN · STREICHELN', 56, '#ffb0d0', LY, 4)
     elif k < 192:
-        kk = k - 84; LG = jload('e_hatch/log.json'); shown = kk >= 79
-        b = stage_bg(ORANGE, kk, 110 if kk < 63 else 170)
+        kk = k - 84; shown = kk >= H_SHOW
+        b = stage_bg(ORANGE, kk, 110 if kk < H_BURST else 170)
         fr = load(os.path.join(RAW, 'e_hatch', '%04d.jpg' % min(kk, 107)))
         cv = fr.crop(bx('e_hatch', 'cv')); cv = cv.resize((round(cv.width * 1.1), round(cv.height * 1.1)), Image.LANCZOS)
         d = ImageDraw.Draw(b); place(b, cv, W / 2, 900); d.rectangle((W / 2 - cv.width / 2 - 5, 900 - cv.height / 2 - 5, W / 2 + cv.width / 2 + 4, 900 + cv.height / 2 + 4), outline=hexrgb(ORANGE) + (255,), width=5)
         if shown:
             rs = fr.crop(bx('e_hatch', 'res')); rs = rs.resize((round(rs.width * .8), round(rs.height * .8)), Image.LANCZOS)
-            place(b, rs, W / 2 - 8, 1360, 1, min(1, (kk - 78) / 3))
+            place(b, rs, W / 2 - 8, 1360, 1, min(1, (kk - H_SHOW + 1) / 3))
             sparkles(b, W / 2, 880, kk, 9, 16, 420, GOLD)
-        heads(b, kk, ('LEGENDÄRES EI', 'SCHLÜPFT!' if kk < 63 else 'PHÖNIX!'), GOLD if kk < 63 else ORANGE, s1=56, t0=0 if kk < 63 else 0)
-        if 63 <= kk < 69: flash(b, kk - 63, .9, 6, (255, 240, 200))
-        if kk < 63: label(b, kk, 'ES WACKELT UND KNACKT …', 56, '#ffd08a', LY, 6)
+        if kk < H_BURST: heads(b, kk, ('LEGENDÄRES EI', 'SCHLÜPFT!'), GOLD, s1=56)
+        else: title(b, kk, 'LEGENDÄRES EI', 56, WHITE, T1); title(b, kk - H_BURST, 'PHÖNIX!', 92, ORANGE, T2)
+        if H_BURST <= kk < H_BURST + 6: flash(b, kk - H_BURST, .9, 6, (255, 240, 200))
+        if kk < H_BURST: label(b, kk, 'ES WACKELT UND KNACKT …', 56, '#ffd08a', LY, 6)
     else:
         kk = k - 192; b = stage_bg('#7a48c0', kk, 80)
         # Eier in sieben Seltenheiten
@@ -547,7 +564,9 @@ def auras(k):
 
 
 # ---------- 4 Basar (168): kaufen, bieten gegen Händler, Marktwert ----------
-BIDBOX = (40, 520, 1040, 1250)
+# Gebots-Ausschnitt: von der gewählten Versteigerung (Zeile) bis zum Bieten-Knopf – je nach Aufnahme an anderer Stelle
+_r2, _bb = bx('m_bas', 'row2'), bx('m_bas', 'bidbtn')
+BIDBOX = (40, round(_r2[1] - 24), 1040, round(min(_bb[3] + 30, _r2[1] - 24 + 900)))
 
 
 def basar(k):
@@ -661,14 +680,14 @@ def hits():
     h = [[st['hook'] + f, 'kick'] for f in (16, 40, 64, 88)] + [[st['hook'] + 42, 'whoosh'], [st['hook'] + 48, 'impact'], [st['hook'] + 48, 'sparkle']]
     R0 = st['risk']; h += [[R0 + 8, 'tick'], [R0 + 44, 'ting']]
     W0 = st['world']; h += [[W0 + 60 + j * 5, 'whoosh'] for j in range(3)] + [[W0 + 108, 'whoosh']]
-    L0 = st['loot']; h += [[L0 + 11, 'clank'], [L0 + 16, 'sparkle'], [L0 + 32, 'ting'], [L0 + 40, 'ting'], [L0 + 46, 'ting'], [L0 + 84, 'whoosh'], [L0 + 84 + 38, 'impact'], [L0 + 84 + 38, 'sparkle'], [L0 + 144, 'whoosh'], [L0 + 161, 'tick'], [L0 + 175, 'tick'], [L0 + 180, 'ting']]
+    L0 = st['loot']; h += [[L0 + C_OPEN, 'clank'], [L0 + C_ITEM, 'sparkle'], [L0 + C_PACK, 'ting'], [L0 + C_PACK + 6, 'ting'], [L0 + C_PACK + 12, 'ting'], [L0 + 84, 'whoosh'], [L0 + 84 + D_OPEN - D_OFF, 'impact'], [L0 + 84 + D_OPEN - D_OFF, 'sparkle'], [L0 + 144, 'whoosh'], [L0 + 161, 'tick'], [L0 + 175, 'tick'], [L0 + 180, 'ting']]
     B0 = st['boss']; h += [[B0 + 4, 'roar'], [B0 + 46, 'impact'], [B0 + 46, 'roar']]
-    N0 = st['npcs']; h += [[N0 + 36, 'whoosh'], [N0 + 72, 'whoosh'], [N0 + 108, 'whoosh'], [N0 + 108 + 43, 'impact']]
+    N0 = st['npcs']; h += [[N0 + 36, 'whoosh'], [N0 + 72, 'whoosh'], [N0 + 108, 'whoosh'], [N0 + 108 + R_DEAD, 'impact']]
     G0 = st['night']; h += [[G0 + 52, 'roar'], [G0 + 86, 'whoosh']]
     X0 = st['extract']; h += [[X0 + i, 'tick'] for i in range(LAST + 1) if ch_n(i) and (i == 0 or ch_n(i - 1) != ch_n(i))]
     h += [[X0 + LAST + 1, 'impact'], [X0 + 72, 'sparkle']]
-    D0 = st['death']; h += [[D0 + 25, 'impact'], [D0 + 60, 'roar'], [D0 + 120, 'sparkle']]
-    E0 = st['nest']; h += [[E0 + t, 'tick'] for t in (14, 32, 50, 56, 62)] + [[E0 + 84, 'whoosh']] + [[E0 + 84 + f, 'clank'] for f in (17, 33, 48)] + [[E0 + 84 + 63, 'impact'], [E0 + 84 + 63, 'sparkle'], [E0 + 84 + 79, 'ting'], [E0 + 192, 'whoosh']]
+    D0 = st['death']; h += [[D0 + DIE, 'impact'], [D0 + 60, 'roar'], [D0 + 120, 'sparkle']]
+    E0 = st['nest']; h += [[E0 + t, 'tick'] for t in (14, 32, 50, 56, 62)] + [[E0 + 84, 'whoosh']] + [[E0 + 84 + f, 'clank'] for f in (17, 33, 48)] + [[E0 + 84 + H_BURST, 'impact'], [E0 + 84 + H_BURST, 'sparkle'], [E0 + 84 + H_SHOW, 'ting'], [E0 + 192, 'whoosh']]
     A0 = st['auras']; h += [[A0 + 60, 'whoosh'], [A0 + 60, 'sparkle'], [A0 + 126, 'whoosh'], [A0 + 126, 'sparkle']]
     M0 = st['basar']; h += [[M0 + 36, 'whoosh'], [M0 + 52, 'tick'], [M0 + 60, 'ting'], [M0 + 96, 'clank'], [M0 + 132, 'whoosh']]
     F0 = st['forge']; h += [[F0 + 36 + j * 24, 'whoosh'] for j in range(3)] + [[F0 + 108, 'impact'], [F0 + 108, 'sparkle']]

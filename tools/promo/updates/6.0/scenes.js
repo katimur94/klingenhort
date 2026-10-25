@@ -4,8 +4,9 @@
 // Alles echt aus dem Spiel: Freiwelt Bild für Bild (feste Karten über Zufall + Uhr), Menüs als Standbilder,
 // Grafiken (Eier, Kreaturen, Gegenstände) als PNG, das Schlüpfen Bild für Bild aus dem echten Schlüpf-Bildschirm.
 // Aufruf (Spiel muss lokal laufen, siehe tools/promo/README.md):
-//   PROMO_OUT=/tmp/klingenhort-clip-6.0 BASE=http://localhost:8765/ node scenes.js        alle Szenen
-//   PROMO_OUT=/tmp/klingenhort-clip-6.0 node scenes.js hook_a,w_run1                       nur diese neu aufnehmen
+//   PROMO_OUT=/tmp/klingenhort-clip-6.0 node scenes.js                  alle Szenen (BASE=http://localhost:<port>/ für einen anderen Port)
+//   PROMO_OUT=/tmp/klingenhort-clip-6.0 node scenes.js hook_a,w_run1    nur diese neu aufnehmen
+// Die Schnitt-Zeitpunkte (Truhe offen, Ei, Tod, Schlüpfen, Ausgang) stehen in raw/<szene>/log.json und chlog.json – storyboard.py liest sie.
 const path = require('path'), fs = require('fs');
 const H = require(path.join(__dirname, '..', '..', 'harness'));
 const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.0';
@@ -174,7 +175,7 @@ const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.0';
   }
 
   /* ---------- Ungeheuer: ein Boss taucht auf, Kampf – dann läuft der Held weg (Kamera hält beide im Bild) ---------- */
-  // [Szene, Weltstufe, Karte, Boss, Straße]
+  // [Szene, Weltstufe, Karte, Boss, Straße] – Todesritter Varkas im Abgrund (Pyraxis fliegt zu hoch für das Bild)
   const BOSSV = [['b_boss', 3, 3, 'Varkas', 3]];
   for (const [scene, ti, seed, bn, ri] of BOSSV) {
     if (!R.want(scene)) continue;
@@ -210,7 +211,6 @@ const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.0';
     fresh('n_trade');
     await ev(() => { __lgo(0, 1, 0); __seed(42); const o = LW.npcs.trade; P.x = o.x - 16; P.y = o.y + 8; LW.pack = [{ t: 'gold', n: 2400 }, { t: 'mat', k: 'zahn', n: 12 }, { t: 'mat', k: 'kristall', n: 14 }, { t: 'mat', k: 'horn', n: 10 }, { t: 'mat', k: 'leder', n: 12 }, { t: 'mat', k: 'knochen', n: 10 }, { t: 'mat', k: 'erz', n: 10 }]; LG.tab = 'tausch'; lTradeScreen(); panel.scrollTop = 0; });
     await still('n_trade', 'trade'); await rect('n_trade', 'say', '#panel .say');
-    await still('n_heal', 'heal', () => { lResume(); P.hp = P.st.hp * .35; lHealScreen(); panel.scrollTop = 0; });
   }
   // Rivale greift an (will deine Beute) – besiegt lässt er alles fallen, was er geplündert hat
   if (R.want('n_rival')) {
@@ -297,7 +297,7 @@ const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.0';
     await rect('e_nest', 'card3', `.ncard[data-eg="${ids[0]}"]`);
   }
   // Schlüpfen Bild für Bild: der echte Schlüpf-Bildschirm (Wackeln, Risse, Licht, Splitter, dann die Kreatur)
-  for (const [scene, sp] of [['e_hatch', 'phoenix'], ['e_hatch2', 'schlange']]) {
+  for (const [scene, sp] of [['e_hatch', 'phoenix']]) {
     if (!R.want(scene)) continue;
     await ev(sp => {
       __scene(52); __hero(0); SAVE.meta.hide.intro = true; SAVE.meta.settings.calm = false; const M = SAVE.meta.pets; M.eggs = []; M.seen = ['drache'];
@@ -337,8 +337,7 @@ const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.0';
 
   /* ---------- Auren: Brunhild mit mythischen Gegenständen und vollem Set (Versteck bei Nacht) ---------- */
   const AURAS = [['phoenix', { armor: { rar: 6, myth: 'phoenix' } }], ['eisherz', { helm: { rar: 6, myth: 'eisherz' } }], ['klinge', { weapon: { rar: 6, myth: 'klinge' } }], ['krone', { helm: { rar: 6, myth: 'krone' } }],
-    ['ernter', { weapon: { rar: 6, myth: 'ernter' } }], ['midas', { helm: { rar: 6, myth: 'midas' } }], ['zorn', { weapon: { rar: 6, myth: 'zorn' } }], ['lion', { weapon: { rar: 5, set: 'lion' }, armor: { rar: 5, set: 'lion' }, helm: { rar: 5, set: 'lion' } }],
-    ['dornen', { armor: { rar: 6, myth: 'dornen' } }], ['alle', { weapon: { rar: 6, myth: 'klinge' }, armor: { rar: 6, myth: 'phoenix' }, helm: { rar: 6, myth: 'krone' } }]];
+    ['ernter', { weapon: { rar: 6, myth: 'ernter' } }], ['midas', { helm: { rar: 6, myth: 'midas' } }], ['zorn', { weapon: { rar: 6, myth: 'zorn' } }], ['lion', { weapon: { rar: 5, set: 'lion' }, armor: { rar: 5, set: 'lion' }, helm: { rar: 5, set: 'lion' } }]];
   for (const [k, cfg] of AURAS) {
     const scene = 'a_' + k; if (!R.want(scene)) continue;
     const nm = await ev(cfg => {
