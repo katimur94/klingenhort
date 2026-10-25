@@ -733,7 +733,7 @@ function updPickups(dt) {
       else if (c.k === 'heart') { const h = Math.round(P.st.hp * .15); P.hp = Math.min(P.st.hp, P.hp + h); txt(P.x, P.y - 24, '+' + h, '#79c24e'); sfx('heal'); }
       else if (c.k === 'flask') { P.potions = Math.min(potMax(), P.potions + 1); toast(_t('Heiltrank +1')); sfx('heal'); }
       else if (c.k === 'mat') { gainMat(c.m, c.n); txt(P.x, P.y - 22, '+' + c.n + ' ' + MATS[c.m].n, MATS[c.m].c); sfx('coin'); }
-      else if (c.k === 'gem') { gainGem(c.g); const [id, gr] = c.g.split(':'); toast(GEMGRADE[+gr] + ' ' + GEMS[id].n + '!', GEMS[id].c); sfx('loot'); }
+      else if (c.k === 'gem') { gainGem(c.g); const [id, gr] = c.g.split(':'); toast(_t('{grade} {gem}', { grade: GEMGRADE[+gr], gem: GEMS[id].n }) + '!', GEMS[id].c); sfx('loot'); }
       else if (c.k === 'loot') pickItem(c.it);
     }
   }

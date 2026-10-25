@@ -80,7 +80,7 @@ const COMING = [
   ['5.1', 'Begleiter: Mini-Drache, Geisterkatze und Goldkäfer sammeln Beute für dich']
 ];
 
-const NEWS_KIND = { neu: ['NEU', '#79c24e'], besser: ['BESSER', '#57a7d6'], fix: ['BEHOBEN', '#e8b04a'] };
+const NEWS_KIND = { neu: [_t('NEU'), '#79c24e'], besser: [_t('BESSER'), '#57a7d6'], fix: [_t('BEHOBEN'), '#e8b04a'] };
 // Ungesehene Neuigkeiten: Version des Spielstands ist älter als die aktuelle
 function newsUnseen() { return !!(SAVE && SAVE.meta.seenVer && SAVE.meta.seenVer !== VERSION); }
 function newsSeen() { if (SAVE && SAVE.meta.seenVer !== VERSION) { SAVE.meta.seenVer = VERSION; persist(); } }
@@ -89,17 +89,17 @@ function newsHTML() {
   let h = '';
   CHANGELOG.forEach((E, i) => {
     const fresh = seen && seen !== VERSION && verNewer(E.v, seen);
-    const date = E.d.split('-').reverse().join('.');
-    h += `<details class="news"${i === 0 || fresh ? ' open' : ''}><summary><b>${E.v}</b> ${esc(E.t)}<small>${date}${fresh ? ' · <span style="color:var(--moss)">NEU FÜR DICH</span>' : ''}</small></summary><ul>${E.items.map(([k, t]) => `<li><span class="nk" style="--c:${NEWS_KIND[k][1]}">${NEWS_KIND[k][0]}</span>${esc(t)}</li>`).join('')}</ul></details>`;
+    const date = new Date(E.d + 'T12:00').toLocaleDateString(LOCALE);
+    h += `<details class="news"${i === 0 || fresh ? ' open' : ''}><summary><b>${E.v}</b> ${esc(E.t)}<small>${date}${fresh ? ' · <span style="color:var(--moss)">' + _t('NEU FÜR DICH') + '</span>' : ''}</small></summary><ul>${E.items.map(([k, t]) => `<li><span class="nk" style="--c:${NEWS_KIND[k][1]}">${NEWS_KIND[k][0]}</span>${esc(t)}</li>`).join('')}</ul></details>`;
   });
   return h;
 }
 function verNewer(a, b) { const x = a.split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; }
 function showNews(back) {
   newsBack = back || 'title';
-  const html = `<div class="head"><h2>NEUIGKEITEN</h2><div class="hbtns"><span class="pill dim">VERSION ${VERSION}</span><button class="btn alt sm" data-act="newsback">Zurück</button></div></div>
+  const html = `<div class="head"><h2>${_t('NEUIGKEITEN')}</h2><div class="hbtns"><span class="pill dim">${_t('VERSION {v}', { v: VERSION })}</span><button class="btn alt sm" data-act="newsback">${_t('Zurück')}</button></div></div>
   <div class="newsgrid"><div>${newsHTML()}</div>
-  <div class="box"><h3 style="margin-top:0">DEMNÄCHST</h3>${COMING.map(([v, t]) => `<div class="soon"><b>${_t('Update {v}', { v })}</b>${esc(t)}</div>`).join('')}<p class="sub" style="font-size:16px;margin-bottom:0">Klingenhort wird jede Woche erweitert. Die installierte App aktualisiert sich von selbst.</p></div></div>`;
+  <div class="box"><h3 style="margin-top:0">${_t('DEMNÄCHST')}</h3>${COMING.map(([v, t]) => `<div class="soon"><b>${_t('Update {v}', { v })}</b>${esc(t)}</div>`).join('')}<p class="sub" style="font-size:16px;margin-bottom:0">${_t('Klingenhort wird jede Woche erweitert. Die installierte App aktualisiert sich von selbst.')}</p></div></div>`;
   newsSeen();
   showOverlay(html, true);
 }

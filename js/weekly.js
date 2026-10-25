@@ -33,10 +33,10 @@ function freeSpin() {
 }
 function weekHTML() {
   const E = weekEvent(), N = weekEvent(1), left = weekDaysLeft();
-  return `<div class="weekbox" style="--c:${E.c}"><img class="px" src="${iconURL(E.icon)}" alt=""><div><b>WOCHEN-EREIGNIS · NOCH ${left} TAG${left > 1 ? 'E' : ''}</b><div class="nm" style="color:${E.c}">${E.n}</div>${E.d}.<small>Nächste Woche: ${N.n}</small></div></div>`;
+  return `<div class="weekbox" style="--c:${E.c}"><img class="px" src="${iconURL(E.icon)}" alt=""><div><b>${left === 1 ? _t('WOCHEN-EREIGNIS · NOCH 1 TAG') : _t('WOCHEN-EREIGNIS · NOCH {n} TAGE', { n: left })}</b><div class="nm" style="color:${E.c}">${E.n}</div>${E.d}.<small>${_t('Nächste Woche: {name}', { name: N.n })}</small></div></div>`;
 }
 // Neues Ereignis einmal ankündigen
 function weekAnnounce() {
   const w = weekNo(); if (SAVE.meta.weekSeen === w) return; SAVE.meta.weekSeen = w; persist();
-  const E = weekEvent(); toast('Wochen-Ereignis: ' + E.n + '!', E.c); sfx('ach');
+  const E = weekEvent(); toast(_t('Wochen-Ereignis: {name}!', { name: E.n }), E.c); sfx('ach');
 }

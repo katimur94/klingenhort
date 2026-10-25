@@ -238,7 +238,7 @@ function loadAll() {
 function markSeen() { if (!SAVE.meta.seenVer) SAVE.meta.seenVer = SAVE.chars.length ? '4.0.1' : VERSION; }
 function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (e) { } }
 function migrateV1(o) {
-  const c = newChar('knight', 'Ritter', 'normal', false);
+  const c = newChar('knight', _t('Ritter'), 'normal', false);
   c.lv = o.lv || 1; c.xp = o.xp || 0; c.gold = o.gold || 0; c.potions = Math.min(5, o.potions || 2);
   c.sp = Math.max(0, c.lv - 1);
   const tr = v => clamp(Math.floor(+v) || 0, 0, 4), has = v => v !== undefined && v !== null && !isNaN(+v);

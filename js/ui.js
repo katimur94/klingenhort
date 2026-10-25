@@ -54,12 +54,12 @@ function costHTML(c, gold) {
   return h + '</div>';
 }
 function itemSlot(it, act, sel) { return `<button class="slot${sel ? ' sel' : ''}" data-act="${act}" data-id="${it.uid}" style="box-shadow:inset 0 0 0 2px ${itemColor(it)}${sel ? ',0 0 0 2px #e8b04a' : ''}" aria-label="${esc(itemName(it))}"><img src="${itemIconURL(it)}" alt="">${it.up ? `<span class="u">+${it.up}</span>` : ''}${it.gems.length ? `<span class="n">◆${it.gems.length}</span>` : it.fz ? `<span class="n">★${it.fz}</span>` : ''}</button>`; }
-function itemDetail(it, actions) { return `<div class="detail"><div style="display:flex;gap:10px;align-items:center"><div class="ic big" style="box-shadow:inset 0 0 0 2px ${itemColor(it)}"><img src="${itemIconURL(it)}" alt=""></div><div><div class="nm" style="color:${itemColor(it)}">${esc(itemName(it))}</div><div class="st" style="color:var(--parch-dim);font-size:16px">${RAR[it.rar].n} ${it.slot === 'weapon' ? WT[it.base].label : AR[it.slot].label} · ${MAT[it.tier].n} (Stufe ${it.tier + 1})${canEquip(it) ? '' : ' · <span style="color:var(--blood)">nicht für deine Klasse</span>'}</div></div></div><ul>${itemLines(it).map(l => '<li>' + esc(l) + '</li>').join('')}</ul><div class="acts" style="justify-content:flex-start">${actions || ''}</div></div>`; }
+function itemDetail(it, actions) { return `<div class="detail"><div style="display:flex;gap:10px;align-items:center"><div class="ic big" style="box-shadow:inset 0 0 0 2px ${itemColor(it)}"><img src="${itemIconURL(it)}" alt=""></div><div><div class="nm" style="color:${itemColor(it)}">${esc(itemName(it))}</div><div class="st" style="color:var(--parch-dim);font-size:16px">${RAR[it.rar].n} ${it.slot === 'weapon' ? WT[it.base].label : AR[it.slot].label} · ${MAT[it.tier].n} (${_t('Stufe {n}', { n: it.tier + 1 })})${canEquip(it) ? '' : ` · <span style="color:var(--blood)">${_t('nicht für deine Klasse')}</span>`}</div></div></div><ul>${itemLines(it).map(l => '<li>' + esc(l) + '</li>').join('')}</ul><div class="acts" style="justify-content:flex-start">${actions || ''}</div></div>`; }
 function findItem(id) { for (const s of ['weapon', 'armor', 'helm']) if (P.gear[s] && P.gear[s].uid === id) return { it: P.gear[s], eq: s }; const i = P.bag.findIndex(x => x.uid === id); return i >= 0 ? { it: P.bag[i], bi: i } : null; }
 const HELP = isTouch
-  ? '<b>STEUERUNG</b>Linke Seite ziehen: laufen. Angriff halten (3er-Kombo) – über den Knopf wischen zielt von Hand. Rolle, drei Fähigkeiten, Ultimative (goldene Wut-Leiste). Der Trank sitzt links oben. Alle Knöpfe lassen sich unter Einstellungen → Steuerung verschieben.'
-  : '<b>STEUERUNG</b>WASD laufen · J/Leertaste/Klick angreifen · K/Shift ausweichen · 1 2 3 Fähigkeiten · F Ultimative · H Trank · E Interagieren · C Charakter · Esc Pause';
-const CREDIT = '<p class="credit">Grafik: „16x16 DungeonTileset II“ von 0x72, Zauber-Effekte „Pixel Art Spells“, „Pixel Art Sword Slash“ und Explosionen von OpenGameArt – alle CC0.</p>';
+  ? '<b>' + _t('STEUERUNG') + '</b>' + _t('Linke Seite ziehen: laufen. Angriff halten (3er-Kombo) – über den Knopf wischen zielt von Hand. Rolle, drei Fähigkeiten, Ultimative (goldene Wut-Leiste). Der Trank sitzt links oben. Alle Knöpfe lassen sich unter Einstellungen → Steuerung verschieben.')
+  : '<b>' + _t('STEUERUNG') + '</b>' + _t('WASD laufen · J/Leertaste/Klick angreifen · K/Shift ausweichen · 1 2 3 Fähigkeiten · F Ultimative · H Trank · E Interagieren · C Charakter · Esc Pause');
+const CREDIT = '<p class="credit">' + _t('Grafik: „16x16 DungeonTileset II“ von 0x72, Zauber-Effekte „Pixel Art Spells“, „Pixel Art Sword Slash“ und Explosionen von OpenGameArt – alle CC0.') + '</p>';
 
 /* ---------- Dialoge (Geschichte) ---------- */
 let DLG = null;
@@ -67,7 +67,7 @@ function dialog(lines, done, title) {
   let i = 0;
   const show = () => {
     const [sp, text] = lines[i], S = typeof sp === 'string' ? SPEAKERS[sp] : sp, nm = (S.n || '').replace('{name}', P ? P.name : '');
-    showOverlay(`${title ? `<h2 class="center" style="margin-bottom:10px">${esc(title)}</h2>` : ''}<div class="dlg">${S.sp ? `<img class="px" src="${iconURL(['sp', S.sp])}" alt="">` : ''}<div>${nm ? `<b style="color:${S.c}">${esc(nm)}</b>` : ''}<p>${esc(text.replace(/\{name\}/g, P ? P.name : ''))}</p></div></div><div class="menu"><button class="btn" data-act="dlgnext">${i < lines.length - 1 ? 'Weiter' : 'Los geht\'s'}</button>${lines.length > 2 && i < lines.length - 1 ? '<button class="btn alt sm" data-act="dlgskip">Überspringen</button>' : ''}</div>`);
+    showOverlay(`${title ? `<h2 class="center" style="margin-bottom:10px">${esc(title)}</h2>` : ''}<div class="dlg">${S.sp ? `<img class="px" src="${iconURL(['sp', S.sp])}" alt="">` : ''}<div>${nm ? `<b style="color:${S.c}">${esc(nm)}</b>` : ''}<p>${esc(text.replace(/\{name\}/g, P ? P.name : ''))}</p></div></div><div class="menu"><button class="btn" data-act="dlgnext">${i < lines.length - 1 ? _t('Weiter') : _t('Los geht\'s')}</button>${lines.length > 2 && i < lines.length - 1 ? `<button class="btn alt sm" data-act="dlgskip">${_t('Überspringen')}</button>` : ''}</div>`);
   };
   DLG = { next() { i++; if (i >= lines.length) { DLG = null; done(); } else show(); }, skip() { DLG = null; done(); } };
   show();
@@ -93,13 +93,13 @@ function buildSkillUI() {
 function updWeaponUI() { const it = P.gear.weapon; $('atkImg').src = itemIconURL(it); }
 let lastRage = -1, lastNear = null;
 function updHud() {
-  setT('hudLv', (P.lv >= 50 ? 'P' + P.paragon : 'LV ' + P.lv));
+  setT('hudLv', (P.lv >= 50 ? 'P' + P.paragon : _t('LV {lv}', { lv: P.lv })));
   setW('hpFill', 100 * P.hp / P.st.hp); setT('hpTxt', Math.ceil(P.hp) + '/' + P.st.hp);
   setW('resFill', 100 * P.res / P.st.resMax);
   setW('xpFill', P.lv >= 50 ? 100 * P.pxp / PARAGON_XP : 100 * P.xp / xpNext(P.lv)); setT('hudGold', fmt(P.gold));
   if (G) {
-    if (G.type === 'versteck') { setT('hudAct', 'VERSTECK · STUFE ' + hideTotal()); setT('hudRoom', 'AKT ' + P.act); }
-    else { setT('hudAct', G.daily ? 'TAGES-CHALLENGE' : 'AKT ' + P.act + (qualOf(P.act) ? ' · QUAL ' + qualOf(P.act) : '') + ' · ' + G.stage); setT('hudRoom', (NODE[G.type] ? NODE[G.type].n : G.type === 'rescue' ? 'Befreiung' : G.type === 'grave' ? 'Grab' : G.type === 'sphinx' ? 'Sphinx' : 'Fluch').toUpperCase() + (G.waves.length > 1 ? ' ' + Math.max(1, G.wi + 1) + '/' + G.waves.length : '')); }
+    if (G.type === 'versteck') { setT('hudAct', _t('VERSTECK · STUFE {n}', { n: hideTotal() })); setT('hudRoom', _t('AKT {act}', { act: P.act })); }
+    else { setT('hudAct', G.daily ? _t('TAGES-CHALLENGE') : _t('AKT {act}', { act: P.act }) + (qualOf(P.act) ? ' · ' + _t('QUAL {q}', { q: qualOf(P.act) }) : '') + ' · ' + G.stage); setT('hudRoom', (NODE[G.type] ? NODE[G.type].n : G.type === 'rescue' ? _t('Befreiung') : G.type === 'grave' ? _t('Grab') : G.type === 'sphinx' ? _t('Sphinx') : _t('Fluch')).toLocaleUpperCase(LOCALE) + (G.waves.length > 1 ? ' ' + Math.max(1, G.wi + 1) + '/' + G.waves.length : '')); }
     const near = G.type === 'versteck' ? G.near : null;
     if (near !== lastNear) { lastNear = near; const b = $('bAct'); b.hidden = !near; if (near) { const id = near.act; b.querySelector('img').src = iconURL(['pa', BUILD[id].icon]); b.setAttribute('aria-label', near.label); } }
   }
@@ -129,7 +129,7 @@ function achStats() {
 }
 function checkAch() {
   if (!SAVE) return; const s = achStats();
-  for (const a of ACH) { if (SAVE.meta.ach[a.id]) continue; try { if (a.t(s)) { SAVE.meta.ach[a.id] = Date.now(); if (P && SAVE.active >= 0) { P.gold += a.r; gainFate(1); } toast('Erfolg: ' + a.n + ' (+' + a.r + ' Gold, +1 Glücksmünze)', '#ffd24a'); sfx('ach'); } } catch (e) { } }
+  for (const a of ACH) { if (SAVE.meta.ach[a.id]) continue; try { if (a.t(s)) { SAVE.meta.ach[a.id] = Date.now(); if (P && SAVE.active >= 0) { P.gold += a.r; gainFate(1); } toast(_t('Erfolg: {n} (+{r} Gold, +1 Glücksmünze)', { n: a.n, r: a.r }), '#ffd24a'); sfx('ach'); } } catch (e) { } }
   persist();
 }
 
@@ -147,26 +147,26 @@ function showTitle() {
   let chars = '';
   SAVE.chars.forEach((c, i) => {
     const C = CLASSES[c.cls];
-    chars += `<div class="cardrow">${heroHTML(c, 1.4)}<div><div style="font-size:21px">${esc(c.name)} ${c.hc ? '<span class="pill hc">HC</span>' : ''}</div><div style="font-size:16px;color:var(--parch-dim)">${C.name} · LV ${c.lv}${c.paragon ? ' · P' + c.paragon : ''} · Akt ${c.act}${qualOf(c.act) ? ' (Qual ' + qualOf(c.act) + ')' : ''} · ${DIFFS[c.diff].n}${c.rebirths ? ' · ★' + c.rebirths : ''}</div></div><div class="acts">${confirmDel === i ? `<button class="btn red sm" data-act="delok" data-i="${i}">Löschen!</button><button class="btn alt sm" data-act="delno">Nein</button>` : `<button class="btn sm" data-act="play" data-i="${i}">Spielen</button><button class="btn alt sm" data-act="delchar" data-i="${i}" aria-label="Löschen"><span class="x">×</span></button>`}</div></div>`;
+    chars += `<div class="cardrow">${heroHTML(c, 1.4)}<div><div style="font-size:21px">${esc(c.name)} ${c.hc ? '<span class="pill hc">HC</span>' : ''}</div><div style="font-size:16px;color:var(--parch-dim)">${C.name} · ${_t('LV {lv}', { lv: c.lv })}${c.paragon ? ' · P' + c.paragon : ''} · ${_t('Akt {act}', { act: c.act })}${qualOf(c.act) ? ' (' + _t('Qual {q}', { q: qualOf(c.act) }) + ')' : ''} · ${DIFFS[c.diff].n}${c.rebirths ? ' · ★' + c.rebirths : ''}</div></div><div class="acts">${confirmDel === i ? `<button class="btn red sm" data-act="delok" data-i="${i}">${_t('Löschen!')}</button><button class="btn alt sm" data-act="delno">${_t('Nein')}</button>` : `<button class="btn sm" data-act="play" data-i="${i}">${_t('Spielen')}</button><button class="btn alt sm" data-act="delchar" data-i="${i}" aria-label="${_t('Löschen')}"><span class="x">×</span></button>`}</div></div>`;
   });
   const N = CHANGELOG[0], fresh = newsUnseen();
   showOverlay(`<div class="tgrid"><div><h1 class="logo">KLINGEN<br>HORT</h1>
-  <p class="tag">Der Uralte Drache hat das Weltenfeuer gestohlen. Bau dein Versteck wieder auf, schmiede Klingen aus Mithril, Adamant und Drachenschuppen – und hol dir zurück, was dem Orden gehört.</p>
-  ${inAppHTML()}<button class="newsteaser" data-act="news"><b>NEU IN ${N.v}${fresh ? '<span class="badge">NEU</span>' : ''}</b>${esc(N.t)}: ${esc(N.items[0][1])} <span style="color:var(--gold)">Alle Neuigkeiten ›</span></button>${weekHTML()}</div>
-  <div>${chars ? '<h3 style="margin-top:0">DEINE HELDEN</h3>' + chars : ''}
+  <p class="tag">${_t('Der Uralte Drache hat das Weltenfeuer gestohlen. Bau dein Versteck wieder auf, schmiede Klingen aus Mithril, Adamant und Drachenschuppen – und hol dir zurück, was dem Orden gehört.')}</p>
+  ${inAppHTML()}<button class="newsteaser" data-act="news"><b>${_t('NEU IN {v}', { v: N.v })}${fresh ? `<span class="badge">${_t('NEU')}</span>` : ''}</b>${esc(N.t)}: ${esc(N.items[0][1])} <span style="color:var(--gold)">${_t('Alle Neuigkeiten ›')}</span></button>${weekHTML()}</div>
+  <div>${chars ? '<h3 style="margin-top:0">' + _t('DEINE HELDEN') + '</h3>' + chars : ''}
   <div class="menu two" style="margin-top:10px">
-    <button class="btn" data-act="new">Neuer Held</button>
-    <button class="btn alt" data-act="daily" ${SAVE.active >= 0 || SAVE.chars.length ? '' : 'disabled'}>Tages-Challenge</button>
-    <button class="btn alt" data-act="news">Neuigkeiten${fresh ? '<span class="badge">NEU</span>' : ''}</button>
-    <button class="btn alt" data-act="ach">Erfolge</button>
-    <button class="btn alt" data-act="best">Bestiarium</button>
-    <button class="btn alt" data-act="hall">Ruhmeshalle</button>
-    <button class="btn alt" data-act="code">Spielstand übertragen</button>
-    <button class="btn alt" data-act="settings">Einstellungen</button>
+    <button class="btn" data-act="new">${_t('Neuer Held')}</button>
+    <button class="btn alt" data-act="daily" ${SAVE.active >= 0 || SAVE.chars.length ? '' : 'disabled'}>${_t('Tages-Challenge')}</button>
+    <button class="btn alt" data-act="news">${_t('Neuigkeiten')}${fresh ? `<span class="badge">${_t('NEU')}</span>` : ''}</button>
+    <button class="btn alt" data-act="ach">${_t('Erfolge')}</button>
+    <button class="btn alt" data-act="best">${_t('Bestiarium')}</button>
+    <button class="btn alt" data-act="hall">${_t('Ruhmeshalle')}</button>
+    <button class="btn alt" data-act="code">${_t('Spielstand übertragen')}</button>
+    <button class="btn alt" data-act="settings">${_t('Einstellungen')}</button>
     <button class="btn alt" data-act="langs" data-id="title">🌐 ${LANGS[LANG]}</button>
     ${installBtn()}
   </div></div></div>
-  <div class="help">${HELP}</div>${CREDIT}<p class="credit">Version ${VERSION}</p>`, true);
+  <div class="help">${HELP}</div>${CREDIT}<p class="credit">${_t('Version {v}', { v: VERSION })}</p>`, true);
   // Nach einem Update einmal die Neuigkeiten zeigen
   if (fresh && SAVE.chars.length && !newsAuto) { newsAuto = true; showNews('title'); }
 }
@@ -178,14 +178,14 @@ function lookTarget() { return lkMode === 'create' ? { cls: CS.cls, look: CS.loo
 function swatch(act, i, sel, a, b, label) { return `<button class="sw${sel ? ' sel' : ''}" data-act="lk" data-id="${act}:${i}" title="${label}" aria-label="${label}" style="background:${a ? `linear-gradient(135deg,${a} 55%,${b || a} 55%)` : 'var(--stone-lo)'}">${a ? '' : '∅'}</button>`; }
 function lookEditorHTML() {
   const t = lookTarget(), L = t.look, B = BODIES[L.body], own = SAVE.meta.cos;
-  let h = `<div class="lookwrap"><div class="lookprev">${heroHTML(t, 4)}<button class="btn alt sm" data-act="lk" data-id="rand:0">Zufall</button></div><div class="lookopts">`;
-  h += `<h3>KÖRPER</h3><div class="bodies">${BODYORDER.map(k => `<button class="bd${L.body === k ? ' sel' : ''}" data-act="lk" data-id="body:${k}" aria-label="${BODIES[k].n}"><img class="px" src="${iconURL(['body', k, 1])}" alt=""><small>${BODIES[k].n}</small></button>`).join('')}</div>`;
-  if (B.hair) h += `<h3>HAARE</h3><div class="sws">${swatch('hair', -1, L.hair < 0, null, null, 'Original')}${HAIRS.map((c, i) => swatch('hair', i, L.hair === i, c[1], c[2], c[0])).join('')}</div>`;
-  if (B.skin) h += `<h3>${L.body.startsWith('lizard') ? 'SCHUPPEN' : L.body === 'doc' ? 'MASKE' : 'HAUT'}</h3><div class="sws">${swatch('skin', -1, L.skin < 0, null, null, 'Original')}${SKINS.map((c, i) => swatch('skin', i, L.skin === i, c[1], c[2], c[0])).join('')}</div>`;
-  if (B.plume) h += `<h3>HELMBUSCH</h3><div class="sws">${swatch('accent', -1, L.accent < 0, null, null, 'Nach Helm')}${ACCENTS.map((c, i) => swatch('accent', i, L.accent === i, c[1], c[2], c[0])).join('')}</div>`;
-  h += `<h3>UMHANG</h3><div class="sws">${swatch('cape', -1, L.cape < 0 && !L.ccape, null, null, 'Kein Umhang')}${CAPES.map((c, i) => swatch('cape', i, L.cape === i && !L.ccape, c[1], c[2], c[0])).join('')}${own.filter(k => COSM[k].k === 'cape').map(k => swatch('ccape', k, L.ccape === k, COSM[k].c[0], COSM[k].trim || COSM[k].c[1], COSM[k].n)).join('')}</div>`;
+  let h = `<div class="lookwrap"><div class="lookprev">${heroHTML(t, 4)}<button class="btn alt sm" data-act="lk" data-id="rand:0">${_t('Zufall')}</button></div><div class="lookopts">`;
+  h += `<h3>${_t('KÖRPER')}</h3><div class="bodies">${BODYORDER.map(k => `<button class="bd${L.body === k ? ' sel' : ''}" data-act="lk" data-id="body:${k}" aria-label="${BODIES[k].n}"><img class="px" src="${iconURL(['body', k, 1])}" alt=""><small>${BODIES[k].n}</small></button>`).join('')}</div>`;
+  if (B.hair) h += `<h3>${_t('HAARE')}</h3><div class="sws">${swatch('hair', -1, L.hair < 0, null, null, _t('Original'))}${HAIRS.map((c, i) => swatch('hair', i, L.hair === i, c[1], c[2], c[0])).join('')}</div>`;
+  if (B.skin) h += `<h3>${L.body.startsWith('lizard') ? _t('SCHUPPEN') : L.body === 'doc' ? _t('MASKE') : _t('HAUT')}</h3><div class="sws">${swatch('skin', -1, L.skin < 0, null, null, _t('Original'))}${SKINS.map((c, i) => swatch('skin', i, L.skin === i, c[1], c[2], c[0])).join('')}</div>`;
+  if (B.plume) h += `<h3>${_t('HELMBUSCH')}</h3><div class="sws">${swatch('accent', -1, L.accent < 0, null, null, _t('Nach Helm'))}${ACCENTS.map((c, i) => swatch('accent', i, L.accent === i, c[1], c[2], c[0])).join('')}</div>`;
+  h += `<h3>${_t('UMHANG')}</h3><div class="sws">${swatch('cape', -1, L.cape < 0 && !L.ccape, null, null, _t('Kein Umhang'))}${CAPES.map((c, i) => swatch('cape', i, L.cape === i && !L.ccape, c[1], c[2], c[0])).join('')}${own.filter(k => COSM[k].k === 'cape').map(k => swatch('ccape', k, L.ccape === k, COSM[k].c[0], COSM[k].trim || COSM[k].c[1], COSM[k].n)).join('')}</div>`;
   const wings = own.filter(k => COSM[k].k === 'wings'), auras = own.filter(k => COSM[k].k === 'aura');
-  h += `<h3>KOSMETIK</h3>${wings.length || auras.length ? `<div class="sws">${swatch('wings', 'x', !L.wings, null, null, 'Keine Flügel')}${wings.map(k => swatch('wings', k, L.wings === k, COSM[k].c[0], COSM[k].c[1], COSM[k].n)).join('')}</div><div class="sws">${swatch('aura', 'x', !L.aura, null, null, 'Keine Aura')}${auras.map(k => swatch('aura', k, L.aura === k, COSM[k].c[0], COSM[k].c[1], COSM[k].n)).join('')}</div>` : '<p class="sub" style="margin:0">Flügel, Auren und besondere Umhänge gibt es im Glückstempel deines Verstecks.</p>'}`;
+  h += `<h3>${_t('KOSMETIK')}</h3>${wings.length || auras.length ? `<div class="sws">${swatch('wings', 'x', !L.wings, null, null, _t('Keine Flügel'))}${wings.map(k => swatch('wings', k, L.wings === k, COSM[k].c[0], COSM[k].c[1], COSM[k].n)).join('')}</div><div class="sws">${swatch('aura', 'x', !L.aura, null, null, _t('Keine Aura'))}${auras.map(k => swatch('aura', k, L.aura === k, COSM[k].c[0], COSM[k].c[1], COSM[k].n)).join('')}</div>` : `<p class="sub" style="margin:0">${_t('Flügel, Auren und besondere Umhänge gibt es im Glückstempel deines Verstecks.')}</p>`}`;
   return h + '</div></div>';
 }
 function lookAction(id) {
@@ -204,16 +204,16 @@ function showCreate() {
   let cl = ''; for (const k in CLASSES) { const C = CLASSES[k]; cl += `<button class="cls${CS.cls === k ? ' sel' : ''}" data-act="ccls" data-id="${k}"><img class="px" src="${iconURL(['body', C.body, 1])}" alt="" style="width:36px;height:auto"><b>${C.name}</b><small>${C.desc}</small></button>`; }
   let df = ''; for (const k in DIFFS) df += `<button class="opt${CS.diff === k ? ' sel' : ''}" data-act="cdiff" data-id="${k}">${DIFFS[k].n}<small>${DIFFS[k].d}</small></button>`;
   const C = CLASSES[CS.cls];
-  showOverlay(`<div class="head"><h2>NEUER HELD</h2><button class="btn alt sm" data-act="backtitle">Zurück</button></div>
-  <h3>KLASSE</h3><div class="classes">${cl}</div>
-  <div class="box" style="margin-bottom:10px"><b style="font-family:var(--f-display);font-size:8px;font-weight:400">${C.name.toUpperCase()}</b> · ${C.res.name} · ${C.weapons.map(w => WT[w].label).join(', ')}<div style="font-size:16px;color:var(--parch-dim);margin-top:4px">${C.skills.map(s => SKILLS[s].n).join(' · ')} · Ultimative: ${SKILLS[C.ult].n}</div></div>
-  <h3>AUSSEHEN – FREI GESTALTBAR</h3>${lookEditorHTML()}
-  <h3>NAME</h3><input type="text" id="cname" maxlength="16" placeholder="${C.name}" value="${esc(CS.name)}">
-  <h3>SCHWIERIGKEIT</h3><div class="opts">${df}</div>
-  <div class="opts"><button class="opt${CS.hc ? ' sel' : ''}" data-act="chc">HARDCORE ${CS.hc ? 'AN' : 'AUS'}<small>Ein Tod löscht den Helden. Dafür Ruhm in der Ruhmeshalle.</small></button></div>
-  <div class="menu foot"><button class="btn" data-act="cstart">Abenteuer beginnen</button></div>`, true);
+  showOverlay(`<div class="head"><h2>${_t('NEUER HELD')}</h2><button class="btn alt sm" data-act="backtitle">Zurück</button></div>
+  <h3>${_t('KLASSE')}</h3><div class="classes">${cl}</div>
+  <div class="box" style="margin-bottom:10px"><b style="font-family:var(--f-display);font-size:8px;font-weight:400">${C.name.toLocaleUpperCase(LOCALE)}</b> · ${C.res.name} · ${C.weapons.map(w => WT[w].label).join(', ')}<div style="font-size:16px;color:var(--parch-dim);margin-top:4px">${C.skills.map(s => SKILLS[s].n).join(' · ')} · ${_t('Ultimative: {n}', { n: SKILLS[C.ult].n })}</div></div>
+  <h3>${_t('AUSSEHEN – FREI GESTALTBAR')}</h3>${lookEditorHTML()}
+  <h3>${_t('NAME')}</h3><input type="text" id="cname" maxlength="16" placeholder="${C.name}" value="${esc(CS.name)}">
+  <h3>${_t('SCHWIERIGKEIT')}</h3><div class="opts">${df}</div>
+  <div class="opts"><button class="opt${CS.hc ? ' sel' : ''}" data-act="chc">${_t('HARDCORE {v}', { v: CS.hc ? _t('AN') : _t('AUS') })}<small>${_t('Ein Tod löscht den Helden. Dafür Ruhm in der Ruhmeshalle.')}</small></button></div>
+  <div class="menu foot"><button class="btn" data-act="cstart">${_t('Abenteuer beginnen')}</button></div>`, true);
 }
-function openMirror() { lkMode = 'mirror'; stationShell('spiegel', `<p class="sub">Der Spiegel zeigt, wer du sein willst. Änderungen sind kostenlos.</p>${lookEditorHTML()}`, true); }
+function openMirror() { lkMode = 'mirror'; stationShell('spiegel', `<p class="sub">${_t('Der Spiegel zeigt, wer du sein willst. Änderungen sind kostenlos.')}</p>${lookEditorHTML()}`, true); }
 
 /* ---------- Weltkarte ---------- */
 let mapSel = -1, mapTapped = false;
@@ -223,7 +223,7 @@ function openMap() {
   if (!P.story['a' + P.act]) {
     P.story['a' + P.act] = 1; saveChar(); setState('menu');
     const A = ACTS[P.act - 1], lines = A ? [['erz', A.i]] : [['erz', QUAL_INTRO]];
-    dialog(lines, openMap, A ? 'Akt ' + P.act + ': ' + A.t : 'Akt ' + P.act + ' · Qual ' + qualOf(P.act)); return;
+    dialog(lines, openMap, A ? _t('Akt {act}: {t}', { act: P.act, t: A.t }) : _t('Akt {act} · Qual {q}', { act: P.act, q: qualOf(P.act) })); return;
   }
   const M = P.map, av = availableNodes(), b = biomeOf(P.act);
   MAPV = portrait();
@@ -237,21 +237,21 @@ function openMap() {
   const selN = mapSel >= 0 ? M.rows[M.pos.r + 1][mapSel] : null, [selX, selY] = selN ? nodePos(M, M.pos.r + 1, mapSel) : [0, 100];
   const A = ACTS[P.act - 1];
   // Info zum gewählten Ort liegt auf der Karte, auf der Seite gegenüber dem Ort
-  const info = selN ? `<div class="mapinfo" style="--c:${NODE[selN.t].c};${selY > 50 ? 'bottom:auto;top:8px;' : ''}${selX < 50 ? 'left:auto;' : 'right:auto;'}"><img src="${iconURL(NODE[selN.t].icon)}" alt=""><div><div class="nm" style="color:${NODE[selN.t].c}">${NODE[selN.t].n}</div><div class="st">${NODE[selN.t].d} <span style="color:var(--gold)">${isTouch ? (mapTapped ? 'Nochmal antippen zum Betreten.' : 'Antippen zum Betreten.') : ''}</span></div></div></div>`
-    : `<div class="mapinfo" style="--c:var(--stone-hi);left:auto"><div class="st">Wähle den nächsten Ort – die leuchtenden Punkte.</div></div>`;
-  showOverlay(`<div class="head"><h2>AKT ${P.act} · ${b.name.toUpperCase()}${qualOf(P.act) ? ' · QUAL ' + qualOf(P.act) : ''}</h2><div class="gold"><i class="coin"></i>${fmt(P.gold)} <span style="color:#ffd24a"><i class="fc"></i>${P.fate || 0}</span></div></div>
-  <div class="stats">${A ? `<span style="color:var(--rune)">${esc(A.t)}</span>` : ''}<span style="color:${weekEvent().c}">${weekEvent().n.toUpperCase()}</span><span>LV ${P.lv}${P.paragon ? ' · P' + P.paragon : ''}</span><span>LP ${Math.ceil(P.hp)}/${P.st.hp}</span><span>TRÄNKE ${P.potions}</span>${P.sp ? `<span style="color:var(--gold)">${P.sp} TALENTPUNKT${P.sp > 1 ? 'E' : ''}</span>` : ''}${P.buffs.map(b => `<span style="color:var(--rune)">${b.n} (${b.rooms})</span>`).join('')}</div>
+  const info = selN ? `<div class="mapinfo" style="--c:${NODE[selN.t].c};${selY > 50 ? 'bottom:auto;top:8px;' : ''}${selX < 50 ? 'left:auto;' : 'right:auto;'}"><img src="${iconURL(NODE[selN.t].icon)}" alt=""><div><div class="nm" style="color:${NODE[selN.t].c}">${NODE[selN.t].n}</div><div class="st">${NODE[selN.t].d} <span style="color:var(--gold)">${isTouch ? (mapTapped ? _t('Nochmal antippen zum Betreten.') : _t('Antippen zum Betreten.')) : ''}</span></div></div></div>`
+    : `<div class="mapinfo" style="--c:var(--stone-hi);left:auto"><div class="st">${_t('Wähle den nächsten Ort – die leuchtenden Punkte.')}</div></div>`;
+  showOverlay(`<div class="head"><h2>${_t('AKT {act}', { act: P.act })} · ${b.name.toLocaleUpperCase(LOCALE)}${qualOf(P.act) ? ' · ' + _t('QUAL {q}', { q: qualOf(P.act) }) : ''}</h2><div class="gold"><i class="coin"></i>${fmt(P.gold)} <span style="color:#ffd24a"><i class="fc"></i>${P.fate || 0}</span></div></div>
+  <div class="stats">${A ? `<span style="color:var(--rune)">${esc(A.t)}</span>` : ''}<span style="color:${weekEvent().c}">${weekEvent().n.toLocaleUpperCase(LOCALE)}</span><span>${_t('LV {lv}', { lv: P.lv })}${P.paragon ? ' · P' + P.paragon : ''}</span><span>${_t('LP {n}', { n: Math.ceil(P.hp) + '/' + P.st.hp })}</span><span>${_t('TRÄNKE {n}', { n: P.potions })}</span>${P.sp ? `<span style="color:var(--gold)">${P.sp > 1 ? _t('{n} TALENTPUNKTE', { n: P.sp }) : _t('1 TALENTPUNKT')}</span>` : ''}${P.buffs.map(b => `<span style="color:var(--rune)">${b.n} (${b.rooms})</span>`).join('')}</div>
   <div class="mapwrap"><canvas id="mapcv" width="320" height="150"></canvas>${nodes}<div class="hero" style="left:${hp[0]}%;top:${hp[1]}%">${heroHTML(P, 1.3)}</div>${info}</div>
-  <div class="menu foot row">${selN ? `<button class="btn wide" data-act="enter">Betreten</button>` : ''}<button class="btn${selN ? ' alt' : ''}" data-act="hide">Versteck${hideReady() ? ' (!)' : ''}</button><button class="btn alt" data-act="char">Charakter${P.sp ? ' (' + P.sp + ')' : ''}</button><button class="btn alt" data-act="mapmore">Mehr</button></div>`, true);
+  <div class="menu foot row">${selN ? `<button class="btn wide" data-act="enter">${_t('Betreten')}</button>` : ''}<button class="btn${selN ? ' alt' : ''}" data-act="hide">${_t('Versteck')}${hideReady() ? ' (!)' : ''}</button><button class="btn alt" data-act="char">${_t('Charakter')}${P.sp ? ' (' + P.sp + ')' : ''}</button><button class="btn alt" data-act="mapmore">${_t('Mehr')}</button></div>`, true);
   drawMapCanvas(M, av);
   checkAch(); weekAnnounce();
 }
 // Seltener gebrauchte Kartenaktionen und die Legende
 function showMapMore() {
   const legend = Object.keys(NODE).map(k => `<span><img src="${iconURL(NODE[k].icon)}" alt="">${NODE[k].n}</span>`).join('');
-  showOverlay(`<div class="head"><h2>AKT ${P.act}</h2><div class="hbtns"><button class="btn alt sm" data-act="tomapview">Zurück</button></div></div>
-  <div class="menu two"><button class="btn alt" data-act="daily">Tages-Challenge</button><button class="btn alt" data-act="news" data-id="map">Neuigkeiten</button><button class="btn alt" data-act="title">Speichern & Hauptmenü</button></div>
-  ${weekHTML()}<h3>LEGENDE</h3><div class="legend open">${legend}</div>`);
+  showOverlay(`<div class="head"><h2>${_t('AKT {act}', { act: P.act })}</h2><div class="hbtns"><button class="btn alt sm" data-act="tomapview">${_t('Zurück')}</button></div></div>
+  <div class="menu two"><button class="btn alt" data-act="daily">${_t('Tages-Challenge')}</button><button class="btn alt" data-act="news" data-id="map">${_t('Neuigkeiten')}</button><button class="btn alt" data-act="title">${_t('Speichern & Hauptmenü')}</button></div>
+  ${weekHTML()}<h3>${_t('LEGENDE')}</h3><div class="legend open">${legend}</div>`);
 }
 function hideReady() { return minePending('mine') > 0 || minePending('garden') > 0 || BUILDORDER.some(k => { const c = buildCost(k); return c && !BUILD[k].fixed && canAfford(c.mats, c.gold); }); }
 function drawMapCanvas(M, av) {
@@ -473,7 +473,7 @@ function doEvent(a) {
 function showPause() {
   if (state !== 'play') return; setState('pause');
   const hide = G && G.type === 'versteck';
-  showOverlay(`<h2 class="center">PAUSE</h2><p class="sub center">${esc(P.name)} · LV ${P.lv} · ${hide ? 'Versteck' : 'Akt ' + P.act}</p><div class="menu"><button class="btn" data-act="resume">Weiterspielen</button><button class="btn alt" data-act="pchar">Charakter</button>${isTouch ? '<button class="btn alt" data-act="ctledit" data-id="pause">Knöpfe anpassen</button>' : ''}<button class="btn alt" data-act="music">Musik ${SAVE.meta.settings.music !== false ? 'aus' : 'an'}</button><button class="btn alt" data-act="sfx">Ton ${SAVE.meta.settings.sfx !== false ? 'aus' : 'an'}</button>${hide ? '<button class="btn alt" data-act="hleave">Zur Weltkarte</button>' : ''}<button class="btn alt" data-act="title">Speichern & Hauptmenü</button></div><div class="help">${HELP}</div>`);
+  showOverlay(`<h2 class="center">PAUSE</h2><p class="sub center">${esc(P.name)} · LV ${P.lv} · ${hide ? 'Versteck' : 'Akt ' + P.act}</p><div class="menu"><button class="btn" data-act="resume">Weiterspielen</button><button class="btn alt" data-act="pchar">Charakter</button>${isTouch ? '<button class="btn alt" data-act="ctledit" data-id="pause">Knöpfe anpassen</button>' : ''}<button class="btn alt" data-act="music">Musik ${SAVE.meta.settings.music !== false ? 'aus' : 'an'}</button><button class="btn alt" data-act="sfx">Ton ${SAVE.meta.settings.sfx !== false ? 'aus' : 'an'}</button>${hide ? '<button class="btn alt" data-act="hleave">Zur Weltkarte</button>' : ''}<button class="btn alt" data-act="title">${_t('Speichern & Hauptmenü')}</button></div><div class="help">${HELP}</div>`);
 }
 function showDeath() {
   setState('over'); showHud(false);
