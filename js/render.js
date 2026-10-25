@@ -5,6 +5,7 @@
 
 let CX = 0, CY = 0, SUBX = 0, SUBY = 0, LIGHTS = [];
 const SCR = mk(64, 64), SG = SCR.getContext('2d'); SG.imageSmoothingEnabled = false;
+const SCR2 = mk(64, 64), SG2 = SCR2.getContext('2d'); SG2.imageSmoothingEnabled = false;
 function addLight(x, y, r, a) { LIGHTS.push([x, y, r, a == null ? 1 : a]); }
 function glow(x, y, r, col, a) { const gr = ctx.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(${col},${a})`); gr.addColorStop(1, `rgba(${col},0)`); ctx.fillStyle = gr; ctx.fillRect(x - r, y - r, r * 2, r * 2); }
 function ptext(s, x, y, col, size) { ctx.font = (size || 8) + 'px "Press Start 2P", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#000'; ctx.fillText(s, Math.round(x) + 1, Math.round(y) + 1); ctx.fillStyle = col; ctx.fillText(s, Math.round(x), Math.round(y)); }
@@ -61,6 +62,13 @@ function drawActor(e, isP) {
       for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) ctx.drawImage(sil, fi * fw, 0, fw, fh, -fw / 2 + ox, -fh + oy, fw, fh);
       ctx.globalAlpha = a;
     }
+  }
+  if (!isP && e.boss) {
+    // Bosse bekommen einen pulsierenden Umriss in ihrer Blutfarbe, damit sie sich auch auf dunklem Boden abheben
+    SG2.clearRect(0, 0, 64, 64); SG2.drawImage(SCR, 0, 0); SG2.globalCompositeOperation = 'source-in'; SG2.fillStyle = e.def.glow || e.def.blood || '#ff4a3a'; SG2.fillRect(0, 0, 64, 64); SG2.globalCompositeOperation = 'source-over';
+    const a = ctx.globalAlpha; ctx.globalAlpha = a * (.6 + .25 * Math.sin(T * 5));
+    for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) ctx.drawImage(SCR2, -32 + ox, -60 + oy);
+    ctx.globalAlpha = a;
   }
   ctx.drawImage(SCR, -32, -60);
   ctx.restore();

@@ -327,7 +327,7 @@ Bezahlt wird mit **Glücksmünzen** – von Bossen, Champions, seltenen Truhen, 
 
 **Elite-Affixe:** Schnell, Explosiv, Gepanzert (Panzer-Leiste), Heiler, Vampir, Teleport, Frostig, Brennend, Riese
 
-**Bosse:** Grausch · Vexhal · Morgul · Ignaroth · **Eiskönigin Frostra** (Frostnova, Eisgespenster) · **Seuchenfürst Morbus** (Giftflaschen-Salven, Giftschleime) · **Todesritter Varkas** (Sturmangriffe, Skelettgarde) · **Uralter Drache Pyraxis** (Feuerodem, Jungdrachen)
+**Bosse:** Grausch · Vexhal · Morgul · Ignaroth · **Eiskönigin Frostra** (Frostnova, Eisgespenster) · **Seuchenfürst Morbus** (Giftflaschen-Salven, Giftschleime) · **Todesritter Varkas** (Sturmangriffe, Skelettgarde) · **Uralter Drache Pyraxis** (Feuerodem, Jungdrachen). Bosse tragen einen pulsierenden Umriss in ihrer Farbe, damit sie sich auch auf dunklem Boden klar abheben.
 
 ---
 
@@ -415,7 +415,7 @@ Lokal starten: `python3 -m http.server` im Ordner, dann `http://localhost:8000`.
 
 ## Werbevideo
 
-30 Sekunden im Hochformat (1080×1920) für TikTok und Instagram Reels (noch aus Version 3): [docs/klingenhort_promo.mp4](docs/klingenhort_promo.mp4)
+22 Sekunden im Hochformat (1080×1920, 30 fps) für TikTok und Instagram Reels, mit eigenem Chiptune-Soundtrack: [docs/klingenhort_promo.mp4](docs/klingenhort_promo.mp4). Alle Szenen sind echte Spielaufnahmen aus Version 4 (Bosse, Klassen, Versteck, Verschmelzen, Glückstempel, Charakter-Editor).
 
 <img src="docs/poster.png" width="240" alt="Poster">
 

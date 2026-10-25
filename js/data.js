@@ -5,7 +5,7 @@
    Neue Klassen, Gegner, Talente, Rezepte: hier ergänzen.
    ========================================================= */
 
-const VERSION = '4.0.0';
+const VERSION = '4.0.1';
 const SAVE_KEY = 'klingenhort.v3';
 const WALL = 32;
 
@@ -432,7 +432,7 @@ const EN = {
   demon:{name:'Höllenschlund',sp:'demon',hp:540,atk:24,spd:30,r:13,xp:60,gold:40,ai:'dragon',summon:'imp',boss:true,mass:8,blood:'#ff8a3a',drop:{horn:4,schuppe:2},desc:'Herrscher der Glutfeste.'},
   frostra:{name:'Eiskönigin',sp:'wizf',hp:60,atk:20,spd:36,r:6,xp:70,gold:50,ai:'caster',orb:'waterorb',summon:'eisgeist',nova:1,boss:true,mass:6,blood:'#bfefff',drop:{mithril:6,kristall:4},desc:'Einst die größte Magierin des Ordens.'},
   morbus:{name:'Seuchenfürst',sp:'doc',hp:60,atk:22,spd:38,r:6,xp:80,gold:55,ai:'bomber',flask:1,summon:'toxslime',boss:true,mass:6,blood:'#79c24e',drop:{adamant:5,schleim:6},desc:'Züchtet Pyraxis\' Brut im Giftsumpf.'},
-  varkas:{name:'Todesritter',sp:'knight',hp:160,atk:26,spd:48,r:7,xp:90,gold:60,ai:'charge',wpn:'anime_sword',hand:[4,-9],summon:'skeleton',boss:true,mass:7,blood:'#6a1a28',drop:{adamant:4,stern:4},desc:'Der Verräter des Ordens.'},
+  varkas:{name:'Todesritter',sp:'knight',glow:'#ff3a5a',hp:160,atk:26,spd:48,r:7,xp:90,gold:60,ai:'charge',wpn:'anime_sword',hand:[4,-9],summon:'skeleton',boss:true,mass:7,blood:'#6a1a28',drop:{adamant:4,stern:4},desc:'Der Verräter des Ordens.'},
   pyraxis:{name:'Uralter Drache',sp:'demon',hp:540,atk:30,spd:32,r:13,xp:120,gold:90,ai:'dragon',summon:'jungdrache',boss:true,mass:9,blood:'#ff8a3a',drop:{schuppe:6,aether:3},desc:'Der Drache, der das Weltenfeuer stahl.'},
   dummy:{name:'Trainingspuppe',sp:'skelet',hp:500,atk:0,spd:0,r:7,xp:0,gold:0,ai:'dummy',hidden:1,cost:99,from:99,blood:'#c8a878',drop:{},desc:''}
 };
@@ -443,7 +443,7 @@ const BOSSES = [
   {type:'demon',name:'Höllenschlund Ignaroth',sc:2,hpMul:1.15},
   {type:'frostra',name:'Eiskönigin Frostra',sc:1.9,hpMul:12,tint:'rgba(170,230,255,.5)'},
   {type:'morbus',name:'Seuchenfürst Morbus',sc:2,hpMul:10,tint:'rgba(120,200,60,.38)'},
-  {type:'varkas',name:'Todesritter Varkas',sc:2,hpMul:3.6,tint:'rgba(40,0,20,.62)'},
+  {type:'varkas',name:'Todesritter Varkas',sc:2,hpMul:3.6,tint:'rgba(70,0,30,.42)'},
   {type:'pyraxis',name:'Uralter Drache Pyraxis',sc:2.5,hpMul:1.7,tint:'rgba(210,30,10,.38)'}
 ];
 const STORY_ACTS = BOSSES.length;   // danach beginnen die Qual-Stufen
