@@ -161,7 +161,7 @@ Den Plan für die nächsten Wochen gibt es in [ROADMAP.md](ROADMAP.md). Neue Ein
 
 **Versteck & Glück**
 - **Begehbares Versteck** mit 9 ausbaubaren Gebäuden, NPCs, Trainingspuppe mit Schaden pro Sekunde und Lager für alle Helden
-- **Glückstempel**: Glücksrad, Schicksalstruhen, Münztausch – seltene Gegenstände sind schwer zu bekommen, aber eine Garantie verhindert endloses Pech
+- **Glückstempel**: Glücksrolle wie beim Case-Opening, Schicksalstruhen, Münztausch – reiner Zufall mit offen angezeigten Chancen
 
 **Gegner**
 - **Bestiarium mehr als verdoppelt**: 23 neue Gegner und 4 neue Bosse (insgesamt 46 Einträge), neue KI: Fernkämpfer mit Zielwarnung, Geister, die verschwinden und hinter dir auftauchen, Würmer, die sich eingraben, Giftwerfer, Gift- und Feuerspuren
@@ -271,7 +271,7 @@ Von der Weltkarte aus jederzeit erreichbar. Du läufst durch die Ruine und spric
 | Juwelier (Selis) | 3 | Edelsteine, Materialien veredeln, halbe Kosten, mehr Edelstein-Funde |
 | Schatzkammer | 5 | Lager mit bis zu 60 Plätzen – für alle Helden |
 | Trainingsplatz (Kael) | 10 | +3 % Schaden und LP pro Stufe, Trainingspuppe mit Schaden pro Sekunde |
-| Glückstempel (Fortuna) | 3 | Glücksrad und Truhen; schnellere Garantie; Gratis-Dreh pro Akt |
+| Glückstempel (Fortuna) | 3 | Glücksrolle und Truhen; Münztausch 25 % günstiger; Gratis-Dreh pro Akt |
 | Bibliothek (Ulmo) | 3 | Chronik, Geschichte, Bestiarium; +5/10/15 % Erfahrung |
 | Erzmine | 5 | fördert pro geschafftem Raum Erz, Mithril, Adamant, Glutsteine, Sternenstaub |
 | Kräutergarten | 5 | wächst pro Raum: Schleimkerne, Leder, Heiltränke, Seelenkristalle |
@@ -344,7 +344,7 @@ Namen entstehen aus Material und Form: *Adamant-Hellebarde*, *Drachen-Zweihände
 
 Bezahlt wird mit **Glücksmünzen** – von Bossen, Champions, seltenen Truhen, Erfolgen, der Tages-Challenge, dem Schrein Fortunas und der Glücksquelle. Oder für Gold im Tempel kaufen.
 
-| Glücksrad (1 Münze) | Chance |
+| Glücksrolle (1 Münze) | Chance |
 |---|---|
 | Goldregen | 25 % |
 | Materialbündel | 19 % |
@@ -358,7 +358,7 @@ Bezahlt wird mit **Glücksmünzen** – von Bossen, Champions, seltenen Truhen, 
 | Kosmetik | 1,4 % |
 | **Mythisch** | **0,4 %** |
 
-**Garantie:** spätestens nach 15 Drehungen (Tempel Stufe 2: 12) gibt es Legendär oder besser, spätestens nach 80 Drehungen Mythisch.
+**Reiner Zufall:** Jede Drehung hat genau diese Chancen, es gibt keine Garantie nach einer bestimmten Zahl von Drehungen. Die Rolle zieht den Gewinn vor dem Drehen und zeigt ihn dann – Schließen während der Rolle ändert nichts.
 
 | Truhe | Preis | Inhalt |
 |---|---|---|

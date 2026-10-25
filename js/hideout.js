@@ -68,7 +68,7 @@ function openStation(id, tab) {
     case 'alchemie': openAlchemy(); break;
     case 'lager': openStash(); break;
     case 'training': openTraining(); break;
-    case 'tempel': openTemple(); break;
+    case 'tempel': if (!rolling()) ROLL = null; openTemple(); break;
     case 'bibliothek': openLibrary(); break;
     case 'mine': case 'garten': openProd(id); break;
   }
@@ -163,23 +163,108 @@ function openLibrary() {
 }
 
 /* ---------- Glückstempel ---------- */
-function coinPrice() { return 400 + P.lv * 30; }
+function coinPrice() { return Math.round((400 + P.lv * 30) * (hideLv('tempel') >= 2 ? .75 : 1)); }
+/* ---------- Glücksrolle: wie beim Case-Opening rauscht eine Reihe Belohnungen vorbei und bleibt beim Gewinn stehen.
+   Reiner Zufall: der Gewinn wird vor der Rolle ausgelost und sofort gutgeschrieben, die Rolle zeigt ihn nur.
+   Die Kacheln davor und danach sind mit denselben Chancen gezogen – keine Garantie, keine gestellten Beinahe-Treffer. */
+const ROLL_GAP = 4, ROLL_N = 46, ROLL_WIN = 38;
+let ROLL = null;   // { tiles, win, off, anim, res, done }
+function rollIcon(k) {
+  const W = P.gear.weapon, it = r => ({ slot: 'weapon', base: W.base, form: wform(W).id, tier: clamp(Math.floor((stageNum() - 1) / 6) + 1, 0, TIERS - 1), rar: r, aff: {}, gems: [], up: 0, fz: 0, myth: r === 6 ? 'klinge' : null, set: r === 5 ? 'drache' : null, name: r >= 4 ? 'x' : null });
+  switch (k) {
+    case 'gold': return iconURL(['s', 289, 385, 6, 7]);
+    case 'mats': return iconURL(['mat', 'mithril']);
+    case 'pots': return iconURL(['s', 288, 352, 16, 16]);
+    case 'gem': return iconURL(['gem', 'rubin', 3]);
+    case 'coins': return rollArt('coin');
+    case 'cos': return rollArt('cos');
+    case 'mag': return itemIconURL(it(1));
+    case 'rare': return itemIconURL(it(2));
+    case 'epic': return itemIconURL(it(3));
+    case 'leg': return itemIconURL(it(4));
+    case 'set': return itemIconURL(it(5));
+    case 'myth': return itemIconURL(it(6));
+  }
+  return '';
+}
+// Glücksmünze und Kosmetik als kleine Pixelbilder
+const ROLLART = {};
+function rollArt(k) {
+  return ROLLART[k] || (ROLLART[k] = mk(14, 14, g => {
+    const px = (x, y, c) => { g.fillStyle = c; g.fillRect(x, y, 1, 1); };
+    if (k === 'coin') { for (let y = 0; y < 14; y++) for (let x = 0; x < 14; x++) { const d = Math.hypot(x - 6.5, y - 6.5); if (d < 6.2) px(x, y, d > 5.2 ? '#000' : d > 4 ? '#c8902a' : x + y < 11 ? '#fff3c0' : '#ffd24a'); } }
+    else { const C = ['#f786a0', '#ffd2e0', '#fff']; for (const [x, y, c] of [[6, 1, 2], [7, 1, 2], [5, 2, 1], [8, 2, 1], [6, 2, 0], [7, 2, 0], [2, 5, 0], [3, 4, 0], [4, 5, 1], [9, 5, 1], [10, 4, 0], [11, 5, 0], [3, 6, 0], [10, 6, 0], [4, 7, 0], [9, 7, 0], [5, 8, 0], [8, 8, 0], [6, 9, 1], [7, 9, 1], [6, 10, 0], [7, 10, 0], [6, 5, 2], [7, 5, 2], [6, 6, 1], [7, 6, 1]]) px(x, y, C[c]); }
+  }).toDataURL());
+}
+// Was eine Rolle enthalten kann: Glücksrad oder eine der Schicksalstruhen
+function rollPool(src) {
+  if (src === 'wheel') return WHEEL.map(w => ({ k: w.k, n: w.n, c: w.c, w: w.w }));
+  const R = r => ({ k: ['', 'mag', 'rare', 'epic', 'leg', 'set', 'myth'][r], n: RAR[r].n, c: RAR[r].c });
+  if (src === 'bronze') return [Object.assign(R(1), { w: 55 }), Object.assign(R(2), { w: 33 }), Object.assign(R(3), { w: 10 }), Object.assign(R(4), { w: 2 })];
+  if (src === 'gold') return [Object.assign(R(3), { w: 84 }), Object.assign(R(4), { w: 10 }), { k: 'cos', n: _t('Kosmetik'), c: '#f786a0', w: 5 }, Object.assign(R(6), { w: 1 })];
+  return [Object.assign(R(4), { w: 94 }), Object.assign(R(6), { w: 6 })];
+}
+function rollDraw(pool) { const W = {}; pool.forEach((p, i) => W[i] = p.w); return pool[+wpick(W)]; }
+function rollTileHTML(t, win) { const [r, g, b] = hexRgb(t.c); return `<div class="tile${win ? ' win' : ''}" style="--c:${t.c};background:linear-gradient(180deg,#1a1622 30%,rgba(${r},${g},${b},.38))"><img src="${rollIcon(t.k)}" alt=""><span>${esc(t.n)}</span></div>`; }
+function rollHTML(src) {
+  const pool = rollPool(src), tot = pool.reduce((a, p) => a + p.w, 0);
+  const tiles = ROLL && ROLL.src === src ? ROLL.tiles : Array.from({ length: 14 }, (_, i) => pool[i % pool.length]);
+  const off = ROLL && ROLL.src === src && !ROLL.anim ? ROLL.off || 0 : 0, win = ROLL && ROLL.src === src && !ROLL.anim ? ROLL.win : -1;
+  return `<div class="roll${ROLL && ROLL.anim ? ' spin' : ''}" id="roll" data-act="rollskip"><div class="strip" id="rollStrip" style="transform:translateX(${-off}px)">${tiles.map((t, i) => rollTileHTML(t, i === win)).join('')}</div><i class="mark"></i></div>
+  ${ROLL && ROLL.anim ? `<p class="sub center" style="margin:0 0 8px">${_t('Antippen zum Überspringen')}</p>` : ''}
+  <div class="odds">${pool.map(p => `<span style="--c:${p.c}">${esc(p.n)} <b>${_t('{n} %', { n: (p.w / tot * 100).toLocaleString(LOCALE, { maximumFractionDigits: p.w / tot < .01 ? 1 : 0 }) })}</b></span>`).join('')}</div>`;
+}
 function openTemple(result) {
-  const L = SAVE.meta.luck, lim = hideLv('tempel') >= 2 ? 12 : 15, free = freeSpin();
-  const seg = WHEEL.map(w => `<span style="--c:${w.c}">${w.n}<small>${_t('{n} %', { n: (w.w / WHEEL.reduce((s, x) => s + x.w, 0) * 100).toLocaleString(LOCALE, { maximumFractionDigits: w.w < 1 ? 1 : 0 }) })}</small></span>`).join('');
-  stationShell('tempel', `<div class="kv"><span class="pill" style="background:#ffd24a"><i class="fc"></i> ${P.fate === 1 ? _t('1 GLÜCKSMÜNZE') : _t('{n} GLÜCKSMÜNZEN', { n: P.fate })}</span><span class="pill dim">${_t('LEGENDÄR SPÄTESTENS IN {n}', { n: Math.max(1, lim - L.pityL) })}</span><span class="pill dim">${_t('MYTHISCH SPÄTESTENS IN {n}', { n: Math.max(1, 80 - L.pityM) })}</span></div>
-  <div class="wheel" id="wheel">${seg}</div>
-  ${result ? `<div class="detail center" style="box-shadow:inset 0 0 0 2px ${result.c}"><div class="nm" style="color:${result.c}">${esc(result.t)}</div>${result.it ? itemDetail(result.it, '') : ''}</div>` : ''}
-  <div class="menu two"><button class="btn" data-act="spin" ${P.fate >= 1 || free ? '' : 'disabled'}>${free === 'day' ? _t('Gratis-Dreh der Glückswoche!') : free ? _t('Gratis drehen!') : _t('Glücksrad drehen (1 {coin})', { coin: '<i class="fc"></i>' })}</button><button class="btn alt" data-act="coin" ${P.gold >= coinPrice() ? '' : 'disabled'}>${_t('1 {coin} kaufen ({gold} Gold)', { coin: '<i class="fc"></i>', gold: coinPrice() })}</button></div>
-  <h3>${_t('SCHICKSALSTRUHEN')}</h3>${CHESTS.map(C => { const price = C.coins ? C.coins + ' <i class="fc"></i>' : _t('{n} Gold', { n: 250 + P.lv * 15 }), ok = C.coins ? P.fate >= C.coins : P.gold >= 250 + P.lv * 15; return `<div class="row" style="cursor:default"><div class="ic"><img src="${iconURL(['s', C.id === 'bronze' ? 304 : C.id === 'gold' ? 320 : 336, 416, 16, 16])}" alt="" style="${C.id === 'drache' ? 'filter:hue-rotate(-40deg) saturate(1.6)' : ''}"></div><div><div class="nm">${C.n}</div><div class="st">${C.d}</div></div><button class="btn sm" data-act="chest" data-id="${C.id}" ${ok ? '' : 'disabled'}>${price}</button></div>`; }).join('')}
-  <p class="sub">${_t('Glücksmünzen gibt es von Bossen, Champions, seltenen Truhen, der Tages-Challenge und Schreinen Fortunas. Mythische Gegenstände sind extrem selten – das Rad merkt sich aber, wie lange du schon Pech hattest.')}</p>`, true);
+  const free = freeSpin(), busy = ROLL && ROLL.anim, src = ROLL ? ROLL.src : 'wheel', res = result || (ROLL && !ROLL.anim ? ROLL.res : null);
+  stationShell('tempel', `<div class="kv"><span class="pill" style="background:#ffd24a"><i class="fc"></i> ${P.fate === 1 ? _t('1 GLÜCKSMÜNZE') : _t('{n} GLÜCKSMÜNZEN', { n: P.fate })}</span><span class="pill dim">${_t('REINER ZUFALL')}</span></div>
+  <h3>${src === 'wheel' ? _t('GLÜCKSROLLE') : esc(CHESTS.find(c => c.id === src).n).toLocaleUpperCase(LOCALE)}</h3>${rollHTML(src)}
+  ${res && !busy ? `<div class="detail center rollres" style="box-shadow:inset 0 0 0 2px ${res.c}"><div class="nm" style="color:${res.c}">${esc(res.t)}</div>${res.it ? itemDetail(res.it, '') : ''}</div>` : ''}
+  <div class="menu two"><button class="btn" data-act="spin" ${!busy && (P.fate >= 1 || free) ? '' : 'disabled'}>${free === 'day' ? _t('Gratis-Dreh der Glückswoche!') : free ? _t('Gratis drehen!') : _t('Glücksrolle drehen (1 {coin})', { coin: '<i class="fc"></i>' })}</button><button class="btn alt" data-act="coin" ${!busy && P.gold >= coinPrice() ? '' : 'disabled'}>${_t('1 {coin} kaufen ({gold} Gold)', { coin: '<i class="fc"></i>', gold: coinPrice() })}</button></div>
+  <h3>${_t('SCHICKSALSTRUHEN')}</h3>${CHESTS.map(C => { const price = C.coins ? C.coins + ' <i class="fc"></i>' : _t('{n} Gold', { n: 250 + P.lv * 15 }), ok = !busy && (C.coins ? P.fate >= C.coins : P.gold >= 250 + P.lv * 15); return `<div class="row" style="cursor:default"><div class="ic"><img src="${iconURL(['s', C.id === 'bronze' ? 304 : C.id === 'gold' ? 320 : 336, 416, 16, 16])}" alt="" style="${C.id === 'drache' ? 'filter:hue-rotate(-30deg) saturate(1.6)' : ''}"></div><div><div class="nm">${C.n}</div><div class="st">${C.d}</div></div><div class="acts"><button class="btn sm" data-act="chest" data-id="${C.id}" ${ok ? '' : 'disabled'}>${price}</button></div></div>`; }).join('')}
+  <p class="sub">${_t('Glücksmünzen gibt es von Bossen, Champions, seltenen Truhen, der Tages-Challenge und Schreinen Fortunas. Jede Drehung ist reiner Zufall mit den gezeigten Chancen – Mythisch kann beim ersten Dreh kommen oder erst nach sehr vielen.')}</p>`, true);
+  if (busy) requestAnimationFrame(rollRun);
+  else if (ROLL && ROLL.off == null && $('roll')) { rollPlace(ROLL, $('roll'), $('rollStrip'), false); $('rollStrip').style.transform = `translateX(${-ROLL.off}px)`; }
+}
+// Rolle starten: Gewinn steht fest (bereits gutgeschrieben), Kacheln drumherum zufällig
+function rollStart(src, winTile, res) {
+  const pool = rollPool(src), tiles = Array.from({ length: ROLL_N }, () => rollDraw(pool));
+  tiles[ROLL_WIN] = winTile;
+  ROLL = { src, tiles, win: ROLL_WIN, off: null, anim: true, res, last: -1 };
+  openTemple();
+}
+// Endposition aus den echten Kacheln messen (unabhängig von Schriftgröße und CSS), leicht neben der Mitte
+function rollPlace(R, box, st, jitter) {
+  const T0 = st.children[0], TW = st.children[R.win];
+  R.off = TW.offsetLeft - T0.offsetLeft + TW.offsetWidth / 2 - box.clientWidth / 2 + (jitter ? Math.round(rnd(-.38, .38) * TW.offsetWidth) : 0);
+}
+function rollRun() {
+  const R = ROLL, box = $('roll'), st = $('rollStrip'); if (!R || !R.anim || !box || !st) return;
+  const vw = box.clientWidth, step = st.children[1].offsetLeft - st.children[0].offsetLeft;
+  rollPlace(R, box, st, true);
+  const calm = (SAVE.meta.settings.calm || matchMedia('(prefers-reduced-motion: reduce)').matches), dur = calm ? 1300 : 5200;
+  st.style.transition = `transform ${dur}ms cubic-bezier(.06,.62,.14,1)`; void st.offsetWidth; st.style.transform = `translateX(${-R.off}px)`;
+  R.end = performance.now() + dur;
+  const tick = () => {
+    if (ROLL !== R || !R.anim) return;
+    const box2 = $('roll'), st2 = $('rollStrip');
+    if (!box2 || !st2) { rollFinish(R, true); return; }
+    const x = -new DOMMatrixReadOnly(getComputedStyle(st2).transform).m41, i = Math.floor((x + vw / 2 + ROLL_GAP / 2) / step);
+    if (i !== R.last) { R.last = i; sfx('tick'); }
+    if (performance.now() >= R.end) rollFinish(R); else requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+ON.rollskip = () => { if (ROLL && ROLL.anim) rollFinish(ROLL); };
+function rollFinish(R, away) {
+  if (!R.anim) return; R.anim = false;
+  const k = R.tiles[R.win].k, res = R.res;
+  sfx(k === 'myth' ? 'myth' : ['leg', 'set', 'cos'].includes(k) ? 'loot' : 'coin'); if (k === 'myth') shake(6);
+  if (away || !$('roll')) { toast(res.t, res.c); checkAch(); return; } // Tempel schon verlassen: Gewinn als Hinweis
+  openTemple(res); checkAch();
 }
 function wheelPick() {
-  const L = SAVE.meta.luck, lim = hideLv('tempel') >= 2 ? 12 : 15; L.spins++; L.pityL++; L.pityM++; stat('spins');
-  const W = {}; WHEEL.forEach(w => W[w.k] = w.w); let k = wpick(W);
-  if (L.pityM >= 80) k = 'myth'; else if (L.pityL >= lim && !['leg', 'set', 'myth', 'cos'].includes(k)) k = 'leg';
-  if (['leg', 'set', 'myth', 'cos'].includes(k)) L.pityL = 0; if (k === 'myth') L.pityM = 0;
-  return k;
+  SAVE.meta.luck.spins++; stat('spins');
+  const W = {}; WHEEL.forEach(w => W[w.k] = w.w); return wpick(W);
 }
 function grantCosmetic() { const free = Object.keys(COSM).filter(k => !SAVE.meta.cos.includes(k)); if (!free.length) { gainFate(4); return _t('Alle Kosmetik gesammelt – 4 Glücksmünzen zurück'); } const k = pick(free); SAVE.meta.cos.push(k); statMax('cosm', SAVE.meta.cos.length); persist(); return _t('Kosmetik: {name} (im Spiegel anlegen)', { name: COSM[k].n }); }
 function wheelReward(k) {
@@ -200,26 +285,24 @@ function wheelReward(k) {
   }
   return res;
 }
-let spinning = false;
+function rolling() { return !!(ROLL && ROLL.anim); }
 function doSpin() {
-  if (spinning) return; const free = freeSpin();
+  if (ROLL && ROLL.anim) return; const free = freeSpin();
   if (!free && P.fate < 1) return; if (free === 'act') P.story['spin' + P.act] = 1; else if (free === 'day') SAVE.meta.luck.day = dayKey(); else P.fate--;
-  const k = wheelPick(), target = WHEEL.findIndex(w => w.k === k), el = $('wheel'), segs = el ? el.children : [];
-  spinning = true; let i = 0, step = 0; const total = WHEEL.length * 3 + target;
-  const tick = () => {
-    for (const s of segs) s.classList.remove('on'); if (segs[i % WHEEL.length]) segs[i % WHEEL.length].classList.add('on'); sfx('tick');
-    if (step >= total) { spinning = false; const r = wheelReward(k); sfx(k === 'myth' ? 'myth' : ['leg', 'set', 'cos'].includes(k) ? 'loot' : 'coin'); if (k === 'myth') shake(6); saveChar(); persist(); checkAch(); openTemple(r); return; }
-    i++; step++; setTimeout(tick, 40 + Math.pow(step / total, 3) * 380);
-  };
-  tick();
+  const k = wheelPick(), r = wheelReward(k); saveChar(); persist();
+  rollStart('wheel', rollPool('wheel').find(p => p.k === k), r);
 }
 function openChestLuck(id) {
+  if (ROLL && ROLL.anim) return;
   const C = CHESTS.find(c => c.id === id), price = 250 + P.lv * 15, st = stageNum();
   if (C.coins) { if (P.fate < C.coins) return; P.fate -= C.coins; } else { if (P.gold < price) return; P.gold -= price; }
-  const r = Math.random(); let res;
-  if (id === 'bronze') { res = { c: '#c8902a', t: _t('Bronzetruhe') }; const rar = r < .02 ? 4 : r < .12 ? 3 : r < .45 ? 2 : 1; res.it = randomItem(st, rar); res.it.rar = Math.max(res.it.rar, rar); }
-  else if (id === 'gold') { res = { c: '#ffd24a', t: _t('Schicksalstruhe') }; if (r < .01) res.it = makeMythic(); else if (r < .06) res.t = grantCosmetic(); else res.it = randomItem(st, r < .16 ? 4 : 3); }
-  else { res = { c: '#ff6a3a', t: _t('Drachentruhe') }; if (r < .06) res.it = makeMythic(); else res.it = randomItem(st + 6, 4, { setChance: .1 }); if (Math.random() < .15) res.t = grantCosmetic(); if (typeof eggGive === 'function' && Math.random() < .1 && eggGive(null, true)) res.t += ' · ' + _t('Ein Begleiter-Ei!'); }
-  if (res.it) { if (res.it.rar === 4 && !res.it.name) res.it.name = pick(LEGEND[res.it.slot === 'weapon' ? res.it.base : res.it.slot]); addToBag(res.it); if (res.it.rar === 4) stat('legs'); res.c = RAR[res.it.rar].c; }
-  sfx(res.it && res.it.rar === 6 ? 'myth' : 'chest'); saveChar(); persist(); checkAch(); openTemple(res);
+  const win = rollDraw(rollPool(id)), rarOf = { mag: 1, rare: 2, epic: 3, leg: 4, myth: 6 };
+  const res = { c: win.c, t: C.n };
+  if (win.k === 'myth') res.it = makeMythic();
+  else if (win.k === 'cos') res.t = grantCosmetic();
+  else { const rar = rarOf[win.k]; res.it = randomItem(id === 'drache' ? st + 6 : st, rar, id === 'drache' ? { setChance: .1 } : {}); res.it.rar = Math.max(res.it.rar, rar); }
+  if (id === 'drache') { if (Math.random() < .15) res.t += ' · ' + grantCosmetic(); if (typeof eggGive === 'function' && Math.random() < .1 && eggGive(null, true)) res.t += ' · ' + _t('Ein Begleiter-Ei!'); }
+  if (res.it) { if (res.it.rar === 4 && !res.it.name) res.it.name = pick(LEGEND[res.it.slot === 'weapon' ? res.it.base : res.it.slot]); addToBag(res.it); if (res.it.rar === 4) stat('legs'); res.c = RAR[res.it.rar].c; if (res.it.rar === 6) statMax('myths', 1); }
+  sfx('chest'); saveChar(); persist();
+  rollStart(id, win, res);
 }

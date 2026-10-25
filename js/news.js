@@ -7,6 +7,15 @@
 
 const CHANGELOG = [
   {
+    v: '5.0.1', d: '2026-10-25', t: 'Die Glücksrolle', items: [
+      ['neu', 'Glücksrolle: Wie beim Case-Opening rauscht eine Reihe Belohnungen vorbei, wird langsamer und bleibt auf deinem Gewinn stehen. Antippen überspringt.'],
+      ['neu', 'Auch die Schicksalstruhen öffnen sich jetzt mit der Rolle.'],
+      ['besser', 'Reiner Zufall: Es gibt keine Garantie nach einer bestimmten Zahl von Drehungen mehr – Mythisch kann bei jedem Dreh kommen. Die Chancen stehen direkt unter der Rolle.'],
+      ['besser', 'Glückstempel Stufe 2 macht Glücksmünzen im Münztausch 25 % günstiger.'],
+      ['fix', 'Beim Tauschen werden Bauteile mit richtigem Namen und Bild angezeigt.']
+    ]
+  },
+  {
     v: '5.0.0', d: '2026-10-25', t: 'Meisterwerk', items: [
       ['neu', 'Begleiter: Glutdrache, Geisterkatze, Goldkäfer, Frosteule, Giftnatter und Sturmfunke kämpfen an deiner Seite, sammeln Beute ein und wachsen mit dir – von Level 1 bis 100, in sechs Entwicklungsstufen bis zur mythischen Form.'],
       ['neu', 'Jeder bekommt einen Begleiter geschenkt. Weitere schlüpfen aus Eiern von Bossen und aus der Drachentruhe – in vielen Farben und als seltene schillernde Exemplare.'],

@@ -5,7 +5,7 @@
    Neue Klassen, Gegner, Talente, Rezepte: hier ergänzen.
    ========================================================= */
 
-const VERSION = '5.0.0';
+const VERSION = '5.0.1';
 const SAVE_KEY = 'klingenhort.v3';
 const WALL = 32;
 
@@ -538,7 +538,7 @@ const BUILD = {
   juwelier:{n:'Juwelier',icon:'juwel',npc:'Selis',body:'elff',lv:[{gold:200,kristall:2,erz:6},{gold:900,kristall:6},{gold:2600,stern:2,kristall:8}],d:['Edelsteine einsetzen, verschmelzen, Materialien veredeln','Edelsteine verschmelzen kostet die Hälfte','+50 % Edelstein-Funde']},
   lager:{n:'Schatzkammer',icon:'truhe',lv:[{gold:150,leder:6},{gold:500,erz:10},{gold:1200,mithril:4},{gold:2600,adamant:4},{gold:5000,schuppe:2}],d:['Lager mit 12 Plätzen – für alle Helden','24 Plätze','36 Plätze','48 Plätze','60 Plätze']},
   training:{n:'Trainingsplatz',icon:'puppe',npc:'Hauptfrau Kael',body:'knightf',lv:[{gold:200,leder:4},{gold:450,erz:8},{gold:900,zahn:6},{gold:1600,knochen:8},{gold:2600,mithril:5},{gold:4000,kristall:8},{gold:6000,adamant:6},{gold:9000,horn:8},{gold:13000,schuppe:4},{gold:20000,stern:5}],d:['+3 % Schaden und LP pro Stufe']},
-  tempel:{n:'Glückstempel',icon:'rad',npc:'Orakel Fortuna',body:'angel',lv:[{gold:300,kristall:3},{gold:1500,kristall:6,glut:2},{gold:5000,stern:4,aether:1}],d:['Glücksrad, Schicksalstruhen und Münztausch','Legendär-Garantie schon nach 12 statt 15 Drehungen','Ein Gratis-Dreh pro Akt']},
+  tempel:{n:'Glückstempel',icon:'rad',npc:'Orakel Fortuna',body:'angel',lv:[{gold:300,kristall:3},{gold:1500,kristall:6,glut:2},{gold:5000,stern:4,aether:1}],d:['Glücksrad, Schicksalstruhen und Münztausch','Glücksmünzen im Münztausch 25 % günstiger','Ein Gratis-Dreh pro Akt']},
   bibliothek:{n:'Bibliothek',icon:'buch',npc:'Archivar Ulmo',body:'wizard',lv:[{gold:180,leder:5,knochen:3},{gold:800,knochen:8,kristall:2},{gold:2400,stern:2,kristall:5}],d:['Chronik und Bestiarium, +5 % Erfahrung','+10 % Erfahrung','+15 % Erfahrung, Chronikseiten häufiger']},
   mine:{n:'Erzmine',icon:'mine',lv:[{gold:250,leder:4,erz:4},{gold:700,zahn:4},{gold:1600,mithril:3},{gold:3200,adamant:3},{gold:6000,stern:2}],d:['Fördert pro geschafftem Raum Eisenerz','Mehr Erz, manchmal Mithril','Auch Adamant','Auch Glutsteine','Auch Sternenstaub']},
   garten:{n:'Kräutergarten',icon:'garten',lv:[{gold:200,schleim:3},{gold:600,schleim:6,leder:4},{gold:1400,knochen:6},{gold:3000,kristall:4},{gold:5500,glut:4}],d:['Wächst pro geschafftem Raum: Schleimkerne','Auch Leder','Auch Heiltränke','Auch Seelenkristalle','Doppelte Ernte']}

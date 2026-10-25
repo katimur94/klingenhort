@@ -59,8 +59,8 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     P.act = 9; M().eggs = []; Math.random = () => .04; petKill({ xp: 1, x: 0, y: 0, boss: true }); Math.random = R; o.bossEgg = M().eggs.length === 1;
     M().eggs = []; Math.random = () => .06; petKill({ xp: 1, x: 0, y: 0, boss: true }); Math.random = R; o.bossNoEgg = M().eggs.length === 0;
     // Drachentruhe im Glückstempel: 10 % Ei
-    P.fate = 99; SAVE.meta.hide.b.tempel = 1; M().eggs = []; Math.random = () => .02; try { openChestLuck('drache'); } finally { Math.random = R; } o.chestEgg = M().eggs.length === 1 && panel.textContent.includes('Begleiter-Ei');
-    M().eggs = []; Math.random = () => .5; try { openChestLuck('drache'); } finally { Math.random = R; } o.chestNoEgg = M().eggs.length === 0;
+    P.fate = 99; SAVE.meta.hide.b.tempel = 1; M().eggs = []; Math.random = () => .02; try { openChestLuck('drache'); } finally { Math.random = R; } ON.rollskip(); o.chestEgg = M().eggs.length === 1 && panel.textContent.includes('Begleiter-Ei');
+    M().eggs = []; Math.random = () => .5; try { openChestLuck('drache'); } finally { Math.random = R; } ON.rollskip(); o.chestNoEgg = M().eggs.length === 0;
     // Tausch: Export entfernt, Import fügt hinzu (neue id), Eier, Fehler
     const cnt = M().list.length, d = petExport(0), id0 = d && M().list.every(x => x.sp !== 'drache' || x.lv !== 100);
     o.exp = !!d && d.sp === 'drache' && M().list.length === cnt - 1 && id0 && !!petLabel(d) && petIconURL(d).startsWith('data:image');

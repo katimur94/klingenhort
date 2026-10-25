@@ -30,9 +30,12 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
       if (row === 6) xp += 60 * S.rm * 8;
       while (lv < 50 && xp >= xpNext(lv)) { xp -= xpNext(lv); lv++; }
     }
-    o.lv8 = lv; o.pow50 = lvPow(50);
+    o.lv8 = lv; o.pow50 = lvPow(50); G = null; setState('menu'); // Rechen-Räume wieder weg
     const cnt = [0, 0, 0, 0, 0, 0, 0]; for (let i = 0; i < 20000; i++) cnt[randomItem(10, 0).rar]++;
     o.leg = cnt[4] / 200; o.rarePlus = (cnt[2] + cnt[3] + cnt[4] + cnt[5]) / 200;
+    // Glücksrolle (5.0.1): reiner Zufall, keine Garantie; die Rolle zeigt den gezogenen Gewinn
+    const wc = {}; for (let i = 0; i < 20000; i++) { const k = wheelPick(); wc[k] = (wc[k] || 0) + 1; } o.myth = wc.myth / 200;
+    SAVE.meta.luck.pityM = 79; SAVE.meta.luck.pityL = 99; let forced = 0; for (let i = 0; i < 40; i++) if (wheelPick() === 'myth') forced++; o.noPity = forced < 4;
     return o;
   });
   ok(r.sameWeek && r.nextWeek, 'Wochen-Ereignis wechselt montags');
@@ -45,6 +48,15 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
   ok(r.lv8 >= 20 && r.lv8 <= 28, `nach der Geschichte (Akt 8) Level ${r.lv8}: Talente noch nicht voll (20–28 erwartet)`);
   ok(Math.abs(r.pow50 - 49) < 1, 'Level 50 bleibt so stark wie früher');
   ok(r.leg < 1.5 && r.rarePlus < 25, `Beute: ${r.leg} % Legendär, ${r.rarePlus.toFixed(1)} % Selten oder besser`);
+  ok(r.myth > .15 && r.myth < .8 && r.noPity, `Glücksrolle: Mythisch ${r.myth.toFixed(2)} % – reiner Zufall, keine Garantie`);
+  const roll = await page.evaluate(async () => {
+    SAVE.meta.pets.starter = true; P.fate = 5; P.map = genMap(2); enterHideout(); openStation('tempel'); const free = !!freeSpin(); doSpin();
+    const during = !!document.querySelector('#roll.spin'), fateAfter = P.fate + (free ? 1 : 0); // Gratis-Dreh (Glückswoche) kostet nichts
+    ON.rollskip(); // sofort überspringen: auch dann richtig stehen
+    const box = $('roll').getBoundingClientRect(), mid = box.left + box.width / 2, w = document.querySelector('#roll .tile.win'), wr = w && w.getBoundingClientRect();
+    return { during, paid: fateAfter === 4, onWin: !!wr && wr.left <= mid && wr.right >= mid, res: !!panel.querySelector('.rollres') };
+  });
+  ok(roll.during && roll.paid && roll.onWin && roll.res, 'Glücksrolle: dreht, bleibt auf dem Gewinn stehen, Gewinn wird angezeigt' + (roll.during && roll.paid && roll.onWin && roll.res ? '' : ' ' + JSON.stringify(roll)));
   ok(!errs.length, 'keine Fehler im Spiel' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
   await b.close();
   process.exit(fails.length ? 1 : 0);
