@@ -284,13 +284,17 @@ function drawHeadgear(g, ox, oy, m, kind, helm) {
 }
 
 /* ---------- Weltkarte ---------- */
+// MAPV: Karte im Hochformat senkrecht – der Weg führt von unten nach oben
+let MAPV = false;
+function mapStart() { return MAPV ? [50, 97] : [3, 50]; }
 function nodePos(M, r, i) {
   const n = M.rows[r].length, h1 = ((r * 73 + i * 151 + M.act * 37) % 97) / 97, h2 = ((r * 41 + i * 89 + M.act * 13) % 89) / 89;
-  return [(r + .5) / 7 * 100 + (h1 - .5) * 5, n === 1 ? 50 : clamp((i + .5) / n * 100 + (h2 - .5) * (50 / n), 12, 88)];
+  const a = (r + .5) / 7 * 100 + (h1 - .5) * 5, b = n === 1 ? 50 : clamp((i + .5) / n * 100 + (h2 - .5) * (50 / n), 12, 88);
+  return MAPV ? [b, 100 - a] : [a, b];
 }
 const MAPBG = {};
 function mapArt(M, W, H) {
-  const k = M.act + ':' + (P.created % 9973) + ':' + P.rebirths + ':' + W + 'x' + H; if (MAPBG[k]) return MAPBG[k];
+  const k = M.act + ':' + (P.created % 9973) + ':' + P.rebirths + ':' + W + 'x' + H + (MAPV ? 'v' : ''); if (MAPBG[k]) return MAPBG[k];
   const b = biomeOf(M.act), R = mulberry(M.act * 7919 + (P.created % 9973) + P.rebirths * 31), cols = b.map;
   const c = mk(W, H), g = c.getContext('2d'), d = g.createImageData(W, H), p = d.data, rgb = cols.map(hexRgb);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const r = R(), ci = r < .72 ? 0 : r < .86 ? 1 : r < .97 ? 2 : 3, i = (y * W + x) * 4; [p[i], p[i + 1], p[i + 2]] = rgb[ci]; p[i + 3] = 255; }

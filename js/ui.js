@@ -17,8 +17,24 @@ let returnTo = null;
 document.head.insertAdjacentHTML('beforeend', '<style>@keyframes idle4{from{background-position-x:0}to{background-position-x:var(--to)}}</style>');
 
 /* ---------- Helfer für Menüs ---------- */
-function showOverlay(html, wide) { panel.className = 'panel' + (wide ? ' wide' : ''); panel.innerHTML = html; ov.hidden = false; panel.scrollTop = 0; const f = panel.querySelector('.btn:not(:disabled)'); if (f && !isTouch) f.focus({ preventScroll: true }); }
-function hideOverlay() { ov.hidden = true; }
+// Gleicher Bildschirm (Titel und Reiter unverändert): Scroll-Position behalten, sonst nach oben
+let ovKey = '';
+function showOverlay(html, wide) {
+  const was = ov.hidden ? null : panel.scrollTop;
+  panel.className = 'panel' + (wide ? ' wide' : ''); panel.innerHTML = html; ov.hidden = false;
+  const h = panel.querySelector('h1,h2'), t = panel.querySelector('.tab[aria-selected="true"]'), key = (h ? h.textContent : '') + '|' + (t ? t.textContent : '');
+  panel.scrollTop = key === ovKey && was != null ? was : 0; ovKey = key;
+  fitPanel();
+  const f = panel.querySelector('.btn:not(:disabled)'); if (f && !isTouch) f.focus({ preventScroll: true });
+}
+function hideOverlay() { ov.hidden = true; ovKey = ''; }
+// Maße für klebende Kopf-/Fußleiste und die Detail-Spalte (siehe .split im CSS)
+function fitPanel() {
+  if (ov.hidden) return;
+  const pt = parseFloat(getComputedStyle(panel).paddingTop) || 0, h = panel.querySelector(':scope > .head:first-child'), f = panel.querySelector(':scope > .foot');
+  const hh = h ? h.offsetHeight - pt + 6 : 0, fh = f ? f.offsetHeight - pt + 6 : 0;
+  panel.style.setProperty('--stt', (hh + 6) + 'px'); panel.style.setProperty('--stb', (fh + 4) + 'px'); panel.style.setProperty('--sth', Math.max(140, panel.clientHeight - hh - fh - 14) + 'px');
+}
 /* Animiertes Heldenbild mit Umhang, Flügeln und Kopfschmuck (4 Bilder Ruhe-Animation) */
 const HPCACHE = {};
 function heroPreviewURL(c) {
@@ -129,23 +145,29 @@ function showTitle() {
   let chars = '';
   SAVE.chars.forEach((c, i) => {
     const C = CLASSES[c.cls];
-    chars += `<div class="cardrow">${heroHTML(c, 1.4)}<div><div style="font-size:21px">${esc(c.name)} ${c.hc ? '<span class="pill hc">HC</span>' : ''}</div><div style="font-size:16px;color:var(--parch-dim)">${C.name} · LV ${c.lv}${c.paragon ? ' · P' + c.paragon : ''} · Akt ${c.act}${qualOf(c.act) ? ' (Qual ' + qualOf(c.act) + ')' : ''} · ${DIFFS[c.diff].n}${c.rebirths ? ' · ★' + c.rebirths : ''}</div></div><div class="acts">${confirmDel === i ? `<button class="btn red sm" data-act="delok" data-i="${i}">Löschen!</button><button class="btn alt sm" data-act="delno">Nein</button>` : `<button class="btn sm" data-act="play" data-i="${i}">Spielen</button><button class="btn alt sm" data-act="delchar" data-i="${i}" aria-label="Löschen">✕</button>`}</div></div>`;
+    chars += `<div class="cardrow">${heroHTML(c, 1.4)}<div><div style="font-size:21px">${esc(c.name)} ${c.hc ? '<span class="pill hc">HC</span>' : ''}</div><div style="font-size:16px;color:var(--parch-dim)">${C.name} · LV ${c.lv}${c.paragon ? ' · P' + c.paragon : ''} · Akt ${c.act}${qualOf(c.act) ? ' (Qual ' + qualOf(c.act) + ')' : ''} · ${DIFFS[c.diff].n}${c.rebirths ? ' · ★' + c.rebirths : ''}</div></div><div class="acts">${confirmDel === i ? `<button class="btn red sm" data-act="delok" data-i="${i}">Löschen!</button><button class="btn alt sm" data-act="delno">Nein</button>` : `<button class="btn sm" data-act="play" data-i="${i}">Spielen</button><button class="btn alt sm" data-act="delchar" data-i="${i}" aria-label="Löschen"><span class="x">×</span></button>`}</div></div>`;
   });
-  showOverlay(`<h1 class="logo">KLINGEN<br>HORT</h1>
+  const N = CHANGELOG[0], fresh = newsUnseen();
+  showOverlay(`<div class="tgrid"><div><h1 class="logo">KLINGEN<br>HORT</h1>
   <p class="tag">Der Uralte Drache hat das Weltenfeuer gestohlen. Bau dein Versteck wieder auf, schmiede Klingen aus Mithril, Adamant und Drachenschuppen – und hol dir zurück, was dem Orden gehört.</p>
-  ${chars ? '<h3>DEINE HELDEN</h3>' + chars : ''}
+  <button class="newsteaser" data-act="news"><b>NEU IN ${N.v}${fresh ? '<span class="badge">NEU</span>' : ''}</b>${esc(N.t)}: ${esc(N.items[0][1])} <span style="color:var(--gold)">Alle Neuigkeiten ›</span></button></div>
+  <div>${chars ? '<h3 style="margin-top:0">DEINE HELDEN</h3>' + chars : ''}
   <div class="menu two" style="margin-top:10px">
     <button class="btn" data-act="new">Neuer Held</button>
     <button class="btn alt" data-act="daily" ${SAVE.active >= 0 || SAVE.chars.length ? '' : 'disabled'}>Tages-Challenge</button>
+    <button class="btn alt" data-act="news">Neuigkeiten${fresh ? '<span class="badge">NEU</span>' : ''}</button>
     <button class="btn alt" data-act="ach">Erfolge</button>
     <button class="btn alt" data-act="best">Bestiarium</button>
     <button class="btn alt" data-act="hall">Ruhmeshalle</button>
     <button class="btn alt" data-act="code">Spielstand übertragen</button>
     <button class="btn alt" data-act="settings">Einstellungen</button>
     ${installBtn()}
-  </div>
-  <div class="help">${HELP}</div>${CREDIT}<p class="credit">Version ${VERSION}</p>`);
+  </div></div></div>
+  <div class="help">${HELP}</div>${CREDIT}<p class="credit">Version ${VERSION}</p>`, true);
+  // Nach einem Update einmal die Neuigkeiten zeigen
+  if (fresh && SAVE.chars.length && !newsAuto) { newsAuto = true; showNews('title'); }
 }
+let newsAuto = false;
 
 /* ---------- Aussehen (Erstellung, Spiegel, Charakter) ---------- */
 let LK = null, lkMode = 'create';
@@ -186,12 +208,12 @@ function showCreate() {
   <h3>NAME</h3><input type="text" id="cname" maxlength="16" placeholder="${C.name}" value="${esc(CS.name)}">
   <h3>SCHWIERIGKEIT</h3><div class="opts">${df}</div>
   <div class="opts"><button class="opt${CS.hc ? ' sel' : ''}" data-act="chc">HARDCORE ${CS.hc ? 'AN' : 'AUS'}<small>Ein Tod löscht den Helden. Dafür Ruhm in der Ruhmeshalle.</small></button></div>
-  <div class="menu"><button class="btn" data-act="cstart">Abenteuer beginnen</button></div>`, true);
+  <div class="menu foot"><button class="btn" data-act="cstart">Abenteuer beginnen</button></div>`, true);
 }
 function openMirror() { lkMode = 'mirror'; stationShell('spiegel', `<p class="sub">Der Spiegel zeigt, wer du sein willst. Änderungen sind kostenlos.</p>${lookEditorHTML()}`, true); }
 
 /* ---------- Weltkarte ---------- */
-let mapSel = -1;
+let mapSel = -1, mapTapped = false;
 function openMap() {
   setState('map'); showHud(false); $('bossbar').hidden = true; G = null;
   if (!P.map || P.map.act !== P.act) { P.map = genMap(P.act); saveChar(); }
@@ -201,25 +223,32 @@ function openMap() {
     dialog(lines, openMap, A ? 'Akt ' + P.act + ': ' + A.t : 'Akt ' + P.act + ' · Qual ' + qualOf(P.act)); return;
   }
   const M = P.map, av = availableNodes(), b = biomeOf(P.act);
-  if (!av.includes(mapSel)) mapSel = av.length === 1 ? av[0] : -1;
+  MAPV = portrait();
+  if (!av.includes(mapSel)) { mapSel = av.length === 1 ? av[0] : -1; mapTapped = false; }
   let nodes = '';
   M.rows.forEach((row, r) => row.forEach((n, i) => {
     const [x, y] = nodePos(M, r, i), N = NODE[n.t], isAv = (M.pos.r + 1 === r) && av.includes(i), cur = M.pos.r === r && M.pos.i === i, fog = r > M.pos.r + 3;
     nodes += `<button class="node${isAv ? ' av' : ''}${n.done ? ' done' : ''}${cur ? ' cur' : ''}${!isAv && !n.done && !cur ? ' dim' : ''}${mapSel === i && isAv ? ' cur sel' : ''}${n.t === 'boss' ? ' boss' : ''}${fog ? ' fog' : ''}" style="left:${x}%;top:${y}%;--c:${N.c}" ${isAv ? `data-act="msel" data-i="${i}"` : 'tabindex="-1"'} aria-label="${N.n}"><img src="${iconURL(N.icon)}" alt=""></button>`;
   }));
-  const hp = M.pos.r >= 0 ? nodePos(M, M.pos.r, M.pos.i) : [3, 50];
-  const selN = mapSel >= 0 ? M.rows[M.pos.r + 1][mapSel] : null;
-  const legend = Object.keys(NODE).map(k => `<span><img src="${iconURL(NODE[k].icon)}" alt="">${NODE[k].n}</span>`).join('');
+  const hp = M.pos.r >= 0 ? nodePos(M, M.pos.r, M.pos.i) : mapStart();
+  const selN = mapSel >= 0 ? M.rows[M.pos.r + 1][mapSel] : null, [selX, selY] = selN ? nodePos(M, M.pos.r + 1, mapSel) : [0, 100];
   const A = ACTS[P.act - 1];
+  // Info zum gewählten Ort liegt auf der Karte, auf der Seite gegenüber dem Ort
+  const info = selN ? `<div class="mapinfo" style="--c:${NODE[selN.t].c};${selY > 50 ? 'bottom:auto;top:8px;' : ''}${selX < 50 ? 'left:auto;' : 'right:auto;'}"><img src="${iconURL(NODE[selN.t].icon)}" alt=""><div><div class="nm" style="color:${NODE[selN.t].c}">${NODE[selN.t].n}</div><div class="st">${NODE[selN.t].d} <span style="color:var(--gold)">${isTouch ? (mapTapped ? 'Nochmal antippen zum Betreten.' : 'Antippen zum Betreten.') : ''}</span></div></div></div>`
+    : `<div class="mapinfo" style="--c:var(--stone-hi);left:auto"><div class="st">Wähle den nächsten Ort – die leuchtenden Punkte.</div></div>`;
   showOverlay(`<div class="head"><h2>AKT ${P.act} · ${b.name.toUpperCase()}${qualOf(P.act) ? ' · QUAL ' + qualOf(P.act) : ''}</h2><div class="gold"><i class="coin"></i>${fmt(P.gold)} <span style="color:#ffd24a"><i class="fc"></i>${P.fate || 0}</span></div></div>
-  ${A ? `<p class="sub" style="margin:0 0 6px">${esc(A.t)}</p>` : ''}
-  <div class="stats"><span>${esc(P.name)} · ${CLASSES[P.cls].name}</span><span>LV ${P.lv}${P.paragon ? ' · P' + P.paragon : ''}</span><span>LP ${Math.ceil(P.hp)}/${P.st.hp}</span><span>TRÄNKE ${P.potions}</span>${P.sp ? `<span style="color:var(--gold)">${P.sp} TALENTPUNKT${P.sp > 1 ? 'E' : ''}</span>` : ''}${P.buffs.map(b => `<span style="color:var(--rune)">${b.n} (${b.rooms})</span>`).join('')}</div>
-  <div class="mapwrap"><canvas id="mapcv" width="320" height="150"></canvas>${nodes}<div class="hero" style="left:${hp[0]}%;top:${hp[1]}%">${heroHTML(P, 1.3)}</div></div>
-  ${selN ? `<div class="detail"><div style="display:flex;gap:10px;align-items:center"><img class="px" src="${iconURL(NODE[selN.t].icon)}" alt="" style="width:32px;height:32px;object-fit:contain"><div><div class="nm" style="color:${NODE[selN.t].c}">${NODE[selN.t].n}</div><div style="font-size:17px">${NODE[selN.t].d}</div></div></div><div class="acts" style="justify-content:flex-start;margin-top:8px"><button class="btn" data-act="enter">Betreten</button></div></div>` : `<p class="sub">Wähle den nächsten Ort auf der Karte – die leuchtenden Punkte.</p>`}
-  <div class="menu two"><button class="btn" data-act="hide">Versteck${hideReady() ? ' (!)' : ''}</button><button class="btn alt" data-act="char">Charakter${P.sp ? ' (' + P.sp + ')' : ''}</button><button class="btn alt" data-act="daily">Tages-Challenge</button><button class="btn alt" data-act="title">Hauptmenü</button></div>
-  <details class="legend"><summary>Legende</summary><div>${legend}</div></details>`, true);
+  <div class="stats">${A ? `<span style="color:var(--rune)">${esc(A.t)}</span>` : ''}<span>LV ${P.lv}${P.paragon ? ' · P' + P.paragon : ''}</span><span>LP ${Math.ceil(P.hp)}/${P.st.hp}</span><span>TRÄNKE ${P.potions}</span>${P.sp ? `<span style="color:var(--gold)">${P.sp} TALENTPUNKT${P.sp > 1 ? 'E' : ''}</span>` : ''}${P.buffs.map(b => `<span style="color:var(--rune)">${b.n} (${b.rooms})</span>`).join('')}</div>
+  <div class="mapwrap"><canvas id="mapcv" width="320" height="150"></canvas>${nodes}<div class="hero" style="left:${hp[0]}%;top:${hp[1]}%">${heroHTML(P, 1.3)}</div>${info}</div>
+  <div class="menu foot row">${selN ? `<button class="btn wide" data-act="enter">Betreten</button>` : ''}<button class="btn${selN ? ' alt' : ''}" data-act="hide">Versteck${hideReady() ? ' (!)' : ''}</button><button class="btn alt" data-act="char">Charakter${P.sp ? ' (' + P.sp + ')' : ''}</button><button class="btn alt" data-act="mapmore">Mehr</button></div>`, true);
   drawMapCanvas(M, av);
   checkAch();
+}
+// Seltener gebrauchte Kartenaktionen und die Legende
+function showMapMore() {
+  const legend = Object.keys(NODE).map(k => `<span><img src="${iconURL(NODE[k].icon)}" alt="">${NODE[k].n}</span>`).join('');
+  showOverlay(`<div class="head"><h2>AKT ${P.act}</h2><div class="hbtns"><button class="btn alt sm" data-act="tomapview">Zurück</button></div></div>
+  <div class="menu two"><button class="btn alt" data-act="daily">Tages-Challenge</button><button class="btn alt" data-act="news" data-id="map">Neuigkeiten</button><button class="btn alt" data-act="title">Speichern & Hauptmenü</button></div>
+  <h3>LEGENDE</h3><div class="legend open">${legend}</div>`);
 }
 function hideReady() { return minePending('mine') > 0 || minePending('garden') > 0 || BUILDORDER.some(k => { const c = buildCost(k); return c && !BUILD[k].fixed && canAfford(c.mats, c.gold); }); }
 function drawMapCanvas(M, av) {
@@ -229,7 +258,7 @@ function drawMapCanvas(M, av) {
   cv.width = Math.max(160, Math.round(box.width / px_)); cv.height = Math.max(80, Math.round(box.height / px_));
   const W = cv.width, H = cv.height, g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
   g.drawImage(mapArt(M, W, H), 0, 0);
-  const P2 = (r, i) => { const [x, y] = r < 0 ? [3, 50] : nodePos(M, r, i); return [x / 100 * W, y / 100 * H]; };
+  const P2 = (r, i) => { const [x, y] = r < 0 ? mapStart() : nodePos(M, r, i); return [x / 100 * W, y / 100 * H]; };
   const path = (a, b, col, big, seed) => {
     const [x0, y0] = a, [x1, y1] = b, mx = (x0 + x1) / 2, my = (y0 + y1) / 2, l = Math.hypot(x1 - x0, y1 - y0) || 1, off = ((seed % 9) - 4) * 2.2, cx = mx - (y1 - y0) / l * off, cy = my + (x1 - x0) / l * off, n = Math.ceil(l / 2.5);
     g.fillStyle = col;
@@ -241,7 +270,8 @@ function drawMapCanvas(M, av) {
   } }));
   if (M.pos.r < 0) M.rows[0].forEach((n, i) => path(P2(-1, 0), P2(0, i), '#fff3c0', true, i * 5));
   const fogFrom = M.pos.r + 4;
-  if (fogFrom < 7) { const x0 = (fogFrom) / 7 * W - 12; const gr = g.createLinearGradient(x0, 0, x0 + 30, 0); gr.addColorStop(0, 'rgba(14,10,20,0)'); gr.addColorStop(1, 'rgba(14,10,20,.55)'); g.fillStyle = gr; g.fillRect(x0, 0, W - x0, H); }
+  if (fogFrom < 7 && !MAPV) { const x0 = (fogFrom) / 7 * W - 12; const gr = g.createLinearGradient(x0, 0, x0 + 30, 0); gr.addColorStop(0, 'rgba(14,10,20,0)'); gr.addColorStop(1, 'rgba(14,10,20,.55)'); g.fillStyle = gr; g.fillRect(x0, 0, W - x0, H); }
+  else if (fogFrom < 7) { const y0 = H - fogFrom / 7 * H + 12; const gr = g.createLinearGradient(0, y0, 0, y0 - 30); gr.addColorStop(0, 'rgba(14,10,20,0)'); gr.addColorStop(1, 'rgba(14,10,20,.55)'); g.fillStyle = gr; g.fillRect(0, 0, W, y0); }
 }
 function openActScreen() {
   setState('menu'); showHud(false);
@@ -263,11 +293,12 @@ function openChar(tab, back) {
     const sel = selItem && findItem(selItem);
     let gear = ''; for (const s of ['weapon', 'armor', 'helm']) { const it = P.gear[s]; gear += `<div class="gearslot"><div style="font-size:14px;color:var(--parch-dim)">${s === 'weapon' ? 'Waffe' : AR[s].label}</div>${it ? itemSlot(it, 'isel', sel && sel.it === it) : ''}</div>`; }
     const sets = {}; for (const s of ['weapon', 'armor', 'helm']) { const it = P.gear[s]; if (it && it.set) sets[it.set] = (sets[it.set] || 0) + 1; }
-    body = `<div class="cols"><div class="box"><div style="display:flex;gap:12px;align-items:center">${heroHTML(P, 2.4)}<div class="stats" style="flex:1"><span>SCH ${Math.round(st.wbase * st.dmgMul)}</span><span>LP ${st.hp}</span><span>VER ${Math.round(st.def)}</span><span>KRIT ${pct(st.crit)}</span><span>KRIT-SCH ${pct(st.critdmg)}</span><span>TEMPO ${(1 / st.cd).toFixed(1)}/s</span>${st.dr ? `<span>MINDERUNG ${pct(st.dr)}</span>` : ''}${st.dodge ? `<span>AUSWEICHEN ${pct(st.dodge)}</span>` : ''}${st.regen ? `<span>REGEN ${st.regen.toFixed(1)}</span>` : ''}${st.leech ? `<span>LEBENSRAUB ${pct(st.leech)}</span>` : ''}${st.gold ? `<span>GOLD +${pct(st.gold)}</span>` : ''}${st.m.xp ? `<span>EP +${pct(st.m.xp)}</span>` : ''}</div></div>
+    const side = sel ? `<div class="side sheet"><button class="btn alt sm sheetx" data-act="isel" data-id="" aria-label="Schließen"><span class="x">×</span></button>${itemDetail(sel.it, sel.eq ? '' : `${canEquip(sel.it) ? `<button class="btn sm" data-act="equip" data-id="${sel.it.uid}">Anlegen</button>` : ''}<button class="btn alt sm" data-act="sell" data-id="${sel.it.uid}">Verkaufen <i class="coin"></i>${itemPrice(sel.it)}</button>`)}${sel.eq ? '' : compareHTML(sel.it)}</div>`
+      : `<div class="side"><p class="sub" style="margin-top:0">Tippe einen Gegenstand an, um Details, Vergleich und Aktionen zu sehen.</p></div>`;
+    body = `<div class="split"><div><div class="box"><div style="display:flex;gap:12px;align-items:center">${heroHTML(P, 2.4)}<div class="stats" style="flex:1"><span>SCH ${Math.round(st.wbase * st.dmgMul)}</span><span>LP ${st.hp}</span><span>VER ${Math.round(st.def)}</span><span>KRIT ${pct(st.crit)}</span><span>KRIT-SCH ${pct(st.critdmg)}</span><span>TEMPO ${(1 / st.cd).toFixed(1)}/s</span>${st.dr ? `<span>MINDERUNG ${pct(st.dr)}</span>` : ''}${st.dodge ? `<span>AUSWEICHEN ${pct(st.dodge)}</span>` : ''}${st.regen ? `<span>REGEN ${st.regen.toFixed(1)}</span>` : ''}${st.leech ? `<span>LEBENSRAUB ${pct(st.leech)}</span>` : ''}${st.gold ? `<span>GOLD +${pct(st.gold)}</span>` : ''}${st.m.xp ? `<span>EP +${pct(st.m.xp)}</span>` : ''}</div></div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px">${gear}</div>
       ${Object.keys(sets).map(k => `<p style="font-size:16px;color:#4ade80;margin:8px 0 0">${SETS[k].n} ${sets[k]}/3 – ${sets[k] >= 2 ? SETS[k].d2 : ''}${sets[k] >= 3 ? ' · ' + SETS[k].d3 : ''}</p>`).join('')}</div>
-      <div class="box"><h3 style="margin-top:0">BEUTEL ${P.bag.length}/30</h3><div class="grid">${P.bag.map(it => itemSlot(it, 'isel', sel && sel.it === it)).join('') || '<p class="sub">Leer</p>'}</div></div></div>
-      ${sel ? itemDetail(sel.it, sel.eq ? '' : `${canEquip(sel.it) ? `<button class="btn sm" data-act="equip" data-id="${sel.it.uid}">Anlegen</button>` : ''}<button class="btn alt sm" data-act="sell" data-id="${sel.it.uid}">Verkaufen <i class="coin"></i>${itemPrice(sel.it)}</button>`) + (sel.eq ? '' : compareHTML(sel.it)) : '<p class="sub">Tippe einen Gegenstand an, um Details zu sehen.</p>'}`;
+      <div class="box" style="margin-top:10px"><h3 style="margin-top:0">BEUTEL ${P.bag.length}/30</h3><div class="grid">${P.bag.map(it => itemSlot(it, 'isel', sel && sel.it === it)).join('') || '<p class="sub">Leer</p>'}</div></div></div>${side}</div>`;
   } else if (charTab === 'tal') {
     body = `<div class="head"><p class="sub" style="margin:0">Freie Punkte: <b style="color:var(--gold)">${P.sp}</b> · 1 Punkt pro Level</p><button class="btn alt sm" data-act="respec" ${spentPoints() ? '' : 'disabled'}>Zurücksetzen (${respecCost()} Gold)</button></div><div class="tree">`;
     TALENTS[P.cls].forEach(([bn, nodes], bi) => {
@@ -290,10 +321,10 @@ function openChar(tab, back) {
     <h3>WIEDERGEBURT</h3><p class="sub">Ab Level 50 und Akt 5: zurück auf Level 1 und Akt 1. Ausrüstung, Materialien, Gold und Paragon bleiben. Dauerhaft +10 % Schaden und LP pro Wiedergeburt und eine goldene Aura. Bisher: ${P.rebirths}.</p>
     <button class="btn red" data-act="rebirth" ${P.lv >= 50 && P.maxAct >= 5 ? '' : 'disabled'}>Wiedergeburt</button>`;
   }
-  showOverlay(`<div class="head"><h2>${esc(P.name).toUpperCase()}</h2><div class="gold"><i class="coin"></i>${fmt(P.gold)} <span style="color:#ffd24a"><i class="fc"></i>${P.fate || 0}</span></div></div>
+  showOverlay(`<div class="head"><h2>${esc(P.name).toUpperCase()}</h2><div class="hbtns"><div class="gold"><i class="coin"></i>${fmt(P.gold)} <span style="color:#ffd24a"><i class="fc"></i>${P.fate || 0}</span></div><button class="btn alt sm" data-act="cback">Zurück</button></div></div>
   <div class="stats"><span>${C.name}</span><span>LV ${P.lv}</span><span>EP ${fmt(P.xp)}/${fmt(xpNext(P.lv))}</span><span>${DIFFS[P.diff].n}${P.hc ? ' · HARDCORE' : ''}</span><span>KILLS ${fmt(P.stats.kills)}</span></div>
   <div class="tabs" role="tablist">${tab_('gear', 'AUSRÜSTUNG')}${tab_('tal', 'TALENTE' + (P.sp ? ' (' + P.sp + ')' : ''))}${tab_('vorrat', 'VORRAT')}${tab_('look', 'AUSSEHEN')}${tab_('para', 'PARAGON')}</div>
-  ${body}<div class="menu" style="margin-top:12px"><button class="btn" data-act="cback">Zurück</button></div>`, true);
+  ${body}`, true);
 }
 /* Vergleich mit dem angelegten Gegenstand */
 function compareHTML(it) {
@@ -323,22 +354,23 @@ function openWorkbench(mode) {
   let body = '';
   if (wbTab === 'up') {
     const c = it.up < 10 ? upCost(it, it.up + 1) : null;
-    body = list + itemDetail(it, '') + (c ? `<h3>AUFWERTEN AUF +${it.up + 1}</h3>${costHTML(c.mats, c.gold)}<p class="sub">Erfolgschance: <b style="color:${c.chance < 1 ? 'var(--gold)' : 'var(--moss)'}">${Math.round(c.chance * 100)} %</b>${wbFree ? ' (Werkbank-Bonus +5 %)' : ''}. Bei Misserfolg sind die Materialien weg, der Gegenstand bleibt. Ab +5 leuchtet deine Ausrüstung, ab +8 bekommt sie eine Aura.</p><button class="btn" data-act="up" ${canAfford(c.mats, c.gold) ? '' : 'disabled'}>Aufwerten</button>` : '<p class="sub">Maximal aufgewertet.</p>');
+    body = `<div class="split"><div>${list}</div><div class="side sheet">${c ? `<h3>AUFWERTEN AUF +${it.up + 1}</h3>${costHTML(c.mats, c.gold)}<button class="btn" data-act="up" ${canAfford(c.mats, c.gold) ? '' : 'disabled'}>Aufwerten · ${Math.round(c.chance * 100)} %</button><p class="sub">Erfolgschance: <b style="color:${c.chance < 1 ? 'var(--gold)' : 'var(--moss)'}">${Math.round(c.chance * 100)} %</b>${wbFree ? ' (Werkbank-Bonus +5 %)' : ''}. Bei Misserfolg sind die Materialien weg, der Gegenstand bleibt. Ab +5 leuchtet deine Ausrüstung, ab +8 bekommt sie eine Aura.</p>` : '<p class="sub">Maximal aufgewertet.</p>'}${itemDetail(it, '')}</div></div>`;
   } else if (wbTab === 'fuse') {
     const A = fuseA && findItem(fuseA) ? findItem(fuseA).it : null, Bf = fuseB && findItem(fuseB) ? findItem(fuseB).it : null, err = fuseCheck(A, Bf);
+    let side = '';
     body = `<p class="sub">Verschmelze zwei Gegenstände derselben Art. Der <b style="color:var(--gold)">Hauptgegenstand</b> behält Aussehen und Namen, das <b style="color:var(--blood)">Opfer</b> vergeht. Ergebnis: höchste Stufe und Aufwertung, die besten Zusatzwerte beider, einen Zusatzwert mehr, +6 % Grundwerte – und vielleicht eine höhere Seltenheit.</p>
     <div class="grid" style="margin-bottom:8px">${all.map(x => `<button class="slot${x === A ? ' fa' : x === Bf ? ' fb' : ''}" data-act="fsel" data-id="${x.uid}" style="box-shadow:inset 0 0 0 2px ${itemColor(x)}${x === A ? ',0 0 0 3px #e8b04a' : x === Bf ? ',0 0 0 3px #c8463c' : ''};${A && !Bf && x !== A && (x.slot !== A.slot || !P.bag.includes(x)) ? 'opacity:.35' : ''}" aria-label="${esc(itemName(x))}"><img src="${itemIconURL(x)}" alt="">${x === A ? '<span class="u">HAUPT</span>' : x === Bf ? '<span class="u" style="color:#ff6a5a">OPFER</span>' : x.fz ? `<span class="n">★${x.fz}</span>` : ''}</button>`).join('')}</div>`;
-    if (A) body += itemDetail(A, '');
-    if (Bf) body += itemDetail(Bf, '');
-    if (err) body += `<p class="sub" style="color:var(--gold)">${esc(err)}</p>${A ? '<button class="btn alt sm" data-act="freset">Auswahl zurücksetzen</button>' : ''}`;
-    else { const R = fusePreview(A, Bf), ch = fuseChance(A, Bf), c = fuseCost(A, Bf); body += `<h3>ERGEBNIS</h3>${itemDetail(R, '')}${ch > 0 && ch < 1 ? `<p class="sub">Dazu <b style="color:var(--rune)">${Math.round(ch * 100)} % Chance</b> auf ${A.rar === 4 ? '<b style="color:#ff4fd8">MYTHISCH</b>' : RAR[A.rar + 1].n} mit einem weiteren Zusatzwert.${Bf.gems.length ? ' Edelsteine des Opfers kommen zurück in den Vorrat.' : ''}</p>` : ''}${costHTML(c.mats, c.gold)}<div class="acts" style="justify-content:flex-start"><button class="btn" data-act="fuse" ${canAfford(c.mats, c.gold) ? '' : 'disabled'}>Verschmelzen</button><button class="btn alt sm" data-act="freset">Neu wählen</button></div>`; }
+    const mini = (x, l, col) => `<div class="row" style="cursor:default"><div class="ic" style="box-shadow:inset 0 0 0 2px ${col}"><img src="${itemIconURL(x)}" alt=""></div><div><div class="st" style="margin:0">${l}</div><div class="nm" style="color:${itemColor(x)}">${esc(itemName(x))}</div></div><span></span></div>`;
+    if (err) side += `${A ? itemDetail(A, '') : ''}<p class="sub" style="color:var(--gold)">${esc(err)}</p>${A ? '<button class="btn alt sm" data-act="freset">Auswahl zurücksetzen</button>' : ''}`;
+    else { const R = fusePreview(A, Bf), ch = fuseChance(A, Bf), c = fuseCost(A, Bf); side += `<h3 style="margin-top:0">ERGEBNIS</h3>${costHTML(c.mats, c.gold)}<div class="acts" style="justify-content:flex-start"><button class="btn" data-act="fuse" ${canAfford(c.mats, c.gold) ? '' : 'disabled'}>Verschmelzen</button><button class="btn alt sm" data-act="freset">Neu wählen</button></div>${ch > 0 && ch < 1 ? `<p class="sub">Dazu <b style="color:var(--rune)">${Math.round(ch * 100)} % Chance</b> auf ${A.rar === 4 ? '<b style="color:#ff4fd8">MYTHISCH</b>' : RAR[A.rar + 1].n} mit einem weiteren Zusatzwert.${Bf.gems.length ? ' Edelsteine des Opfers kommen zurück in den Vorrat.' : ''}</p>` : ''}${itemDetail(R, '')}${mini(A, 'HAUPTGEGENSTAND', '#e8b04a')}${mini(Bf, 'OPFER – VERGEHT', '#c8463c')}`; }
+    body = `<div class="split"><div>${body}</div><div class="side${A ? ' sheet' : ''}">${side}</div></div>`;
   } else if (wbTab === 'forge') {
     body = `<p class="sub">Schmiede einen magischen Gegenstand aus einem bestimmten Material – garantiert in dieser Stufe, mit zufälliger Form.${hideLv('schmiede') >= 2 ? ' Schmiede-Rabatt aktiv.' : ''}</p><div class="opts">${['weapon', 'armor', 'helm'].map(s => `<button class="opt${forgeSlot === s ? ' sel' : ''}" data-act="fslot" data-id="${s}">${s === 'weapon' ? 'Waffe' : AR[s].label}</button>`).join('')}</div>`;
     body += MAT.map((M, t) => { const c = forgeCost(t, forgeSlot), ok = forgeOk(t), sample = forgeSlot === 'weapon' ? weaponArt({ slot: 'weapon', base: P.gear.weapon.base, form: wform(P.gear.weapon).id, tier: t, rar: 1, aff: {}, gems: [] }).c : armorArt({ slot: forgeSlot, base: forgeSlot, tier: t, rar: 1, aff: {}, gems: [] }, P.cls); return `<div class="row" style="cursor:default;${ok ? '' : 'opacity:.5'}"><div class="ic"><img src="${sample.toDataURL()}" alt=""></div><div><div class="nm" style="color:${M.m[2]}">${M.n}${forgeSlot !== 'weapon' ? ' · ' + CLASSES[P.cls].names[t][forgeSlot === 'armor' ? 0 : 1] : ''}</div><div class="st">Stufe ${t + 1}${ok ? '' : ' · ab Level ' + REQ[t]}</div>${costHTML(c.mats, c.gold)}</div><button class="btn sm" data-act="forge" data-i="${t}" ${ok && canAfford(c.mats, c.gold) ? '' : 'disabled'}>Schmieden</button></div>`; }).join('');
   } else if (wbTab === 'craft') {
     body = RECIPES.map(R => `<div class="row" style="cursor:default"><div class="ic"><img src="${iconURL(R.id === 'potion' ? ['s', 288, 336, 16, 16] : R.id === 'gem' ? ['gem', 'rubin', 1] : R.id === 'socket' ? ['gem', 'saphir', 3] : ['fx', 'sparks', 2])}" alt=""></div><div><div class="nm">${R.n}</div><div class="st">${R.d}${R.needItem ? ' – für: <b style="color:' + itemColor(it) + '">' + esc(itemName(it)) + '</b>' : ''}</div>${costHTML(R.cost, R.gold)}</div><button class="btn sm" data-act="craft" data-id="${R.id}" ${canAfford(R.cost, R.gold) ? '' : 'disabled'}>Herstellen</button></div>`).join('') + '<p class="sub">Für Umschmieden und Sockel bohren den Gegenstand im Reiter „Aufwerten“ oder „Sockel“ auswählen.</p>';
   } else if (wbTab === 'sock') {
-    body = list + itemDetail(it, it.gems.length ? `<button class="btn alt sm" data-act="unsock">Edelsteine entfernen (${40 + it.gems.length * 20} Gold)</button>` : '') + `<h3>EDELSTEIN EINSETZEN (${it.gems.length}/${it.sockets} Sockel)</h3>` + (it.sockets > it.gems.length ? gemListHTML('sock') : '<p class="sub">Keine freien Sockel – an der Werkbank kannst du welche bohren.</p>');
+    body = `<div class="split"><div>${list}</div><div class="side sheet">${itemDetail(it, it.gems.length ? `<button class="btn alt sm" data-act="unsock">Edelsteine entfernen (${40 + it.gems.length * 20} Gold)</button>` : '')}<h3>EDELSTEIN EINSETZEN (${it.gems.length}/${it.sockets} Sockel)</h3>${it.sockets > it.gems.length ? gemListHTML('sock') : '<p class="sub">Keine freien Sockel – an der Werkbank kannst du welche bohren.</p>'}</div></div>`;
   } else if (wbTab === 'gems') {
     body = `<p class="sub">Drei gleiche Edelsteine verschmelzen zu einem besseren.${hideLv('juwelier') >= 2 ? ' Juwelier-Rabatt aktiv.' : ''}</p>` + gemListHTML('comb');
   } else if (wbTab === 'trans') {
@@ -347,10 +379,10 @@ function openWorkbench(mode) {
     body = `<div style="display:flex;gap:16px;align-items:center;margin-bottom:10px">${heroHTML(P, 2.4)}<p class="sub">Farbstoffe färben deine Rüstung. „Material“ zeigt die echte Farbe von Mithril, Adamant, Drachen … Einmal freigeschaltet, kannst du jederzeit wechseln.</p></div>` + DYES.map(D => { const have = P.dyes.includes(D.id); return `<div class="row${P.dye === D.id ? ' sel' : ''}" style="cursor:default"><div class="ic">${heroHTML(Object.assign({}, P, { dye: D.id, look: P.look }), .9)}</div><div><div class="nm">${D.n}</div>${have ? '<div class="st">Freigeschaltet</div>' : costHTML(D.cost, 0)}</div><button class="btn sm" data-act="dye" data-id="${D.id}" ${have || hasMats(D.cost) ? '' : 'disabled'}>${P.dye === D.id ? 'Aktiv' : have ? 'Anlegen' : 'Freischalten'}</button></div>`; }).join('');
   }
   const title = wbMode === 'smith' ? 'SCHMIEDE' : wbMode === 'jewel' ? 'JUWELIER' : 'WERKBANK', npc = wbMode === 'smith' ? npcLine('schmiede') : wbMode === 'jewel' ? npcLine('juwelier') : '';
-  showOverlay(`<div class="head"><h2>${title}</h2><div class="gold"><i class="coin"></i>${fmt(P.gold)}</div></div>${npc}
+  showOverlay(`<div class="head"><h2>${title}</h2><div class="hbtns"><div class="gold"><i class="coin"></i>${fmt(P.gold)}</div><button class="btn ${wbMode === 'smith' || wbMode === 'jewel' ? 'alt ' : ''}sm" data-act="wbdone">${wbMode === 'smith' || wbMode === 'jewel' ? 'Zurück' : 'Weiter'}</button></div></div>${npc}
   <div class="cost" style="font-size:16px">${MATORDER.filter(k => P.mats[k]).map(k => `<span><img src="${iconURL(['mat', k])}" alt="${MATS[k].n}">${P.mats[k] || 0}</span>`).join('') || '<span>Keine Materialien</span>'}</div>
   <div class="tabs" role="tablist">${WB_TABS[wbMode].map(tab_).join('')}</div>
-  ${body}${wbMode === 'smith' ? buildHTML('schmiede') : wbMode === 'jewel' ? buildHTML('juwelier') : ''}<div class="menu" style="margin-top:12px"><button class="btn" data-act="wbdone">${wbMode === 'smith' || wbMode === 'jewel' ? 'Zurück' : 'Weiter'}</button></div>`, true);
+  ${body}${wbMode === 'smith' ? buildHTML('schmiede') : wbMode === 'jewel' ? buildHTML('juwelier') : ''}`, true);
 }
 
 /* ---------- Händler ---------- */
@@ -375,10 +407,10 @@ function openMerchant() {
   } else {
     body = P.bag.length ? P.bag.map(it => `<div class="row" style="cursor:default"><div class="ic"><img src="${itemIconURL(it)}" alt=""></div><div><div class="nm" style="color:${itemColor(it)}">${esc(itemName(it))}</div><div class="st">${itemLines(it).slice(0, 2).join(' · ')}</div></div><button class="btn sm" data-act="msell" data-id="${it.uid}"><i class="coin"></i>${itemPrice(it)}</button></div>`).join('') + `<button class="btn alt" data-act="sellall" style="width:100%;margin-top:6px">Alle Gewöhnlichen & Magischen verkaufen</button>` : '<p class="sub">Dein Beutel ist leer.</p>';
   }
-  showOverlay(`<div class="head"><h2>HÄNDLER BORIN</h2><div class="gold"><i class="coin"></i>${fmt(P.gold)}</div></div>
+  showOverlay(`<div class="head"><h2>HÄNDLER BORIN</h2><div class="hbtns"><div class="gold"><i class="coin"></i>${fmt(P.gold)}</div><button class="btn sm" data-act="mdone">Weiterziehen</button></div></div>
   <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px"><img class="px" src="${iconURL(['sp', 'dwarf'])}" alt="" style="width:48px;height:48px;object-fit:contain"><p class="sub" style="margin:0">„Mein Vetter. Gute Ware, faire Preise. Meistens.“</p></div>
   <div class="tabs" role="tablist">${tab_('buy', 'KAUFEN')}${tab_('sell', 'VERKAUFEN')}</div>${body}
-  <div class="menu" style="margin-top:12px"><button class="btn" data-act="mdone">Weiterziehen</button></div>`, true);
+  `, true);
 }
 
 /* ---------- Schrein, Ereignis, Rast, Rätsel ---------- */
@@ -487,7 +519,7 @@ function showCode(msg) {
 }
 function showSettings() {
   const s = SAVE.meta.settings;
-  showOverlay(`<h2>EINSTELLUNGEN</h2><div class="menu" style="margin-top:12px"><button class="btn alt" data-act="music">Musik: ${s.music !== false ? 'AN' : 'AUS'}</button><button class="btn alt" data-act="sfx">Soundeffekte: ${s.sfx !== false ? 'AN' : 'AUS'}</button><button class="btn alt" data-act="controls">Steuerung</button>${UPD.on ? '<button class="btn alt" data-act="checkupd">Nach Update suchen</button>' : ''}<button class="btn" data-act="backtitle">Zurück</button></div><p class="sub" id="updmsg">Version ${VERSION}</p>`);
+  showOverlay(`<h2>EINSTELLUNGEN</h2><div class="menu" style="margin-top:12px"><button class="btn alt" data-act="music">Musik: ${s.music !== false ? 'AN' : 'AUS'}</button><button class="btn alt" data-act="sfx">Soundeffekte: ${s.sfx !== false ? 'AN' : 'AUS'}</button><button class="btn alt" data-act="controls">Steuerung</button><button class="btn alt" data-act="news" data-id="settings">Neuigkeiten</button>${UPD.on ? '<button class="btn alt" data-act="checkupd">Nach Update suchen</button>' : ''}<button class="btn" data-act="backtitle">Zurück</button></div><p class="sub" id="updmsg">Version ${VERSION}</p>`);
 }
 function showControls() {
   const c = ctlSet(), opt = (act, on, label, small) => `<button class="opt${on ? ' sel' : ''}" data-act="${act}">${label}<small>${small}</small></button>`;
@@ -519,6 +551,8 @@ panel.addEventListener('click', ev => {
     case 'delok': SAVE.chars.splice(i, 1); if (SAVE.active === i) SAVE.active = -1; else if (SAVE.active > i) SAVE.active--; confirmDel = -1; persist(); P = null; titleScene(); showTitle(); break;
     case 'daily': if (SAVE.active < 0) { if (!SAVE.chars.length) break; activateChar(0); } goFullscreen(); startDaily(); break;
     case 'ach': showAch(); break;
+    case 'news': showNews(id); break;
+    case 'newsback': if (newsBack === 'settings') showSettings(); else if (newsBack === 'map') openMap(); else showTitle(); break;
     case 'best': showBestiary(); break;
     case 'hall': showHall(); break;
     case 'code': showCode(); break;
@@ -532,7 +566,9 @@ panel.addEventListener('click', ev => {
     case 'loadcode': try { const r = importCode($('codeIn').value); P = null; if (SAVE.active >= 0 && SAVE.chars[SAVE.active]) activateChar(SAVE.active); titleScene(); showCode(r === 'v1' ? 'Alter Spielstand als Ritter übernommen.' : 'Spielstand geladen.'); } catch (_) { showCode('Der Code ist ungültig. Bitte vollständig kopieren und erneut einfügen.'); } break;
     case 'music': SAVE.meta.settings.music = SAVE.meta.settings.music === false; persist(); if (state === 'pause') { setState('play'); showPause(); } else showSettings(); break;
     case 'sfx': SAVE.meta.settings.sfx = SAVE.meta.settings.sfx === false; persist(); if (state === 'pause') { setState('play'); showPause(); } else showSettings(); break;
-    case 'msel': mapSel = i; openMap(); break;
+    case 'mapmore': showMapMore(); break;
+    case 'tomapview': openMap(); break;
+    case 'msel': if (mapSel === i && isTouch) { P.map.prev = Object.assign({}, P.map.pos); enterNode(i); mapSel = -1; } else { mapSel = i; mapTapped = true; sfx('click'); openMap(); } break;
     case 'enter': if (mapSel >= 0) { P.map.prev = Object.assign({}, P.map.pos); enterNode(mapSel); mapSel = -1; } break;
     case 'char': selItem = null; openChar('gear', 'map'); break;
     case 'hide': saveChar(); enterHideout(); break;
@@ -626,14 +662,15 @@ addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; }
 cv.addEventListener('contextmenu', e => e.preventDefault());
 $('pauseBtn').addEventListener('click', () => { audioOn(); showPause(); });
 
-/* ---------- PWA: Installation, Vollbild, Querformat ---------- */
+/* ---------- PWA: Installation, Vollbild ---------- */
 let deferredInstall = null;
 const standalone = matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone;
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; if (state === 'title') showTitle(); });
 function installBtn() { if (standalone) return ''; if (deferredInstall) return '<button class="btn" data-act="install">Als App installieren</button>'; if (isIOS) return '<p class="help" style="border:0;padding:0;grid-column:1/-1">Als App: in Safari auf TEILEN und dann „Zum Home-Bildschirm“ tippen.</p>'; return ''; }
 window.__doInstall = async () => { if (!deferredInstall) return; deferredInstall.prompt(); try { await deferredInstall.userChoice; } catch (_) { } deferredInstall = null; showTitle(); };
-function goFullscreen() { if (!isTouch) return; const el = document.documentElement; const lock = () => { try { screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => { }); } catch (_) { } }; if (!standalone && !document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).then(lock).catch(() => { }); else lock(); }
+// Vollbild ohne feste Ausrichtung: Hoch- und Querformat werden beide unterstützt
+function goFullscreen() { if (!isTouch) return; const el = document.documentElement; if (!standalone && !document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).catch(() => { }); }
 /* PWA-START */
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   UPD.on = true; UPD.had = !!navigator.serviceWorker.controller;
@@ -672,6 +709,8 @@ function resize() {
   ctx.imageSmoothingEnabled = false; makeVig();
 }
 addEventListener('resize', resize);
+// Gedreht: Weltkarte neu ausrichten, Tafel-Maße anpassen
+addEventListener('resize', () => setTimeout(() => { if (state === 'map' && !ov.hidden && portrait() !== MAPV) openMap(); else fitPanel(); }, 60));
 let last = performance.now(), achT = 0, lastTf = '';
 function update(dt) {
   dt0 = dt;
@@ -696,7 +735,6 @@ function loop(now) {
   let dt = clamp((now - last) / 1000, 0, .05); last = Math.max(last, now); T += dt;
   if (slowmo > 0) { slowmo -= dt; dt *= .35; }
   flash.a = Math.max(0, flash.a - dt * 1.6);
-  if (state === 'play' && isTouch && innerHeight > innerWidth) showPause();
   if (state === 'play' || state === 'dead') { if (hitStop > 0) hitStop -= dt; else update(dt); }
   else if (state === 'title' || state === 'map' || state === 'menu') { P.moving = false; if (!G || !G.type) { P.turn = approach(P.turn, Math.sin(T * .4) > 0 ? 1 : -1, dt * 3); P.face = P.turn > 0 ? 1 : -1; } updParts(dt); if (!G) G = { ambT: 0 }; ambient(dt); }
   if (P && bg) { camera(dt); if (state === 'play') updHud(); }

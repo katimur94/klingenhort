@@ -63,7 +63,9 @@ function addPool(k, x, y, rx, ry) {
 function inPool(x, y, pad) { for (const p of pools) { const dx = (x - p.x) / (p.rx + (pad || 0)), dy = (y - p.y) / (p.ry + (pad || 0) * .5); if (dx * dx + dy * dy < 1) return p; } return null; }
 function makeVig() { vig = mk(VW, VH, g => { const gr = g.createRadialGradient(VW / 2, VH / 2, Math.min(VW, VH) * .35, VW / 2, VH / 2, Math.max(VW, VH) * .75); gr.addColorStop(0, 'rgba(8,6,12,0)'); gr.addColorStop(1, 'rgba(8,6,12,.55)'); g.fillStyle = gr; g.fillRect(0, 0, VW, VH); }); dark = mk(VW, VH); }
 function prepArena(act, seed) {
-  AW = Math.ceil(Math.max(528, VW + 64) / 16) * 16; AH = Math.ceil(Math.max(352, VH + 64) / 16) * 16;
+  // Hochformat: die Arena ist hoch statt breit
+  const tall = VH > VW;
+  AW = Math.ceil(Math.max(tall ? 352 : 528, VW + 64) / 16) * 16; AH = Math.ceil(Math.max(tall ? 528 : 352, VH + 64) / 16) * 16;
   BD = { x0: 22, x1: AW - 22, y0: WALL + 8, y1: AH - 20 };
   bg = genBg(act, seed); obs = []; spikes = []; hazards = []; traps = []; pools = [];
 }

@@ -2,12 +2,12 @@
 
 # ⚔ KLINGENHORT
 
-**16-Bit Hack & Slash im Browser – für Handy (Querformat) und PC.**
+**16-Bit Hack & Slash im Browser – für Handy (Hoch- und Querformat) und PC.**
 Vier Klassen, frei gestaltbare Helden, ein Versteck zum Ausbauen, Waffen aus Mithril, Adamant und Drachenschuppen, Verschmelzen, ein Glückstempel, acht Akte Geschichte – und danach endlose Qual-Stufen.
 
 ### ▶ [Jetzt spielen: katimur94.github.io/klingenhort](https://katimur94.github.io/klingenhort/)
 
-Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 4
+Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 4.1 · jede Woche neue Inhalte
 
 ![Gameplay](docs/gameplay.gif)
 
@@ -17,6 +17,7 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Vers
 
 ## Inhalt
 - [Screenshots](#screenshots)
+- [Neuigkeiten & Wochenplan](#neuigkeiten--wochenplan)
 - [Was ist neu in Version 4](#was-ist-neu-in-version-4)
 - [Klassen & Aussehen](#klassen--aussehen)
 - [Talentbäume](#talentbäume)
@@ -76,6 +77,25 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Vers
 | Titel mit mehreren Helden | Talentbaum |
 |---|---|
 | ![Titel](docs/titel.png) | ![Talente](docs/talente.png) |
+
+---
+
+## Neuigkeiten & Wochenplan
+
+Klingenhort wird jede Woche erweitert. Im Spiel zeigt **Neuigkeiten** (Titelmenü, Einstellungen oder Weltkarte → Mehr) alle Updates und was als Nächstes kommt; nach einem Update öffnet sich die Seite einmal von selbst.
+
+**Neu in 4.1 – das Handy-Update**
+
+![Hochformat: Titel, Weltkarte, Kampf und Charakter](docs/hochformat.png)
+
+- **Hochformat:** Menüs, Weltkarte (läuft dann von unten nach oben) und Kämpfe funktionieren auch hochkant. Die Arena ist im Hochformat hoch statt breit
+- **Eigene Knopf-Anordnung für Hoch- und Querformat**, der Editor speichert beide getrennt
+- **Kopfleiste und wichtige Knöpfe bleiben beim Scrollen stehen** – Zurück, Betreten, Aufwerten und Verschmelzen sind immer erreichbar
+- **Liste und Details nebeneinander** in Charakter, Werkbank und Schatzkammer; im Hochformat als Leiste am unteren Rand
+- **Weltkarte:** Ort antippen zeigt die Info direkt auf der Karte, zweites Antippen betritt ihn
+- Größere Knöpfe, Reiter und Farbfelder, besser lesbare Pixelschrift, Hinweise verdecken keine Knöpfe mehr
+
+Den Plan für die nächsten Wochen gibt es in [ROADMAP.md](ROADMAP.md). Neue Einträge für die Neuigkeiten-Seite stehen in `js/news.js`.
 
 ---
 
@@ -365,7 +385,7 @@ Bezahlt wird mit **Glücksmünzen** – von Bossen, Champions, seltenen Truhen, 
 Angriffe zielen automatisch auf den nächsten Gegner – die goldene Markierung zeigt, auf welchen.
 
 **Anpassen** (Einstellungen → Steuerung, oder im Spiel: Pause → Knöpfe anpassen):
-- Knöpfe ziehen zum Verschieben, antippen zum Auswählen, Größe pro Knopf und gesamt, Deckkraft, Spiegeln, Standard
+- Knöpfe ziehen zum Verschieben, antippen zum Auswählen, Größe pro Knopf und gesamt, Deckkraft, Spiegeln, Standard – Hoch- und Querformat haben jeweils ihre eigene Anordnung
 - Joystick frei oder fest, Größe
 - Heiltrank: Tippen (mit Rollen-Schutz), Halten oder Auto unter 30 % LP
 - Zielmarkierung, Wisch-Zielen und Vibration an/aus
@@ -376,7 +396,7 @@ Angriffe zielen automatisch auf den nächsten Gegner – die goldene Markierung 
 
 - **Android (Chrome):** im Titelmenü „Als App installieren“
 - **iPhone (Safari):** Teilen → „Zum Home-Bildschirm“
-- Als App startet das Spiel im Vollbild und Querformat und läuft offline.
+- Als App startet das Spiel im Vollbild und läuft offline – hoch oder quer, wie du das Handy hältst.
 - **Updates:** Die App sucht beim Öffnen, beim Zurückholen aus dem Hintergrund und alle 10 Minuten nach einer neuen Version. Sie wird im Titelmenü oder auf der Weltkarte automatisch geladen, nie mitten im Kampf. Von Hand: Einstellungen → „Nach Update suchen“. Die installierte Version steht unten im Titelmenü.
 - **Spielstand übertragen:** Titelmenü → „Spielstand übertragen“ – Code kopieren und auf dem anderen Gerät einfügen. Der Code enthält auch das Versteck. Codes aus Version 1 bis 3 funktionieren ebenfalls.
 
@@ -391,6 +411,7 @@ index.html             Oberfläche, Stile, lädt die Skripte
 js/data.js             Klassen, Körper, Materialien, Waffenformen, Gegner, Bosse, Gebiete, Orte,
                        Ereignisse, Rätsel, Gebäude, Glücksrad, Mythisch, Kosmetik, Erfolge
 js/story.js            Prolog, Akte, Boss-Sprüche, Gespräche, Chronikseiten
+js/news.js             Neuigkeiten: Changelog und Vorschau („Demnächst“)
 js/core.js             Helfer, Grafik laden, Charakter-Umfärbung, Ton & Musik, Speichern
 js/art.js              prozedurale Pixel-Grafik: Waffen, Rüstungen, Umhänge, Flügel, Karte, Stationen
 js/items.js            Charaktere, Gegenstände, Werte, Talente, Werkbank, Verschmelzen
@@ -402,12 +423,14 @@ js/controls.js         Touch-Steuerung, Joystick, Knopf-Editor
 js/ui.js               HUD, Menüs, Charakter-Editor, Dialoge, Eingabe, Hauptschleife
 assets/sheet.png       Sprite-Atlas (Figuren, Gegner, Waffen, Kerker)
 assets/fx.png          Effekt-Atlas (Zauber, Explosionen, Blitze, Hiebe)
-manifest.webmanifest   App-Manifest (Vollbild, Querformat)
+manifest.webmanifest   App-Manifest (Vollbild, Hoch- und Querformat)
 sw.js                  Service Worker (Offline)
 docs/                  Screenshots, GIF, Werbevideo
 ```
 
 **Erweitern:** Neue Gegner, Materialien, Waffenformen, Gebäude, Ereignisse, Rätsel oder Erfolge sind reine Daten in `js/data.js`, Texte stehen in `js/story.js`.
+
+**Ein Update veröffentlichen:** `VERSION` in `js/data.js` und `sw.js` anheben, oben in `CHANGELOG` (`js/news.js`) einen Eintrag ergänzen und `COMING` nachziehen. Spieler sehen dann im Titelmenü „NEU“, die installierte App lädt die Version von selbst.
 
 Lokal starten: `python3 -m http.server` im Ordner, dann `http://localhost:8000`.
 

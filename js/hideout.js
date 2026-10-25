@@ -91,13 +91,13 @@ function doBuild(id) {
 }
 function openBuild(id) {
   const B = BUILD[id];
-  showOverlay(`<div class="head"><h2>${B.n.toUpperCase()}</h2><div class="gold"><i class="coin"></i>${fmt(P.gold)}</div></div>
+  showOverlay(`<div class="head"><h2>${B.n.toUpperCase()}</h2><div class="hbtns"><div class="gold"><i class="coin"></i>${fmt(P.gold)}</div><button class="btn alt sm" data-act="hback">Zurück</button></div></div>
   <div style="display:flex;gap:12px;align-items:center"><img class="px" src="${iconURL(['pa', 'bau'])}" alt="" style="width:48px"><p class="sub">Hier steht nur ein Gerüst. ${esc(B.d[0])}.</p></div>
-  ${buildHTML(id)}<div class="menu" style="margin-top:12px"><button class="btn alt" data-act="hback">Zurück</button></div>`);
+  ${buildHTML(id)}`);
 }
 function stationShell(id, body, wide) {
   const B = BUILD[id], lv = hideLv(id);
-  showOverlay(`<div class="head"><h2>${B.n.toUpperCase()}${B.fixed ? '' : ' · ' + lv}</h2><div class="gold"><i class="coin"></i>${fmt(P.gold)}${P.fate ? ` <span style="color:#ffd24a"><i class="fc"></i>${P.fate}</span>` : ''}</div></div>${npcLine(id)}${body}${B.fixed ? '' : buildHTML(id)}<div class="menu" style="margin-top:12px"><button class="btn" data-act="hback">Zurück</button></div>`, wide);
+  showOverlay(`<div class="head"><h2>${B.n.toUpperCase()}${B.fixed ? '' : ' · ' + lv}</h2><div class="hbtns"><div class="gold"><i class="coin"></i>${fmt(P.gold)}${P.fate ? ` <span style="color:#ffd24a"><i class="fc"></i>${P.fate}</span>` : ''}</div><button class="btn alt sm" data-act="hback">Zurück</button></div></div>${npcLine(id)}${body}${B.fixed ? '' : buildHTML(id)}`, wide);
 }
 
 /* Lagerfeuer: Rast einmal pro Akt, Gespräche, Ausbau-Übersicht */
@@ -123,9 +123,9 @@ function openStash() {
   const S = SAVE.meta.hide.stash, cap = stashCap(), sel = selItem && (P.bag.find(x => x.uid === selItem) || S.find(x => x.uid === selItem));
   const slot = (it, act) => `<button class="slot" data-act="${act}" data-id="${it.uid}" style="box-shadow:inset 0 0 0 2px ${itemColor(it)}${sel === it ? ',0 0 0 2px #e8b04a' : ''}" aria-label="${esc(itemName(it))}"><img src="${itemIconURL(it)}" alt="">${it.up ? `<span class="u">+${it.up}</span>` : ''}${it.fz ? `<span class="n">★${it.fz}</span>` : ''}</button>`;
   stationShell('lager', `<p class="sub">Antippen zum Auswählen, nochmal antippen zum Verschieben. Das Lager teilen sich alle deine Helden.</p>
-  <div class="cols"><div class="box"><h3 style="margin-top:0">BEUTEL ${P.bag.length}/30</h3><div class="grid">${P.bag.map(it => slot(it, 'stin')).join('') || '<p class="sub">Leer</p>'}</div></div>
-  <div class="box"><h3 style="margin-top:0">LAGER ${S.length}/${cap}</h3><div class="grid">${S.map(it => slot(it, 'stout')).join('') || '<p class="sub">Leer</p>'}</div></div></div>
-  ${sel ? itemDetail(sel, '') : ''}`, true);
+  <div class="split"><div><div class="box"><h3 style="margin-top:0">BEUTEL ${P.bag.length}/30</h3><div class="grid">${P.bag.map(it => slot(it, 'stin')).join('') || '<p class="sub">Leer</p>'}</div></div>
+  <div class="box" style="margin-top:10px"><h3 style="margin-top:0">LAGER ${S.length}/${cap}</h3><div class="grid">${S.map(it => slot(it, 'stout')).join('') || '<p class="sub">Leer</p>'}</div></div></div>
+  ${sel ? `<div class="side sheet">${itemDetail(sel, `<button class="btn sm" data-act="${P.bag.includes(sel) ? 'stin' : 'stout'}" data-id="${sel.uid}">${P.bag.includes(sel) ? 'Ins Lager legen' : 'In den Beutel'}</button>`)}</div>` : '<div class="side"><p class="sub" style="margin-top:0">Tippe einen Gegenstand an.</p></div>'}</div>`, true);
 }
 /* Trainingsplatz */
 function openTraining() {

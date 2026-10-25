@@ -8,6 +8,7 @@ const cv = $('game'), ctx = cv.getContext('2d');
 let VW = 320, VH = 200, SCALE = 3;
 const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 if (isTouch) document.body.classList.add('touch');
+function portrait() { return innerHeight > innerWidth; }
 
 /* ---------- Mathe ---------- */
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -226,11 +227,13 @@ function fixMeta(m) {
   return m;
 }
 function loadAll() {
-  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (s && s.v === 3) { SAVE = s; SAVE.meta = fixMeta(SAVE.meta); return; } } catch (e) { }
+  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (s && s.v === 3) { SAVE = s; SAVE.meta = fixMeta(SAVE.meta); markSeen(); return; } } catch (e) { }
   SAVE = { v: 3, chars: [], active: -1, meta: defaultMeta() };
   try { const old = JSON.parse(localStorage.getItem('klingenhort.v1') || 'null'); if (old && old.lv) { SAVE.chars.push(migrateV1(old)); SAVE.active = 0; } } catch (e) { }
-  persist();
+  markSeen(); persist();
 }
+// Neue Spieler sehen keine „Neu“-Hinweise; wer schon Helden hat, bekommt die Neuigkeiten seit 4.0.1 gezeigt
+function markSeen() { if (!SAVE.meta.seenVer) SAVE.meta.seenVer = SAVE.chars.length ? '4.0.1' : VERSION; }
 function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (e) { } }
 function migrateV1(o) {
   const c = newChar('knight', 'Ritter', 'normal', false);
@@ -254,7 +257,7 @@ function migrateV1(o) {
 function exportCode() { return btoa(unescape(encodeURIComponent(JSON.stringify(SAVE)))); }
 function importCode(code) {
   const s = JSON.parse(decodeURIComponent(escape(atob(code.trim()))));
-  if (s && s.v === 3 && Array.isArray(s.chars)) { SAVE = s; SAVE.meta = fixMeta(SAVE.meta); persist(); return 'ok'; }
+  if (s && s.v === 3 && Array.isArray(s.chars)) { SAVE = s; SAVE.meta = fixMeta(SAVE.meta); markSeen(); persist(); return 'ok'; }
   if (s && s.lv) { SAVE.chars.push(migrateV1(s)); SAVE.active = SAVE.chars.length - 1; persist(); return 'v1'; }
   throw new Error('bad');
 }
