@@ -68,7 +68,7 @@ const LNPC = {
 const LRIV = [[_t('Kira die Flinke'), 'elfe', 'elf_f', 3, 1], [_t('Brom Eisenfaust'), 'zwerg', 'dwarf_m', 2, 3], [_t('Selvi Schattenschritt'), 'elfe', 'elf_m', 5, 8], [_t('Taro der Gierige'), 'todesritter', 'knight_m', 4, -1], [_t('Mara Dornhand'), 'hexe', 'wizard_f', 3, 7], [_t('Ulf Sturmbart'), 'zwerg', 'dwarf_f', 3, 4], [_t('Nesa die Stille'), 'pyro', 'wizard_m', 6, 3], [_t('Gorm der Sammler'), 'todesritter', 'lizard_m', 4, -1]];
 const LNAMED = [_t('Rotzahn der Plünderer'), _t('Moorhexe Ilka'), _t('Knochenfürst Zarr'), _t('Grimmfell'), _t('Sturmklaue'), _t('Vargul der Wilde'), _t('Die Aschenbraut'), _t('Schädelbrecher Orm')];
 const LMARK = { turm: _t('Alter Wachturm'), kreis: _t('Steinkreis'), riese: _t('Weltenbaum'), statue: _t('Statue des Ordens') };
-const LTS = 16, LFC = 32, LGC = 128, LBOX = 40, LPACK = 16;
+const LTS = 16, LFC = 32, LGC = 128, LBOX = 40, LPACK = 20;
 let LW = null;                     // laufender Ausflug (nur im Speicher)
 const LG = { from: 'hide', sel: null, arm: null, tab: 'tausch', note: null };   // Zustand der Bildschirme
 
@@ -170,6 +170,8 @@ function lVal(e) {
   return 0;
 }
 function lSum(list) { let v = 0; for (const e of list) v += lVal(e); return v; }
+// Reihenfolge der Beuteliste: Eier und seltene Gegenstände zuerst, dann nach Wert
+function lHype(e) { return (e.t === 'egg' ? 9e8 : e.t === 'item' && e.it.rar >= 3 ? e.it.rar * 1e8 : 0) + lVal(e); }
 // Kleine Zeile für eine Beute (auch für andere Systeme)
 function landeLootHTML(e, right) {
   if (!lEntryOk(e)) return '';
@@ -604,9 +606,9 @@ function lExtract() {
   showOverlay(`<div class="head"><h2 style="color:var(--moss)">${_t('ENTKOMMEN!')}</h2><div class="hbtns"><span class="pill">${esc(L.TT.n)}</span></div></div>
   <p class="sub">${_t('{t} in den Landen · {k} Gegner besiegt', { t: lClock(time), k: kills })}${L.ti + 1 < LANDE_TIER.length && newTier ? ' · <b style="color:var(--gold)">' + _t('Neue Weltstufe frei: {n}!', { n: esc(LANDE_TIER[L.ti + 1].n) }) + '</b>' : ''}</p>
   <div class="kv"><span class="pill" style="background:var(--gold)">${_t('BEUTEWERT {n} GOLD', { n: fmt(val) })}</span>${best && val > 0 ? `<span class="pill" style="background:#ff8a3a">${_t('NEUER BESTWERT')}</span>` : ''}${rep ? `<span class="pill" style="background:#57c7e6">${_t('+{n} RUF', { n: rep })}</span>` : ''}</div>
-  ${all.length ? `<h3>${_t('IN SICHERHEIT ({n})', { n: all.length })}</h3><div class="lgot">${all.map((e, i) => `<div style="animation-delay:${Math.min(i, 20) * 80}ms">${landeLootHTML(e)}</div>`).join('')}</div>` : `<p class="sub">${_t('Diesmal mit leeren Händen – aber lebendig.')}</p>`}
+  ${all.length ? `<h3>${_t('IN SICHERHEIT ({n})', { n: all.length })}</h3><div class="lgot">${all.slice().sort((a, b) => lHype(b) - lHype(a)).map((e, i) => `<div style="animation-delay:${Math.min(i, 20) * 80}ms">${landeLootHTML(e)}</div>`).join('')}</div>` : `<p class="sub">${_t('Diesmal mit leeren Händen – aber lebendig.')}</p>`}
   ${lDeliverHTML(r)}${ml}
-  <div class="menu foot row"><button class="btn wide" data-act="l_home">${_t('Ins Versteck')}</button><button class="btn alt" data-act="l_tomap">${_t('Zur Karte')}</button><button class="btn alt" data-act="l_again">${_t('Weltentor')}</button></div>`, true);
+  <div class="menu foot lfoot"><button class="btn wide" data-act="l_home">${_t('Ins Versteck')}</button><button class="btn alt" data-act="l_tomap">${_t('Zur Karte')}</button><button class="btn alt" data-act="l_again">${_t('Weltentor')}</button></div>`, true);
 }
 function lDie() {
   P.hp = 0; setState('dead'); deadT = 999; P.atkT = 0; P.spin = 0; P.leap = null; P.dash = null;
@@ -1188,6 +1190,8 @@ body.lande #bossbar{top:calc(var(--sat) + 56px);left:max(16px,var(--sal));transf
 .lslot .n{position:absolute;right:3px;bottom:2px;font-family:var(--f-display);font-size:7px;text-shadow:1px 1px 0 #000;color:var(--parch)}
 .lslot.empty{cursor:default;background:rgba(10,8,14,.35);box-shadow:inset 0 0 0 2px var(--stone-hi)}
 .lgear .lslot{width:60px;height:60px;margin:4px auto 0}
+.lfoot{grid-template-columns:1fr 1fr}.lfoot .wide{grid-column:1/-1}
+@media (min-width:600px){.lfoot{grid-template-columns:2fr 1fr 1fr}.lfoot .wide{grid-column:auto}}
 .lnw+.lpk{margin-top:10px}.side .lwd{margin-bottom:10px}
 .lgmini{padding:6px}.lgmini .lgear>div:first-child{display:none}.lgmini .lgear .lslot{width:46px;height:46px;margin:0 auto}
 @media (min-width:600px){.lnw{display:none}}
