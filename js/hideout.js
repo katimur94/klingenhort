@@ -7,7 +7,8 @@
 const HIDE_POS = {
   schmiede: [.13, .2], alchemie: [.31, .2], bibliothek: [.5, .16], juwelier: [.69, .2], tempel: [.87, .2],
   spiegel: [.06, .6], feuer: [.5, .56], portal: [.94, .6],
-  lager: [.18, .9], training: [.38, .92], mine: [.62, .92], garten: [.82, .9]
+  lager: [.18, .9], training: [.38, .92], mine: [.62, .92], garten: [.82, .9],
+  basar: [.28, .56], weltentor: [.72, .56], brutnest: [.5, .92]
 };
 function hideTotal() { let n = 0; for (const k in BUILD) if (!BUILD[k].fixed) n += hideLv(k); return n; }
 function npcLine(id) {
@@ -59,6 +60,7 @@ function openStation(id, tab) {
   setState('menu'); showHud(false); stTab = tab || null;
   const B = BUILD[id], lv = B.fixed ? 1 : hideLv(id);
   if (!lv) { openBuild(id); return; }
+  if (hookVal('station', false, id)) return;
   switch (id) {
     case 'feuer': openCampfire(); break;
     case 'portal': leaveHideout(); break;

@@ -216,6 +216,7 @@ function artIcon(name) {
     case 'muenze': b.disc(8, 8, 5.5, '#9c6a24'); b.disc(8, 8, 4.5, '#ffd24a'); b.rect(7, 5, 2, 6, '#e8b04a'); b.rect(6, 7, 4, 1, '#fff3c0'); b.set(6, 6, '#fff'); break;
     case 'bau': b.rect(2, 3, 2, 12, WOOD[1]); b.rect(12, 3, 2, 12, WOOD[1]); b.rect(1, 5, 14, 2, WOOD[2]); b.rect(1, 10, 14, 2, WOOD[2]); b.rect(6, 7, 4, 3, '#e8b04a'); b.set(8, 8, '#1a1420'); break;
     case 'held': b.disc(8, 5, 3, '#fccba3'); b.rect(5, 9, 7, 6, '#57a7d6'); break;
+    default: hook('artIcon', name, b);
   }
   return PACACHE[name] = pbCanvas(pbOutline(b));
 }
@@ -414,6 +415,7 @@ function drawStation(o) {
       for (let i = 0; i < 5; i++) { const h = 4 + (i * 7 + lv) % 5 + Math.round(Math.sin(T * 2 + i)), dx = -12 + i * 6; r(dx, -6 - h, 1, h, '#3a7a2a'); r(dx - 1, -7 - h, 3, 2, i % 2 ? '#79c24e' : '#5aaa42'); if (lv >= 3 && i % 2 === 0) r(dx, -8 - h, 1, 1, '#f786a0'); }
       if (minePending('garden') > 0) { r(-1, -24, 3, 5, '#ffd24a'); r(-1, -18, 3, 2, '#ffd24a'); }
       break;
+    default: hook('drawStation', o, x, y, r, lv);
   }
   if (!B.fixed) for (let i = 0; i < lv; i++) { r(-lv * 2 + i * 4, 4, 3, 2, '#e8b04a'); }
 }

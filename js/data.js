@@ -541,9 +541,12 @@ const BUILD = {
   tempel:{n:'Glückstempel',icon:'rad',npc:'Orakel Fortuna',body:'angel',lv:[{gold:300,kristall:3},{gold:1500,kristall:6,glut:2},{gold:5000,stern:4,aether:1}],d:['Glücksrad, Schicksalstruhen und Münztausch','Glücksmünzen im Münztausch 25 % günstiger','Ein Gratis-Dreh pro Akt']},
   bibliothek:{n:'Bibliothek',icon:'buch',npc:'Archivar Ulmo',body:'wizard',lv:[{gold:180,leder:5,knochen:3},{gold:800,knochen:8,kristall:2},{gold:2400,stern:2,kristall:5}],d:['Chronik und Bestiarium, +5 % Erfahrung','+10 % Erfahrung','+15 % Erfahrung, Chronikseiten häufiger']},
   mine:{n:'Erzmine',icon:'mine',lv:[{gold:250,leder:4,erz:4},{gold:700,zahn:4},{gold:1600,mithril:3},{gold:3200,adamant:3},{gold:6000,stern:2}],d:['Fördert pro geschafftem Raum Eisenerz','Mehr Erz, manchmal Mithril','Auch Adamant','Auch Glutsteine','Auch Sternenstaub']},
-  garten:{n:'Kräutergarten',icon:'garten',lv:[{gold:200,schleim:3},{gold:600,schleim:6,leder:4},{gold:1400,knochen:6},{gold:3000,kristall:4},{gold:5500,glut:4}],d:['Wächst pro geschafftem Raum: Schleimkerne','Auch Leder','Auch Heiltränke','Auch Seelenkristalle','Doppelte Ernte']}
+  garten:{n:'Kräutergarten',icon:'garten',lv:[{gold:200,schleim:3},{gold:600,schleim:6,leder:4},{gold:1400,knochen:6},{gold:3000,kristall:4},{gold:5500,glut:4}],d:['Wächst pro geschafftem Raum: Schleimkerne','Auch Leder','Auch Heiltränke','Auch Seelenkristalle','Doppelte Ernte']},
+  weltentor:{n:'Weltentor',icon:'tor',fixed:1,d0:'Tor zu den Verlorenen Landen: die beste Beute – aber wer dort stirbt, verliert alles, was er trägt.'},
+  basar:{n:'Basar',icon:'basar',fixed:1,d0:'Kaufen, verkaufen und versteigern.'},
+  brutnest:{n:'Brutnest',icon:'nest',fixed:1,d0:'Hier pflegst du Eier, bis sie schlüpfen.'}
 };
-const BUILDORDER = ['feuer','portal','spiegel','schmiede','alchemie','juwelier','lager','training','tempel','bibliothek','mine','garten'];
+const BUILDORDER = ['feuer','portal','spiegel','schmiede','alchemie','juwelier','lager','training','tempel','bibliothek','mine','garten','weltentor','basar','brutnest'];
 const ELIXIRS = [
   {id:'kraft',n:'Elixier der Kraft',bn:'Kraft',d:'+30 % Schaden für 3 Räume',cost:{schleim:4,horn:1},gold:150,buff:{dmg:.3},rooms:3},
   {id:'stein',n:'Elixier des Steins',bn:'Stein',d:'+15 Verteidigung, +10 % LP für 3 Räume',cost:{schleim:4,erz:6},gold:150,buff:{def:15,hp:.1},rooms:3},

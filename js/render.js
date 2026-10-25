@@ -297,6 +297,7 @@ function render() {
   for (const t of texts) { const age = T - t.born, s = t.big && age < .12 ? (VW < 260 ? 12 : 16) : 8; ctx.globalAlpha = clamp(t.life / .3, 0, 1); ptext(t.s, t.x - CX, t.y - CY, t.col, s); }
   ctx.globalAlpha = 1;
   if (G && G.type === 'versteck' && G.near && state === 'play') { const o = G.near, lbl = o.label || ''; ptext(lbl, o.x - CX, o.y - CY - (o.k === 'npc' ? 34 : 44), '#ffd24a', 6); if (!isTouch) ptext('[E]', o.x - CX, o.y - CY - (o.k === 'npc' ? 26 : 36), '#efe2bf', 6); }
+  hook('postRender'); // Bildschirm-Überlagerungen eigener Systeme (z. B. Nebel der Freiwelt), unter Vignette und Blitz
   if (vig) ctx.drawImage(vig, 0, 0);
   if (flash.a > 0 && !SAVE.meta.settings.calm) { ctx.fillStyle = `rgba(${flash.c},${flash.a * .45})`; ctx.fillRect(0, 0, VW, VH); }
 }

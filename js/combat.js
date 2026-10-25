@@ -377,6 +377,7 @@ function hurtPlayer(dmg, src) {
   if (P.hp <= 0) playerDie();
 }
 function playerDie() {
+  if (hookVal('die', false)) return;
   P.hp = 0; setState('dead'); deadT = 1.8; P.atkT = 0; P.spin = 0; P.leap = null; P.dash = null;
   burst(P.x, P.y, 8, '#b8302a', 24, 90); sfx('die'); $('bossbar').hidden = true; slowmo = 1.5;
   P.stats.deaths++; stat('deaths');

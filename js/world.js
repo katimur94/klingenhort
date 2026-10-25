@@ -191,6 +191,7 @@ function queueWave() {
 }
 function updRoom(dt) {
   if (G.type === 'versteck') { updHideout(dt); return; }
+  if (hookVal('roomUpd', false, dt)) return;
   if (G.spikeRush > 0) G.spikeRush -= dt;
   if (G.phase === 'gap') { G.t -= dt; if (G.t <= 0) { G.wi++; if (!G.waves[G.wi]) { roomClear(); return; } queueWave(); G.phase = 'fight'; } return; }
   if (G.phase === 'fight') {
