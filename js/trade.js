@@ -79,7 +79,7 @@ function trValid(o) {
   if (o.t === 'i') d = trItem(o.d);
   else if (o.t === 'b') d = trBundle(o.d);
   else if (o.t === 'p') { d = trPlain(o.d, 0); if (!(trObj(d) && trSp(d.sp))) d = null; }
-  else if (o.t === 'e') d = trObj(o.d) && trSp(o.d.sp) ? { sp: o.d.sp } : null;
+  else if (o.t === 'e') d = trObj(o.d) && trSp(o.d.sp) ? { sp: o.d.sp, tier: trInt(o.d.tier, 0, 6) ? o.d.tier | 0 : 0 } : null;
   return d ? { id: o.id, t: o.t, d, n: n || '?', at } : null;
 }
 // Gegenstand Feld für Feld prüfen: ungültig → abgelehnt, unplausibel → auf erlaubte Werte gesetzt
@@ -149,7 +149,7 @@ function trSend(a) {
     if (!trObj(d)) return null; d = JSON.parse(JSON.stringify(d)); if (!d.sp) d.sp = pet.sp;
     const code = trMake('p', d); if (!code) return null; trPetRemove(a.i, pet); persist(); return code;
   }
-  if (a.t === 'e') { const egg = Array.isArray(S.eggs) && S.eggs[a.i]; if (!egg || !trSp(egg.sp)) return null; const code = trMake('e', { sp: egg.sp }); if (!code) return null; S.eggs.splice(a.i, 1); persist(); return code; }
+  if (a.t === 'e') { const egg = Array.isArray(S.eggs) && S.eggs[a.i]; if (!egg || !trSp(egg.sp)) return null; const code = trMake('e', { sp: egg.sp, tier: egg.tier | 0 }); if (!code) return null; if (typeof eggExport === 'function') eggExport(a.i); else S.eggs.splice(a.i, 1); persist(); return code; }
   return null;
 }
 // Begleiter abgeben: pets.js darf das selbst (petRemove), sonst aus der Liste nehmen
@@ -173,7 +173,7 @@ function trAccept(p) {
   else {
     const fn = p.t === 'p' ? (typeof petImport === 'function' ? petImport : null) : (typeof eggGive === 'function' ? eggGive : null);
     if (!fn) return 'pets';
-    let r; try { r = p.t === 'p' ? fn(JSON.parse(JSON.stringify(p.d))) : fn(p.d.sp); } catch (_) { return 'petfail'; }
+    let r; try { r = p.t === 'p' ? fn(JSON.parse(JSON.stringify(p.d))) : typeof petImport === 'function' ? petImport({ egg: 1, sp: p.d.sp, tier: p.d.tier | 0 }) : fn(p.d.sp); } catch (_) { return 'petfail'; }
     if (r === false) return 'petfull';
   }
   S.got.push(p.id); S.log.unshift({ c: p.code, at: Date.now(), r: 1 }); S.log.length = Math.min(S.log.length, TR_LOG);
@@ -247,7 +247,7 @@ function trDealState() { const S = SAVE.meta.trades.deal, d = dayKey(); if (S.d 
 function trDealDo(i) {
   const D = trDeals(), o = D[i], S = trDealState(); if (!o || S.done.includes(i) || !trCan(o.give)) { sfx('deny'); return false; }
   trTake(o.give, -1);
-  if (o.get.egg) { let ok = false; try { const sp = trRandSp(); ok = (sp ? eggGive(sp) : eggGive()) !== false; } catch (_) { ok = false; } if (!ok) { trTake(o.give, 1); toast(trErr('petfull'), '#ff6a5a'); sfx('deny'); return false; } }
+  if (o.get.egg) { let ok = false; try { ok = !!eggGive(null, false, { luck: 1 }); } catch (_) { ok = false; } if (!ok) { trTake(o.give, 1); toast(trErr('petfull'), '#ff6a5a'); sfx('deny'); return false; } }
   else trTake(o.get, 1);
   S.done.push(i); saveChar(); sfx('buy'); toast(_t('Getauscht: {what}', { what: trSpecText(o.get) }), '#79c24e');
   return true;
@@ -265,7 +265,9 @@ function trSpEl(sp) {
 }
 function trPetName(p) { return p && typeof p.nm === 'string' && p.nm.trim() ? p.nm.slice(0, 20) : trSpName(p && p.sp); }
 function trPetIcon(p) { if (typeof petIconURL === 'function') { try { const u = petIconURL(p); if (typeof u === 'string' && u.startsWith('data:')) return u; } catch (_) { } } const el = trSpEl(p && p.sp); return trArt('paw', el ? TR_ELC[el] : '#e8b04a'); }
-function trEggIcon(sp) { const el = trSpEl(sp); return trArt('egg', el ? TR_ELC[el] : '#efe2bf', '#6a4a8a'); }
+function trEggIcon(sp, tier) { if (typeof petIconURL === 'function') { try { const u = petIconURL({ egg: 1, sp, tier: tier | 0 }); if (typeof u === 'string' && u.startsWith('data:')) return u; } catch (_) { } } const el = trSpEl(sp); return trArt('egg', el ? TR_ELC[el] : '#efe2bf', '#6a4a8a'); }
+// Eier zeigen nur die Seltenheit – welche Kreatur darin steckt, verrät erst das Schlüpfen
+function trEggName(d) { if (typeof petLabel === 'function') { try { const s = petLabel({ egg: 1, sp: d.sp, tier: d.tier | 0 }); if (typeof s === 'string' && s) return s; } catch (_) { } } return _t('Ei: {sp}', { sp: trSpName(d.sp) }); }
 function trPartName(k) {
   if (typeof pname === 'function' && typeof pparse === 'function') { try { const p = pparse(k), s = pname(p.t, p.g, p.el); if (typeof s === 'string' && s) return s; } catch (_) { } }
   const a = k.split(':'), g = +a[a.length - 1], t = TR_PART[a[0]] || a[0].replace(/^./, c => c.toUpperCase()), el = a.length > 2 ? TR_ELN[a[1]] || a[1] : null;
@@ -331,8 +333,8 @@ function trSpecIcon(s) {
 function trDesc(p) {
   if (p.t === 'i') return { ic: itemIconURL(p.d), n: itemName(p.d), c: itemColor(p.d), html: itemDetail(p.d, '') };
   if (p.t === 'b') { const n = Object.keys(p.d.m).length + Object.keys(p.d.g).length + Object.keys(p.d.p).length; return { ic: trSpecIcon(p.d), n: n === 1 ? trSpecText(p.d) : _t('Bündel: {list}', { list: trSpecText(p.d) }), c: 'var(--parch)', html: `<div class="detail"><div class="nm">${_t('BÜNDEL')}</div>${trChips(p.d)}</div>` }; }
-  const pet = p.t === 'p', ic = pet ? trPetIcon(p.d) : trEggIcon(p.d.sp), nm = pet ? trPetName(p.d) : _t('Ei: {sp}', { sp: trSpName(p.d.sp) });
-  const st = pet ? trSpName(p.d.sp) + (trInt(p.d.lv, 1, 999) ? ' · ' + _t('LV {lv}', { lv: p.d.lv }) : '') + (p.d.shiny ? ' · ' + _t('schillernd') : '') : _t('Schlüpft nach genug Kämpfen');
+  const pet = p.t === 'p', ic = pet ? trPetIcon(p.d) : trEggIcon(p.d.sp, p.d.tier), nm = pet ? trPetName(p.d) : trEggName(p.d);
+  const st = pet ? trSpName(p.d.sp) + (trInt(p.d.lv, 1, 999) ? ' · ' + _t('LV {lv}', { lv: p.d.lv }) : '') + (p.d.shiny ? ' · ' + _t('schillernd') : '') : _t('Wird im Brutnest gepflegt, bis es schlüpft');
   return { ic, n: nm, c: p.d.shiny ? '#ff4fd8' : 'var(--parch)', html: `<div class="detail"><div style="display:flex;gap:10px;align-items:center"><div class="ic big"><img src="${ic}" alt=""></div><div><div class="nm">${esc(nm)}</div><div class="st" style="color:var(--parch-dim);font-size:16px">${esc(st)}</div></div></div></div>` };
 }
 
@@ -378,7 +380,7 @@ function trSendHTML() {
   }
   const S = pets, list = Array.isArray(S.list) ? S.list : [], eggs = Array.isArray(S.eggs) ? S.eggs : [];
   h += list.length ? list.map((p, i) => `<div class="row" style="cursor:default"><div class="ic"><img src="${trPetIcon(p)}" alt=""></div><div><div class="nm"${p.shiny ? ' style="color:#ff4fd8"' : ''}>${esc(trPetName(p))}</div><div class="st">${esc(trSpName(p.sp))} · ${_t('LV {lv}', { lv: trInt(p.lv, 1, 999) ? p.lv : 1 })}</div></div><button class="btn sm" data-act="tr_ask" data-id="p:${i}">${_t('Verschenken')}</button></div>`).join('') : `<p class="sub">${_t('Du hast noch keinen Begleiter.')}</p>`;
-  if (eggs.length) h += `<h3>${_t('EIER')}</h3>` + eggs.map((e, i) => `<div class="row" style="cursor:default"><div class="ic"><img src="${trEggIcon(e.sp)}" alt=""></div><div><div class="nm">${esc(_t('Ei: {sp}', { sp: trSpName(e.sp) }))}</div><div class="st">${_t('Beim Verschenken beginnt das Ausbrüten von vorn.')}</div></div><button class="btn sm" data-act="tr_ask" data-id="e:${i}" ${trSp(e.sp) ? '' : 'disabled'}>${_t('Verschenken')}</button></div>`).join('');
+  if (eggs.length) h += `<h3>${_t('EIER')}</h3>` + eggs.map((e, i) => `<div class="row" style="cursor:default"><div class="ic"><img src="${trEggIcon(e.sp, e.tier)}" alt=""></div><div><div class="nm">${esc(trEggName(e))}</div><div class="st">${_t('Beim Verschenken beginnt das Ausbrüten von vorn.')}</div></div><button class="btn sm" data-act="tr_ask" data-id="e:${i}" ${trSp(e.sp) ? '' : 'disabled'}>${_t('Verschenken')}</button></div>`).join('');
   return h;
 }
 function trBunSum() { const b = trBundle(TRD.bun); return b ? esc(trSpecText(b)) : _t('Noch nichts ausgewählt.'); }
