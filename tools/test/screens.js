@@ -9,6 +9,7 @@ const LG = process.env.KH_LANG || 'de', LOC = { de: 'de-DE', en: 'en-US', tr: 't
 // typisch deutsche Wörter (keine, die es auch in einer der anderen Sprachen gibt)
 const DE_WORDS = new Set('und nicht eine einen einem einer für ist mit sich noch wird werden oder auch kein keine keinen mehr zurück schaden gegner stufe gegenstand gegenstände fähigkeit fähigkeiten kosten kaufen verkaufen wählen neue neuer neues spielen dein deine deinen deiner ihr wenn jetzt beim zum zur vom über gegen durch ohne sehr schon immer hier dann weil sind habe kann diese dieser dieses leben abklingzeit wut trank heiltrank weiter schließen anlegen ablegen verschmelzen aufwerten versteck helden karte weltkarte'.split(' '));
 const DE_CHARS = LG === 'tr' ? /[äÄß]/ : /[äöüÄÖÜß]/;
+const NATIVE = new Set(['Deutsch', 'English', 'Türkçe', 'Español', 'Italiano', 'Français']); // Sprachwahl: jede Sprache in ihrer Schreibweise
 const PC = process.argv[5] === 'pc', BASE = (process.env.BASE || 'http://localhost:8777/').replace(/\/?$/, '/');
 (async () => {
   fs.rmSync(OUT, { recursive: true, force: true }); fs.mkdirSync(OUT, { recursive: true });
@@ -46,6 +47,7 @@ const PC = process.argv[5] === 'pc', BASE = (process.env.BASE || 'http://localho
         return r;
       });
       for (const t of texts) for (const line of String(t).split('\n')) {
+        if (NATIVE.has(line.trim())) continue;
         const w = line.toLowerCase().split(/[^\p{L}]+/u).find(x => DE_WORDS.has(x));
         if (w || DE_CHARS.test(line)) german.push(`${name}: ${w ? '„' + w + '“' : 'Umlaut'} in: ${line.trim().slice(0, 140)}`);
       }
