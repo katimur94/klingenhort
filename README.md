@@ -7,7 +7,7 @@ Vier Klassen, frei gestaltbare Helden, ein Versteck zum Ausbauen, Waffen aus Mit
 
 ### ▶ [Jetzt spielen: katimur94.github.io/klingenhort](https://katimur94.github.io/klingenhort/)
 
-Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 4.1 · jede Woche neue Inhalte
+Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 4.2 · jede Woche neue Inhalte
 
 ![Gameplay](docs/gameplay.gif)
 
@@ -84,7 +84,21 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Vers
 
 Klingenhort wird jede Woche erweitert. Im Spiel zeigt **Neuigkeiten** (Titelmenü, Einstellungen oder Weltkarte → Mehr) alle Updates und was als Nächstes kommt; nach einem Update öffnet sich die Seite einmal von selbst.
 
-**Neu in 4.1 – das Handy-Update**
+**Neu in 4.2 – Wochen-Ereignisse**
+- Jede Kalenderwoche gilt automatisch eine andere Regel, für alle Spieler gleich, Wechsel montags:
+
+| Ereignis | Wirkung |
+|---|---|
+| Goldrausch | +50 % Gold aus Gegnern, Truhen und Räumen |
+| Blutmond | doppelt so viele Elite-Gegner, +30 % Beute |
+| Drachenwoche | viel mehr Drachenschuppen, Jungdrachen ab Stufe 10 |
+| Glückswoche | jeden Tag ein Gratis-Dreh am Glücksrad, doppelt so viele Glücksmünzen |
+| Schmiedewoche | Aufwerten und Verschmelzen 40 % günstiger, Aufwerten +10 % Erfolgschance |
+
+- Titelmenü und Weltkarte zeigen das aktuelle Ereignis, die Resttage und die nächste Woche. Die Tages-Challenge bleibt für alle gleich
+- Einstellungen: **große Schrift** für alle Menüs, **Wackeln & Blitzen** abschaltbar
+
+**4.1 – das Handy-Update**
 
 ![Hochformat: Titel, Weltkarte, Kampf und Charakter](docs/hochformat.png)
 

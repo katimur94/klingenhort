@@ -157,7 +157,7 @@ function computeStats() {
   st.spd = C.spd * (1 + (m.spd || 0));
   st.resMax = C.res.max; st.resRegen = C.res.regen * (1 + (m.resreg || 0));
   st.cdr = Math.min(.6, m.cdr || 0); st.dr = Math.min(.6, m.dr || 0); st.dodge = Math.min(.4, m.dodge || 0);
-  st.regen = m.regen || 0; st.leech = m.leech || 0; st.gold = m.gold || 0; st.rage = m.rage || 0;
+  st.regen = m.regen || 0; st.leech = m.leech || 0; st.gold = (m.gold || 0) + weekFx('gold'); st.rage = m.rage || 0;
   P.st = st;
   return st;
 }
@@ -183,7 +183,8 @@ function upCost(it, k) {
   if (w) { c.erz = 2 + k; if (k >= 4) c.zahn = k - 2; if (k >= 7) c.kristall = k - 5; } else { c.leder = 2 + k; if (k >= 4) c.knochen = k - 2; if (k >= 7) c.horn = k - 5; }
   if (k >= 9) c.glut = k - 7; if (k === 10) c.schuppe = 2;
   const sl = hideLv('schmiede'), bonus = (sl >= 2 ? .05 : 0) + (sl >= 3 ? .05 : 0) + (sl >= 4 ? .05 : 0) + (wbFreeBonus() || 0);
-  return { mats: c, gold: Math.round((30 + PRICE[it.tier] * .08) * k), chance: Math.min(1, UPCHANCE[k - 1] + (UPCHANCE[k - 1] < 1 ? bonus : 0)) };
+  const wk = 1 - weekFx('smith'); for (const m in c) c[m] = Math.max(1, Math.ceil(c[m] * wk));
+  return { mats: c, gold: Math.round((30 + PRICE[it.tier] * .08) * k * wk), chance: Math.min(1, UPCHANCE[k - 1] + (UPCHANCE[k - 1] < 1 ? bonus + weekFx('upChance') : 0)) };
 }
 function wbFreeBonus() { return typeof wbFree !== 'undefined' && wbFree ? .05 : 0; }
 function hasMats(c) { for (const k in c) if ((P.mats[k] || 0) < c[k]) return false; return true; }
@@ -248,7 +249,8 @@ function fuseChance(a, b) {
 function fuseCost(a, b) {
   const t = Math.max(a.tier, b ? b.tier : 0), fz = (a.fz || 0) + 1, c = { kristall: fz };
   if (a.rar >= 3) c.horn = 1; if (a.rar >= 4) c.schuppe = fz;
-  return { mats: c, gold: Math.round(60 + PRICE[t] * .1 * fz) };
+  const wk = 1 - weekFx('smith'); for (const m in c) c[m] = Math.max(1, Math.ceil(c[m] * wk));
+  return { mats: c, gold: Math.round((60 + PRICE[t] * .1 * fz) * wk) };
 }
 function fusePreview(a, b) {
   const r = JSON.parse(JSON.stringify(a)), pool = a.slot === 'weapon' ? AFFW : AFFA, all = {};

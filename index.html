@@ -340,6 +340,19 @@ body.touch .row{min-height:52px}
   .gearslot .slot{width:54px;height:54px}
   .help{font-size:16px}
 }
+/* Wochen-Ereignis */
+.weekbox{display:flex;gap:10px;align-items:center;background:var(--stone-lo);padding:9px 10px;margin-top:10px;font-size:18px;line-height:1.15;box-shadow:inset 3px 0 0 var(--c)}
+.weekbox img{width:32px;height:32px;object-fit:contain;flex:none}
+.weekbox b{display:block;font-family:var(--f-display);font-weight:400;font-size:8px;color:var(--parch-dim);margin-bottom:3px}
+.weekbox .nm{font-family:var(--f-display);font-size:11px;margin-bottom:4px}
+.weekbox small{display:block;font-size:15px;color:var(--parch-dim);margin-top:3px}
+/* Große Schrift (Einstellungen) */
+body.bigui .sub,body.bigui .row .nm,body.bigui .detail ul,body.bigui .cost,body.bigui .say,body.bigui .dlg p,body.bigui .tag,body.bigui details.news li,body.bigui .soon,body.bigui .weekbox,body.bigui .newsteaser,body.bigui .inapp{font-size:22px}
+body.bigui .row .st,body.bigui .tal small,body.bigui .cls small,body.bigui .opt small,body.bigui .ach small,body.bigui .help,body.bigui .mapinfo .st{font-size:19px}
+body.bigui .btn{font-size:11px}body.bigui .btn.sm{font-size:9px}body.bigui .foot.row .btn{font-size:9px}
+.foot.row .btn{padding-left:4px;padding-right:4px}
+body.bigui .tab,body.bigui .stats span,body.bigui .pill,body.bigui .tal b,body.bigui .ach b,body.bigui .wheel span{font-size:9px}
+body.bigui h3{font-size:10px}body.bigui h2{font-size:17px}
 </style>
 </head>
 <body>
@@ -393,6 +406,7 @@ body.touch .row{min-height:52px}
 <script src="js/data.js"></script>
 <script src="js/story.js"></script>
 <script src="js/news.js"></script>
+<script src="js/weekly.js"></script>
 <script src="js/core.js"></script>
 <script src="js/art.js"></script>
 <script src="js/items.js"></script>

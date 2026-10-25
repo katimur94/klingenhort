@@ -1,6 +1,6 @@
 // Klingenhort Service Worker – App offline spielbar machen
-const VERSION = 'klingenhort-v4.1.0';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './js/data.js', './js/story.js', './js/news.js', './js/core.js', './js/art.js', './js/items.js', './js/world.js', './js/combat.js', './js/render.js', './js/hideout.js', './js/controls.js', './js/ui.js', './assets/sheet.png', './assets/fx.png', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png'];
+const VERSION = 'klingenhort-v4.2.0';
+const SHELL = ['./', './index.html', './manifest.webmanifest', './js/data.js', './js/story.js', './js/news.js', './js/weekly.js', './js/core.js', './js/art.js', './js/items.js', './js/world.js', './js/combat.js', './js/render.js', './js/hideout.js', './js/controls.js', './js/ui.js', './assets/sheet.png', './assets/fx.png', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));

@@ -7,7 +7,7 @@ let T = 0, hitStop = 0, slowmo = 0, deadT = 0;
 let flash = { a: 0, c: '200,40,40' };
 
 /* ---------- Effekte ---------- */
-function shake(m) { shk.m = Math.max(shk.m, m); }
+function shake(m) { if (SAVE && SAVE.meta.settings.calm) return; shk.m = Math.max(shk.m, m); }
 function txt(x, y, s, col, big) { texts.push({ x, y, s, col, life: .8, big, born: T }); }
 function part(x, y, z, vx, vy, vz, col, life, s, g, glow) { parts.push({ x, y, z, vx, vy, vz, col, life, max: life, s: s || 1, g: g == null ? 220 : g, glow }); }
 function dust(x, y, n) { for (let i = 0; i < (n || 2); i++) part(x + rnd(-3, 3), y + rnd(-1, 1), 1, rnd(-15, 15), rnd(-6, 6), rnd(10, 25), bg ? bg.b.dust : '#8a8a7a', rnd(.25, .45), 1, 60); }
@@ -76,7 +76,7 @@ function openChest(o) {
   if (o.open) return; o.open = .001;
   if (o.mimic) { o.dead = true; spawnEnemy(o.gold ? 'goldmimik' : 'mimic', { x: o.x, y: o.y, instant: true, elite: Math.random() < .3 }); toast(o.gold ? 'Eine Goldmimik!' : 'Ein Mimik!', '#ff6a5a'); shake(4); sfx('lunge'); return; }
   sfx('chest');
-  setTimeout(() => { if (!G) return; const st = stageNum(), mats = MATORDER.slice(0, Math.min(MATORDER.length, 6 + Math.floor(st / 8))); dropCoins(o.x, o.y, (10 + st * 5) * (o.gold ? 2.5 : 1), true); if (Math.random() < (o.gold ? 1 : .55) * G.lootMul) dropLoot(o.x, o.y, o.gold ? 2 : 1); if (Math.random() < .25 * gemMul()) dropGem(o.x, o.y, randomGem(st)); dropMat(o.x, o.y, pick(mats), ri(1, 3)); if (Math.random() < .25) pickups.push({ k: 'flask', x: o.x, y: o.y, z: 8, vz: 90, vx: rnd(-30, 30), vy: rnd(-10, 20), t: 0 }); if (Math.random() < .04 * loreChance()) gainLore(); if (Math.random() < (o.gold ? .1 : .02)) gainFate(1, true); }, 250);
+  setTimeout(() => { if (!G) return; const st = stageNum(), mats = MATORDER.slice(0, Math.min(MATORDER.length, 6 + Math.floor(st / 8))); dropCoins(o.x, o.y, (10 + st * 5) * (o.gold ? 2.5 : 1), true); if (Math.random() < (o.gold ? 1 : .55) * G.lootMul) dropLoot(o.x, o.y, o.gold ? 2 : 1); if (Math.random() < .25 * gemMul()) dropGem(o.x, o.y, randomGem(st)); dropMat(o.x, o.y, pick(mats), ri(1, 3)); if (Math.random() < .25) pickups.push({ k: 'flask', x: o.x, y: o.y, z: 8, vz: 90, vx: rnd(-30, 30), vy: rnd(-10, 20), t: 0 }); if (Math.random() < .04 * loreChance()) gainLore(); if (Math.random() < (o.gold ? .1 : .02) * (1 + weekFx('fate'))) gainFate(1, true); }, 250);
 }
 function useFountain(o) {
   if (o.used) return; o.used = true; const h = Math.round(P.st.hp * .35); P.hp = Math.min(P.st.hp, P.hp + h);
@@ -299,8 +299,9 @@ function killEnemy(e, nx, ny) {
   if (Math.random() < .06) pickups.push({ k: 'heart', x: e.x, y: e.y, z: 6, vz: 70, vx: rnd(-20, 20), vy: rnd(-10, 10), t: 0 });
   for (const k in (e.def.drop || {})) { const v = e.def.drop[k]; if (v >= 1) dropMat(e.x, e.y, k, Math.round(v * (e.boss ? 1 : 1))); else if (Math.random() < v * lm * (e.elite ? 2 : 1)) dropMat(e.x, e.y, k, e.elite ? 2 : 1); }
   if (qm && Math.random() < .03 * lm * (e.elite ? 3 : 1)) dropMat(e.x, e.y, 'aether', 1);
+  if (weekFx('dragon') && !e.boss && Math.random() < (e.elite ? .12 : .03) * lm) dropMat(e.x, e.y, 'schuppe', 1);
   if (e.boss) { dropLoot(e.x, e.y, 2, .25); dropLoot(e.x + 10, e.y, 1, .1); if (qm) dropLoot(e.x - 10, e.y, 3, .1); dropGem(e.x, e.y, randomGem(stageNum() + 10)); dropMat(e.x, e.y, 'schuppe', ri(1, 3)); if (qm && Math.random() < .01 + qm * .002) dropItem(e.x, e.y, makeMythic()); if (!gainLore()) gainFate(1, true); }
-  else if (e.elite) { if (Math.random() < .35 * lm) dropLoot(e.x, e.y, 1, .03); if (Math.random() < .14 * lm * gemMul()) dropGem(e.x, e.y, randomGem(stageNum())); if (Math.random() < .03 * loreChance()) gainLore(); if (Math.random() < .02) gainFate(1, true); }
+  else if (e.elite) { if (Math.random() < .35 * lm) dropLoot(e.x, e.y, 1, .03); if (Math.random() < .14 * lm * gemMul()) dropGem(e.x, e.y, randomGem(stageNum())); if (Math.random() < .03 * loreChance()) gainLore(); if (Math.random() < .02 * (1 + weekFx('fate'))) gainFate(1, true); }
   else if (Math.random() < .03 * lm) dropLoot(e.x, e.y, 0);
   if (e.champ) { $('bossbar').hidden = true; banner('CHAMPION BESIEGT', e.name); slowmo = .6; }
   if (e.t === 'mimic' || e.t === 'goldmimik') dropLoot(e.x, e.y, e.t === 'goldmimik' ? 3 : 2, .05);

@@ -7,6 +7,16 @@
 
 const CHANGELOG = [
   {
+    v: '4.2.0', d: '2026-10-25', t: 'Wochen-Ereignisse', items: [
+      ['neu', 'Jede Woche gilt eine neue Regel für alle: Goldrausch, Blutmond, Drachenwoche, Glückswoche oder Schmiedewoche. Wechsel ist immer montags.'],
+      ['neu', 'Goldrausch bringt 50 % mehr Gold, im Blutmond tauchen doppelt so viele Elite-Gegner auf – mit 30 % mehr Beute.'],
+      ['neu', 'In der Drachenwoche fallen viel mehr Drachenschuppen und Jungdrachen streifen durch die Gebiete.'],
+      ['neu', 'In der Glückswoche gibt es jeden Tag einen Gratis-Dreh am Glücksrad, in der Schmiedewoche ist Aufwerten 40 % günstiger.'],
+      ['besser', 'Titelmenü und Weltkarte zeigen das aktuelle Ereignis, wie lange es noch läuft und was nächste Woche kommt.'],
+      ['besser', 'Einstellungen: große Schrift für alle Menüs, Bildschirm-Wackeln und Blitzen lassen sich abschalten.']
+    ]
+  },
+  {
     v: '4.1.0', d: '2026-10-25', t: 'Das Handy-Update', items: [
       ['neu', 'Hochformat: Klingenhort lässt sich jetzt auch hochkant spielen – Menüs, Weltkarte und Kämpfe. Drehen ist kein Muss mehr.'],
       ['neu', 'Eigene Knopf-Anordnung für Hoch- und Querformat. Der Editor speichert beide getrennt.'],
@@ -64,10 +74,10 @@ const CHANGELOG = [
 
 // Vorschau: was in den nächsten Wochen kommt (siehe ROADMAP.md)
 const COMING = [
-  ['Woche 1', 'Wochen-Ereignisse: jede Woche eine andere Regel – mehr Gold, Blutmond, Drachenwoche …'],
-  ['Woche 2', 'Tägliche und wöchentliche Aufträge mit Belohnungen im Versteck'],
-  ['Woche 3', 'Neues Gebiet: der Sturmgipfel mit eigenem Boss und vier neuen Gegnern'],
-  ['Woche 4', 'Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste']
+  ['Update 4.3', 'Tägliche und wöchentliche Aufträge mit Belohnungen im Versteck'],
+  ['Update 4.4', 'Neues Gebiet: der Sturmgipfel mit eigenem Boss und vier neuen Gegnern'],
+  ['Update 5.0', 'Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste'],
+  ['Update 5.1', 'Begleiter: Mini-Drache, Geisterkatze und Goldkäfer sammeln Beute für dich']
 ];
 
 const NEWS_KIND = { neu: ['NEU', '#79c24e'], besser: ['BESSER', '#57a7d6'], fix: ['BEHOBEN', '#e8b04a'] };

@@ -28,6 +28,8 @@ function showOverlay(html, wide) {
   const f = panel.querySelector('.btn:not(:disabled)'); if (f && !isTouch) f.focus({ preventScroll: true });
 }
 function hideOverlay() { ov.hidden = true; ovKey = ''; }
+// Große Schrift für Menüs (Einstellungen)
+function applyUiPrefs() { document.body.classList.toggle('bigui', !!(SAVE && SAVE.meta.settings.bigui)); }
 // Maße für klebende Kopf-/Fußleiste und die Detail-Spalte (siehe .split im CSS)
 function fitPanel() {
   if (ov.hidden) return;
@@ -150,7 +152,7 @@ function showTitle() {
   const N = CHANGELOG[0], fresh = newsUnseen();
   showOverlay(`<div class="tgrid"><div><h1 class="logo">KLINGEN<br>HORT</h1>
   <p class="tag">Der Uralte Drache hat das Weltenfeuer gestohlen. Bau dein Versteck wieder auf, schmiede Klingen aus Mithril, Adamant und Drachenschuppen – und hol dir zurück, was dem Orden gehört.</p>
-  ${inAppHTML()}<button class="newsteaser" data-act="news"><b>NEU IN ${N.v}${fresh ? '<span class="badge">NEU</span>' : ''}</b>${esc(N.t)}: ${esc(N.items[0][1])} <span style="color:var(--gold)">Alle Neuigkeiten ›</span></button></div>
+  ${inAppHTML()}<button class="newsteaser" data-act="news"><b>NEU IN ${N.v}${fresh ? '<span class="badge">NEU</span>' : ''}</b>${esc(N.t)}: ${esc(N.items[0][1])} <span style="color:var(--gold)">Alle Neuigkeiten ›</span></button>${weekHTML()}</div>
   <div>${chars ? '<h3 style="margin-top:0">DEINE HELDEN</h3>' + chars : ''}
   <div class="menu two" style="margin-top:10px">
     <button class="btn" data-act="new">Neuer Held</button>
@@ -237,18 +239,18 @@ function openMap() {
   const info = selN ? `<div class="mapinfo" style="--c:${NODE[selN.t].c};${selY > 50 ? 'bottom:auto;top:8px;' : ''}${selX < 50 ? 'left:auto;' : 'right:auto;'}"><img src="${iconURL(NODE[selN.t].icon)}" alt=""><div><div class="nm" style="color:${NODE[selN.t].c}">${NODE[selN.t].n}</div><div class="st">${NODE[selN.t].d} <span style="color:var(--gold)">${isTouch ? (mapTapped ? 'Nochmal antippen zum Betreten.' : 'Antippen zum Betreten.') : ''}</span></div></div></div>`
     : `<div class="mapinfo" style="--c:var(--stone-hi);left:auto"><div class="st">Wähle den nächsten Ort – die leuchtenden Punkte.</div></div>`;
   showOverlay(`<div class="head"><h2>AKT ${P.act} · ${b.name.toUpperCase()}${qualOf(P.act) ? ' · QUAL ' + qualOf(P.act) : ''}</h2><div class="gold"><i class="coin"></i>${fmt(P.gold)} <span style="color:#ffd24a"><i class="fc"></i>${P.fate || 0}</span></div></div>
-  <div class="stats">${A ? `<span style="color:var(--rune)">${esc(A.t)}</span>` : ''}<span>LV ${P.lv}${P.paragon ? ' · P' + P.paragon : ''}</span><span>LP ${Math.ceil(P.hp)}/${P.st.hp}</span><span>TRÄNKE ${P.potions}</span>${P.sp ? `<span style="color:var(--gold)">${P.sp} TALENTPUNKT${P.sp > 1 ? 'E' : ''}</span>` : ''}${P.buffs.map(b => `<span style="color:var(--rune)">${b.n} (${b.rooms})</span>`).join('')}</div>
+  <div class="stats">${A ? `<span style="color:var(--rune)">${esc(A.t)}</span>` : ''}<span style="color:${weekEvent().c}">${weekEvent().n.toUpperCase()}</span><span>LV ${P.lv}${P.paragon ? ' · P' + P.paragon : ''}</span><span>LP ${Math.ceil(P.hp)}/${P.st.hp}</span><span>TRÄNKE ${P.potions}</span>${P.sp ? `<span style="color:var(--gold)">${P.sp} TALENTPUNKT${P.sp > 1 ? 'E' : ''}</span>` : ''}${P.buffs.map(b => `<span style="color:var(--rune)">${b.n} (${b.rooms})</span>`).join('')}</div>
   <div class="mapwrap"><canvas id="mapcv" width="320" height="150"></canvas>${nodes}<div class="hero" style="left:${hp[0]}%;top:${hp[1]}%">${heroHTML(P, 1.3)}</div>${info}</div>
   <div class="menu foot row">${selN ? `<button class="btn wide" data-act="enter">Betreten</button>` : ''}<button class="btn${selN ? ' alt' : ''}" data-act="hide">Versteck${hideReady() ? ' (!)' : ''}</button><button class="btn alt" data-act="char">Charakter${P.sp ? ' (' + P.sp + ')' : ''}</button><button class="btn alt" data-act="mapmore">Mehr</button></div>`, true);
   drawMapCanvas(M, av);
-  checkAch();
+  checkAch(); weekAnnounce();
 }
 // Seltener gebrauchte Kartenaktionen und die Legende
 function showMapMore() {
   const legend = Object.keys(NODE).map(k => `<span><img src="${iconURL(NODE[k].icon)}" alt="">${NODE[k].n}</span>`).join('');
   showOverlay(`<div class="head"><h2>AKT ${P.act}</h2><div class="hbtns"><button class="btn alt sm" data-act="tomapview">Zurück</button></div></div>
   <div class="menu two"><button class="btn alt" data-act="daily">Tages-Challenge</button><button class="btn alt" data-act="news" data-id="map">Neuigkeiten</button><button class="btn alt" data-act="title">Speichern & Hauptmenü</button></div>
-  <h3>LEGENDE</h3><div class="legend open">${legend}</div>`);
+  ${weekHTML()}<h3>LEGENDE</h3><div class="legend open">${legend}</div>`);
 }
 function hideReady() { return minePending('mine') > 0 || minePending('garden') > 0 || BUILDORDER.some(k => { const c = buildCost(k); return c && !BUILD[k].fixed && canAfford(c.mats, c.gold); }); }
 function drawMapCanvas(M, av) {
@@ -519,7 +521,7 @@ function showCode(msg) {
 }
 function showSettings() {
   const s = SAVE.meta.settings;
-  showOverlay(`<h2>EINSTELLUNGEN</h2><div class="menu" style="margin-top:12px"><button class="btn alt" data-act="music">Musik: ${s.music !== false ? 'AN' : 'AUS'}</button><button class="btn alt" data-act="sfx">Soundeffekte: ${s.sfx !== false ? 'AN' : 'AUS'}</button><button class="btn alt" data-act="controls">Steuerung</button><button class="btn alt" data-act="news" data-id="settings">Neuigkeiten</button>${UPD.on ? '<button class="btn alt" data-act="checkupd">Nach Update suchen</button>' : ''}<button class="btn" data-act="backtitle">Zurück</button></div><p class="sub" id="updmsg">Version ${VERSION}</p>`);
+  showOverlay(`<h2>EINSTELLUNGEN</h2><div class="menu" style="margin-top:12px"><button class="btn alt" data-act="music">Musik: ${s.music !== false ? 'AN' : 'AUS'}</button><button class="btn alt" data-act="sfx">Soundeffekte: ${s.sfx !== false ? 'AN' : 'AUS'}</button><button class="btn alt" data-act="bigui">Schrift: ${s.bigui ? 'GROSS' : 'NORMAL'}</button><button class="btn alt" data-act="calm">Wackeln & Blitzen: ${s.calm ? 'AUS' : 'AN'}</button><button class="btn alt" data-act="controls">Steuerung</button><button class="btn alt" data-act="news" data-id="settings">Neuigkeiten</button>${UPD.on ? '<button class="btn alt" data-act="checkupd">Nach Update suchen</button>' : ''}<button class="btn" data-act="backtitle">Zurück</button></div><p class="sub" id="updmsg">Version ${VERSION}</p>`);
 }
 function showControls() {
   const c = ctlSet(), opt = (act, on, label, small) => `<button class="opt${on ? ' sel' : ''}" data-act="${act}">${label}<small>${small}</small></button>`;
@@ -557,6 +559,8 @@ panel.addEventListener('click', ev => {
     case 'hall': showHall(); break;
     case 'code': showCode(); break;
     case 'settings': showSettings(); break;
+    case 'bigui': SAVE.meta.settings.bigui = !SAVE.meta.settings.bigui; persist(); applyUiPrefs(); showSettings(); break;
+    case 'calm': SAVE.meta.settings.calm = !SAVE.meta.settings.calm; persist(); showSettings(); break;
     case 'controls': showControls(); break;
     case 'ctledit': openCtlEditor(id); break;
     case 'backtitle': showTitle(); break;
@@ -565,7 +569,7 @@ panel.addEventListener('click', ev => {
     case 'inappok': SAVE.meta.settings.inAppOk = true; persist(); showTitle(); break;
     case 'checkupd': checkUpdateNow(); break;
     case 'copycode': { const t = $('codeOut'); const done = () => { b.textContent = 'Kopiert'; }; try { navigator.clipboard.writeText(t.value).then(done, () => { t.select(); done(); }); } catch (_) { t.select(); done(); } break; }
-    case 'loadcode': try { const r = importCode($('codeIn').value); P = null; if (SAVE.active >= 0 && SAVE.chars[SAVE.active]) activateChar(SAVE.active); titleScene(); showCode(r === 'v1' ? 'Alter Spielstand als Ritter übernommen.' : 'Spielstand geladen.'); } catch (_) { showCode('Der Code ist ungültig. Bitte vollständig kopieren und erneut einfügen.'); } break;
+    case 'loadcode': try { const r = importCode($('codeIn').value); applyUiPrefs(); P = null; if (SAVE.active >= 0 && SAVE.chars[SAVE.active]) activateChar(SAVE.active); titleScene(); showCode(r === 'v1' ? 'Alter Spielstand als Ritter übernommen.' : 'Spielstand geladen.'); } catch (_) { showCode('Der Code ist ungültig. Bitte vollständig kopieren und erneut einfügen.'); } break;
     case 'music': SAVE.meta.settings.music = SAVE.meta.settings.music === false; persist(); if (state === 'pause') { setState('play'); showPause(); } else showSettings(); break;
     case 'sfx': SAVE.meta.settings.sfx = SAVE.meta.settings.sfx === false; persist(); if (state === 'pause') { setState('play'); showPause(); } else showSettings(); break;
     case 'mapmore': showMapMore(); break;
@@ -751,7 +755,7 @@ function loop(now) {
 }
 loadAssets().then(() => {
   try {
-    loadAll(); resize(); applyLayout();
+    loadAll(); applyUiPrefs(); resize(); applyLayout();
     if (SAVE.active >= 0 && SAVE.chars[SAVE.active]) activateChar(SAVE.active);
     titleScene(); showTitle(); checkAch();
   } catch (e) {

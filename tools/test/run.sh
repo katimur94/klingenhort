@@ -12,6 +12,7 @@ for f in js/*.js sw.js; do node -e "new Function(require('fs').readFileSync('$f'
 echo "  ok   Syntax aller Skripte"
 FAIL=0
 run() { echo; echo "== $*"; "$@" || FAIL=1; }
+run node tools/test/rules.js
 run node tools/test/flows.js 390 844
 run node tools/test/flows.js 844 390
 run node tools/test/flows.js 667 375

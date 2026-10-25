@@ -294,7 +294,7 @@ function render() {
   ctx.globalAlpha = 1;
   if (G && G.type === 'versteck' && G.near && state === 'play') { const o = G.near, lbl = o.label || ''; ptext(lbl, o.x - CX, o.y - CY - (o.k === 'npc' ? 34 : 44), '#ffd24a', 6); if (!isTouch) ptext('[E]', o.x - CX, o.y - CY - (o.k === 'npc' ? 26 : 36), '#efe2bf', 6); }
   if (vig) ctx.drawImage(vig, 0, 0);
-  if (flash.a > 0) { ctx.fillStyle = `rgba(${flash.c},${flash.a * .45})`; ctx.fillRect(0, 0, VW, VH); }
+  if (flash.a > 0 && !SAVE.meta.settings.calm) { ctx.fillStyle = `rgba(${flash.c},${flash.a * .45})`; ctx.fillRect(0, 0, VW, VH); }
 }
 const MATC = {}, GEMC = {};
 function matCanvas(k) { return MATC[k] || (MATC[k] = matIcon(k)); }

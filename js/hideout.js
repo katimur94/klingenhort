@@ -165,12 +165,12 @@ function openLibrary() {
 /* ---------- Glückstempel ---------- */
 function coinPrice() { return 400 + P.lv * 30; }
 function openTemple(result) {
-  const L = SAVE.meta.luck, lim = hideLv('tempel') >= 2 ? 12 : 15, free = hideLv('tempel') >= 3 && !P.story['spin' + P.act];
+  const L = SAVE.meta.luck, lim = hideLv('tempel') >= 2 ? 12 : 15, free = freeSpin();
   const seg = WHEEL.map(w => `<span style="--c:${w.c}">${w.n}<small>${(w.w / WHEEL.reduce((s, x) => s + x.w, 0) * 100).toFixed(w.w < 1 ? 1 : 0)} %</small></span>`).join('');
   stationShell('tempel', `<div class="kv"><span class="pill" style="background:#ffd24a"><i class="fc"></i> ${P.fate} GLÜCKSMÜNZEN</span><span class="pill dim">LEGENDÄR SPÄTESTENS IN ${Math.max(1, lim - L.pityL)}</span><span class="pill dim">MYTHISCH SPÄTESTENS IN ${Math.max(1, 80 - L.pityM)}</span></div>
   <div class="wheel" id="wheel">${seg}</div>
   ${result ? `<div class="detail center" style="box-shadow:inset 0 0 0 2px ${result.c}"><div class="nm" style="color:${result.c}">${esc(result.t)}</div>${result.it ? itemDetail(result.it, '') : ''}</div>` : ''}
-  <div class="menu two"><button class="btn" data-act="spin" ${P.fate >= 1 || free ? '' : 'disabled'}>${free ? 'Gratis drehen!' : 'Glücksrad drehen (1 <i class="fc"></i>)'}</button><button class="btn alt" data-act="coin" ${P.gold >= coinPrice() ? '' : 'disabled'}>1 <i class="fc"></i> kaufen (${coinPrice()} Gold)</button></div>
+  <div class="menu two"><button class="btn" data-act="spin" ${P.fate >= 1 || free ? '' : 'disabled'}>${free === 'day' ? 'Gratis-Dreh der Glückswoche!' : free ? 'Gratis drehen!' : 'Glücksrad drehen (1 <i class="fc"></i>)'}</button><button class="btn alt" data-act="coin" ${P.gold >= coinPrice() ? '' : 'disabled'}>1 <i class="fc"></i> kaufen (${coinPrice()} Gold)</button></div>
   <h3>SCHICKSALSTRUHEN</h3>${CHESTS.map(C => { const price = C.coins ? C.coins + ' <i class="fc"></i>' : (250 + P.lv * 15) + ' Gold', ok = C.coins ? P.fate >= C.coins : P.gold >= 250 + P.lv * 15; return `<div class="row" style="cursor:default"><div class="ic"><img src="${iconURL(['s', C.id === 'bronze' ? 304 : C.id === 'gold' ? 320 : 336, 416, 16, 16])}" alt="" style="${C.id === 'drache' ? 'filter:hue-rotate(-40deg) saturate(1.6)' : ''}"></div><div><div class="nm">${C.n}</div><div class="st">${C.d}</div></div><button class="btn sm" data-act="chest" data-id="${C.id}" ${ok ? '' : 'disabled'}>${price}</button></div>`; }).join('')}
   <p class="sub">Glücksmünzen gibt es von Bossen, Champions, seltenen Truhen, der Tages-Challenge und Schreinen Fortunas. Mythische Gegenstände sind extrem selten – das Rad merkt sich aber, wie lange du schon Pech hattest.</p>`, true);
 }
@@ -202,8 +202,8 @@ function wheelReward(k) {
 }
 let spinning = false;
 function doSpin() {
-  if (spinning) return; const free = hideLv('tempel') >= 3 && !P.story['spin' + P.act];
-  if (!free && P.fate < 1) return; if (free) P.story['spin' + P.act] = 1; else P.fate--;
+  if (spinning) return; const free = freeSpin();
+  if (!free && P.fate < 1) return; if (free === 'act') P.story['spin' + P.act] = 1; else if (free === 'day') SAVE.meta.luck.day = dayKey(); else P.fate--;
   const k = wheelPick(), target = WHEEL.findIndex(w => w.k === k), el = $('wheel'), segs = el ? el.children : [];
   spinning = true; let i = 0, step = 0; const total = WHEEL.length * 3 + target;
   const tick = () => {

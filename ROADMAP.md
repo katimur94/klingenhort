@@ -36,7 +36,7 @@ Ausführlich für den automatischen Lauf: [`tools/WOCHENUPDATE.md`](tools/WOCHEN
 
 | Woche | Version | Thema | Inhalt | Aufwand | Status |
 |---|---|---|---|---|---|
-| 1 | 4.2 | **Wochen-Ereignisse** | Automatisch nach Kalenderwoche: *Goldrausch* (+50 % Gold), *Blutmond* (doppelt so viele Elite-Gegner, bessere Beute), *Drachenwoche* (mehr Schuppen, Jungdrachen überall), *Glückswoche* (Glücksrad ein Gratis-Dreh pro Tag), *Schmiedewoche* (Aufwerten günstiger). Banner im Titelmenü und auf der Karte | klein | offen |
+| 1 | 4.2 | **Wochen-Ereignisse** | Automatisch nach Kalenderwoche: *Goldrausch* (+50 % Gold), *Blutmond* (doppelt so viele Elite-Gegner, bessere Beute), *Drachenwoche* (mehr Schuppen, Jungdrachen überall), *Glückswoche* (Glücksrad ein Gratis-Dreh pro Tag), *Schmiedewoche* (Aufwerten günstiger). Banner im Titelmenü und auf der Karte | klein | ✅ 4.2 |
 | 2 | 4.3 | **Aufträge** | 3 Tagesaufträge (z. B. „Besiege 40 Untote“, „Verschmelze einen Gegenstand“) und 1 Wochenauftrag. Auftragstafel als neue Station im Versteck. Belohnung: Gold, Materialien, Glücksmünzen | mittel | offen |
 | 3 | 4.4 | **Neues Gebiet: Sturmgipfel** | Gebiet 9 mit Blitz-Effekten, 4 neue Gegner (Harpyie, Sturmgolem, Donnerschamane, Greif), Boss *Sturmkönig Aerok* mit Blitz-Phasen, neues Material *Sturmsilber* | groß | offen |
 | 4 | 5.0 | **Saison 1** | Saison-Helden starten bei Level 1, eigene Saison-Rangliste (lokal: bester Akt, höchste Qual, schnellster Boss), **kostenloser Saison-Pass** mit 30 Stufen (Kosmetik, Titel, Glücksmünzen). Nach 6 Wochen wandern Saison-Helden zu den normalen Helden | groß | offen |
@@ -57,7 +57,7 @@ Ausführlich für den automatischen Lauf: [`tools/WOCHENUPDATE.md`](tools/WOCHEN
 
 Schon erledigt in 4.1: Hochformat, klebende Kopf- und Fußleisten, Liste neben Details, größere Ziele, Neuigkeiten-Seite.
 
-- **Schriftgröße** in den Einstellungen (normal / groß) – hilft auf kleinen Handys
+- ✅ **Schriftgröße** in den Einstellungen (normal / groß) – 4.2
 - **Leistungs-Modus:** weniger Partikel, kein Licht-Effekt, 30 fps – für ältere Handys und Akku
 - **Einhand-Modus** im Hochformat: Auto-Angriff, wenn ein Gegner in Reichweite ist; nur Joystick und Fähigkeiten
 - **Schnell-Ausrüsten:** „Bestes anlegen“-Knopf im Charakter und „Alles Schlechtere verkaufen“
@@ -65,7 +65,8 @@ Schon erledigt in 4.1: Hochformat, klebende Kopf- und Fußleisten, Liste neben D
 - **Lange drücken für Infos** auf Fähigkeiten, Materialien und Talente statt Text zu suchen
 - **Wisch-Gesten** zwischen den Reitern (Ausrüstung → Talente → Vorrat)
 - **Farbenblind-Modus** für Seltenheitsfarben (zusätzliche Symbole)
-- **Haptik-Stärke** einstellbar, Bildschirm-Wackeln und Blitzen abschaltbar
+- ✅ **Bildschirm-Wackeln und Blitzen** abschaltbar – 4.2
+- **Haptik-Stärke** einstellbar
 - **Spielstand in der Cloud** (Code per Link teilen statt kopieren)
 - **Englische Sprache** – vervielfacht die Reichweite auf TikTok
 

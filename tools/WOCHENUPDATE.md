@@ -38,7 +38,7 @@ Jede Woche entsteht ein neues, getestetes Update, geht live und bekommt einen Ti
 ## 4. Testen
 
 - `bash tools/test/run.sh` muss **„ALLE TESTS GRÜN“** melden (prüft Handy hoch/quer, iPhone, TikTok-Browser, alte Spielstände aus der Live-Version, alle Bildschirme).
-- Für das neue Feature eigene Prüfungen in `tools/test/flows.js` ergänzen (z. B. neues Menü öffnet sich, neue Station funktioniert, Belohnung kommt an).
+- Für das neue Feature eigene Prüfungen ergänzen: Spielregeln in `tools/test/rules.js` (z. B. Belohnung stimmt, Wirkung greift), Bedienung mit Antippen in `tools/test/flows.js` (z. B. neues Menü öffnet sich, neue Station funktioniert).
 - Die Screenshots in `/tmp/klingenhort-test/screens-hoch`, `-quer`, `-pc` und eigene Screenshots der neuen Bildschirme **ansehen**: abgeschnittener Text? Knöpfe erreichbar? Sieht es gut aus?
 - Bleibt ein Test rot und lässt sich nicht beheben: **nicht live stellen** (siehe Abschnitt 7).
 
