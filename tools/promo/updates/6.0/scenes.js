@@ -31,6 +31,7 @@ const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.0';
     (boxes[scene] = boxes[scene] || {})[key] = r; fs.writeFileSync(`${R.out}${scene}/boxes.json`, JSON.stringify(boxes[scene], null, 1)); return r;
   };
   const fresh = scene => { const d = R.out + scene; fs.rmSync(d, { recursive: true, force: true }); fs.mkdirSync(d, { recursive: true }); boxes[scene] = {}; };
+  const saveLog = async scene => fs.writeFileSync(`${R.out}${scene}/log.json`, JSON.stringify(await ev(() => window.__log)));
   const info = (scene, o) => fs.writeFileSync(`${R.out}${scene}/info.json`, JSON.stringify(o, null, 1));
 
   // Hilfen im Browser
@@ -71,6 +72,7 @@ const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.0';
     // Beute für Szenen: ein Legendär, ein Episch, ein Ei, Gold, Edelstein, Material
     window.__loot = () => [{ t: 'item', it: lItem(4, 3) }, { t: 'item', it: lItem(3, 2) }, { t: 'gold', n: 186 }, { t: 'gem', k: 'rubin:2', n: 1 }, { t: 'mat', k: 'mithril', n: 3 }];
     // Gegenstände am Boden einsammeln (Gold, Material, Edelsteine fliegen von selbst)
+    window.__sheetTop = () => { const sh = panel.querySelector('.side.sheet'); panel.scrollTop = 0; if (sh) panel.scrollTop = sh.getBoundingClientRect().top - panel.getBoundingClientRect().top - 210; };
     window.__collect = () => { const c = pickups.filter(c => c.k === 'loot' && c.t > .5).sort((a, b) => Math.hypot(a.x - P.x, a.y - P.y) - Math.hypot(b.x - P.x, b.y - P.y))[0]; if (c) __go(c.x, c.y, 2); else __off(); return !!c; };
   });
 
@@ -137,7 +139,9 @@ const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.0';
       __lgo(0, 1, 0); const o = __spot('gold', 0); window.__chest = o; o.loot = __loot();
       __tp(o.x - 56, o.y + 6); __quiet(o.x, o.y, 500); P.face = 1; __step(4);
     });
-    await R.cap('l_chest', 96, `i => { __calm(); const o = window.__chest; if (!o.open) __go(o.x, o.y, 6); else if (i > 20) __collect(); else __off(); }`);
+    await ev(() => { window.__log = []; });
+    await R.cap('l_chest', 96, `i => { __calm(); const o = window.__chest; if (!o.open) __go(o.x, o.y, 6); else if (i > 20) __collect(); else __off(); window.__log.push([o.open ? 1 : 0, LW.pack.length, pickups.filter(c => c.k === 'loot').length]); }`);
+    await saveLog('l_chest');
     await rect('l_chest', 'pack', '#lhPack');
     console.log('Rucksack:', await ev(() => LW.pack.map(e => e.t + (e.t === 'item' ? ':' + e.it.rar : '')).join(' ')));
   }
@@ -148,7 +152,9 @@ const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.0';
       o.loot = [{ t: 'egg', d: { egg: 1, sp: 'phoenix', tier: 5 } }, { t: 'gold', n: 240 }, { t: 'gem', k: 'saphir:3', n: 1 }];
       __tp(o.x - 30, o.y + 2); __quiet(o.x, o.y, 500); P.face = 1; __step(4);
     });
-    await R.cap('l_dig', 84, `i => { __calm(); const o = window.__cache; if (!o.open) __go(o.x, o.y, 3); else __off(); }`);
+    await ev(() => { window.__log = []; });
+    await R.cap('l_dig', 84, `i => { __calm(); const o = window.__cache; if (!o.open) __go(o.x, o.y, 3); else __off(); window.__log.push([o.open ? 1 : 0, +LW.dig.toFixed(2), LW.pack.length]); }`);
+    await saveLog('l_dig');
   }
   // Rucksack: Gegenstand antippen → in die Begleiter-Tasche (die überlebt den Tod)
   if (R.want('l_inv')) {
@@ -167,22 +173,27 @@ const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.0';
     await rect('l_inv', 'bag2', '#panel .lpk + .box');
   }
 
-  /* ---------- Ungeheuer: Uralter Drache Pyraxis taucht auf – der Held läuft weg ---------- */
-  if (R.want('b_boss')) {
-    await ev(() => {
-      __lgo(3, 3, 0); const L = LW, r = L.roads[3], i = Math.floor(r.length * .55), q = r[i];
+  /* ---------- Ungeheuer: ein Boss taucht auf, Kampf – dann läuft der Held weg (Kamera hält beide im Bild) ---------- */
+  // [Szene, Weltstufe, Karte, Boss, Straße]
+  const BOSSV = [['b_boss', 3, 3, 'Varkas', 3]];
+  for (const [scene, ti, seed, bn, ri] of BOSSV) {
+    if (!R.want(scene)) continue;
+    await ev(([ti, seed, bn, ri]) => {
+      __lgo(ti, seed, 0); const L = LW, r = L.roads[ri], i = Math.floor(r.length * .5), q = r[i];
       __tp(q[0], q[1]); __quiet(q[0], q[1], 900); window.__route = r; window.__ri = i;
-      const B = L.bosses.find(b => /Pyraxis/.test(b.B.name)) || L.bosses[0]; window.__B = B;
-      L.t = 60; P.face = 1; window.__txtNo = /^\d+$/; __step(2);
-    });
-    await R.cap('b_boss', 120, `i => {
+      const B = L.bosses.find(b => b.B.name.includes(bn)) || L.bosses[0]; window.__B = B;
+      L.t = 60; P.face = 1; window.__txtNo = /^\d+$/; __vp(3.1); __snap(); __step(2);
+    }, [ti, seed, bn, ri]);
+    await R.cap(scene, 120, `i => {
       __calm(); const B = window.__B, r = window.__route;
-      if (i === 2) { B.state = 'roam'; B.x = P.x + 56; B.y = P.y - 92; B.tx = B.x; B.ty = B.y; B.hp = 1; }
-      if (i < 44) { __off(); P.face = 1; keys.KeyJ = i > 18 && i < 40; }
-      else { keys.KeyJ = false; window.__camDX = Math.min(34, (i - 44) * 1.5); window.__camDY = -Math.min(30, (i - 44) * 1.3); if (!window.__path) __follow(r, window.__ri, -1); __walk(); }
-      for (const e of enemies) if (e.boss) e.hp = Math.max(e.hp, e.maxHp * .8);
+      if (i === 2) { B.state = 'roam'; B.x = P.x + 62; B.y = P.y - 30; B.tx = B.x; B.ty = B.y; B.hp = 1; }
+      if (i < 46) { __off(); P.face = 1; keys.KeyJ = i > 20 && i < 42; }
+      else { keys.KeyJ = false; if (!window.__path) __follow(r, window.__ri, -1); __walk(); }
+      const b = enemies.find(e => e.boss && !e.dead);
+      if (b) { b.hp = Math.max(b.hp, b.maxHp * .8); const tx = clamp((b.x - P.x) * .5, -70, 70), ty = clamp((b.y - P.y) * .5 + 8, -60, 50); window.__camDX = (window.__camDX || 0) * .85 + tx * .15; window.__camDY = (window.__camDY || 0) * .85 + ty * .15; }
     }`);
     await ev(() => { window.__camDX = 0; window.__camDY = 0; window.__path = null; window.__txtNo = null; });
+    console.log(scene, await ev(() => window.__B.B.name));
   }
 
   /* ---------- Leute in den Landen: Kundschafterin Elwa, Händler Bodo, Kräuterfrau Mirja, Rivalen ---------- */
@@ -207,7 +218,9 @@ const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.0';
       __lgo(1, 2, 0); const L = LW, r = L.rivals[0], q = L.roads[1][40]; __tp(q[0], q[1]); __quiet(q[0], q[1], 900);
       r.state = 'roam'; r.loot = [{ t: 'item', it: lItem(3, 2) }, { t: 'gold', n: 160 }, { t: 'mat', k: 'mithril', n: 2 }]; r.x = P.x + 120; r.y = P.y - 50; r.tgt = null; r.leave = 9999; window.__R = r; P.face = 1; __step(1);
     });
-    await R.cap('n_rival', 96, `i => { __calm(); const e = enemies.find(x => x.rival); keys.KeyJ = !!e && i > 14; if (e && Math.hypot(e.x - P.x, e.y - P.y) > 26 && i > 10) __go(e.x - 14, e.y, 3); else if (!e && i > 30) __collect(); else if (!e) __off(); if (e && i < 46) e.hp = Math.max(e.hp, e.maxHp * .5); }`);
+    await ev(() => { window.__log = []; });
+    await R.cap('n_rival', 96, `i => { window.__log.push([window.__R.state, enemies.some(x => x.rival) ? 1 : 0]); __calm(); const e = enemies.find(x => x.rival); keys.KeyJ = !!e && i > 14; if (e && Math.hypot(e.x - P.x, e.y - P.y) > 26 && i > 10) __go(e.x - 14, e.y, 3); else if (!e && i > 30) __collect(); else if (!e) __off(); if (e && i < 46) e.hp = Math.max(e.hp, e.maxHp * .5); }`);
+    await saveLog('n_rival');
     console.log('Rivale:', await ev(() => window.__R.name + ' ' + window.__R.state));
   }
 
@@ -233,7 +246,7 @@ const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.0';
       for (const e of L.pack) if (e.t === 'item') e.it.lw = L.id;
       lBag(L.pet).push({ t: 'item', it: lItem(4, 2) });
       L.misOn = true; L.mis = lMisGen(); L.mis[0].done = true; L.mis[0].c = L.mis[0].n;
-      window.__chlog = []; P.face = -1; __step(1);
+      L.kills = 37; window.__chlog = []; P.face = -1; __step(1);
     });
     await R.cap('x_exit', 66, `i => { __calm(); const ex = window.__ex; if (LW && LW.on) { if (!__go(ex.x, ex.y + 1, 3)) {} window.__chlog.push([LW.ch, LW.chEx ? 1 : 0]); } else window.__chlog.push([-1, 0]); }`);
     const ch = await ev(() => ({ log: window.__chlog, need: 3, on: !!(LW && LW.on) }));
@@ -241,6 +254,7 @@ const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.0';
     fresh('x_done');
     if (ch.on) await ev(() => lExtract());
     await still('x_done', 'done', null, null, 2600);
+    info('x_done', await ev(() => ({ kv: [...panel.querySelectorAll('.kv .pill')].map(e => e.textContent) })));
     await rect('x_done', 'panel', '#panel'); await rect('x_done', 'pill', '#panel .kv'); await rect('x_done', 'list', '#panel .lgot');
   }
 
@@ -251,10 +265,12 @@ const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.0';
       L.pack = [{ t: 'item', it: lItem(4, 3) }, { t: 'item', it: lItem(3, 2) }, { t: 'egg', d: { egg: 1, sp: 'phoenix', tier: 5 } }, { t: 'gold', n: 1240 }, { t: 'gem', k: 'rubin:3', n: 1 }];
       for (const e of L.pack) if (e.t === 'item') e.it.lw = L.id;
       const keep = lItem(4, 3); keep.lw = L.id; lBag(L.pet).push({ t: 'item', it: keep });
-      const B = L.bosses.find(b => /Pyraxis/.test(b.B.name)) || L.bosses[0]; B.state = 'roam'; B.x = P.x + 60; B.y = P.y - 56; B.tx = B.x; B.ty = B.y; B.hp = .6; L.t = 60;
-      window.__txtNo = /\d{4,}/; P.face = 1; __step(16);
+      const B = L.bosses.find(b => /Varkas/.test(b.B.name)) || L.bosses[0]; B.state = 'roam'; B.x = P.x + 56; B.y = P.y - 20; B.tx = B.x; B.ty = B.y; B.hp = .6; L.t = 60;
+      window.__txtNo = /\d{4,}/; P.face = 1; __vp(3.1); __snap(); __step(16);
     });
-    await R.cap('d_die', 72, `i => { if (i < 12) { __calm(); P.face = 1; keys.KeyJ = true; } else if (i === 12) { keys.KeyJ = false; __off(); P.inv = 0; P.hp = Math.min(P.hp, 20); } if (i === 22 && state === 'play') { P.inv = 0; hurtPlayer(1e9, enemies.find(e => e.boss) || null); } }`);
+    await ev(() => { window.__log = []; });
+    await R.cap('d_die', 72, `i => { window.__log.push(state); if (i < 12) { __calm(); P.face = 1; keys.KeyJ = true; } else if (i === 12) { keys.KeyJ = false; __off(); P.inv = 0; P.hp = Math.min(P.hp, 20); } if (i === 28 && state === 'play') { P.inv = 0; hurtPlayer(1e9, enemies.find(e => e.boss) || null); } const b = enemies.find(e => e.boss && !e.dead); if (b && state === 'play') { window.__camDX = clamp((b.x - P.x) * .5, -60, 60); window.__camDY = clamp((b.y - P.y) * .5 + 8, -50, 40); } }`);
+    await saveLog('d_die');
     fresh('d_screen');
     await ev(() => { for (let k = 0; k < 400 && state === 'dead'; k++) __step(1); });
     await still('d_screen', 'screen', () => { panel.scrollTop = 0; }, null, 600);
@@ -288,7 +304,9 @@ const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.0';
       const g = eggGive(sp, true); Object.assign(g, { got: g.need, w: 1, f: 1, z: 1, t: Date.now() });
       enterHideout(); openNest('hide'); hatchStart(g.id);
     }, sp);
-    await R.cap(scene, 108, `i => { const H = HATCH; if (!H) return; for (const s of [.5, 0]) { H.t0 = performance.now() - ((i - s) / 30) * 1000 / H.sp; hatchRun(); } }`);
+    await ev(() => { window.__log = []; });
+    await R.cap(scene, 108, `i => { const H = HATCH; if (!H) return; for (const s of [.5, 0]) { H.t0 = performance.now() - ((i - s) / 30) * 1000 / H.sp; hatchRun(); } window.__log.push([H.burst ? 1 : 0, H.shown ? 1 : 0]); }`);
+    await saveLog(scene);
     await rect(scene, 'cv', '#hatchcv'); await rect(scene, 'res', '#hres');
     await ev(() => { HATCH = null; });
   }
@@ -327,11 +345,12 @@ const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.0';
       __scene(61); __hero(0); SAVE.meta.hide.intro = true; SAVE.meta.pets.act = null; enterHideout(); hideOverlay(); setState('play'); showHud(false);
       P.look = Object.assign({}, lookOf(P), { aura: null, wings: null });
       for (const s of ['weapon', 'armor', 'helm']) { const d = cfg[s] || { rar: 2 }, x = makeItem({ slot: s, base: s === 'weapon' ? 'sword' : s, form: s === 'weapon' ? 'zwei' : undefined, tier: 6, rar: d.rar, set: d.set, myth: d.myth }); if (d.set) x.name = SETS[d.set].pieces[s]; P.gear[s] = x; }
-      computeStats(); G.dark = .8; P.x = AW / 2 + 40; P.y = BD.y0 + 74; P.face = 1; P.turn = 1; __vp(4.2); __snap(); __calm(); __step(20);
+      computeStats(); G.dark = .8; P.x = BD.x0 + (BD.x1 - BD.x0) * .4; P.y = BD.y0 + (BD.y1 - BD.y0) * .38; P.face = 1; P.turn = 1; __vp(5.5); __snap(); __calm(); __step(20);
       const A = auraOf(P); return A.myth.map(m => AURA[m].n).concat(A.set ? [AURA[A.set].n] : []).join(' + ');
     }, cfg);
     await R.cap(scene, 48, `i => { __calm(); P.face = 1; }`);
-    info(scene, { k, n: nm });
+    const pos = await ev(() => ({ x: (P.x - CX) * SCALE * 2, y: (P.y - CY) * SCALE * 2, s: SCALE * 2 }));
+    info(scene, { k, n: nm, pos });
   }
 
   /* ---------- Basar: kaufen, bieten (Bieter überbieten dich), versteigern, Marktwert ---------- */
@@ -343,15 +362,15 @@ const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.0';
     });
     await still('m_bas', 'buy'); await rect('m_bas', 'say', '#panel .mk .say'); await rect('m_bas', 'tabs', '#panel .mk .tabs');
     // eine Versteigerung mit vielen Geboten auswählen
-    const aid = await ev(() => { MARKET.tick(); const L = MARKET.listings('auc').filter(A => A.t1 - mkNow() > 20 * 60000); L.sort((a, b) => (b.e.t === 'item' ? b.e.it.rar : 0) * 10 + b.bids.length - ((a.e.t === 'item' ? a.e.it.rar : 0) * 10 + a.bids.length)); const A = L[0]; A.bo = 0; MK.tab = 'bid'; MK.sel = A.id; MK.amtFor = null; mkShow(); panel.scrollTop = 0; return A.id; });
+    const aid = await ev(() => { MARKET.tick(); const L = MARKET.listings('auc').filter(A => A.t1 - mkNow() > 20 * 60000); L.sort((a, b) => (b.e.t === 'item' ? b.e.it.rar : 0) * 10 + b.bids.length - ((a.e.t === 'item' ? a.e.it.rar : 0) * 10 + a.bids.length)); const A = L[0]; A.bo = 0; MK.tab = 'bid'; MK.sel = A.id; MK.amtFor = null; mkShow(); __sheetTop(); return A.id; });
     await still('m_bas', 'bid0'); await rect('m_bas', 'sheet', '#panel .side.sheet'); await rect('m_bas', 'bidbtn', '[data-act="mk_bid"]'); await rect('m_bas', 'hist', '#panel .mk-hist');
-    await still('m_bas', 'bid1', id => { ON.mk_bid(id); panel.scrollTop = 0; }, aid);
+    await still('m_bas', 'bid1', id => { ON.mk_bid(id); __sheetTop(); }, aid);
     await rect('m_bas', 'lead', '#panel .side.sheet .mk-good');
     // Kaspar (Last-Minute-Bieter) überbietet dich
     await ev(id => { const A = mkM().auc.find(x => x.id === id); A.bd.push({ n: 0, m: 3, k: 2, x: Date.now() + 150 }); }, aid);
     await page.waitForTimeout(400);
-    await still('m_bas', 'bid2', () => { MARKET.tick(); mkAutoGold(); mkShow(); panel.scrollTop = 0; });
-    await rect('m_bas', 'now2', '#panel .side.sheet .mk-now'); await rect('m_bas', 'hist2', '#panel .mk-hist');
+    await still('m_bas', 'bid2', () => { MARKET.tick(); mkAutoGold(); mkShow(); __sheetTop(); });
+    await rect('m_bas', 'now2', '#panel .side.sheet .mk-now'); await rect('m_bas', 'hist2', '#panel .mk-hist'); await rectTxt('m_bas', 'row2', '#panel .mk .row', 'ÜBERBOTEN');
     // Verkaufen: Gegenstand mit Marktwert, Sofort an Hedda oder versteigern
     await still('m_bas', 'sell', () => { MK.tab = 'sell'; MK.cat = 'item'; MK.sel = P.bag[0].uid; mkShow(); panel.scrollTop = 0; });
     await rectTxt('m_bas', 'mw', '#panel .side.sheet li, #panel .side.sheet div', '^Marktwert'); await rect('m_bas', 'sheet3', '#panel .side.sheet');
