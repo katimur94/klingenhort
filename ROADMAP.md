@@ -39,17 +39,18 @@ Ausführlich für den automatischen Lauf: [`tools/WOCHENUPDATE.md`](tools/WOCHEN
 | 1 | 4.2 | **Wochen-Ereignisse** | Automatisch nach Kalenderwoche: *Goldrausch*, *Blutmond*, *Drachenwoche*, *Glückswoche*, *Schmiedewoche*. Banner im Titelmenü und auf der Karte | klein | ✅ 4.2 |
 | – | 4.3 | **Sechs Sprachen** | Deutsch, Englisch, Türkisch, Spanisch, Italienisch, Französisch. Sprache des Geräts beim Start, Auswahl im Titelmenü und in den Einstellungen | mittel | ✅ 4.3 |
 | – | 5.0 | **Meisterwerk** | Begleiter (6 Arten, Level 1–100, 6 Entwicklungsstufen), Elemente (Schwächen und Resistenzen), Schmiede der Meister (Bauteile Stufe 1–10, Zerlegen, Meisterwerke, Schmiedemeisterschaft 1–100), Fähigkeiten-Meisterschaft (Level 1–50, 6 Ränge mit neuem Aussehen), Tauschen per Code/Link, Tauschhändler, Aussehen tauschen (Sammlung) | sehr groß | ✅ 5.0 |
-| 2 | 5.1 | **Aufträge** | 3 Tagesaufträge und 1 Wochenauftrag, auch für Begleiter, Meisterschaft und Schmiede („Zerlege 20 Gegenstände“, „Besiege 30 Gegner mit Schwäche-Treffern“). Auftragstafel im Versteck. Belohnung: Bauteile, Eier, Glücksmünzen | mittel | offen |
-| 3 | 5.2 | **Neues Gebiet: Sturmgipfel** | Gebiet 9 mit Blitz-Gegnern (Harpyie, Sturmgolem, Donnerschamane, Greif), Boss *Sturmkönig Aerok* mit Blitz-Phasen, neues Material *Sturmsilber*, Blitz-Elementkerne | groß | offen |
-| 4 | 6.0 | **Saison 1** | Saison-Helden ab Level 1, Saison-Rangliste (lokal), **kostenloser Saison-Pass** mit 30 Stufen (Kosmetik, Titel, Eier, Bauteile). Nach 6 Wochen wandern Saison-Helden zu den normalen | groß | offen |
-| 5 | 6.1 | **Begleiter-Expeditionen & Zucht** | Begleiter auf Expedition schicken (läuft auch, wenn das Spiel zu ist), zwei Begleiter kreuzen → neue Farben und seltene Mischformen, Begleiter-Rangliste | mittel | offen |
-| 6 | 6.2 | **Der Abgrund** | Endlos-Turm: Ebene für Ebene stärker, 3 Minuten pro Ebene, Bestwert pro Klasse in der Ruhmeshalle | mittel | offen |
-| 7 | 6.3 | **Neue Klasse: Nekromant** | Beschwört Skelette, Knochenspeer, Leichenexplosion, Ultimative *Armee der Toten*, eigener Talentbaum, eigene Waffen, Meisterschaft für alle neuen Fähigkeiten | groß | offen |
-| 8 | 6.4 | **Runenwörter & Legendäre Kräfte 2.0** | Runen in Sockeln ergeben in der richtigen Reihenfolge Runenwörter mit starken Effekten. 12 neue legendäre Kräfte, die Fähigkeiten verändern | mittel | offen |
-| 9 | 6.5 | **Verzaubern & Element-Reaktionen** | Einen Zusatzwert gezielt neu würfeln. Elemente kombinieren: Feuer auf gefrorene Gegner = Dampfexplosion, Blitz auf vergiftete = Giftwolke | mittel | offen |
-| 10 | 6.6 | **Weltboss der Woche** | Riesiger Boss mit 3 Phasen, nur diese Woche, Schaden-Bestwert, Trophäe fürs Versteck | mittel | offen |
-| 11 | 6.7 | **Versteck 2.0** | Dekorieren mit Trophäen, Bannern, Pflanzen; Begleiter-Nest; Versteck als Code teilen | mittel | offen |
-| 12 | 7.0 | **Saison 2 + Online** | Neue Saison-Regel. Echte Online-Rangliste und Marktplatz zum Handeln (braucht einen kleinen Server, z. B. Supabase) | groß | offen |
+| – | 6.0 | **Die Verlorenen Lande** | Freiwelt mit Extraktion: zufällige Beute, NPC-Händler mit Tausch, Missionen und Ruf, Rivalen, zufällige Bosse zum Weglaufen, Ausgänge. Wer stirbt, verliert alles Angelegte – nur die Tasche des Begleiters kommt mit heim. Begleiter nur noch aus Eiern mit Pflege (≈ 24 Kreaturen von wertlos bis mythisch). Einzigartige Optik für besondere Gegenstände, Auren am Helden. Schmiede einfach bedienbar. Basar mit Auktionen (offline) | riesig | in Arbeit |
+| 2 | 6.1 | **Aufträge & Ruf** | Tages- und Wochenaufträge für Kampagne und Freiwelt, Fraktionen mit Ruf-Stufen und besseren Tauschangeboten | mittel | offen |
+| 3 | 6.2 | **Neues Gebiet: Sturmgipfel** | Kampagnen-Gebiet 9 und neue Freiwelt-Region mit Blitz-Gegnern, Boss *Sturmkönig Aerok*, Material *Sturmsilber* | groß | offen |
+| 4 | 7.0 | **Online: Konto & Marktplatz** | Spielstand in der Cloud, echter Marktplatz mit Auktionen zwischen Spielern, Online-Tausch. **Braucht einen Server (z. B. Supabase) – Entscheidung des Besitzers** | groß | offen |
+| 5 | 7.1 | **Saison 1** | Saison-Helden ab Level 1, Saison-Rangliste, kostenloser Saison-Pass mit 30 Stufen | groß | offen |
+| 6 | 7.2 | **Begleiter-Expeditionen & Zucht** | Begleiter allein in die Verlorenen Lande schicken (läuft auch offline), zwei Begleiter kreuzen → neue Farben und Mischformen | mittel | offen |
+| 7 | 7.3 | **Der Abgrund** | Endlos-Turm mit Bestwert pro Klasse | mittel | offen |
+| 8 | 7.4 | **Neue Klasse: Nekromant** | Skelette, Knochenspeer, Leichenexplosion, *Armee der Toten* | groß | offen |
+| 9 | 7.5 | **Runenwörter & Legendäre Kräfte 2.0** | Runen in Sockeln ergeben Runenwörter, neue legendäre Kräfte | mittel | offen |
+| 10 | 7.6 | **Verzaubern & Element-Reaktionen** | Zusatzwert gezielt neu würfeln; Dampfexplosion, Giftwolke … | mittel | offen |
+| 11 | 7.7 | **Weltboss der Woche** | Riesiger Boss in den Verlorenen Landen, nur diese Woche | mittel | offen |
+| 12 | 7.8 | **Versteck 2.0** | Dekorieren, Trophäen, Begleiter-Nest ausbauen, Versteck teilen | mittel | offen |
 
 > Faustregel: Wochen mit „groß“ wechseln sich mit kleinen und mittleren ab. Fällt eine Woche aus, lieber ein kleines Update als gar keins – Ereignisse und Aufträge laufen ab Woche 2 auch ohne neue Inhalte weiter.
 
@@ -97,6 +98,8 @@ Jedes System zeigt immer das nächste Ziel und einen Fortschrittsbalken – der 
 **Versteck:** Kartograph (Karten-Modifikatoren kaufen) · Arena mit Wellen-Herausforderungen · Haustierstall · Brunnen der Wünsche (Münzen opfern)
 
 **Geschichte:** Nebenquests von NPCs im Versteck · Tagebuch-Seiten pro Gebiet · Geheime Räume auf der Karte · Zweites Kapitel nach Pyraxis
+
+**Verlorene Lande:** Schlüssel und verschlossene Schatzkammern · Kopfgeld auf benannte Rivalen · Tageszeit und Wetter (nachts stärkere Monster, bessere Beute) · Karawanen begleiten · Ereignisse mitten in der Welt (Meteoritenfall, Händlerkarawane, Dimensionsriss) · Rangliste „größte Beute nach Hause gebracht“
 
 **Begleiter:** Expeditionen (offline) · Zucht und Mischformen · Begleiter-Arena · Begleiter-Kostüme · zweiter Begleiter-Platz ab Paragon 100
 
