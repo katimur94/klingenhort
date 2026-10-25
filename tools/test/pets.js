@@ -30,8 +30,8 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     o.rooms = at;
     o.stage = [1, 9, 10, 24, 25, 49, 50, 74, 75, 99, 100].map(petStage).join('');
     // Bilder werden mit jeder Stufe größer
-    o.grow = PSPORDER.every(sp => { let a = 0; for (let s = 0; s < 6; s++) { const S = petStrip(sp, s, 0, false), v = S.W * S.H; if (v <= a) return false; a = v; } return true; });
-    o.vars = PSPORDER.every(sp => petVariants(sp).length === 6 && new Set(petVariants(sp).map(v => v.n)).size === 6);
+    o.grow = PET_ORDER.every(sp => { let a = 0; for (let s = 0; s < 6; s++) { const S = petStrip(sp, s, 0, false), v = S.W * S.H; if (v <= a) return false; a = v; } return true; });
+    o.vars = PET_ORDER.every(sp => petVariants(sp).length === 6 && new Set(petVariants(sp).map(v => v.n)).size === 6);
     o.shinyStrip = !!petStrip('katze', 2, 6, true).c;
     // EP aus Siegen, Entwicklung, Farben
     M().starter = true; const p = petGive('drache', {}); o.give = !!p && M().act === p.id && p.lv === 1;
@@ -42,18 +42,18 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     o.pas = Math.abs(d0) < 1e-9 && Math.abs(d25 - .03) < 1e-6 && Math.abs(d100 - .15) < 1e-6;
     M().act = null; computeStats(); o.noPas = !(P.st.m.dmg > 0); M().act = p.id;
     // Beutemagnet ab LV 10
-    G = { type: 'kampf', phase: 'fight', row: 0 }; setState('play'); P.x = 200; P.y = 200; PET.id = null;
+    G = { type: 'kampf', phase: 'fight', row: 0 }; setState('play'); P.x = 200; P.y = 200; PET_RT.id = null;
     const coin = (d) => ({ k: 'coin', x: 200 + d, y: 200, z: 0, vz: 0, vx: 0, vy: 0, v: 1, t: 1 });
     p.lv = 5; pickups = [coin(60)]; petTick(.016); o.mag5 = !pickups[0].mag;
     p.lv = 10; pickups = [coin(60), coin(120)]; petTick(.016); o.mag10 = !!pickups[0].mag && !pickups[1].mag;
     p.lv = 100; pickups = [coin(180)]; petTick(.016); o.mag100 = !!pickups[0].mag;
     pickups = []; setState('menu');
     // Füttern (Leibspeise doppelt)
-    p.lv = 30; p.xp = 0; P.mats.glut = 10; petView = p.id; petAmt = 10; ON.petfeed('glut'); o.feed = P.mats.glut === 0 && (p.xp === PFEED.glut * 20 || p.lv > 30);
+    p.lv = 30; p.xp = 0; P.mats.glut = 10; petView = p.id; petAmt = 10; ON.petfeed('glut'); o.feed = P.mats.glut === 0 && (p.xp === PET_FEED.glut * 20 || p.lv > 30);
     // Eier: Brutnest, Schlüpfen nach 150 Siegen, voll
     M().eggs = []; o.egg = eggGive('eule', true) && M().eggs.length === 1;
     const n0 = M().list.length; for (let i = 0; i < 150; i++) petKill({ xp: 1, x: 0, y: 0 }); o.hatch = M().list.length === n0 + 1 && !M().eggs.length && M().list[M().list.length - 1].sp === 'eule' && !!M().list[M().list.length - 1].nw;
-    for (let i = 0; i < 6; i++) eggGive(null, true); o.eggMax = M().eggs.length === EMAX && !eggGive('funke', true);
+    for (let i = 0; i < 6; i++) eggGive(null, true); o.eggMax = M().eggs.length === EGG_MAX && !eggGive('funke', true);
     // schillernd (1 %) und Boss-Ei (3 %)
     const R = Math.random; M().eggs = [{ sp: 'funke', need: 1, got: 1 }]; Math.random = () => .005; const sh = eggHatch(0, true); Math.random = R; o.shiny = !!sh && sh.shiny && sh.col === 6 && petCols(sh).includes(6);
     P.act = 9; M().eggs = []; Math.random = () => .04; petKill({ xp: 1, x: 0, y: 0, boss: true }); Math.random = R; o.bossEgg = M().eggs.length === 1;
@@ -64,9 +64,9 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     o.imp = petImport(d) && M().list.length === cnt && M().list[M().list.length - 1].lv === d.lv;
     o.impBad = !petImport({ sp: 'yeti' }) && !petImport(null) && !petImport('x');
     eggGive('natter', true); const ed = eggExport(0); o.eggTrade = !!ed && ed.egg && !M().eggs.length && petImport(ed) && M().eggs.length === 1;
-    while (M().list.length < PMAX) petGive('funke', {}); o.full = !petGive('drache', {}) && !petImport({ sp: 'katze', lv: 3 }) && petFree() === 0;
+    while (M().list.length < PET_MAX) petGive('funke', {}); o.full = !petGive('drache', {}) && !petImport({ sp: 'katze', lv: 3 }) && petFree() === 0;
     // Laden und Speichern
-    persist(); const saved = JSON.parse(localStorage.getItem(SAVE_KEY)); o.saved = saved.meta.pets.list.length === PMAX && saved.meta.pets.eggs.length === 1;
+    persist(); const saved = JSON.parse(localStorage.getItem(SAVE_KEY)); o.saved = saved.meta.pets.list.length === PET_MAX && saved.meta.pets.eggs.length === 1;
     return o;
   });
   ok(r.fresh, 'neues Konto: leere Begleiter-Daten');
@@ -95,19 +95,22 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
   console.log('Begleiter: Kampf');
   const k = await page.evaluate(() => {
     const res = {}, M = SAVE.meta.pets; let spec = 0; const os = petSpecial; petSpecial = function (...a) { spec++; return os(...a); };
-    for (const sp of PSPORDER) for (const lv of [1, 12, 30, 55, 80, 100]) {
+    for (const sp of PET_ORDER) for (const lv of [1, 12, 30, 55, 80, 100]) {
       M.list = []; M.act = null; const p = petGive(sp, { lv }); P.lv = 30; computeStats();
       startRoom('kampf', 2); G.waves = []; G.phase = 'fight'; G.pending = []; enemies = []; P.inv = 999;
       for (let i = 0; i < 4; i++) { const e = spawnEnemy('orc', { x: P.x + 40 + i * 12, y: P.y + (i % 2 ? 14 : -14), instant: true }); e.hp = e.maxHp = 1e6; e.spd = 0; e.atk = 0; }
       spec = 0; for (let f = 0; f < 60 * 25; f++) update(1 / 60);
       const lost = enemies.reduce((s, e) => s + e.maxHp - e.hp, 0);
-      res[sp + lv] = { dmg: lost > 0, spec, inBD: PET.x >= BD.x0 && PET.x <= BD.x1 && PET.y >= BD.y0 && PET.y <= BD.y1 };
+      res[sp + lv] = { dmg: lost > 0, spec, inBD: PET_RT.x >= BD.x0 && PET_RT.x <= BD.x1 && PET_RT.y >= BD.y0 && PET_RT.y <= BD.y1 };
     }
     petSpecial = os;
     // Versteck: Begleiter streunt herum und bleibt im Bild
     M.list = []; M.act = null; petGive('katze', { lv: 40 }); leaveHideout; enterHideout(); hideOverlay(); setState('play'); const pos = [];
-    for (let f = 0; f < 60 * 20; f++) { update(1 / 60); if (f % 60 === 0) pos.push([PET.x, PET.y]); }
-    res.hideMove = pos.some(([x, y]) => Math.hypot(x - pos[0][0], y - pos[0][1]) > 8) && PET.x >= BD.x0 && PET.x <= BD.x1;
+    for (let f = 0; f < 60 * 20; f++) { update(1 / 60); if (f % 60 === 0) pos.push([PET_RT.x, PET_RT.y]); }
+    res.hideMove = pos.some(([x, y]) => Math.hypot(x - pos[0][0], y - pos[0][1]) > 8) && PET_RT.x >= BD.x0 && PET_RT.x <= BD.x1;
+    // Ei schlüpft mitten im Kampf, ohne aktiven Begleiter wird der neue sofort mitgenommen
+    M.act = null; startRoom('kampf', 1); M.eggs = [{ sp: 'natter', need: 2, got: 1 }]; const n0 = M.list.length; petKill({ xp: 3, x: P.x, y: P.y }); for (let f = 0; f < 30; f++) update(1 / 60);
+    res.hatchPlay = M.list.length === n0 + 1 && petActive() && petActive().sp === 'natter' && PET_RT.id === petActive().id;
     // ohne Begleiter: Raum, Versteck, Charakter
     M.act = null; startRoom('kampf', 1); for (let f = 0; f < 120; f++) update(1 / 60); enterHideout(); for (let f = 0; f < 60; f++) update(1 / 60);
     openChar('pet'); res.noPet = !!panel.querySelector('.petcard'); M.list = []; openChar('pet'); res.noPetList = panel.textContent.includes('niemand');
@@ -118,6 +121,7 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     ok(k[sp + 1].spec === 0 && k[sp + 30].spec === 0 && k[sp + 55].spec > 0 && k[sp + 100].spec >= k[sp + 55].spec, `${sp}: Spezialangriff ab LV 50 (${k[sp + 55].spec}× / ${k[sp + 100].spec}× in 25 s)`);
   }
   ok(k.hideMove, 'Versteck: Begleiter streunt herum');
+  ok(k.hatchPlay, 'Ei schlüpft im Kampf, der Neue begleitet sofort');
   ok(k.noPet && k.noPetList, 'ohne aktiven Begleiter: Raum, Versteck und Reiter laufen');
   ok(!errs.length, 'keine Fehler (Regeln, Kampf)' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
   await page.close();
