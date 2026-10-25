@@ -2,16 +2,21 @@
 
 Ziel: **Jede Woche ein spürbares Update**, damit Klingenhort nie „durchgespielt“ ist. Jedes Update bekommt eine Versionsnummer, einen Eintrag in den Neuigkeiten im Spiel und einen kurzen Clip für TikTok.
 
+**Automatisch:** Ein geplanter Claude-Auftrag arbeitet diesen Plan jede Woche ab – nach der Anleitung in [`tools/WOCHENUPDATE.md`](tools/WOCHENUPDATE.md). Er nimmt die erste Woche mit Status „offen“, baut und testet sie, stellt sie live und schickt den TikTok-Clip. Reihenfolge ändern: einfach die Tabelle unten umsortieren oder Zeilen umschreiben.
+
 ---
 
 ## So läuft ein Wochen-Update
 
-1. **Montag – auswählen:** ein großes Thema aus dem Plan unten plus ein bis zwei Handy-Verbesserungen aus der Liste weiter unten
-2. **Bauen und auf dem Handy testen:** Hoch- und Querformat, kleines Handy (z. B. iPhone SE) und großes Handy
-3. **Version anheben:** `VERSION` in `js/data.js` und `sw.js` (Feature: 4.2.0, kleine Korrektur: 4.2.1)
-4. **Neuigkeiten schreiben:** oben in `CHANGELOG` (`js/news.js`) einen Eintrag mit `neu` / `besser` / `fix`, dann `COMING` um eine Woche weiterschieben
-5. **Live stellen:** auf `main` und `gh-pages` pushen. Die installierte App holt sich das Update selbst, im Titelmenü erscheint „NEU“
-6. **Zeigen:** 10–20 Sekunden Clip vom neuen Feature für TikTok (die Werbevideo-Pipeline lässt sich wiederverwenden)
+Ausführlich für den automatischen Lauf: [`tools/WOCHENUPDATE.md`](tools/WOCHENUPDATE.md). Kurzfassung:
+
+1. **Auswählen:** ein großes Thema aus dem Plan unten plus ein bis zwei Handy-Verbesserungen aus der Liste weiter unten
+2. **Bauen und auf dem Handy ansehen:** Hoch- und Querformat, kleines Handy (z. B. iPhone SE) und großes Handy
+3. **Testen:** `bash tools/test/run.sh` muss grün sein
+4. **Version anheben:** `VERSION` in `js/data.js` und `sw.js` (Feature: 4.2.0, kleine Korrektur: 4.2.1)
+5. **Neuigkeiten schreiben:** oben in `CHANGELOG` (`js/news.js`) einen Eintrag mit `neu` / `besser` / `fix`, dann `COMING` um eine Woche weiterschieben
+6. **Live stellen:** auf `main` und `gh-pages` pushen. Die installierte App holt sich das Update selbst, im Titelmenü erscheint „NEU“
+7. **Zeigen:** 12–20 Sekunden Clip vom neuen Feature für TikTok (`tools/promo`, Vorlage `tools/promo/update`)
 
 ---
 
@@ -29,20 +34,20 @@ Ziel: **Jede Woche ein spürbares Update**, damit Klingenhort nie „durchgespie
 
 ## Plan für 12 Wochen
 
-| Woche | Version | Thema | Inhalt | Aufwand |
-|---|---|---|---|---|
-| 1 | 4.2 | **Wochen-Ereignisse** | Automatisch nach Kalenderwoche: *Goldrausch* (+50 % Gold), *Blutmond* (doppelt so viele Elite-Gegner, bessere Beute), *Drachenwoche* (mehr Schuppen, Jungdrachen überall), *Glückswoche* (Glücksrad ein Gratis-Dreh pro Tag), *Schmiedewoche* (Aufwerten günstiger). Banner im Titelmenü und auf der Karte | klein |
-| 2 | 4.3 | **Aufträge** | 3 Tagesaufträge (z. B. „Besiege 40 Untote“, „Verschmelze einen Gegenstand“) und 1 Wochenauftrag. Auftragstafel als neue Station im Versteck. Belohnung: Gold, Materialien, Glücksmünzen | mittel |
-| 3 | 4.4 | **Neues Gebiet: Sturmgipfel** | Gebiet 9 mit Blitz-Effekten, 4 neue Gegner (Harpyie, Sturmgolem, Donnerschamane, Greif), Boss *Sturmkönig Aerok* mit Blitz-Phasen, neues Material *Sturmsilber* | groß |
-| 4 | 5.0 | **Saison 1** | Saison-Helden starten bei Level 1, eigene Saison-Rangliste (lokal: bester Akt, höchste Qual, schnellster Boss), **kostenloser Saison-Pass** mit 30 Stufen (Kosmetik, Titel, Glücksmünzen). Nach 6 Wochen wandern Saison-Helden zu den normalen Helden | groß |
-| 5 | 5.1 | **Begleiter** | Haustiere aus Eiern (Truhen, Bosse): Mini-Drache, Geisterkatze, Goldkäfer. Sie sammeln Beute ein, leveln mit und haben je einen kleinen Effekt | mittel |
-| 6 | 5.2 | **Der Abgrund** | Endlos-Turm: Ebene für Ebene stärker, 3 Minuten pro Ebene, Bestwert pro Klasse in der Ruhmeshalle. Belohnung steigt mit der Ebene | mittel |
-| 7 | 5.3 | **Neue Klasse: Nekromant** | Beschwört Skelette, Knochenspeer, Leichenexplosion, Ultimative *Armee der Toten*. Eigener Talentbaum, eigene Waffen (Sense, Knochenstab) | groß |
-| 8 | 5.4 | **Legendäre Kräfte 2.0** | 12 neue legendäre Effekte, die Fähigkeiten verändern (z. B. Feuerball teilt sich, Wirbelklinge zieht Gegner an). Sets mit 4 Teilen und Ring/Amulett als neue Plätze | mittel |
-| 9 | 5.5 | **Verzaubern & Waffen-Skins** | Einen Zusatzwert gezielt neu würfeln (Verzauberer im Versteck). Waffen-Aussehen übertragen (Transmog) | mittel |
-| 10 | 5.6 | **Weltboss der Woche** | Ein riesiger Boss mit 3 Phasen, nur diese Woche. Schaden-Bestwert, eigene Belohnung (Trophäe fürs Versteck) | mittel |
-| 11 | 5.7 | **Versteck 2.0** | Dekorieren: Trophäen von Bossen, Banner, Teppiche, Pflanzen. Gästebuch-Code: Versteck als Code teilen und das von Freunden ansehen | mittel |
-| 12 | 6.0 | **Saison 2 + Online-Rangliste** | Neue Saison-Regel (z. B. „nur Hardcore“ oder „doppelte Geschwindigkeit“). Optional eine echte Online-Rangliste (braucht einen kleinen Server, z. B. Supabase) | groß |
+| Woche | Version | Thema | Inhalt | Aufwand | Status |
+|---|---|---|---|---|---|
+| 1 | 4.2 | **Wochen-Ereignisse** | Automatisch nach Kalenderwoche: *Goldrausch* (+50 % Gold), *Blutmond* (doppelt so viele Elite-Gegner, bessere Beute), *Drachenwoche* (mehr Schuppen, Jungdrachen überall), *Glückswoche* (Glücksrad ein Gratis-Dreh pro Tag), *Schmiedewoche* (Aufwerten günstiger). Banner im Titelmenü und auf der Karte | klein | offen |
+| 2 | 4.3 | **Aufträge** | 3 Tagesaufträge (z. B. „Besiege 40 Untote“, „Verschmelze einen Gegenstand“) und 1 Wochenauftrag. Auftragstafel als neue Station im Versteck. Belohnung: Gold, Materialien, Glücksmünzen | mittel | offen |
+| 3 | 4.4 | **Neues Gebiet: Sturmgipfel** | Gebiet 9 mit Blitz-Effekten, 4 neue Gegner (Harpyie, Sturmgolem, Donnerschamane, Greif), Boss *Sturmkönig Aerok* mit Blitz-Phasen, neues Material *Sturmsilber* | groß | offen |
+| 4 | 5.0 | **Saison 1** | Saison-Helden starten bei Level 1, eigene Saison-Rangliste (lokal: bester Akt, höchste Qual, schnellster Boss), **kostenloser Saison-Pass** mit 30 Stufen (Kosmetik, Titel, Glücksmünzen). Nach 6 Wochen wandern Saison-Helden zu den normalen Helden | groß | offen |
+| 5 | 5.1 | **Begleiter** | Haustiere aus Eiern (Truhen, Bosse): Mini-Drache, Geisterkatze, Goldkäfer. Sie sammeln Beute ein, leveln mit und haben je einen kleinen Effekt | mittel | offen |
+| 6 | 5.2 | **Der Abgrund** | Endlos-Turm: Ebene für Ebene stärker, 3 Minuten pro Ebene, Bestwert pro Klasse in der Ruhmeshalle. Belohnung steigt mit der Ebene | mittel | offen |
+| 7 | 5.3 | **Neue Klasse: Nekromant** | Beschwört Skelette, Knochenspeer, Leichenexplosion, Ultimative *Armee der Toten*. Eigener Talentbaum, eigene Waffen (Sense, Knochenstab) | groß | offen |
+| 8 | 5.4 | **Legendäre Kräfte 2.0** | 12 neue legendäre Effekte, die Fähigkeiten verändern (z. B. Feuerball teilt sich, Wirbelklinge zieht Gegner an). Sets mit 4 Teilen und Ring/Amulett als neue Plätze | mittel | offen |
+| 9 | 5.5 | **Verzaubern & Waffen-Skins** | Einen Zusatzwert gezielt neu würfeln (Verzauberer im Versteck). Waffen-Aussehen übertragen (Transmog) | mittel | offen |
+| 10 | 5.6 | **Weltboss der Woche** | Ein riesiger Boss mit 3 Phasen, nur diese Woche. Schaden-Bestwert, eigene Belohnung (Trophäe fürs Versteck) | mittel | offen |
+| 11 | 5.7 | **Versteck 2.0** | Dekorieren: Trophäen von Bossen, Banner, Teppiche, Pflanzen. Gästebuch-Code: Versteck als Code teilen und das von Freunden ansehen | mittel | offen |
+| 12 | 6.0 | **Saison 2 + Online-Rangliste** | Neue Saison-Regel (z. B. „nur Hardcore“ oder „doppelte Geschwindigkeit“). Optional eine echte Online-Rangliste (braucht einen kleinen Server, z. B. Supabase) | groß | offen |
 
 > Faustregel: Wochen mit „groß“ wechseln sich mit kleinen und mittleren ab. Fällt eine Woche aus, lieber ein kleines Update als gar keins – Ereignisse und Aufträge laufen ab Woche 2 auch ohne neue Inhalte weiter.
 

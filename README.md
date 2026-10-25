@@ -427,6 +427,9 @@ assets/fx.png          Effekt-Atlas (Zauber, Explosionen, Blitze, Hiebe)
 manifest.webmanifest   App-Manifest (Vollbild, Hoch- und Querformat)
 sw.js                  Service Worker (Offline)
 docs/                  Screenshots, GIF, Werbevideo
+tools/test/            automatische Tests (Handy, iPhone, TikTok-Browser, alte Spielstände): bash tools/test/run.sh
+tools/promo/           TikTok-Clips aus echten Spielszenen (Aufnahme, Schnitt, Musik)
+tools/WOCHENUPDATE.md  Ablauf für das wöchentliche Update
 ```
 
 **Erweitern:** Neue Gegner, Materialien, Waffenformen, Gebäude, Ereignisse, Rätsel oder Erfolge sind reine Daten in `js/data.js`, Texte stehen in `js/story.js`.

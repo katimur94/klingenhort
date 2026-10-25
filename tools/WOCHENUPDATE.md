@@ -1,0 +1,69 @@
+# Wöchentliches Update – Ablauf
+
+Jede Woche entsteht ein neues, getestetes Update, geht live und bekommt einen TikTok-Clip. Diese Anleitung ist für den geplanten Claude-Auftrag geschrieben, gilt aber genauso für Menschen.
+
+**Während des Laufs fragt niemand zurück.** Im Zweifel die kleinere, sichere Variante bauen und im Bericht erklären.
+
+---
+
+## 0. Vorbereitung
+
+- Repo `katimur94/klingenhort`, Arbeitsverzeichnis ist die Repo-Wurzel. Mit dem neuesten Stand beginnen: `git fetch origin main gh-pages` und auf `origin/main` aufsetzen.
+- Live-Seite: https://katimur94.github.io/klingenhort/ – GitHub Pages aus dem Branch `gh-pages`. `main` und `gh-pages` zeigen immer auf denselben Stand.
+- Werkzeuge: `bash tools/promo/fonts.sh` einmal ausführen (Schriften für den Clip).
+
+## 1. Thema der Woche
+
+1. In `ROADMAP.md`, Tabelle „Plan“: die **erste Zeile mit Status „offen“** (oder „teilweise“) ist das Thema.
+2. Dazu ein bis zwei Punkte aus „Handy-Feinschliff“ ohne ✅ – klein halten.
+3. Passt das Thema nicht in einen Lauf: den Kern bauen, Status „teilweise“ setzen und notieren, was fehlt.
+4. Sind alle Wochen erledigt: aus dem Ideenspeicher eine neue Woche planen, in die Tabelle schreiben und umsetzen.
+
+## 2. Umsetzen
+
+- Reines HTML und JavaScript, keine Abhängigkeiten, kein Build-Schritt. Inhalte sind Daten in `js/data.js`, Texte in `js/story.js`.
+- Spieltexte auf Deutsch, im Ton des Spiels.
+- **Alte Spielstände müssen laden:** neue Felder immer mit Standardwert ergänzen (`fixMeta`, `activateChar`).
+- **Handy zuerst:** Hoch- und Querformat, Touch-Ziele mindestens 44 px, Zurück/Hauptaktion in der Kopfleiste (`.head` mit `.hbtns`) oder Fußleiste (`.foot`), Listen mit Details nebeneinander (`.split` + `.side.sheet`).
+- Neue Skripte in `index.html` laden und in `sw.js` (`SHELL`) eintragen.
+- Code im Stil des umgebenden Codes: kompakt, kurze deutsche Kommentare.
+
+## 3. Version, Neuigkeiten, Doku
+
+- `VERSION` in `js/data.js` **und** `sw.js` anheben: neues Feature = Minor (4.2.0 → 4.3.0), nur Korrekturen = Patch.
+- `js/news.js`: neuen Eintrag **oben** in `CHANGELOG` (`v`, `d` = heutiges Datum, `t` = kurzer Titel, `items` mit `neu` / `besser` / `fix`). Aus Spielersicht schreiben, keine Technik. `COMING`: diese Woche entfernen, die übernächste aus der Roadmap hinten anfügen (immer vier Einträge).
+- `ROADMAP.md`: Status der Woche auf „✅ 4.x“, erledigte Handy-Punkte mit ✅ markieren.
+- `README.md`: im Abschnitt „Neuigkeiten & Wochenplan“ den Block „Neu in …“ ersetzen, betroffene Abschnitte ergänzen (z. B. Gegner, Steuerung), Versionszeile oben anpassen.
+
+## 4. Testen
+
+- `bash tools/test/run.sh` muss **„ALLE TESTS GRÜN“** melden (prüft Handy hoch/quer, iPhone, TikTok-Browser, alte Spielstände aus der Live-Version, alle Bildschirme).
+- Für das neue Feature eigene Prüfungen in `tools/test/flows.js` ergänzen (z. B. neues Menü öffnet sich, neue Station funktioniert, Belohnung kommt an).
+- Die Screenshots in `/tmp/klingenhort-test/screens-hoch`, `-quer`, `-pc` und eigene Screenshots der neuen Bildschirme **ansehen**: abgeschnittener Text? Knöpfe erreichbar? Sieht es gut aus?
+- Bleibt ein Test rot und lässt sich nicht beheben: **nicht live stellen** (siehe Abschnitt 7).
+
+## 5. Veröffentlichen
+
+1. Commit mit deutscher Nachricht, auf den Arbeits-Branch pushen.
+2. Live stellen – nur bei grünen Tests: `git fetch origin main gh-pages`; wenn `origin/main` und `origin/gh-pages` Vorfahren von `HEAD` sind: `git push origin HEAD:main HEAD:gh-pages`. Sonst zuerst `origin/main` hereinmergen und die Tests wiederholen.
+3. Prüfen: `curl -s https://katimur94.github.io/klingenhort/js/data.js | grep VERSION` zeigt nach 1–3 Minuten die neue Version.
+
+## 6. TikTok-Clip
+
+- Ablauf in `tools/promo/README.md`. Vorlage nach `tools/promo/updates/<version>/` kopieren, die Szenen `feature1` und `feature2` auf das **neue Feature im echten Spiel** umbauen, Texte unter ANPASSEN schreiben.
+- 12–20 Sekunden. Erstes Bild: Action und großer Text.
+- Vor dem Kodieren `sheet.jpg` und einzelne Bilder ansehen.
+- Das Video an den Nutzer schicken (SendUserFile, status „proactive“) – **nicht** ins Repo. Die Dateien unter `updates/<version>/` committen und mit veröffentlichen.
+
+## 7. Bericht an den Nutzer
+
+Kurz und auf Deutsch:
+- Was ist neu (aus Spielersicht), Version, Link zur Live-Seite
+- Das Video (angehängt) und ein Vorschlag für die TikTok-Beschreibung mit Hashtags
+- Was nicht geklappt hat; falls nicht live: warum, und was als Nächstes passiert
+- Was nächste Woche kommt
+
+## Wenn etwas schiefgeht
+
+- Fehler nach dem Live-Gang entdeckt: mit `git revert` zurücknehmen, wieder auf `main` und `gh-pages` pushen, im Bericht erklären.
+- Live-Seite lädt nicht: genauso zurücknehmen.
