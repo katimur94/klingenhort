@@ -6,7 +6,8 @@
 //   await R.cap('kampf', 60, `i => { __keep(.8); if (i === 0) { P.rage = 100; doUlt(); } }`);
 //   await R.close();
 // Optionen: H.open({ out, seed: 5 }) – seed legt den Zufall fest; im Browser __seed(n) je Szene,
-// window.__txtOK = /SCHWÄCHE|RESISTENT/ zeigt zusätzlich solche schwebenden Texte.
+// window.__txtOK = /SCHWÄCHE|RESISTENT/ zeigt zusätzlich solche schwebenden Texte, window.__txtNo = /^\d+$/ blendet Schadenszahlen aus,
+// window.__camDX/__camDY verschieben die Kamera (Spielpixel).
 // Wichtig: Funktionen für jedes Bild (per) laufen im Browser. Sie dürfen keine Variablen aus Node
 // benutzen – Werte daher als Text einsetzen (Template-String) oder als zweites Argument an ev() geben.
 const { chromium } = require('playwright');
@@ -39,7 +40,9 @@ function setup() {
   window.__step = n => { for (let i = 0; i < (n || 1); i++) { for (let k = RT.length - 1; k >= 0; k--) if (RT[k].t <= T) { const r = RT.splice(k, 1)[0]; try { r.fn(); } catch (e) { } } loop(last + 1000 / 30); } };
   // Zoom: s = Bildschirmpixel pro Spielpixel (3–3.5 nah, 2.4 Übersicht)
   window.__vp = s => { SCALE = s; VW = Math.ceil(innerWidth / SCALE) + 1; VH = Math.ceil(innerHeight / SCALE) + 1; cv.width = VW; cv.height = VH; cv.style.width = VW * SCALE + 'px'; cv.style.height = VH * SCALE + 'px'; ctx.imageSmoothingEnabled = false; makeVig(); };
-  window.__snap = () => { cam.x = clamp(P.x - VW / 2, 0, Math.max(0, AW - VW)); cam.y = clamp(P.y - 10 - VH / 2, 0, Math.max(0, AH - VH)); };
+  window.__snap = () => { cam.x = clamp(P.x + (window.__camDX || 0) - VW / 2, 0, Math.max(0, AW - VW)); cam.y = clamp(P.y + (window.__camDY || 0) - 10 - VH / 2, 0, Math.max(0, AH - VH)); };
+  // Kamera-Versatz in Spielpixeln (z. B. __camDX = 24: Held links, Gegner rechts im Bild); 0 = wie im Spiel
+  const _cam = window.camera; window.camera = function (dt) { const dx = window.__camDX || 0, dy = window.__camDY || 0; if (!P || (!dx && !dy)) return _cam.apply(this, arguments); P.x += dx; P.y += dy; try { return _cam.apply(this, arguments); } finally { P.x -= dx; P.y -= dy; } };
   // Kampf aufbauen: Held ci, Akt act, Gegnerarten kinds im Kreis; o: { boss, bx, by, champ, champName, tanky, keepN, dist, elite, type }
   window.__fight = (ci, act, kinds, o) => {
     o = o || {}; activateChar(ci); P.act = act; P.map = genMap(act); startRoom(o.type || 'kampf', 3);
@@ -61,8 +64,9 @@ function setup() {
   window.__off = () => { keys.KeyJ = keys.KeyA = keys.KeyD = keys.KeyW = keys.KeyS = false; };
   // Zufall für eine Szene festlegen (gleiche Aufnahme bei jedem Lauf): __seed(7)
   window.__seed = s => { let a = s >>> 0; Math.random = () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
-  // nur Schadenszahlen und Ultimative-Rufe zeigen, keine EP- und Beute-Texte; window.__txtOK (RegExp) lässt weitere Texte durch
-  const _txt = window.txt; window.txt = function (x, y, s, c, big) { s = String(s); if (window.__txtOK && window.__txtOK.test(s)) return _txt.apply(this, arguments); if (/EP|^\+\d+ \D/.test(s)) return; if (!big && !/^\d+$/.test(s)) return; return _txt.apply(this, arguments); };
+  // nur Schadenszahlen und Ultimative-Rufe zeigen, keine EP- und Beute-Texte;
+  // window.__txtOK (RegExp) lässt weitere Texte durch, window.__txtNo (RegExp) blendet welche aus (z. B. /^\d+$/ = keine Schadenszahlen)
+  const _txt = window.txt; window.txt = function (x, y, s, c, big) { s = String(s); if (window.__txtNo && window.__txtNo.test(s)) return; if (window.__txtOK && window.__txtOK.test(s)) return _txt.apply(this, arguments); if (/EP|^\+\d+ \D/.test(s)) return; if (!big && !/^\d+$/.test(s)) return; return _txt.apply(this, arguments); };
 }
 
 async function open(o = {}) {

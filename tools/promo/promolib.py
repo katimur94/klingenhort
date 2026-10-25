@@ -137,11 +137,13 @@ def logo():
 
 
 class EndCard:
-    """Schluss: Logo, die vier Helden, Aufruf und Adresse. Braucht raw/assets (harness.assets()) und Hintergrundbilder."""
-    def __init__(self, raw, bg_frames, tag='DAS PIXEL-ACTION-RPG', extra=None):
+    """Schluss: Logo, die vier Helden, Aufruf und Adresse. Braucht raw/assets (harness.assets()) und Hintergrundbilder.
+    cta: Aufruf als Liste von Zeilen (Standard eine Zeile „JETZT GRATIS SPIELEN“), foot: Zeile unter der Adresse."""
+    def __init__(self, raw, bg_frames, tag='DAS PIXEL-ACTION-RPG', extra=None, cta=None, foot=None):
         A = json.load(open(os.path.join(raw, 'assets', 'assets.json')))
         self.meta = A['main']; self.heroes = [load(os.path.join(raw, 'assets', 'm_%d.png' % i)) for i in range(len(self.meta))]
         self.bg = [darken(load(p), .3, 14) for p in bg_frames]; self.logo = logo(); self.tag = tag; self.extra = extra
+        self.cta = cta or ['JETZT GRATIS SPIELEN']; self.foot = foot or 'HANDY & PC · OHNE DOWNLOAD'
 
     def __call__(self, k, total=144):
         b = self.bg[(k // 6) % len(self.bg)].copy()
@@ -158,13 +160,16 @@ class EndCard:
             if self.meta[i]['aura']: place(b, glow_disc(170, self.meta[i]['aura'][0], 130), x, yb + 30)
             fr = (k // 4 + i) % 4
             place(b, self.heroes[i].crop((fr * 40, 0, fr * 40 + 40, 44)), x, yb, 8)
-        if k >= 26: place(b, text_img('JETZT GRATIS SPIELEN', 50, GOLD), W / 2, 1270, pop(k - 26) * (1 + .05 * math.sin((k - 26) * .35)))
+        n = len(self.cta)   # eine Zeile wie bisher bei y 1270, zwei Zeilen bei 1215/1285
+        for j, line in enumerate(self.cta):
+            if k >= 26 + j * 3: place(b, text_img(line, 50, GOLD), W / 2, 1270 - (n - 1) * 35 + j * 70, pop(k - 26 - j * 3) * (1 + .05 * math.sin((k - 26) * .35)))
+        uy = 1385 if n == 1 else 1393
         if k >= 32:
             kk = k - 32; box = Image.new('RGBA', (900, 104), (16, 10, 24, 235))
             ImageDraw.Draw(box).rectangle((0, 0, 899, 103), outline=(255, 210, 74, 255), width=6)
-            place(b, box, W / 2 - 20, 1385, pop(kk))
-            if kk >= 2: place(b, text_img(URL, 62, WHITE, VT, stroke=3, shadow=3, maxw=840), W / 2 - 20, 1382)
-        if k >= 40: title(b, k, 'HANDY & PC · OHNE DOWNLOAD', 30, ICE, 1490, 40)
+            place(b, box, W / 2 - 20, uy, pop(kk))
+            if kk >= 2: place(b, text_img(URL, 62, WHITE, VT, stroke=3, shadow=3, maxw=840), W / 2 - 20, uy - 3)
+        if k >= 40: title(b, k, self.foot, 30, ICE, 1490 if n == 1 else 1482, 40)
         flash(b, k, 1, 6); fade_out(b, k, total)
         return b
 
