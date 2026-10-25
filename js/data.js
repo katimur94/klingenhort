@@ -5,7 +5,7 @@
    Neue Klassen, Gegner, Talente, Rezepte: hier ergänzen.
    ========================================================= */
 
-const VERSION = '4.2.0';
+const VERSION = '4.3.0';
 const SAVE_KEY = 'klingenhort.v3';
 const WALL = 32;
 
@@ -364,7 +364,7 @@ const GEMS = {
   topas:{n:'Topas',c:'#e8d04a',eff:'gold',v:[.05,.1,.16,.24,.35],s:v=>_t('Gold +{v}',{v:pct(v)})}
 };
 const GEMORDER = ['rubin','saphir','smaragd','amethyst','topas'];
-const GEMGRADE = ['Splitter','Kleiner','Feiner','Makelloser','Königlicher'];
+const GEMGRADE = ['Gesplitterter','Kleiner','Feiner','Makelloser','Königlicher'];
 const UPCHANCE = [1,1,1,1,1,.85,.7,.55,.45,.35];
 const RECIPES = [
   {id:'potion',n:'Heiltrank ×2',d:'Zwei Heiltränke brauen',cost:{schleim:1},gold:15},

@@ -7,6 +7,13 @@
 
 const CHANGELOG = [
   {
+    v: '4.3.0', d: '2026-10-25', t: 'Sechs Sprachen', items: [
+      ['neu', 'Klingenhort spricht jetzt sechs Sprachen: Deutsch, Englisch, Türkisch, Spanisch, Italienisch und Französisch.'],
+      ['neu', 'Das Spiel startet in der Sprache deines Handys. Wechseln geht jederzeit über 🌐 im Titelmenü oder in den Einstellungen – dein Spielstand bleibt erhalten.'],
+      ['besser', 'Zahlen und Daten erscheinen im Format deiner Sprache.']
+    ]
+  },
+  {
     v: '4.2.0', d: '2026-10-25', t: 'Wochen-Ereignisse', items: [
       ['neu', 'Jede Woche gilt eine neue Regel für alle: Goldrausch, Blutmond, Drachenwoche, Glückswoche oder Schmiedewoche. Wechsel ist immer montags.'],
       ['neu', 'Goldrausch bringt 50 % mehr Gold, im Blutmond tauchen doppelt so viele Elite-Gegner auf – mit 30 % mehr Beute.'],
