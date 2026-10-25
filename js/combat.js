@@ -329,7 +329,7 @@ function killEnemy(e, nx, ny) {
   for (const k in (e.def.drop || {})) { const v = e.def.drop[k]; if (v >= 1) dropMat(e.x, e.y, k, Math.round(v * (e.boss ? 1 : 1))); else if (Math.random() < v * lm * (e.elite ? 2 : 1)) dropMat(e.x, e.y, k, e.elite ? 2 : 1); }
   if (qm && Math.random() < .03 * lm * (e.elite ? 3 : 1)) dropMat(e.x, e.y, 'aether', 1);
   if (weekFx('dragon') && !e.boss && Math.random() < (e.elite ? .12 : .03) * lm) dropMat(e.x, e.y, 'schuppe', 1);
-  if (e.boss) { dropLoot(e.x, e.y, 2, .06); dropLoot(e.x + 10, e.y, 1, .03); if (qm) dropLoot(e.x - 10, e.y, 3, .04); dropGem(e.x, e.y, randomGem(stageNum() + 10)); dropMat(e.x, e.y, 'schuppe', ri(1, 3)); if (qm && Math.random() < .01 + qm * .002) dropItem(e.x, e.y, makeMythic()); if (!gainLore()) gainFate(1, true); }
+  if (e.boss) { dropLoot(e.x, e.y, 2, .06); dropLoot(e.x + 10, e.y, 1, .03); if (qm) dropLoot(e.x - 10, e.y, 3, .04); dropGem(e.x, e.y, randomGem(stageNum() + 10)); dropMat(e.x, e.y, 'schuppe', ri(1, 3)); if (qm && Math.random() < .004 + qm * .001) dropItem(e.x, e.y, makeMythic()); /* seltener: Mythisch kommt vor allem aus den Verlorenen Landen */ if (!gainLore()) gainFate(1, true); }
   else if (e.elite) { if (Math.random() < .25 * lm) dropLoot(e.x, e.y, 1, .01); if (Math.random() < .14 * lm * gemMul()) dropGem(e.x, e.y, randomGem(stageNum())); if (Math.random() < .03 * loreChance()) gainLore(); if (Math.random() < .02 * (1 + weekFx('fate'))) gainFate(1, true); }
   else if (Math.random() < .02 * lm) dropLoot(e.x, e.y, 0);
   if (e.champ) { $('bossbar').hidden = true; banner(_t('CHAMPION BESIEGT'), e.name); slowmo = .6; }
@@ -770,6 +770,7 @@ function updPickups(dt) {
     const magR = c.k === 'loot' ? 0 : 48;
     if (state === 'play' && (d < magR || c.mag) && c.t > .3) { const sp = c.mag ? 260 : 170; c.x += dx / d * sp * dt; c.y += dy / d * sp * dt; }
     if (state === 'play' && d < (c.k === 'loot' ? 10 : 8) && c.t > .4) {
+      if (HOOK.collect && hookVal('collect', false, c)) continue; // ein System nimmt die Beute selbst (Verlorene Lande: in den Rucksack)
       c.got = true;
       if (c.k === 'coin') { P.gold += c.v; stat('goldTotal', c.v); sfx('coin'); part(c.x, c.y, 4, 0, 0, 40, '#e8b04a', .3, 1, 0, 1); }
       else if (c.k === 'heart') { const h = Math.round(P.st.hp * .15); P.hp = Math.min(P.st.hp, P.hp + h); txt(P.x, P.y - 24, '+' + h, '#79c24e'); sfx('heal'); }
