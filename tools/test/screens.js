@@ -97,6 +97,15 @@ const PC = process.argv[5] === 'pc', BASE = (process.env.BASE || 'http://localho
   await shot('35_best', () => { showBestiary(); });
   await shot('36_hall', () => { showHall(); });
   await shot('37_code', () => { showCode(); });
+  // 5.0: Begleiter, Bauteile, Meisterschmiede, Tauschen, Aussehen
+  await shot('38_pet_starter', () => { SAVE.meta.pets.starter = false; titleScene(); showTitle(); petStarter('title'); });
+  await shot('39_pet', () => { SAVE.meta.pets.starter = true; petGive('drache', { nm: 'Funki', lv: 52 }); eggGive('eule', true); activateChar(0); openChar('pet', 'map'); }, 500);
+  await shot('40_parts', () => { Object.assign(P.parts, { 'klinge:3': 2, 'griff:2': 4, 'kern:feuer:2': 1, 'platte:1': 5, 'futter:4': 1, 'rune:licht:3': 2 }); openChar('parts'); });
+  await shot('41_wb_mw', () => { wbTab = 'mw'; openWorkbench('node'); });
+  await shot('42_wb_zer', () => { wbTab = 'zer'; openWorkbench(); });
+  await shot('43_trade', () => { trShow(); });
+  await shot('44_trade_deal', () => { TRD.tab = 'deal'; trShow(); });
+  await shot('45_mirror_looks', () => { enterHideout(); openStation('spiegel'); panel.scrollTop = 9999; }, 1200);
   console.log(errs.length ? '  FAIL Fehler: ' + errs.slice(0, 3).join(' | ') : '  ok   ' + W + 'x' + H + (LG !== 'de' ? ' ' + LG : '') + ' alle Bildschirme ohne Fehler → ' + OUT);
   let bad = errs.length;
   if (LG !== 'de') {
