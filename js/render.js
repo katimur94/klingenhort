@@ -9,7 +9,22 @@ const SCR2 = mk(64, 64), SG2 = SCR2.getContext('2d'); SG2.imageSmoothingEnabled 
 function addLight(x, y, r, a) { LIGHTS.push([x, y, r, a == null ? 1 : a]); }
 function glow(x, y, r, col, a) { const gr = ctx.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(${col},${a})`); gr.addColorStop(1, `rgba(${col},0)`); ctx.fillStyle = gr; ctx.fillRect(x - r, y - r, r * 2, r * 2); }
 function ptext(s, x, y, col, size) { ctx.font = (size || 8) + 'px "Press Start 2P", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#000'; ctx.fillText(s, Math.round(x) + 1, Math.round(y) + 1); ctx.fillStyle = col; ctx.fillText(s, Math.round(x), Math.round(y)); }
-function drawWeapon(spr, x, y, ang, sc) { ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(spr.bow ? ang : ang + Math.PI / 2); const s = sc || 1; if (Math.cos(ang) < 0) ctx.scale(spr.bow ? s : -s, spr.bow ? -s : s); else ctx.scale(s, s); ctx.drawImage(spr.c, -spr.ox, -spr.oy); ctx.restore(); }
+// Mythisch: wandernde Farben (spr.fr), Legendär/Set/Mythisch: Glanz, der alle paar Sekunden über die Waffe läuft
+function drawWeapon(spr, x, y, ang, sc) {
+  ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(spr.bow ? ang : ang + Math.PI / 2); const s = sc || 1; if (Math.cos(ang) < 0) ctx.scale(spr.bow ? s : -s, spr.bow ? -s : s); else ctx.scale(s, s);
+  ctx.drawImage(spr.fr ? spr.fr[Math.floor(T * 7) % spr.fr.length] : spr.c, -spr.ox, -spr.oy);
+  if (spr.glint) { const gi = glintImg(spr); if (gi) ctx.drawImage(gi, -spr.ox, -spr.oy); }
+  ctx.restore();
+}
+function glintImg(spr) {
+  const ph = (T * (spr.myth ? .55 : .4) + (spr.ox * .13)) % 1; if (ph > .22) return null;
+  const n = 6, f = Math.floor(ph / .22 * n);
+  if (!spr.gls) spr.gls = []; if (spr.gls[f]) return spr.gls[f];
+  const w = spr.c.width, h = spr.c.height, c = mk(w, h), g = c.getContext('2d'), p = (f + .5) / n * (w + h);
+  g.drawImage(spr.c, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = 'rgba(255,255,255,.85)';
+  for (let y = 0; y < h; y++) { const x0 = Math.round(p - y * .7 - h * .3); g.fillRect(x0, y, 2, 1); }
+  return spr.gls[f] = c;
+}
 function depthScale(y) { return .95 + .08 * clamp((y - BD.y0) / (BD.y1 - BD.y0), 0, 1); }
 function drawFxFrame(name, f, x, y, sc, rot, flipY, img) {
   const [sx, sy, w, h] = fxRect(name, f);
@@ -18,7 +33,7 @@ function drawFxFrame(name, f, x, y, sc, rot, flipY, img) {
   ctx.restore();
 }
 // Held mit dem gewählten Aussehen der Ausrüstung (visItem, js/trade.js)
-function heroStrip() { const hm = visItem(P.gear.helm), am = visItem(P.gear.armor), hg = headgearOf(hm); return { strip: charStrip(heroSpec(P, { np: hg === 'crown' ? 1 : 0, at: am ? am.tier : 0, ht: hm ? hm.tier : 0 })), hg, hm }; }
+function heroStrip() { const hm = visItem(P.gear.helm), am = visItem(P.gear.armor), hg = headgearOf(hm); return { strip: charStrip(heroSpec(P, { np: hgNoPlume(hg), at: am ? am.tier : 0, ht: hm ? hm.tier : 0 })), hg, hm }; }
 
 /* ---------- Figuren ---------- */
 const HAND = { knight: [4, -9], knightf: [4, -9], wizard: [4, -9], wizf: [4, -9], elf: [4, -9], elff: [4, -9], dwarf: [4, -8], dwarff: [4, -8], lizard: [4, -9], lizardf: [4, -9], doc: [4, -7] };
@@ -34,9 +49,11 @@ function drawActor(e, isP) {
     fi = P.flash > 0 && strip.hasHit ? 8 : (P.moving ? 4 + w4(P.phase * .6) : w4(T * 6));
     const ox = 32 - fw / 2, oy = 60 - fh, m = strip.meta[fi] || strip.meta[0], L = P.look, cc = capeCols(L);
     if (L.wings && COSM[L.wings] && P.roll <= 0) drawWings(SG, ox, oy, m, COSM[L.wings], P.moving);
+    auraSprite(SG, ox, oy, m, 0); // Auren hinter dem Körper (js/auras.js)
     if (cc) drawCape(SG, ox, oy, m, cc, P.moving, P.phase);
     SG.drawImage(strip.c, fi * fw, 0, fw, fh, ox, oy, fw, fh);
     if (hs.hg) drawHeadgear(SG, ox, oy, m, hs.hg, hs.hm);
+    auraSprite(SG, ox, oy, m, 1);
   } else {
     const anim = e.moving || e.st === 'act' ? 'run' : 'idle', spd = anim === 'run' ? 10 : 6;
     let r = frameRect(e.sp, anim, Math.floor(T * spd + e.seed));
@@ -56,9 +73,9 @@ function drawActor(e, isP) {
   if (e.rollA) { ctx.translate(0, -10 * sc); ctx.rotate(e.rollA); ctx.translate(0, 10 * sc); }
   ctx.transform(1, 0, ln, 1, 0, 0); ctx.scale(kx, ky);
   if (isP && strip) {
-    const up = Math.max(P.gear.armor ? P.gear.armor.up : 0, P.gear.helm ? P.gear.helm.up : 0), myth = (P.gear.armor && P.gear.armor.rar === 6) || (P.gear.helm && P.gear.helm.rar === 6);
-    if (up >= 5 || P.rebirths || myth) {
-      const col = myth ? '#ff4fd8' : up >= 10 ? '#ffd24a' : up >= 8 ? (P.gear.armor ? RAR[P.gear.armor.rar].c : '#fff') : P.rebirths && up < 5 ? '#ffd24a' : '#ffffff';
+    const up = Math.max(P.gear.armor ? P.gear.armor.up : 0, P.gear.helm ? P.gear.helm.up : 0), myth = (P.gear.armor && P.gear.armor.rar === 6) || (P.gear.helm && P.gear.helm.rar === 6), ae = auraEdge();
+    if (ae || up >= 5 || P.rebirths || myth) {
+      const col = ae || myth ? ae || '#ff4fd8' : up >= 10 ? '#ffd24a' : up >= 8 ? (P.gear.armor ? RAR[P.gear.armor.rar].c : '#fff') : P.rebirths && up < 5 ? '#ffd24a' : '#ffffff';
       const sil = silCache(strip, col); const a = ctx.globalAlpha; ctx.globalAlpha = a * (.45 + .2 * Math.sin(T * 5));
       for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) ctx.drawImage(sil, fi * fw, 0, fw, fh, -fw / 2 + ox, -fh + oy, fw, fh);
       ctx.globalAlpha = a;
@@ -99,17 +116,43 @@ function drawPlayer() {
   if (P.spin > 0) off = 10;
   const showW = P.roll <= 0 && !P.leap && state !== 'dead', behind = Math.sin(ang) < -.35 && P.spin <= 0 && it.base !== 'staff';
   const wpos = h => ({ x: h.x + Math.cos(ang) * off, y: h.y + Math.sin(ang) * off * (P.spin > 0 ? .5 : 1) });
-  if (showW && behind && P.hand) { const q = wpos(P.hand); drawWeapon(spr, q.x, q.y, ang, P.hand.sc); }
+  if (showW && behind && P.hand) { const q = wpos(P.hand); drawWeapon(spr, q.x, q.y, ang, P.hand.sc); auWq(q, ang, spr, it); }
   if (P.wall > 0) { const f = Math.floor(T * 10) % 6, sk = P.wallSk; ctx.globalAlpha = sk ? .3 + sk.r * .03 : .28; drawFxFrame('shield', f, P.x - CX, P.y - CY - 12, .8 * (sk ? sk.sc : 1), 0, false, sk && skFx('shield', sk)); ctx.globalAlpha = 1; addLight(P.x - CX, P.y - CY - 10, 40, .6); }
   const L = P.look, aura = L.aura && COSM[L.aura];
   if (aura) { const x = P.x - CX, y = P.y - CY; ctx.globalAlpha = .18 + .06 * Math.sin(T * 4); ctx.fillStyle = aura.c[0]; ctx.beginPath(); ctx.ellipse(x, y, 11, 4.5, 0, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1; if (Math.random() < .35) part(P.x + rnd(-8, 8), P.y + rnd(-2, 2), rnd(0, 4), 0, 0, rnd(15, 35), Math.random() < .5 ? aura.c[0] : aura.c[1], rnd(.5, .9), 1, -6, 1); }
   if (L.wings === 'w_phoenix' && Math.random() < .3) part(P.x - P.turn * 7 + rnd(-4, 4), P.y, rnd(10, 22), 0, 0, rnd(10, 25), Math.random() < .5 ? '#ffd24a' : '#ff6a2a', .5, 1, -10, 1);
   const h = drawActor(P, true); if (h) P.hand = h;
-  if (showW && !behind && h) { const q = wpos(h); drawWeapon(spr, q.x, q.y, ang, h.sc); }
-  if (h && (vw.tier >= 3 || it.rar >= 3 || it.up >= 5)) { addLight(h.x, h.y, 30, .6); if ((it.up >= 7 || vw.tier >= 5 || it.rar === 6) && Math.random() < .3) part(P.x + rnd(-6, 6), P.y, rnd(6, 16), 0, 0, 15, gc, .4, 1, 0, 1); }
-  if (P.gear.armor && P.gear.armor.up >= 8 && Math.random() < .25) part(P.x + rnd(-7, 7), P.y + rnd(-2, 2), rnd(0, 6), 0, 0, rnd(15, 30), P.gear.armor.up >= 10 ? '#ffd24a' : RAR[P.gear.armor.rar].c, rnd(.4, .8), 1, -5, 1);
+  if (showW && !behind && h) { const q = wpos(h); drawWeapon(spr, q.x, q.y, ang, h.sc); auWq(q, ang, spr, it); }
+  if (!showW) P.wq = null;
+  const calm = SAVE.meta.settings.calm;
+  if (h && (vw.tier >= 3 || it.rar >= 3 || it.up >= 5)) { addLight(h.x, h.y, 30, .6); if ((it.up >= 7 || vw.tier >= 5 || it.rar === 6) && Math.random() < (calm ? .1 : .3)) part(P.x + rnd(-6, 6), P.y, rnd(6, 16), 0, 0, 15, gc, .4, 1, 0, 1); }
+  if (P.gear.armor && P.gear.armor.up >= 8 && Math.random() < (calm ? .08 : .25)) part(P.x + rnd(-7, 7), P.y + rnd(-2, 2), rnd(0, 6), 0, 0, rnd(15, 30), P.gear.armor.up >= 10 ? '#ffd24a' : RAR[P.gear.armor.rar].c, rnd(.4, .8), 1, -5, 1);
   if (P.rebirths && Math.random() < .15) part(P.x + rnd(-8, 8), P.y, 0, 0, 0, 25, '#ffd24a', .7, 1, 0, 1);
   if (P.spin > 0 && h) { const K = 1 + mod('k2Rad'); ctx.strokeStyle = P.spinSk ? P.spinSk.col : '#f0f4ff'; ctx.globalAlpha = P.spinSk ? .5 : .35; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(h.x, h.y + 4, 30 * K, 15 * K, 0, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1; }
+}
+// Lage der Waffe für Auren (Leuchten, Schweif, Flammen): Griff, Winkel, Länge bis zur Spitze/zum Stabkopf
+function auWq(q, ang, spr, it) { const w = P.wq || (P.wq = {}); w.x = q.x; w.y = q.y; w.ang = ang; w.len = spr.bow ? 0 : spr.tl || 0; w.at = it.base === 'staff' ? .9 : .6; }
+/* Beute am Boden: Lichtsäule nach Seltenheit – Gewöhnlich keine, dann höher und breiter; Legendär/Set mit Bodenring und Namen,
+   Mythisch bis über den Bildrand mit wandernden Farben, zwei Ringen und aufsteigenden Funken */
+let lootLbl = null, lootLblT = -1;
+const BEAM = [null, [24, 2, .4], [40, 3, .5], [60, 4, .55], [92, 6, .62], [92, 6, .62], [170, 8, .75]], BEAMC = {}, MYCOL = ['#ff4fd8', '#b892f4', '#8ae8ff', '#ffe08a'];
+function beamImg(col, h, w) {
+  const k = col + h + 'x' + w; if (BEAMC[k]) return BEAMC[k];
+  return BEAMC[k] = mk(w, h, g => { const [r, gg, b] = hexRgb(col), gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, `rgba(${r},${gg},${b},0)`); gr.addColorStop(.7, `rgba(${r},${gg},${b},.45)`); gr.addColorStop(1, `rgba(${r},${gg},${b},.9)`); g.fillStyle = gr; g.fillRect(0, 0, w, h); if (w >= 4) { const g2 = g.createLinearGradient(0, 0, 0, h); g2.addColorStop(0, 'rgba(255,255,255,0)'); g2.addColorStop(1, 'rgba(255,255,255,.75)'); g.fillStyle = g2; g.fillRect(w / 2 - 1, 0, 2, h); } });
+}
+function drawLoot(c, x, y, z) {
+  const it = c.it, r = clamp(it.rar, 0, 6), B = BEAM[r], L = itemLook(it), calm = SAVE.meta.settings.calm;
+  const col = r === 6 ? MYCOL[Math.floor(T * (calm ? 1 : 3)) % 4] : L ? L.acc : RAR[r].c;
+  if (B) { ctx.globalAlpha = B[2] * (r >= 3 ? .8 + .2 * Math.sin(T * 4 + c.x) : 1); ctx.drawImage(beamImg(col, B[0], B[1]), x - B[1] / 2, y - B[0]); ctx.globalAlpha = 1; }
+  if (r >= 4) for (let ring = 0; ring < (r === 6 ? 2 : 1); ring++) { const n = 10, rx = 9 + ring * 4, ry = 3.5 + ring * 1.5, dir = ring ? -1 : 1; ctx.fillStyle = col; for (let i = 0; i < n; i++) { const a = i / n * 6.283 + T * 2 * dir; ctx.globalAlpha = .55 + .45 * Math.sin(a); ctx.fillRect(Math.round(x + Math.cos(a) * rx), Math.round(y + Math.sin(a) * ry), 1, 1); } ctx.globalAlpha = 1; }
+  if (r === 6) for (let i = 0; i < 4; i++) { const ph = (T * .6 + i / 4) % 1, a = ph * 12 + i; ctx.globalAlpha = 1 - ph; ctx.fillStyle = i % 2 ? '#ffffff' : col; ctx.fillRect(Math.round(x + Math.cos(a) * 5), Math.round(y - 6 - ph * 60), 1, 1); }
+  ctx.globalAlpha = 1;
+  if (it.slot === 'weapon') drawWeapon(weaponArt(it), x, y - z - 4, -.8, 1);
+  else { const a = armorSpr(it, P.cls), img = a.fr ? a.fr[Math.floor(T * 7) % a.fr.length] : a.c; ctx.drawImage(img, x - img.width / 2, y - z - img.height + 2); }
+  // Name nur über der besonderen Beute, die dem Helden am nächsten liegt – so überdecken sich keine Schilder
+  if (lootLblT !== T) { lootLblT = T; lootLbl = null; let best = 120; for (const q of pickups) if (q.k === 'loot' && q.it.rar >= 4 && q.it.name) { const d = Math.hypot(q.x - P.x, q.y - P.y) - (q.it.rar === 6 ? 40 : 0); if (d < best) { best = d; lootLbl = q; } } }
+  if (lootLbl === c) ptext(_t(it.name), x, y - z - 30, col, 6);
+  addLight(x, y - 10, [16, 22, 28, 34, 46, 46, 64][r], .8);
 }
 function drawEnemy(e) {
   if (e.ai === 'dummy') { drawDummy(e); return; }
@@ -242,7 +285,7 @@ function render() {
     else if (c.k === 'flask') ctx.drawImage(SHEET, 288, 352, 16, 16, x - 8, y - z - 14, 16, 16);
     else if (c.k === 'mat') { ctx.drawImage(matCanvas(c.m), x - 6, y - z - 11); }
     else if (c.k === 'gem') { const [id, gr] = c.g.split(':'); ctx.drawImage(gemCanvas(id, +gr), x - 5, y - z - 10); addLight(x, y - 8, 14, .6); }
-    else if (c.k === 'loot') { const col = RAR[c.it.rar].c, [r, g, b] = hexRgb(col), hh = c.it.rar >= 4 ? 90 : 60; const gr = ctx.createLinearGradient(0, y - hh, 0, y); gr.addColorStop(0, `rgba(${r},${g},${b},0)`); gr.addColorStop(1, `rgba(${r},${g},${b},.55)`); ctx.fillStyle = gr; ctx.fillRect(x - 3, y - hh, 6, hh); ctx.fillRect(x - 1, y - hh - 10, 2, hh + 10); if (c.it.slot === 'weapon') drawWeapon(weaponArt(c.it), x, y - z - 4, -.8, 1); else { const a = armorArt(c.it, P.cls); ctx.drawImage(a, x - a.width / 2, y - z - a.height + 2); } addLight(x, y - 10, c.it.rar >= 4 ? 44 : 30, .8); }
+    else if (c.k === 'loot') drawLoot(c, x, y, z);
   }
   const list = []; for (const e of enemies) list.push({ y: e.y, e }); for (const o of obs) if (!o.dead) list.push({ y: o.y, o });
   for (const c of corpses) if (c.z > 0) list.push({ y: c.y, c });
