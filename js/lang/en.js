@@ -909,6 +909,7 @@ I18N.en = {
   "Klingenhort spricht jetzt sechs Sprachen: Deutsch, Englisch, Türkisch, Spanisch, Italienisch und Französisch.": "Klingenhort now speaks six languages: German, English, Turkish, Spanish, Italian and French.",
   "Das Spiel startet in der Sprache deines Handys. Wechseln geht jederzeit über 🌐 im Titelmenü oder in den Einstellungen – dein Spielstand bleibt erhalten.": "The game starts in your phone's language. Switch anytime with 🌐 in the title menu or in the settings – your progress stays.",
   "Zahlen und Daten erscheinen im Format deiner Sprache.": "Numbers and dates appear in your language's format.",
+  "Lange Hinweise rutschen nicht mehr über den Bildschirmrand hinaus.": "Long hints no longer slide off the edge of the screen.",
   "Wochen-Ereignisse": "Weekly Events",
   "Jede Woche gilt eine neue Regel für alle: Goldrausch, Blutmond, Drachenwoche, Glückswoche oder Schmiedewoche. Wechsel ist immer montags.": "Every week a new rule applies to everyone: Gold Rush, Blood Moon, Dragon Week, Fortune Week or Forge Week. It changes every Monday.",
   "Goldrausch bringt 50 % mehr Gold, im Blutmond tauchen doppelt so viele Elite-Gegner auf – mit 30 % mehr Beute.": "Gold Rush brings 50% more gold; during the Blood Moon twice as many elite enemies show up – with 30% more loot.",

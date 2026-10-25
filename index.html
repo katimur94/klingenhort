@@ -68,8 +68,9 @@ img.px{image-rendering:pixelated}
 #banner small{display:block;margin-top:10px;font-family:var(--f-display);font-size:clamp(8px,1.6vw,11px);color:var(--parch);text-shadow:2px 2px 0 #000;text-wrap:balance}
 #banner.show{animation:ban 2.2s steps(20) forwards}
 @keyframes ban{0%{opacity:0;transform:translateY(8px)}10%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
-#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 90px);transform:translateX(-50%);font-family:var(--f-display);font-size:9px;background:var(--stone);padding:8px 10px;box-shadow:0 0 0 2px var(--night),0 0 0 3px var(--parch-dim);opacity:0;pointer-events:none;z-index:12;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
-#toast.show{animation:ban 2s steps(14) forwards}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 90px);transform:translateX(-50%);font-family:var(--f-display);font-size:9px;background:var(--stone);padding:8px 10px;box-shadow:0 0 0 2px var(--night),0 0 0 3px var(--parch-dim);opacity:0;pointer-events:none;z-index:12;width:max-content;max-width:calc(100vw - 52px);text-align:center;line-height:1.6}
+#toast.show{animation:tst 2s steps(14) forwards}
+@keyframes tst{0%{opacity:0;transform:translate(-50%,8px)}10%{opacity:1;transform:translate(-50%,0)}80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,0)}}
 body.touch #toast{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 96px)}
 #toast.low,body.touch #toast.low{top:calc(env(safe-area-inset-top,0px) + 6px);bottom:auto}
 /* Fähigkeitenleiste (PC) */
@@ -137,7 +138,7 @@ body.edit #game{filter:brightness(.55)}
 .help{font-size:18px;line-height:1.2;color:var(--parch-dim);border-top:2px dashed var(--stone-hi);padding-top:10px}
 .help b{font-family:var(--f-display);font-weight:400;font-size:8px;color:var(--parch);letter-spacing:1px;display:block;margin-bottom:6px}
 .credit{margin-top:10px;font-size:15px;color:var(--parch-dim)}
-h2{font-family:var(--f-display);font-weight:400;font-size:16px;color:var(--gold);margin:0;text-shadow:3px 3px 0 #000}
+h2{font-family:var(--f-display);font-weight:400;font-size:16px;line-height:1.35;color:var(--gold);margin:0;text-shadow:3px 3px 0 #000}
 h3{font-family:var(--f-display);font-weight:400;font-size:9px;color:var(--gold);margin:14px 0 8px;letter-spacing:1px}
 .head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
 .gold{font-family:var(--f-display);font-size:11px;color:var(--gold);white-space:nowrap}

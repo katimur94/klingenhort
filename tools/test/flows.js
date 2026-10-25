@@ -1,6 +1,6 @@
 // Echte Abläufe mit Antippen auf einem Touch-Gerät. Aufruf: node flows.js <breite> <höhe>
 // Prüft: neuer Held, Karte (Info + zweites Antippen), Kampf, Charakter mit Details, Versteck mit Station,
-// Knopf-Editor speichert je Ausrichtung, Drehen im Kampf pausiert nicht, Neuigkeiten nach Update.
+// Knopf-Editor speichert je Ausrichtung, Drehen im Kampf pausiert nicht, Neuigkeiten nach Update, Sprachwechsel.
 const { chromium } = require('playwright');
 const [W, H] = [+process.argv[2] || 390, +process.argv[3] || 844];
 const BASE = (process.env.BASE || 'http://localhost:8777/').replace(/\/?$/, '/');
@@ -73,6 +73,16 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
   await page.evaluate(() => { SAVE.meta.seenVer = '0.0.1'; persist(); }); await page.reload(); await page.waitForTimeout(1500);
   ok((await page.evaluate(() => (panel.querySelector('h2') || {}).textContent)) === 'NEUIGKEITEN', 'nach Update öffnen sich die Neuigkeiten einmal');
   ok((await page.evaluate(() => SAVE.meta.seenVer)) === (await page.evaluate(() => VERSION)), 'Neuigkeiten als gelesen gespeichert');
+
+  // Sprache wechseln: 🌐 oben im Titel → Englisch → Seite lädt neu, Held bleibt
+  await tap('[data-act="newsback"]'); const heroes = await page.evaluate(() => SAVE.chars.length);
+  ok(await inView('.langbtn'), 'Sprachwahl im Titelmenü ohne Scrollen sichtbar');
+  await tap('.langbtn'); await Promise.all([page.waitForNavigation(), tap('[data-act="setlang"][data-id="en"]')]); await page.waitForTimeout(1500);
+  const en = await page.evaluate(() => ({ lang: LANG, html: document.documentElement.lang, btn: (panel.querySelector('[data-act="new"]') || {}).textContent, n: SAVE.chars.length }));
+  ok(en.lang === 'en' && en.html === 'en' && en.btn === 'New Hero', 'Sprache auf Englisch gewechselt: „' + en.btn + '“');
+  ok(en.n === heroes && heroes > 0, 'Helden bleiben beim Sprachwechsel erhalten');
+  await tap('.langbtn'); await Promise.all([page.waitForNavigation(), tap('[data-act="setlang"][data-id="de"]')]); await page.waitForTimeout(1500);
+  ok((await page.evaluate(() => LANG)) === 'de', 'zurück auf Deutsch');
 
   ok(!errs.length, 'keine Fehler im Spiel' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
   await b.close();

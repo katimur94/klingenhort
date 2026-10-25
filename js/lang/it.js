@@ -909,6 +909,7 @@ I18N.it = {
   "Klingenhort spricht jetzt sechs Sprachen: Deutsch, Englisch, Türkisch, Spanisch, Italienisch und Französisch.": "Klingenhort ora parla sei lingue: tedesco, inglese, turco, spagnolo, italiano e francese.",
   "Das Spiel startet in der Sprache deines Handys. Wechseln geht jederzeit über 🌐 im Titelmenü oder in den Einstellungen – dein Spielstand bleibt erhalten.": "Il gioco si avvia nella lingua del tuo telefono. Puoi cambiarla quando vuoi con 🌐 nel menu principale o nelle impostazioni – i tuoi progressi restano.",
   "Zahlen und Daten erscheinen im Format deiner Sprache.": "Numeri e date appaiono nel formato della tua lingua.",
+  "Lange Hinweise rutschen nicht mehr über den Bildschirmrand hinaus.": "Gli avvisi lunghi non escono più dal bordo dello schermo.",
   "Wochen-Ereignisse": "Eventi settimanali",
   "Jede Woche gilt eine neue Regel für alle: Goldrausch, Blutmond, Drachenwoche, Glückswoche oder Schmiedewoche. Wechsel ist immer montags.": "Ogni settimana vale una nuova regola per tutti: Febbre dell'oro, Luna di sangue, Settimana del Drago, Settimana della Fortuna o Settimana della Forgia. Si cambia sempre il lunedì.",
   "Goldrausch bringt 50 % mehr Gold, im Blutmond tauchen doppelt so viele Elite-Gegner auf – mit 30 % mehr Beute.": "La Febbre dell'oro porta il 50% di oro in più, con la Luna di sangue compaiono il doppio dei nemici Élite – con il 30% di bottino in più.",
