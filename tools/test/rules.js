@@ -51,10 +51,10 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
   ok(r.myth > .15 && r.myth < .8 && r.noPity, `Glücksrolle: Mythisch ${r.myth.toFixed(2)} % – reiner Zufall, keine Garantie`);
   const roll = await page.evaluate(async () => {
     SAVE.meta.pets.starter = true; P.fate = 5; P.map = genMap(2); enterHideout(); openStation('tempel'); const free = !!freeSpin(); doSpin();
-    const during = !!document.querySelector('#roll.spin'), fateAfter = P.fate + (free ? 1 : 0); // Gratis-Dreh (Glückswoche) kostet nichts
+    const during = !!document.querySelector('#roll.spin'), fateAfter = P.fate; // Gratis-Dreh (erster im Akt, Glückswoche) kostet nichts
     ON.rollskip(); // sofort überspringen: auch dann richtig stehen
     const box = $('roll').getBoundingClientRect(), mid = box.left + box.width / 2, w = document.querySelector('#roll .tile.win'), wr = w && w.getBoundingClientRect();
-    return { during, paid: fateAfter === 4, onWin: !!wr && wr.left <= mid && wr.right >= mid, res: !!panel.querySelector('.rollres') };
+    return { during, paid: fateAfter === (free ? 5 : 4), onWin: !!wr && wr.left <= mid && wr.right >= mid, res: !!panel.querySelector('.rollres') };
   });
   ok(roll.during && roll.paid && roll.onWin && roll.res, 'Glücksrolle: dreht, bleibt auf dem Gewinn stehen, Gewinn wird angezeigt' + (roll.during && roll.paid && roll.onWin && roll.res ? '' : ' ' + JSON.stringify(roll)));
   ok(!errs.length, 'keine Fehler im Spiel' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
