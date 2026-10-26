@@ -7,6 +7,20 @@
 
 const CHANGELOG = [
   {
+    v: '6.1.0', d: '2026-10-26', t: 'Die Endlosen Lande', items: [
+      ['neu', 'Die Verlorenen Lande sind jetzt die Endlosen Lande: eine riesige, feste Welt – für alle Spieler gleich. Vom Weltentor bis zum Rand läufst du 24 Stunden. Unterwegs: 48 Biome, Regionen mit eigenen Namen, Wahrzeichen, Ruinen und Außenposten.'],
+      ['neu', 'Nicht jeder Weg ist offen: Schluchten, Flüsse, Lava, Eis, Giftnebel und Finsternis überquerst du nur mit Wegwerkzeugen wie Seil, Eishaken oder Feuermantel. Sie liegen in bewachten Horten.'],
+      ['neu', 'Leuchtfeuer: Setze bis zu 12 Checkpoints. Sie speichern deine Karte, sind Startpunkt für den nächsten Ausflug und ein sicherer Ausgang. Stirbst du, vergisst du alles, was du seit dem letzten Leuchtfeuer entdeckt hast.'],
+      ['neu', '1200 Bosse – von leicht bis fast unmöglich, mit 29 Mechaniken, die sich vorher ankündigen. Der Boss-Kodex sammelt Trophäen, die dich dauerhaft stärker machen. Besiegte Bosse kehren nach 3 Tagen zurück.'],
+      ['neu', 'Über 5000 Artefakte in 830 Geschichten: Jedes Fundstück erzählt ein Stück und verrät, wo das nächste liegt. Am Ende wartet ein versiegelter Schatz. Dazu 35 mystische Begegnungen – von der Sphinx bis zum Feenring.'],
+      ['neu', 'Kreaturen: 77 Arten, Monster-Eier, Zucht mit Genen, 16 Mischformen und seltene Mutationen. Begleiter bekommen Ausrüstung, Talente und Zauber.'],
+      ['neu', 'Mods: Runen, Glyphen, Essenzen, Kerne und Prägungen in den Mod-Plätzen deiner Gegenstände, 36 geheime Resonanzen, dazu Umschmieden, Veredeln und Extrahieren in der Werkbank.'],
+      ['besser', 'Tag und Nacht in den Landen statt Zeitdruck: Nachts jagen dich gefährlichere Monster.'],
+      ['besser', 'Beim Verschenken reisen Mods und veredelte Werte mit dem Gegenstand.'],
+      ['fix', 'Der Countdown am Ausgang läuft jetzt in echter Zeit.']
+    ]
+  },
+  {
     v: '6.0.0', d: '2026-10-25', t: 'Die Verlorenen Lande', items: [
       ['neu', 'Die Verlorenen Lande: Durch das Weltentor in deinem Versteck betrittst du eine riesige, jedes Mal neue Freiwelt. Die beste Beute des Spiels liegt hier – in Truhen, Verstecken, Erzadern und bei gefallenen Abenteurern, immer an anderen Orten.'],
       ['neu', 'Hohes Risiko: Was du findest, gehört dir erst, wenn du durch einen Ausgang entkommst. Stirbst du, ist alles verloren, was du angelegt und im Rucksack hast – du wachst im Versteck auf.'],
@@ -126,10 +140,10 @@ const CHANGELOG = [
 
 // Vorschau: was in den nächsten Wochen kommt (Version, Text – siehe ROADMAP.md)
 const COMING = [
-  ['6.1', 'Die Endlosen Lande: eine riesige Welt für alle – 24 Stunden Fußmarsch bis zum Rand, 1200 Bosse, 5000 Artefakte mit Geschichten, Zucht und Mods'],
   ['6.2', 'Aufträge & Ruf: Tages- und Wochenaufträge, Fraktionen mit Ruf-Stufen und besseren Tauschangeboten'],
   ['6.3', 'Neues Gebiet: der Sturmgipfel mit Blitz-Gegnern, eigenem Boss und Sturmsilber'],
-  ['6.4', 'Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste']
+  ['6.4', 'Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste'],
+  ['6.5', 'Begleiter-Expeditionen: Schick deine Begleiter allein in die Endlosen Lande – sie bringen Beute, Eier und Artefakte mit']
 ];
 
 const NEWS_KIND = { neu: [_t('NEU'), '#79c24e'], besser: [_t('BESSER'), '#57a7d6'], fix: [_t('BEHOBEN'), '#e8b04a'] };

@@ -86,6 +86,18 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Vers
 
 Klingenhort wird jede Woche erweitert. Im Spiel zeigt **Neuigkeiten** (Titelmenü, Einstellungen oder Weltkarte → Mehr) alle Updates und was als Nächstes kommt; nach einem Update öffnet sich die Seite einmal von selbst.
 
+**Neu in 6.1 – Die Endlosen Lande**
+
+| System | Was es kann | Langzeit-Ziel |
+|---|---|---|
+| **Die Endlosen Lande** | Eine feste Welt für alle Spieler, beim Laufen stückweise erzeugt (Chunks à 768 px). 48 Biome in Regionen mit Namen, Wahrzeichen, Ruinen, Außenposten mit Kundschafterin, Händler und Heilerin, Tore der Alten als Ausgänge. Schwierigkeit und Beute steigen mit der Entfernung vom Weltentor. Tag und Nacht (nachts Jäger und ein Ungeheuer der Nacht). Zoombare Karte mit Fingergesten | 24 Stunden Fußmarsch bis zum Weltrand |
+| **Wegwerkzeuge** | Barrieren zwischen den Ringen: Schluchten, Flüsse, Lava, Eis, Giftnebel, Finsternis, Dornen, Stürme, Siegel, Risse der Leere. 11 Werkzeuge (Seil, Brückenstein, Kräutermaske, Eishaken, Feuermantel, Schattenlaterne, Gezeitenperle, Dornenklinge, Sturmfeder, Sternenschlüssel, Leere-Anker) in bewachten Horten | alle 11 finden |
+| **Leuchtfeuer** | Bis zu 12 Checkpoints (kosten einen Leuchtfeuerstein, nicht im Kampf): speichern die Karte, Startpunkt für den nächsten Ausflug, sicherer Ausgang. Beim Tod ist alles seit dem letzten Leuchtfeuer Entdeckte vergessen | immer tiefer vordringen |
+| **1200 Bosse** | Feste Bosse von Rang 1 (leicht) bis 1200 (fast unmöglich): 40 Körper, Elemente, 29 angekündigte Mechaniken (bis zu 5 je Boss), Phasen, Raserei, Signatur-Beute. Boss-Kodex mit Rang-Bändern, Trophäen (alle 25 ein kleiner Kontobonus, gedeckelt) und Titeln, Übungskampf. Besiegte Bosse kehren nach 3 Tagen zurück | 1200 Trophäen |
+| **Artefakte & Begegnungen** | 5138 Artefakte in 830 Geschichten (28 Themen): Jedes Fundstück verrät Richtung, Schritte und Gelände des nächsten, auf der Karte erscheint ein Suchkreis; am Ende ein versiegelter Schatz (einzigartiger Gegenstand, seltenes Ei, Mods, manchmal ein Wegwerkzeug oder ein Wächter). Chronik der Artefakte, Gerüchte bei Elwa. 35 mystische Begegnungen mit Entscheidungen | 830 Geschichten vollenden |
+| **Kreaturen** | 77 Arten (37 wilde, 16 Mischformen nur aus der Zucht), Monster-Eier von ihren Monstern in den Landen. Zucht ab Level 25 mit Genen (Kraft, Tempo, Zähigkeit, Magie, Glück), 10 sichtbare Mutationen (Kristall, Schatten, Gold, Sternen …). Ausrüstung (Halsband, Panzer, Talisman), Talente in 3 Zweigen (Sammler = mehr Taschenplätze), 8 Zauber | alle 77 Arten und Mutationen |
+| **Mods** | Mod-Plätze nach Seltenheit (1–5, Meisterwerk +1): Runen, Glyphen (Kettenblitz, Meteor, Frostnova …), Essenzen, Kerne, Prägungen in Stufe 1–10. 36 Resonanzen (Kombinationen mit neuem Effekt) im Resonanz-Buch. Umschmieden (einen Wert neu würfeln), Veredeln (Wert-Stufe +1), Extrahieren (Wert als Affix-Essenz übertragen) | alle Resonanzen entdecken |
+
 **Neu in 6.0 – Die Verlorenen Lande**
 
 | System | Was es kann | Langzeit-Ziel |
@@ -468,7 +480,10 @@ js/pets.js             Begleiter: 24 Kreaturen, Eier & Brutnest, Tasche, Verletz
 js/mastery.js          Meisterschaft der Fähigkeiten: Level, Ränge, Aussehen
 js/trade.js            Tauschen per Code/Link, Tauschhändlerin, Aussehen-Sammlung
 js/auras.js            Aussehen der Beute nach Material/Seltenheit, Auren der Helden
-js/lande.js            Die Verlorenen Lande: Freiwelt, Rucksack, NPCs, Aufträge, Rivalen, Ausgänge, Tod
+js/bosses.js           1200 Bosse: Generator, Mechaniken, Höhlen, Boss-Kodex, Trophäen
+js/artefakte.js        Artefakte, Geschichten, Spuren, Schätze, Chronik, mystische Begegnungen
+js/mods.js             Mods, Resonanzen, Umschmieden, Veredeln, Extrahieren
+js/lande.js            Die Endlosen Lande: feste Chunk-Welt, Biome, Barrieren, Leuchtfeuer, Rucksack, NPCs, Tod
 js/market.js           Basar: Angebote, Verkauf, Auktionen, Marktwert (Schnittstelle MARKET)
 js/lang/               Übersetzungen (en, tr, es, it, fr) – Schlüssel ist der deutsche Text
 js/core.js             Helfer, Grafik laden, Charakter-Umfärbung, Ton & Musik, Speichern
