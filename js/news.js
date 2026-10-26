@@ -7,6 +7,15 @@
 
 const CHANGELOG = [
   {
+    v: '6.1.1', d: '2026-10-26', t: 'Bis zum Rand der Welt', items: [
+      ['neu', 'Die Endlosen Lande sind jetzt bis zum Rand voller Neuem: 20 Grenzen statt 11 und 26 neue Biome – von der Kristallwüste über Uhrwerk-Ruinen und Titanengräber bis zum Ufer des Nichts. 74 Biome insgesamt.'],
+      ['neu', 'Meisterwerkzeuge: Hinter der 11. Grenze brauchst du die zweite Stufe deiner Werkzeuge – Seil II, Eishaken II, Feuermantel II und mehr. Sie schützen auch vor den Gefahren der tiefen Biome.'],
+      ['neu', 'Das Ende der Welt: Am Rand stehen Monumente mit einem Wächter. Wer als Erstes dort ankommt, wird reich belohnt.'],
+      ['besser', 'Tief draußen sind die Gegner stärker und tragen öfter besondere Eigenschaften.'],
+      ['fix', 'Entfernungen wie „770 m“ und „450 Schritte“ brechen nicht mehr mitten im Wort um. Werkzeuge aus Artefakt-Schätzen passen jetzt zur Tiefe.']
+    ]
+  },
+  {
     v: '6.1.0', d: '2026-10-26', t: 'Die Endlosen Lande', items: [
       ['neu', 'Die Verlorenen Lande sind jetzt die Endlosen Lande: eine riesige, feste Welt – für alle Spieler gleich. Vom Weltentor bis zum Rand läufst du 24 Stunden. Unterwegs: 48 Biome, Regionen mit eigenen Namen, Wahrzeichen, Ruinen und Außenposten.'],
       ['neu', 'Nicht jeder Weg ist offen: Schluchten, Flüsse, Lava, Eis, Giftnebel und Finsternis überquerst du nur mit Wegwerkzeugen wie Seil, Eishaken oder Feuermantel. Sie liegen in bewachten Horten.'],

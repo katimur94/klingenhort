@@ -29,7 +29,7 @@ const AGATE = .5;   // das Weltentor steht in der Mitte von Chunk (0, 0)
 function aH(a, b, c, d) { let h = 0x9E3779B9 ^ ARTE_SEED; for (const x of [a, b, c, d]) { if (x === undefined) break; h = Math.imul(h ^ (x | 0), 0x85EBCA6B); h ^= h >>> 13; h = Math.imul(h, 0xC2B2AE35); h ^= h >>> 16; } return h >>> 0; }
 const aPk = (R, a) => a[Math.floor(R() * a.length)];
 function aShuf(R, a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
-function aFill(t, V) { return String(t).replace(/\{(\w+)\}/g, (m, k) => (V[k] != null ? V[k] : m)); }
+function aFill(t, V) { const r = String(t).replace(/\{(\w+)\}/g, (m, k) => (V[k] != null ? V[k] : m)); return V.schritte != null ? r.split(V.schritte + ' ').join(V.schritte + '\u00a0') : r; }   // „450 Schritte“ bricht nicht um
 function aNum(n) { try { return Number(n).toLocaleString(typeof LOCALE !== 'undefined' ? LOCALE : 'de-DE'); } catch (_) { return String(n); } }
 function aLocal() { return SAVE && SAVE.meta ? SAVE.meta.arte : null; }
 
@@ -806,8 +806,9 @@ function aItemHome(it) {
 function aToolPick(dep) {
   try {
     if (typeof landeToolGive !== 'function' || typeof LANDE_TOOLS === 'undefined' || !LANDE_TOOLS) return null;
-    const list = Array.isArray(LANDE_TOOLS) ? LANDE_TOOLS.map((t, i) => Object.assign({ k: t.k || t.key || String(i) }, t)) : Object.keys(LANDE_TOOLS).map(k => Object.assign({ k }, LANDE_TOOLS[k]));
-    const dd = t => +(t.d != null ? t.d : t.depth != null ? t.depth : t.dep != null ? t.dep : 0) || 0;
+    const list = Array.isArray(LANDE_TOOLS) ? LANDE_TOOLS.map((t, i) => Object.assign({ k: t.k || t.key || String(i), i }, t)) : Object.keys(LANDE_TOOLS).map((k, i) => Object.assign({ k, i }, LANDE_TOOLS[k]));
+    // Tiefe eines Werkzeugs: Anfang seines Hort-Bandes (js/lande.js); t.d ist dort die Beschreibung, keine Tiefe
+    const dd = t => typeof lToolBand === 'function' ? lToolBand(t.i)[0] / (typeof LWR === 'number' ? LWR : 9000) : +(t.depth != null ? t.depth : t.dep != null ? t.dep : 0) || 0;
     const has = t => { try { return typeof landeToolHas === 'function' && landeToolHas(t.k); } catch (_) { return false; } };
     const ok = list.filter(t => !has(t) && dd(t) <= dep + .15).sort((a, b) => dd(a) - dd(b));
     return ok.length ? ok[0] : null;
