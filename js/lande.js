@@ -13,7 +13,7 @@
    Barrieren an Ringgrenzen (Schlucht, Fluss, Giftnebel, Eisklippen …) lassen sich nur an Übergängen und nur mit dem passenden Werkzeug queren.
    Spielstand: SAVE.meta.lande (Statistik, Ruf, Schlüssel, Werkzeuge, Leuchtfeuer, erkundete Kartenfelder, entdeckte Regionen, Fundkiste, laufender Ausflug).
    Schnittstelle: landeActive(), landeToolGive(key), landeToolHas(key), landeDepth(), landeCtx(cx, cy, salt), LANDE_BIOMES, LANDE_TOOLS, worldStage(depth),
-     landeLocal(wx, wy) / landeWorld(x, y) (Welt-Pixel ↔ Spiel-Koordinaten), landePos(), landeLootHTML(entry), landeLuck()/landeRar() (Seltenheit in randomItem)
+     landeLocal(wx, wy) / landeWorld(x, y) (Welt-Pixel ↔ Spiel-Koordinaten), landePos(), landeLootHTML(entry), landeLuck()/landeRar() (Seltenheit in randomItem), landePackAdd(entry)
    Ruft (wenn vorhanden): bossForLair, bossSpawn, bossLairReady, arteInChunk, arteTreasureInChunk, arteHints, artePickup/arteOpen, arteTreasureOpen,
      encounterRoll, encounterOpen, eggForBiome, modRoll/modName/modIconURL/modValue/modGive/modLootHTML
    Beute-Einträge: { t: 'item', it } | { t: 'mat', k, n } | { t: 'gem', k, n } | { t: 'part', k, n } | { t: 'egg', d } | { t: 'gold', n } | { t: 'mod', k, n }
@@ -1058,6 +1058,12 @@ function lCap() { return LPACK + lPerk('pack'); }
 function lStack(e) { return e.t === 'mat' || e.t === 'gem' || e.t === 'part' || e.t === 'gold' || e.t === 'mod'; }
 function lAdd(list, e, cap) { if (lStack(e)) { const s = list.find(x => x.t === e.t && x.k === e.k); if (s) { s.n += e.n; return true; } } if (list.length >= cap) return false; list.push(e); return true; }
 function lPackAdd(e) { return lAdd(LW.pack, e, lCap()); }
+// Für andere Systeme (z. B. Mods aus js/mods.js): Beute in den Rucksack – false, wenn kein Ausflug läuft oder der Rucksack voll ist
+function landePackAdd(e) {
+  if (!landeActive() || !lEntryOk(e)) return false;
+  if (!lPackAdd(e)) { lMsg('full', _t('Rucksack voll! Wirf etwas weg oder leg es in die Begleiter-Tasche.'), '#ff6a5a', 2.5); return false; }
+  lGot(e); return true;
+}
 function lPackHas(t, k) { let n = 0; for (const e of LW.pack) if (e.t === t && e.k === k) n += e.n; return n; }
 function lPackGold() { const g = LW.pack.find(e => e.t === 'gold'); return g ? g.n : 0; }
 function lPackPay(t, k, n) { const e = LW.pack.find(x => x.t === t && x.k === k); if (!e || e.n < n) return false; e.n -= n; if (e.n <= 0) LW.pack.splice(LW.pack.indexOf(e), 1); return true; }
@@ -1323,7 +1329,7 @@ function lDrop(x, y, e, sp) {
     case 'part': pickups.push(Object.assign(b(), { k: 'lpart', pk: e.k, n: e.n || 1 })); break;
     case 'egg': pickups.push(Object.assign(b(), { k: 'legg', d: e.d })); break;
     case 'gold': lCoins(x, y, e.n); break;
-    case 'mod': pickups.push(Object.assign(b(), { k: 'lmod', mk: e.k, n: e.n || 1 })); break;
+    case 'mod': pickups.push(Object.assign(b(), { k: typeof modDrop === 'function' ? 'mod' : 'lmod', mk: e.k, n: e.n || 1 })); break;   // mit js/mods.js: dessen Bodenbeute (gezeichnet von dort, eingesammelt über landePackAdd)
     case 'key': pickups.push(Object.assign(b(), { k: 'lkey' })); break;
     case 'map': pickups.push(Object.assign(b(), { k: 'lmap' })); break;
     case 'stone': pickups.push(Object.assign(b(), { k: 'lstone' })); break;

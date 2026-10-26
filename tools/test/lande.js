@@ -195,9 +195,16 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
       const it = makeItem({ slot: 'weapon', base: CLASSES[P.cls].start, tier: 1, rar: 1 }); put({ k: 'loot', it }); updPickups(.016); o.full = pickups.some(c => c.it === it) && LW.pack.length === lCap();
       LW.pack.length = 4; const parts0 = JSON.stringify(P.parts); const e = lSpawn('goblin', P.x + 30, P.y, {}); lKillPre(e); P.parts['griff:3'] = (P.parts['griff:3'] || 0) + 1; lKillPost(e);
       o.parts = LW.pack.some(x => x.t === 'part' && x.k === 'griff:3') && JSON.stringify(P.parts) === parts0;
+      // echte Mods (js/mods.js): Bodenbeute „mod“ → landePackAdd → Rucksack, daheim über modGive
+      LW.pack.length = 0; pickups.length = 0; o.realMod = true;
+      if (typeof modRoll === 'function' && typeof modDrop === 'function') {
+        const k = modRoll(.1, 1), n0 = (P.mods && P.mods[k]) || 0; lDrop(P.x, P.y, { t: 'mod', k, n: 1 }); for (const c of pickups) { c.t = 1; c.z = 0; c.vz = 0; c.vx = c.vy = 0; c.x = P.x; c.y = P.y; } updPickups(.016);
+        const inPack = LW.pack.some(e => e.t === 'mod' && e.k === k) && ((P.mods && P.mods[k]) || 0) === n0; lDeliver(LW.pack.splice(0)); o.realMod = inPack && P.mods[k] === n0 + 1;
+      }
       LW.pack.length = 0; pickups.length = 0; return o;
     }, [CALM.toString()]);
     ok(pk.gold && pk.mat && pk.item && pk.part && pk.mod, 'Beute (Gold, Material, Gegenstand, Bauteil, Mod) kommt in den Rucksack, nicht nach Hause');
+    ok(pk.realMod, 'Mods aus js/mods.js: Bodenbeute über landePackAdd in den Rucksack, daheim über modGive');
     ok(pk.stack && pk.heart && pk.stone, 'Gold stapelt sich, Herzen heilen wie immer, Leuchtfeuersteine gehen gleich aufs Konto');
     ok(pk.full && pk.parts, 'Rucksack voll: Beute bleibt liegen; Bauteile aus Kills wandern in den Rucksack');
     const eg = await page.evaluate(() => {
