@@ -269,12 +269,13 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
     const vis = await p.evaluate(() => {
       enterHideout(); const s = obs.find(o => o.k === 'station' && o.id === 'sattler'); P.x = s.x + 30; P.y = s.y + 26;
       if (!isTouch) return true;
-      // im Hochformat: keine neue Station unter den Touch-Knöpfen, wenn der Held davor steht
-      const hit = id => { const o = obs.find(x => x.k === 'station' && x.id === id); P.x = o.x; P.y = o.y + 20; camera(5); const sx = (o.x - cam.x) * SCALE, sy = (o.y - 20 - cam.y) * SCALE; return [...document.querySelectorAll('#touch .tb, #touch button, #bAtk')].filter(el => el.offsetParent).some(el => { const r = el.getBoundingClientRect(); return sx > r.left && sx < r.right && sy > r.top && sy < r.bottom; }); };
-      const bad = ['sattler', 'voliere'].filter(hit); const s2 = obs.find(o => o.k === 'station' && o.id === 'sattler'); P.x = s2.x + 30; P.y = s2.y + 26; return bad.length ? bad : true;
+      // Handy: keine neue Station und nichts vom Holzplatz unter den Touch-Knöpfen, wenn der Held davor steht (oberstes Element an Fuß und Mitte des Bilds)
+      const covered = o => { P.x = o.x; P.y = o.y + 18; for (let i = 0; i < 4; i++) camera(5); return [[0, -4], [-6, -16], [6, -16], [0, -24]].some(([dx, dy]) => { const el = document.elementFromPoint(VIEW.ox + (o.x + dx - cam.x) * SCALE, (o.y + dy - cam.y) * SCALE); return !!el && !!el.closest('#btns, #bAct, #bPot'); }); };
+      const L = obs.filter(o => (o.k === 'station' && (o.id === 'sattler' || o.id === 'voliere')) || o.k === 'gat'), bad = L.filter(covered).map(o => o.id);
+      const s2 = obs.find(o => o.k === 'station' && o.id === 'sattler'); P.x = s2.x + 30; P.y = s2.y + 26; return bad.length ? bad : true;
     });
-    if (tag === 'hoch') ok(vis === true, 'Hochformat: Sattlerei und Vogelhaus nicht unter den Touch-Knöpfen' + (vis === true ? '' : ' ' + JSON.stringify(vis)));
-    await shot('versteck-baustelle', null, 1500);
+    if (tag !== 'pc') ok(vis === true, `${tag}: Sattlerei, Vogelhaus und Holzplatz nicht unter den Touch-Knöpfen` + (vis === true ? '' : ' ' + JSON.stringify(vis)));
+    await shot('versteck-baustelle', null, 3200);
     await shot('versteck-vogelhaus', () => { const s = obs.find(o => o.k === 'station' && o.id === 'voliere'); P.x = s.x - 20; P.y = s.y + 30; }, 900);
     await shot('holzplatz', () => { const t = obs.find(o => o.k === 'gat' && o.id === 'b2'); P.x = t.x + 11; P.y = t.y + 2; P.face = -1; for (const e of enemies) e.dead = true; keys.KeyJ = true; setTimeout(() => { keys.KeyJ = false; }, 1500); }, 1700);
     await shot('baustelle', () => openStation('sattler'), 500);

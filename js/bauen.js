@@ -211,7 +211,7 @@ function gatherGive(k, n) {
 const GFX = [];
 function gatherGiveAll(o, got) {
   let i = 0;
-  for (const k in got) { const n = got[k]; if (!(n > 0)) continue; gatherGive(k, n); setTimeout(() => { if (G) txt(o.x, o.y - 22, '+' + n + ' ' + MATS[k].n, MATS[k].c); }, i * 180); for (let j = 0; j < Math.min(n, 4); j++) GFX.push({ k, x: o.x + rnd(-4, 4), y: o.y, z: 10, vx: rnd(-45, 45), vy: rnd(-18, 18), vz: rnd(80, 120), t: -(i * .08 + j * .06) }); i++; }
+  for (const k in got) { const n = got[k], row = i; if (!(n > 0)) continue; gatherGive(k, n); setTimeout(() => { if (G) txt(o.x, o.y - 22 - row * 9, '+' + n + ' ' + MATS[k].n, MATS[k].c); }, row * 180); for (let j = 0; j < Math.min(n, 4); j++) GFX.push({ k, x: o.x + rnd(-4, 4), y: o.y, z: 10, vx: rnd(-45, 45), vy: rnd(-18, 18), vz: rnd(80, 120), t: -(i * .08 + j * .06) }); i++; }
   if (i) setTimeout(() => sfx('coin'), 260);
   stat('gather');
 }
@@ -241,10 +241,11 @@ function gStump(kind, x, y, o) {
   else { r(-3, -2, 1, 2, '#3a7a2a'); r(0, -3, 1, 3, '#5aaa42'); r(2, -2, 1, 2, '#3a7a2a'); }
 }
 
-/* ---------- Holzplatz im Versteck: links Bäume, rechts Felsen, Büsche – mit Angriffen abbauen, wachsen in Echtzeit nach ---------- */
+/* ---------- Holzplatz im Versteck: links oben Bäume, links unten Felsen, dazu Büsche – mit Angriffen abbauen, wachsen in Echtzeit nach.
+   Alles am linken Rand: rechts liegen hoch und quer die Touch-Knöpfe. ---------- */
 const GHIDE = [
   { id: 'b1', t: 'baum', p: [.01, .33] }, { id: 'b2', t: 'baum', p: [.09, .4] }, { id: 'b3', t: 'baum', p: [.01, .47] }, { id: 'u1', t: 'busch', p: [.12, .49] },
-  { id: 's1', t: 'fels', p: [.99, .33] }, { id: 's2', t: 'stein', p: [.91, .4] }, { id: 's3', t: 'fels', p: [.99, .47] }, { id: 'u2', t: 'busch', p: [.88, .49] }
+  { id: 's1', t: 'fels', p: [.01, .71] }, { id: 's2', t: 'stein', p: [.09, .76] }, { id: 's3', t: 'fels', p: [.01, .81] }, { id: 'u2', t: 'busch', p: [.13, .69] }
 ];
 // prop = Bild aus den Landen, hits = Treffer, grow = nachwachsen (s), out = sicher [von, bis], extra = [Material, Chance, von, bis]
 const GHK = {

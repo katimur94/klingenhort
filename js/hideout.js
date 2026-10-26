@@ -10,7 +10,7 @@ const HIDE_POS = {
   lager: [.18, .9], training: [.38, .92], mine: [.62, .92], garten: [.82, .9],
   basar: [.28, .56], weltentor: [.72, .56], brutnest: [.5, .92],
   // 6.2: zwischen oberer und mittlerer Reihe (im Hochformat nie unter den Touch-Knöpfen); links/rechts außen der Holzplatz (js/bauen.js GHIDE)
-  sattler: [.24, .38], voliere: [.76, .38]
+  sattler: [.22, .34], voliere: [.78, .34]
 };
 function hideTotal() { let n = 0; for (const k in BUILD) if (!BUILD[k].fixed) n += hideLv(k); return n; }
 function npcLine(id) {
