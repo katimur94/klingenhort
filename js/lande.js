@@ -11,6 +11,9 @@
    Tod: Ausrüstung und Rucksack sind verloren, nur die Begleiter-Tasche (petBagSize, p.bag) kommt heim; was seit dem letzten Leuchtfeuer erkundet wurde, ist vergessen.
    Abbrechen (nur außerhalb des Kampfes) oder neu laden: Rucksack verloren, Ausrüstung vom Aufbruch zurück. Neu laden mitten im Kampf zählt als Tod (M.cur.fight).
    Barrieren an Ringgrenzen (Schlucht, Fluss, Giftnebel, Eisklippen …) lassen sich nur an Übergängen und nur mit dem passenden Werkzeug queren.
+   20 Ringgrenzen bis kurz vor den Rand (LRING): die ersten 11 mit den elf Grundwerkzeugen, danach je eine neue Barriere mit einem Meisterwerkzeug
+   (Stufe II eines Grundwerkzeugs, z. B. „Seil II“), das in Horten im Ring davor liegt und auch vor der Gefahr der Biome dahinter schützt.
+   Im äußersten Ring liegt der Weltenrand, ganz außen die Stätten „Ende der Welt“ (Wächter, Hort, einmalige Belohnung beim ersten Besuch).
    Spielstand: SAVE.meta.lande (Statistik, Ruf, Schlüssel, Werkzeuge, Leuchtfeuer, erkundete Kartenfelder, entdeckte Regionen, Fundkiste, laufender Ausflug).
    Schnittstelle: landeActive(), landeToolGive(key), landeToolHas(key), landeDepth(), landeCtx(cx, cy, salt) (mit biome, region, rname, landmark, stage, depth, R),
      LANDE_BIOMES, LANDE_TOOLS, worldStage(depth), landeLocal(wx, wy) / landeWorld(x, y) (Welt-Pixel ↔ Spiel-Koordinaten), landePos() → { wx, wy, cx, cy },
@@ -52,8 +55,10 @@ function lLuckD(d) { return 1 + 9 * Math.pow(clamp(d, 0, 1), .6); }
 function lDepthC(cx, cy) { return Math.min(1, Math.hypot(cx, cy) / LWR); }
 
 /* ---------- Werkzeuge und Barrieren ---------- */
-// Ringe um das Tor (Chunks): wer über Ring k will, braucht Werkzeug k – zu finden in Horten diesseits des Rings
-const LRING = [22, 56, 110, 190, 300, 450, 650, 920, 1300, 1900, 2800];
+// Ringe um das Tor (Chunks): wer über Ring k will, braucht Werkzeug k – zu finden in Horten diesseits des Rings.
+// Bis 2800 wie in 6.1 (dicht am Anfang), danach alle 600–800 Chunks (≈ 1,6–2,1 h Fußmarsch) eine neue Grenze bis kurz vor den Rand (9000).
+const LRING = [22, 56, 110, 190, 300, 450, 650, 920, 1300, 1900, 2800, 3600, 4350, 5050, 5700, 6300, 6900, 7500, 8100, 8700];
+const LRMAX = LRING.length;   // äußerster Ring (Weltenrand)
 const LANDE_TOOLS = [
   { key: 'seil', n: _t('Seil'), bar: 'schlucht', c: '#c8a070', d: _t('Ein Kletterseil mit Wurfhaken – damit kommst du an den Übergängen über Schluchten.') },
   { key: 'brueckenstein', n: _t('Brückenstein'), bar: 'fluss', c: '#9ad0ff', d: _t('Ein Stein der Alten: Er lässt eingestürzte Brücken über reißende Flüsse wieder erstehen.') },
@@ -65,7 +70,17 @@ const LANDE_TOOLS = [
   { key: 'dornenklinge', n: _t('Dornenklinge'), bar: 'dornen', c: '#79c24e', d: _t('Schneidet Wege durch Dornenwälle, die nichts anderes durchdringt.') },
   { key: 'sturmfeder', n: _t('Sturmfeder'), bar: 'sturm', c: '#c8d0e0', d: _t('Hält dich im Auge des Sturms – Sturmwände und Böen werfen dich nicht mehr zurück.') },
   { key: 'sternenschluessel', n: _t('Sternenschlüssel'), bar: 'siegel', c: '#b0b8ff', d: _t('Öffnet die uralten Siegel der Sternentore.') },
-  { key: 'leereanker', n: _t('Leere-Anker'), bar: 'leere', c: '#c060ff', d: _t('Verankert dich in der Wirklichkeit – über Leere-Risse und durch das Nichts.') }
+  { key: 'leereanker', n: _t('Leere-Anker'), bar: 'leere', c: '#c060ff', d: _t('Verankert dich in der Wirklichkeit – über Leere-Risse und durch das Nichts.') },
+  // Meisterwerkzeuge (Stufe II): je eine neue Grenze ab 3600 Chunks, Horte im Ring davor; b = Grundwerkzeug (Bild)
+  { key: 'seil2', b: 0, n: _t('Seil II'), bar: 'kluft', c: '#9ab8ff', d: _t('Ein Seil aus Sternenfaden mit Kristallhaken – es hält auch über der Kristallkluft, wo jedes andere Seil zerschneidet.') },
+  { key: 'kraeutermaske2', b: 2, n: _t('Kräutermaske II'), bar: 'blutnebel', c: '#ff6a7a', d: _t('Gefüllt mit Kräutern vom Rand der Welt: Sie filtert die Wand aus Blutnebel, den Blutdunst der Sümpfe und die Sporenluft der Pilzriesen.') },
+  { key: 'eishaken2', b: 3, n: _t('Eishaken II'), bar: 'abbruch', c: '#e8f4ff', d: _t('Haken aus Himmelsstahl: Damit kletterst du am Himmelsabbruch entlang, und kein Höhensturm reißt dich fort.') },
+  { key: 'brueckenstein2', b: 1, n: _t('Brückenstein II'), bar: 'seelenstrom', c: '#9af0e0', d: _t('Ein Stein der Alten, der Brücken über den Seelenstrom baut. Sein Licht hält auch den Seelensog von dir fern.') },
+  { key: 'feuermantel2', b: 4, n: _t('Feuermantel II'), bar: 'sternglut', c: '#ffd04a', d: _t('Gewebt aus Sternenfeuer: schützt vor Sternenglut und Grabeskälte. Über die Glutströme führen schwebende Steine.') },
+  { key: 'schattenlaterne2', b: 5, n: _t('Schattenlaterne II'), bar: 'traum', c: '#e0b0ff', d: _t('Ihr Licht weckt dich aus jedem Traum: Sie zerreißt den Traumschleier und vertreibt den Traumnebel.') },
+  { key: 'gezeitenperle2', b: 6, n: _t('Gezeitenperle II'), bar: 'zeitstrom', c: '#ffe08a', d: _t('Eine Perle aus erstarrter Zeit: An den Stundenpfeilern hält sie den Zeitstrom an und schützt vor dem Zeitsog.') },
+  { key: 'dornenklinge2', b: 7, n: _t('Dornenklinge II'), bar: 'splitter', c: '#c8f0ff', d: _t('Geschmiedet aus Sternensplittern: Sie schneidet Wege durch Splitterwälle und zerschlägt den Splitterregen.') },
+  { key: 'sternenschluessel2', b: 9, n: _t('Sternenschlüssel II'), bar: 'weltsiegel', c: '#ffe8a0', d: _t('Der Schlüssel zum Siegel der Welt. Dahinter liegt nur noch der Weltenrand – und das Ende der Welt.') }
 ];
 const LTOOLK = {}; LANDE_TOOLS.forEach((t, i) => { t.i = i; LTOOLK[t.key] = i; });
 // Barrieren: w = halbe Breite in Kacheln, c = Farben (Grund, Tiefe, Licht, Rand), x = Übergang (Aussehen), haz = Gefahr in Biomen
@@ -81,7 +96,17 @@ const LBAR = {
   sturm: { n: _t('Sturmwand'), w: 3, c: ['#5a6070', '#3a404c', '#c8d0e0', '#6a7080'], x: 'licht' },
   siegel: { n: _t('Uraltes Siegel'), w: 2.1, c: ['#4a4652', '#2e2a36', '#e8b04a', '#6a6672'], x: 'tor' },
   leere: { n: _t('Leere-Riss'), w: 3.4, c: ['#050208', '#000000', '#b892f4', '#2a1640'], x: 'anker' },
-  rand: { n: _t('Rand der Welt'), w: 99, c: ['#050208', '#000000', '#ffffff', '#1a1028'], x: null }
+  rand: { n: _t('Rand der Welt'), w: 99, c: ['#000000', '#000000', '#ffffff', '#8a6ac0'], x: null },
+  // Grenzen der Tiefe (Meisterwerkzeuge) – manche auch als örtliche Barriere mit Brücke in passenden Biomen
+  kluft: { n: _t('Kristallkluft'), w: 2.8, c: ['#14122a', '#06040e', '#8ab0ff', '#4a4a7a'], x: 'kseil' },
+  blutnebel: { n: _t('Blutnebel'), w: 3, c: ['#5a1420', '#2a0810', '#ff6a7a', '#3a1018'], x: 'kraut' },
+  abbruch: { n: _t('Himmelsabbruch'), w: 3, c: ['#7aa8e0', '#4a78b8', '#ffffff', '#3a4a6a'], x: 'schwebe' },
+  seelenstrom: { n: _t('Seelenstrom'), w: 3, c: ['#1e5a58', '#0e2a30', '#9af0e0', '#2a4a48'], x: 'gebein' },
+  sternglut: { n: _t('Sternenglut'), w: 2.8, c: ['#e8a020', '#a85010', '#fff0a0', '#3a1a08'], x: 'glutstein' },
+  traum: { n: _t('Traumschleier'), w: 3.2, c: ['#4a3a6a', '#2a1e40', '#ffc0f0', '#3a2a50'], x: 'wachlicht' },
+  zeitstrom: { n: _t('Zeitstrom'), w: 3.2, c: ['#3a3858', '#1a1a30', '#ffe08a', '#2a2a40'], x: 'stunde' },
+  splitter: { n: _t('Splitterwall'), w: 2.6, c: ['#3a4656', '#1e2632', '#e8f8ff', '#6a7a8a'], x: 'schnitt' },
+  weltsiegel: { n: _t('Siegel der Welt'), w: 2.4, c: ['#2a2440', '#140e24', '#ffd24a', '#4a4060'], x: 'weltor' }
 };
 const LBARK = Object.keys(LBAR); LBARK.forEach((k, i) => { LBAR[k].i = i; LBAR[k].key = k; });
 // Gefahren der Biome: welches Werkzeug schützt
@@ -91,10 +116,34 @@ const LHAZ = {
   hitze: { n: _t('Glühende Hitze'), tool: 4, c: '#ff8a3a', s: _t('Glühende Hitze! Ohne Feuermantel versengt sie dich.') },
   dunkel: { n: _t('Finsternis'), tool: 5, c: '#8a7aa8', s: _t('Finsternis! Ohne Schattenlaterne siehst du kaum die Hand vor Augen.') },
   sturm: { n: _t('Sturm'), tool: 8, c: '#c8d0e0', s: _t('Sturm! Ohne Sturmfeder werfen dich die Böen umher.') },
-  leere: { n: _t('Sog der Leere'), tool: 10, c: '#c060ff', s: _t('Die Leere saugt an deiner Kraft! Ohne Leere-Anker schwindet sie.') }
+  leere: { n: _t('Sog der Leere'), tool: 10, c: '#c060ff', s: _t('Die Leere saugt an deiner Kraft! Ohne Leere-Anker schwindet sie.') },
+  // Gefahren der Tiefe: Schutz durch das Meisterwerkzeug aus demselben Ring
+  blut: { n: _t('Blutdunst'), tool: 12, c: '#ff6a7a', s: _t('Blutdunst! Ohne Kräutermaske II saugt er dir das Leben aus.') },
+  sporen: { n: _t('Sporenluft'), tool: 12, c: '#c8a0ff', s: _t('Sporenluft! Ohne Kräutermaske II vergiftet sie dich.') },
+  hoehe: { n: _t('Höhensturm'), tool: 13, c: '#e8f4ff', s: _t('Höhensturm! Ohne Eishaken II reißt er dich von den Füßen.') },
+  seelen: { n: _t('Seelensog'), tool: 14, c: '#9af0e0', s: _t('Seelensog! Ohne Brückenstein II zehren die Seelen an Kraft und Leben.') },
+  glut: { n: _t('Sternenglut'), tool: 15, c: '#ffd04a', s: _t('Sternenglut! Ohne Feuermantel II verbrennst du.') },
+  frost: { n: _t('Grabeskälte'), tool: 15, c: '#d8f0ff', s: _t('Grabeskälte! Ohne Feuermantel II erstarrst du.') },
+  traum: { n: _t('Traumnebel'), tool: 16, c: '#e0b0ff', s: _t('Traumnebel! Ohne Schattenlaterne II wirst du müde und siehst kaum etwas.') },
+  zeit: { n: _t('Zeitsog'), tool: 17, c: '#ffe08a', s: _t('Zeitsog! Ohne Gezeitenperle II zerrt die Zeit an dir.') },
+  splitter: { n: _t('Splitterregen'), tool: 18, c: '#c8f0ff', s: _t('Splitterregen! Ohne Dornenklinge II schneiden dich die Splitter.') }
 };
+// Pfützen der Tiefe (js/world.js kennt Wasser, Gift, Eis, Lava): Farben wie POOLCOL, Wirkung hier (slow = Bremse, dmg = Schaden je ½ s, res = Kraft-Sog je s)
+const LPOOLX = {
+  blut: { c: ['#2a0608', '#7a1018', '#ff5a6a'], dmg: [4, 1] },
+  stern: { c: ['#0a0e2a', '#1e2a6a', '#c0d0ff'], slow: .15 },
+  mond: { c: ['#3a4a6a', '#9ab0d8', '#ffffff'], slow: .15 },
+  seelen: { c: ['#0a2a2a', '#2a8a80', '#bfffee'], slow: .2, res: .06 },
+  glas: { c: ['#3a5a6a', '#9ad8e8', '#ffffff'], dmg: [5, 1.2] },
+  bernstein: { c: ['#5a2a08', '#c87a1a', '#ffd070'], slow: .5 },
+  zeit: { c: ['#2a2a40', '#8a7a3a', '#ffe08a'], slow: .3, res: .04 },
+  leere: { c: ['#050208', '#1a0a2e', '#c060ff'], dmg: [4, .8], res: .05 }
+};
+function lPC(k) { return LPOOLX[k] ? LPOOLX[k].c : POOLCOL[k] || POOLCOL.wasser; }
+// Die neuen Pfützen bei js/world.js anmelden (Zeichnen und Teilchen dort lesen POOLCOL) – world.js lädt erst nach dieser Datei
+function lPoolReg() { if (typeof POOLCOL === 'undefined') return; for (const k in LPOOLX) if (!POOLCOL[k]) POOLCOL[k] = LPOOLX[k].c; }
 
-/* ---------- Biome (über 40): Boden, Pflanzen, Pfützen, Teilchen, Musik, Bewohner, Gefahren ---------- */
+/* ---------- Biome (über 70): Boden, Pflanzen, Pfützen, Teilchen, Musik, Bewohner, Gefahren ---------- */
 // g = Bodenfarben (Grund, Abwandlungen, die dritte ist die Kartenfarbe), tx = Bodenart, tr = Bäume/Pflanzen ('art.variante'), td/rk = Dichte, rv = Fels-Farbe,
 // pool/lk = Pfützenart und Seen je Chunk, deco = Kleinkram, amb = Schwebeteilchen, mus = Grundton, en = Bewohner, et/ea = Abwandlung der Gegner (Tönung, Affix),
 // haz = Gefahr, dark = Dunkel, vein = Erz, r = Ringe (von, bis), t/m = Wärme und Feuchte (zur Wahl je Region), pl = Ortsnamen, lb = lokale Barriere
@@ -138,15 +187,42 @@ const LANDE_BIOMES = {
   spiegelsee: { n: _t('Spiegelsee'), g: ['#8a9ab0', '#8090a6', '#9aaac0', '#70809a'], tx: 'kristall', tr: ['kristall.3', 'weide.1', 'kristall.3'], td: .05, rk: .01, rv: 7, pool: 'wasser', lk: 2, deco: 'stern', amb: 'stern', mus: 48, en: ['engel', 'eisgeist', 'icez', 'elfe', 'mage'], r: [7, 9], t: .4, m: .96, lb: 'fluss', pl: [_t('Silberspiegel'), _t('Stille Wasser'), _t('Gläserner See')] },
   uralt: { n: _t('Uralter Wald'), g: ['#1a3a2e', '#163428', '#224838', '#102a20'], tx: 'gras', tr: ['eiche.9', 'riese.0', 'eiche.9', 'eiche.9'], td: .26, rk: .01, pool: 'wasser', lk: .2, deco: 'pilz', amb: 'moss', dark: .12, mus: 43, en: ['elfe', 'hexe', 'wurm', 'golem', 'ogre', 'lizshaman'], r: [7, 10], t: .5, m: .72, lb: 'fluss', pl: [_t('Urwald'), _t('Wurzelreich'), _t('Ahnenforst')] },
   sturmklippen: { n: _t('Sturmklippen'), g: ['#5a6068', '#525860', '#6a7078', '#464c54'], tx: 'stein', tr: ['tot.0', 'busch.3'], td: .02, rk: .07, rv: 0, deco: 'kies', amb: 'regen', dark: .1, mus: 44, haz: 'sturm', en: ['engel', 'imp', 'golem', 'frostoger', 'zwerg', 'schattenimp'], r: [8, 10], t: .3, m: .55, ea: 'schnell', lb: 'schlucht', pl: [_t('Sturmklippen'), _t('Donnerkamm'), _t('Heulende Felsen')] },
-  drachenland: { n: _t('Drachenland'), g: ['#6a3a1e', '#5e321a', '#7a4826', '#4e2a14'], tx: 'asche', tr: ['knochen.2', 'kohle.0', 'obs.0'], td: .03, rk: .05, rv: 2, pool: 'lava', lk: .6, deco: 'glut', amb: 'asche', mus: 40, en: ['jungdrache', 'lavadaemon', 'chort', 'imp', 'golem', 'pyro'], r: [8, 11], t: .85, m: .3, lb: 'schlucht', pl: [_t('Drachenmark'), _t('Schuppenland'), _t('Hort der Schwingen')] },
+  drachenland: { n: _t('Drachenland'), g: ['#6a3a1e', '#5e321a', '#7a4826', '#4e2a14'], tx: 'asche', tr: ['knochen.2', 'kohle.0', 'obs.0'], td: .03, rk: .05, rv: 2, pool: 'lava', lk: .6, deco: 'glut', amb: 'asche', mus: 40, en: ['jungdrache', 'lavadaemon', 'chort', 'imp', 'golem', 'pyro'], r: [8, 10], t: .85, m: .3, lb: 'schlucht', pl: [_t('Drachenmark'), _t('Schuppenland'), _t('Hort der Schwingen')] },
   traumwiese: { n: _t('Traumwiese'), g: ['#7a6a9a', '#706090', '#8a7aaa', '#605084'], tx: 'gras', tr: ['eiche.5', 'eiche.3', 'busch.4'], td: .08, rk: .005, pool: 'wasser', lk: .4, deco: 'blume', amb: 'stern', mus: 49, en: ['engel', 'elfe', 'kuerbis', 'hexe', 'geist'], r: [8, 10], t: .5, m: .6, lb: 'fluss', pl: [_t('Traumwiese'), _t('Schlummerau'), _t('Wolkenflur')] },
-  sternenfeld: { n: _t('Sternenfeld'), g: ['#1a1e3a', '#161a32', '#22284a', '#10142a'], tx: 'leere', tr: ['sternbaum.0', 'kristall.0', 'sternbaum.0'], td: .05, rk: .02, rv: 7, deco: 'stern', amb: 'stern', dark: .2, mus: 48, en: ['engel', 'schattenimp', 'skelmage', 'todesritter', 'elfe'], r: [9, 11], t: .3, m: .4, lb: 'schlucht', pl: [_t('Sternenfeld'), _t('Himmelsgrund'), _t('Funkelöde')] },
-  goetterhain: { n: _t('Götterhain'), g: ['#9a8a3a', '#8e7e34', '#aa9a48', '#7e6e2e'], tx: 'gras', tr: ['eiche.8', 'saeule.0', 'eiche.8', 'statue.0'], td: .1, rk: .01, rv: 6, pool: 'wasser', lk: .3, deco: 'blume', amb: 'pollen', mus: 50, en: ['engel', 'todesritter', 'golem', 'elfe', 'jungdrache'], r: [9, 11], t: .62, m: .5, lb: 'fluss', pl: [_t('Götterhain'), _t('Goldener Garten'), _t('Hain der Ersten')] },
-  zeitruinen: { n: _t('Zeitruinen'), g: ['#4a3e5a', '#423652', '#564a66', '#3a2e4a'], tx: 'floor', tr: ['saeule.0', 'kristall.2', 'tot.1'], td: .05, rk: .03, rv: 5, deco: 'stern', amb: 'stern', dark: .15, mus: 41, en: ['skelmage', 'todesritter', 'geist', 'mage', 'golem', 'engel'], r: [9, 11], t: .5, m: .3, lb: 'schlucht', pl: [_t('Zeitruinen'), _t('Vergessene Stadt'), _t('Halle der Uhren')] },
-  leere: { n: _t('Leereland'), g: ['#160e22', '#120a1c', '#20162e', '#0c0614'], tx: 'leere', tr: ['kristall.2', 'obs.1', 'sternbaum.1'], td: .04, rk: .03, rv: 5, deco: 'stern', amb: 'leere', dark: .3, mus: 37, haz: 'leere', en: ['schattenimp', 'engel', 'todesritter', 'skelmage', 'geist'], r: [10, 11], t: .5, m: .5, et: 'rgba(40,0,70,.45)', lb: 'schlucht', pl: [_t('Leereland'), _t('Das Nichts'), _t('Hungriges Dunkel')] },
+  sternenfeld: { n: _t('Sternenfeld'), g: ['#1a1e3a', '#161a32', '#22284a', '#10142a'], tx: 'leere', tr: ['sternbaum.0', 'kristall.0', 'sternbaum.0'], td: .05, rk: .02, rv: 7, deco: 'stern', amb: 'stern', dark: .2, mus: 48, en: ['engel', 'schattenimp', 'skelmage', 'todesritter', 'elfe'], r: [9, 10], t: .3, m: .4, lb: 'schlucht', pl: [_t('Sternenfeld'), _t('Himmelsgrund'), _t('Funkelöde')] },
+  goetterhain: { n: _t('Götterhain'), g: ['#9a8a3a', '#8e7e34', '#aa9a48', '#7e6e2e'], tx: 'gras', tr: ['eiche.8', 'saeule.0', 'eiche.8', 'statue.0'], td: .1, rk: .01, rv: 6, pool: 'wasser', lk: .3, deco: 'blume', amb: 'pollen', mus: 50, en: ['engel', 'todesritter', 'golem', 'elfe', 'jungdrache'], r: [9, 10], t: .62, m: .5, lb: 'fluss', pl: [_t('Götterhain'), _t('Goldener Garten'), _t('Hain der Ersten')] },
+  zeitruinen: { n: _t('Zeitruinen'), g: ['#4a3e5a', '#423652', '#564a66', '#3a2e4a'], tx: 'floor', tr: ['saeule.0', 'kristall.2', 'tot.1'], td: .05, rk: .03, rv: 5, deco: 'stern', amb: 'stern', dark: .15, mus: 41, en: ['skelmage', 'todesritter', 'geist', 'mage', 'golem', 'engel'], r: [9, 10], t: .5, m: .3, lb: 'schlucht', pl: [_t('Zeitruinen'), _t('Vergessene Stadt'), _t('Halle der Uhren')] },
+  leere: { n: _t('Leereland'), g: ['#160e22', '#120a1c', '#20162e', '#0c0614'], tx: 'leere', tr: ['kristall.2', 'obs.1', 'sternbaum.1'], td: .04, rk: .03, rv: 5, deco: 'stern', amb: 'leere', dark: .3, mus: 37, haz: 'leere', en: ['schattenimp', 'engel', 'todesritter', 'skelmage', 'geist'], r: [10, 12], t: .5, m: .5, et: 'rgba(40,0,70,.45)', lb: 'schlucht', pl: [_t('Leereland'), _t('Das Nichts'), _t('Hungriges Dunkel')] },
   aether: { n: _t('Ätherfeld'), g: ['#d8d0a8', '#ccc49c', '#e8e0b8', '#b8b090'], tx: 'kristall', tr: ['kristall.4', 'sternbaum.0', 'eiche.8'], td: .05, rk: .02, rv: 6, deco: 'stern', amb: 'stern', mus: 50, en: ['engel', 'jungdrache', 'eisgeist', 'elfe', 'todesritter'], r: [10, 11], t: .6, m: .6, et: 'rgba(255,240,180,.3)', lb: 'schlucht', pl: [_t('Ätherfeld'), _t('Lichtsteppe'), _t('Strahlende Weite')] },
-  chaos: { n: _t('Chaosöde'), g: ['#5a1e3a', '#521a34', '#6a2a4a', '#46142c'], tx: 'blut', tr: ['obs.1', 'kristall.2', 'knochen.2'], td: .05, rk: .05, rv: 5, pool: 'lava', lk: .6, deco: 'blut', amb: 'schatten', dark: .2, mus: 37, en: ['jungdrache', 'lavadaemon', 'todesritter', 'schattenimp', 'golem', 'frostoger'], r: [11, 11], t: .7, m: .4, ea: 'riese', lb: 'schlucht', pl: [_t('Chaosöde'), _t('Zerrissenes Land'), _t('Wirbelgrund')] },
-  weltenrand: { n: _t('Weltenrand'), g: ['#3a3a4a', '#323242', '#46465a', '#262636'], tx: 'leere', tr: ['sternbaum.1', 'obs.1'], td: .02, rk: .03, rv: 5, deco: 'stern', amb: 'leere', dark: .25, mus: 36, haz: 'leere', en: ['schattenimp', 'engel', 'todesritter', 'jungdrache', 'geist'], r: [11, 11], t: .4, m: .5, et: 'rgba(20,10,40,.5)', lb: 'schlucht', pl: [_t('Weltenrand'), _t('Letztes Ufer'), _t('Saum des Seins')] }
+  chaos: { n: _t('Chaosöde'), g: ['#5a1e3a', '#521a34', '#6a2a4a', '#46142c'], tx: 'blut', tr: ['obs.1', 'kristall.2', 'knochen.2'], td: .05, rk: .05, rv: 5, pool: 'lava', lk: .6, deco: 'blut', amb: 'schatten', dark: .2, mus: 37, en: ['jungdrache', 'lavadaemon', 'todesritter', 'schattenimp', 'golem', 'frostoger'], r: [11, 12], t: .7, m: .4, ea: 'riese', lb: 'schlucht', pl: [_t('Chaosöde'), _t('Zerrissenes Land'), _t('Wirbelgrund')] },
+  weltenrand: { n: _t('Weltenrand'), g: ['#3a3a4a', '#323242', '#46465a', '#262636'], tx: 'leere', tr: ['sternbaum.1', 'obs.1'], td: .02, rk: .03, rv: 5, deco: 'stern', amb: 'leere', dark: .25, mus: 36, haz: 'leere', en: ['schattenimp', 'engel', 'todesritter', 'jungdrache', 'geist'], r: [20, 20], t: .5, m: .45, et: 'rgba(20,10,40,.5)', lb: 'schlucht', pl: [_t('Weltenrand'), _t('Letztes Ufer'), _t('Saum des Seins')] },
+  // ---- Die Tiefe (ab 2800 Chunks ≈ 7,5 h Fußmarsch): je Ring zwei bis drei eigene Biome, stärkere Gegner (mehr Affixe), eigene Gefahren ----
+  kristallwueste: { n: _t('Kristallwüste'), g: ['#a8b0d4', '#9ca4ca', '#bcc6e6', '#8a92b8'], tx: 'kristall', tr: ['kristall.0', 'kristall.3', 'salzk.0', 'kristall.0'], td: .04, rk: .02, rv: 7, pool: 'eis', lk: .25, deco: 'kristall', amb: 'kristall', mus: 49, haz: 'kalt', en: ['golem', 'icez', 'eisgeist', 'engel', 'frostoger', 'skelmage'], r: [11, 12], t: .3, m: .1, et: 'rgba(150,190,255,.32)', ea: 'gepanzert', lb: 'kluft', pl: [_t('Kristallwüste'), _t('Prismensand'), _t('Gläserne Weite')] },
+  glasduenen: { n: _t('Glasdünen'), g: ['#d8c49a', '#ccb88e', '#e8d8b0', '#b8a47a'], tx: 'glas', tr: ['scherbe.0', 'kaktus.0', 'glasbaum.0'], td: .03, rk: .01, rv: 10, pool: 'glas', lk: .3, deco: 'scherbe', amb: 'glas', mus: 47, haz: 'hitze', en: ['golem', 'pyro', 'glutschleim', 'imp', 'lavadaemon', 'skeleton'], r: [11, 13], t: .9, m: .1, et: 'rgba(255,240,200,.3)', ea: 'brennend', lb: 'schlucht', pl: [_t('Glasdünen'), _t('Scherbenmeer'), _t('Schmelzsand')] },
+  sternmeer: { n: _t('Sternenmeer-Küste'), g: ['#2a3062', '#242a58', '#38407a', '#1c224a'], tx: 'sternstaub', tr: ['koralle.3', 'sternbaum.0', 'palme.0', 'koralle.3'], td: .04, rk: .01, rv: 7, pool: 'stern', lk: 1.6, deco: 'muschel', amb: 'sternmeer', mus: 50, en: ['engel', 'lizshaman', 'eisgeist', 'elfe', 'icez', 'schattenimp'], r: [11, 13], t: .5, m: .95, et: 'rgba(120,140,255,.32)', ea: 'schnell', lb: 'fluss', pl: [_t('Sternenmeer'), _t('Funkelbucht'), _t('Ufer der Lichter')] },
+  aschesturm: { n: _t('Aschesturm'), g: ['#4a4446', '#403a3c', '#5a5254', '#363032'], tx: 'asche', tr: ['tot.1', 'kohle.0', 'obs.0'], td: .03, rk: .05, rv: 2, deco: 'glut', amb: 'aschesturm', dark: .18, mus: 39, haz: 'sturm', en: ['lavadaemon', 'imp', 'chort', 'jungdrache', 'schattenimp', 'golem'], r: [11, 12], t: .85, m: .55, et: 'rgba(80,60,60,.4)', ea: 'schnell', lb: 'schlucht', pl: [_t('Aschesturm'), _t('Rußwirbel'), _t('Glimmende Öde')] },
+  knochenwald: { n: _t('Knochenwald'), g: ['#3e3a32', '#36322a', '#4c463c', '#2c2822'], tx: 'knochen', tr: ['knochenbaum.0', 'knochenbaum.1', 'knochen.2', 'knochenbaum.0'], td: .2, rk: .01, rv: 9, deco: 'knochen', amb: 'gruft', dark: .2, mus: 38, haz: 'dunkel', en: ['skeleton', 'skelarcher', 'skelmage', 'todesritter', 'zombie', 'geist'], r: [12, 13], t: .3, m: .5, et: 'rgba(230,220,190,.3)', ea: 'gepanzert', lb: 'schlucht', pl: [_t('Knochenwald'), _t('Gebeinforst'), _t('Rippenhain')] },
+  scharlachsumpf: { n: _t('Scharlachsumpf'), g: ['#5a1e22', '#501a1e', '#6e2a2e', '#421418'], tx: 'blut', tr: ['eiche.7', 'schilf.1', 'riesenpilz.2'], td: .08, rk: .01, pool: 'blut', lk: 1.4, deco: 'blut', amb: 'blutnebel', dark: .1, mus: 37, haz: 'blut', en: ['zombie', 'seuche', 'hexe', 'toxslime', 'todesritter', 'wurm'], r: [12, 13], t: .7, m: .88, et: 'rgba(200,30,40,.35)', ea: 'vampir', lb: 'blutnebel', pl: [_t('Scharlachsumpf'), _t('Blutsee'), _t('Roter Morast')] },
+  pilzriesen: { n: _t('Pilzriesen'), g: ['#3a2a44', '#34263e', '#4a3654', '#2a1e34'], tx: 'erde', tr: ['riesenpilz.0', 'riesenpilz.1', 'pilz.2', 'riesenpilz.0'], td: .15, rk: .006, pool: 'gift', lk: .5, deco: 'pilz', amb: 'riesensporen', mus: 41, haz: 'sporen', en: ['toxslime', 'slime', 'hexe', 'wurm', 'zombie', 'seuche'], r: [12, 13], t: .5, m: .7, et: 'rgba(170,90,230,.3)', ea: 'heiler', lb: 'fluss', pl: [_t('Pilzriesen'), _t('Hutwald der Riesen'), _t('Sporendom')] },
+  uhrwerk: { n: _t('Uhrwerk-Ruinen'), g: ['#5a4a2e', '#524428', '#6e5c3a', '#463a22'], tx: 'metall', tr: ['zahnrad.0', 'zahnrad.1', 'saeule.0', 'zahnrad.0'], td: .04, rk: .02, rv: 11, deco: 'zahnrad', amb: 'dampf', mus: 42, en: ['golem', 'zwerg', 'bomber', 'skelmage', 'todesritter', 'engel'], r: [13, 14], t: .55, m: .3, et: 'rgba(220,170,80,.3)', ea: 'gepanzert', lb: 'schlucht', pl: [_t('Uhrwerk-Ruinen'), _t('Zahnradhalle'), _t('Stadt der Federn')] },
+  himmelsklippen: { n: _t('Himmelsklippen'), g: ['#7088b0', '#667ea6', '#8ea4cc', '#556c94'], tx: 'wolke', tr: ['tanne.0', 'busch.3', 'tot.0'], td: .03, rk: .07, rv: 0, deco: 'feder', amb: 'wolke', mus: 51, haz: 'hoehe', en: ['engel', 'imp', 'schattenimp', 'elfe', 'frostoger', 'jungdrache'], r: [13, 15], t: .2, m: .55, et: 'rgba(230,240,255,.35)', ea: 'schnell', lb: 'abbruch', pl: [_t('Himmelsklippen'), _t('Wolkengrat'), _t('Adlerhorst')] },
+  titanengraeber: { n: _t('Titanengräber'), g: ['#6a6252', '#605848', '#7c7464', '#524a3e'], tx: 'stein', tr: ['schaedel.0', 'knochen.2', 'grab.1', 'tot.0'], td: .03, rk: .04, rv: 9, deco: 'knochen', amb: 'gruft', dark: .08, mus: 37, en: ['zombie', 'golem', 'todesritter', 'ogre', 'skelmage', 'frostoger'], r: [13, 14], t: .75, m: .2, et: 'rgba(200,190,160,.3)', ea: 'riese', lb: 'schlucht', pl: [_t('Titanengräber'), _t('Feld der Riesen'), _t('Gebeinhalde')] },
+  mondsee: { n: _t('Mondsee'), g: ['#4a5a7a', '#425272', '#5c6c8e', '#3a4a68'], tx: 'mond', tr: ['weide.3', 'eiche.12', 'kristall.3', 'weide.3'], td: .07, rk: .01, rv: 12, pool: 'mond', lk: 2.2, deco: 'stern', amb: 'mond', dark: .12, mus: 52, en: ['eisgeist', 'engel', 'icez', 'elfe', 'geist', 'lizshaman'], r: [14, 15], t: .25, m: .92, et: 'rgba(200,220,255,.4)', ea: 'teleport', lb: 'fluss', pl: [_t('Mondsee'), _t('Silberbucht'), _t('Spiegel des Mondes')] },
+  seelenfluss: { n: _t('Seelenfluss'), g: ['#2a4a4a', '#244242', '#385c5c', '#1e3838'], tx: 'seele', tr: ['weide.2', 'eiche.15', 'grab.1', 'weide.2'], td: .08, rk: .01, pool: 'seelen', lk: 1.2, deco: 'seele', amb: 'seele', dark: .16, mus: 39, haz: 'seelen', en: ['geist', 'eisgeist', 'skelmage', 'engel', 'zombie', 'todesritter'], r: [14, 15], t: .55, m: .78, et: 'rgba(120,255,220,.38)', ea: 'teleport', lb: 'seelenstrom', pl: [_t('Seelenfluss'), _t('Ufer der Verlorenen'), _t('Flüsternde Strömung')] },
+  bernstein: { n: _t('Bernsteinwald'), g: ['#6a4a1e', '#60421a', '#7e5e2a', '#523a14'], tx: 'bernstein', tr: ['eiche.13', 'eiche.13', 'kristall.7', 'busch.1'], td: .22, rk: .01, rv: 14, pool: 'bernstein', lk: .4, deco: 'bernstein', amb: 'bernstein', mus: 45, en: ['elfe', 'hexe', 'golem', 'wurm', 'jungdrache', 'lizshaman'], r: [14, 15], t: .8, m: .55, et: 'rgba(255,170,60,.32)', ea: 'gepanzert', lb: 'fluss', pl: [_t('Bernsteinwald'), _t('Honigforst'), _t('Harz der Ewigkeit')] },
+  splittergebirge: { n: _t('Splittergebirge'), g: ['#5a6070', '#525868', '#6c7284', '#464c5a'], tx: 'riss', tr: ['scherbe.0', 'scherbe.2', 'fels.0', 'scherbe.0'], td: .05, rk: .08, rv: 10, deco: 'scherbe', amb: 'splitter', mus: 43, haz: 'sturm', en: ['golem', 'frostoger', 'engel', 'zwerg', 'schattenimp', 'ogre'], r: [15, 16], t: .4, m: .15, et: 'rgba(200,230,255,.3)', ea: 'explosiv', lb: 'kluft', pl: [_t('Splittergebirge'), _t('Scherbenkamm'), _t('Zerbrochene Gipfel')] },
+  sonnenschmiede: { n: _t('Sonnenschmiede'), g: ['#7a4a14', '#6e4210', '#8e5e20', '#5e360c'], tx: 'lava', tr: ['obs.0', 'kohle.0', 'scherbe.1'], td: .03, rk: .06, rv: 2, pool: 'lava', lk: 1, deco: 'glut', amb: 'sonne', mus: 40, haz: 'glut', en: ['lavadaemon', 'jungdrache', 'pyro', 'glutschleim', 'golem', 'chort'], r: [15, 17], t: .95, m: .25, et: 'rgba(255,200,60,.38)', ea: 'brennend', lb: 'sternglut', pl: [_t('Sonnenschmiede'), _t('Amboss der Sterne'), _t('Goldene Glut')] },
+  frostkrone: { n: _t('Frostkrone'), g: ['#c8dcf0', '#bcd2ea', '#dce8f8', '#a8c0dc'], tx: 'eis', tr: ['eisz.0', 'eisz.1', 'kristall.3'], td: .05, rk: .04, rv: 1, pool: 'eis', lk: .8, deco: 'eis', amb: 'frost', mus: 49, haz: 'frost', en: ['frostoger', 'eisgeist', 'icez', 'golem', 'todesritter', 'engel'], r: [15, 16], t: .02, m: .45, et: 'rgba(180,220,255,.45)', ea: 'frostig', lb: 'abbruch', pl: [_t('Frostkrone'), _t('Thron des Winters'), _t('Eisige Zinnen')] },
+  traumwald: { n: _t('Traumwald'), g: ['#6a5a8a', '#605080', '#7c6c9e', '#504070'], tx: 'traum', tr: ['eiche.14', 'eiche.5', 'busch.4', 'glasbaum.1'], td: .2, rk: .005, pool: 'wasser', lk: .3, deco: 'traum', amb: 'traum', dark: .1, mus: 50, haz: 'traum', en: ['engel', 'elfe', 'geist', 'hexe', 'kuerbis', 'schattenimp'], r: [16, 17], t: .5, m: .75, et: 'rgba(255,180,240,.35)', ea: 'teleport', lb: 'traum', pl: [_t('Traumwald'), _t('Schlummerforst'), _t('Wald der Wachträume')] },
+  spiegelwelt: { n: _t('Spiegellande'), g: ['#8a8aa0', '#808096', '#a0a0b8', '#6e6e86'], tx: 'glas', tr: ['kristall.3', 'glasbaum.0', 'saeule.0'], td: .05, rk: .02, rv: 10, pool: 'mond', lk: .5, deco: 'scherbe', amb: 'glas', dark: .05, mus: 48, en: ['engel', 'elfe', 'mage', 'skelmage', 'eisgeist', 'todesritter'], r: [16, 17], t: .3, m: .35, et: 'rgba(230,230,255,.4)', ea: 'teleport', lb: 'kluft', pl: [_t('Spiegellande'), _t('Halle der Spiegel'), _t('Gläserne Ebene')] },
+  zeitbruch: { n: _t('Zeitbruch'), g: ['#3e3a52', '#38344a', '#4c4866', '#2e2a40'], tx: 'zeit', tr: ['sanduhr.0', 'saeule.0', 'kristall.2'], td: .04, rk: .03, rv: 5, pool: 'zeit', lk: .4, deco: 'riss', amb: 'zeit', dark: .14, mus: 41, haz: 'zeit', en: ['skelmage', 'todesritter', 'engel', 'geist', 'golem', 'mage'], r: [17, 18], t: .6, m: .4, et: 'rgba(255,220,120,.32)', ea: 'schnell', lb: 'zeitstrom', pl: [_t('Zeitbruch'), _t('Riss der Stunden'), _t('Gestern und Morgen')] },
+  leerenstrand: { n: _t('Leerenstrand'), g: ['#3e2e56', '#36284c', '#4c3a68', '#2c2042'], tx: 'sand', tr: ['koralle.3', 'obs.1', 'sternbaum.1'], td: .04, rk: .02, rv: 15, pool: 'leere', lk: 1.4, deco: 'muschel', amb: 'leere', dark: .22, mus: 36, haz: 'leere', en: ['schattenimp', 'engel', 'todesritter', 'eisgeist', 'jungdrache', 'geist'], r: [17, 19], t: .4, m: .9, et: 'rgba(80,30,140,.45)', ea: 'teleport', lb: 'fluss', pl: [_t('Leerenstrand'), _t('Küste des Nichts'), _t('Schwarzer Sand')] },
+  rost: { n: _t('Rostfelder'), g: ['#6a3a1e', '#60341a', '#7e4a28', '#522c14'], tx: 'rost', tr: ['ruest.0', 'zahnrad.1', 'tot.0'], td: .03, rk: .04, rv: 13, deco: 'rost', amb: 'rost', mus: 40, en: ['golem', 'zwerg', 'bomber', 'berserker', 'todesritter', 'ogre'], r: [17, 18], t: .8, m: .15, et: 'rgba(200,100,40,.32)', ea: 'gepanzert', lb: 'schlucht', pl: [_t('Rostfelder'), _t('Rüstungsgrab der Riesen'), _t('Rote Halde')] },
+  sternenwrack: { n: _t('Sternenfall'), g: ['#2a1e2e', '#241a28', '#3a2a3e', '#1e1422'], tx: 'sternstaub', tr: ['scherbe.1', 'obs.1', 'kristall.5'], td: .04, rk: .05, rv: 15, pool: 'stern', lk: .5, deco: 'krater', amb: 'sternfall', dark: .2, mus: 43, haz: 'splitter', en: ['jungdrache', 'engel', 'golem', 'lavadaemon', 'schattenimp', 'todesritter'], r: [18, 19], t: .85, m: .35, et: 'rgba(255,220,140,.35)', ea: 'explosiv', lb: 'kluft', pl: [_t('Sternenfall'), _t('Krater der Sterne'), _t('Gefallenes Licht')] },
+  goetterdaemmerung: { n: _t('Götterdämmerung'), g: ['#5a4a3a', '#524234', '#6e5c4a', '#463a2e'], tx: 'floor', tr: ['statue.0', 'saeule.0', 'eiche.16', 'eiche.8'], td: .07, rk: .02, rv: 6, pool: 'wasser', lk: .3, deco: 'blume', amb: 'daemmer', dark: .12, mus: 44, en: ['engel', 'todesritter', 'jungdrache', 'golem', 'skelmage', 'frostoger'], r: [18, 19], t: .55, m: .6, et: 'rgba(255,200,120,.32)', ea: 'riese', lb: 'fluss', pl: [_t('Götterdämmerung'), _t('Letzte Halle'), _t('Zwielicht der Götter')] },
+  urnebel: { n: _t('Urnebel'), g: ['#3a3448', '#342e42', '#48405a', '#2a2438'], tx: 'traum', tr: ['eiche.10', 'sternbaum.1', 'riesenpilz.1'], td: .1, rk: .01, pool: 'leere', lk: .6, deco: 'stern', amb: 'urnebel', dark: .26, mus: 37, haz: 'traum', en: ['geist', 'schattenimp', 'engel', 'todesritter', 'eisgeist', 'hexe'], r: [19, 19], t: .2, m: .55, et: 'rgba(160,120,220,.45)', ea: 'teleport', lb: 'traum', pl: [_t('Urnebel'), _t('Nebel vor der Zeit'), _t('Wiege des Seins')] },
+  schwarzsonne: { n: _t('Schwarzsonnen-Öde'), g: ['#2a1210', '#220e0c', '#3c1a16', '#180806'], tx: 'lava', tr: ['kohle.0', 'obs.0', 'scherbe.2'], td: .03, rk: .05, rv: 2, pool: 'lava', lk: .5, deco: 'glut', amb: 'schwarz', dark: .3, mus: 36, haz: 'glut', en: ['lavadaemon', 'jungdrache', 'schattenimp', 'todesritter', 'chort', 'golem'], r: [19, 19], t: .6, m: .1, et: 'rgba(40,10,10,.5)', ea: 'brennend', lb: 'sternglut', pl: [_t('Schwarzsonnen-Öde'), _t('Erloschene Sonne'), _t('Glut ohne Licht')] },
+  nichtsufer: { n: _t('Ufer des Nichts'), g: ['#16203a', '#121a32', '#20304e', '#0c1426'], tx: 'nichts', tr: ['obs.1', 'sternbaum.1', 'kristall.5'], td: .02, rk: .03, rv: 15, pool: 'leere', lk: .6, deco: 'stern', amb: 'nichts', dark: .3, mus: 35, haz: 'leere', en: ['schattenimp', 'engel', 'todesritter', 'jungdrache', 'geist', 'eisgeist'], r: [20, 20], t: .4, m: .9, et: 'rgba(10,0,30,.5)', ea: 'teleport', lb: 'schlucht', pl: [_t('Ufer des Nichts'), _t('Letzte Brandung'), _t('Saum der Leere')] }
 };
 // Lebensräume der Biome (Marken aus PET_HABS in js/pets.js): welche Begleiter-Arten dort schlüpfen (eggForBiome)
 const LBHAB = { wiese: ['wiese'], wald: ['wald'], hain: ['wald', 'wiese'], heide: ['wiese', 'berg'], ruine: ['ruine', 'gruft'], fels: ['berg', 'hoehle'], seen: ['wasser', 'wiese'], tannen: ['wald', 'berg'],
@@ -154,7 +230,12 @@ const LBHAB = { wiese: ['wiese'], wald: ['wald'], hain: ['wald', 'wiese'], heide
   dornen: ['wald', 'schatten'], tundra: ['eis', 'wiese'], kueste: ['kueste', 'wasser', 'himmel'], friedhof: ['gruft'], gletscher: ['eis', 'berg'], wueste: ['wueste'], dschungel: ['wald', 'sumpf'], salz: ['wueste', 'kristall'],
   kristall: ['kristall', 'hoehle'], asche: ['asche', 'feuer'], vulkan: ['feuer', 'berg'], blutmoor: ['sumpf', 'schatten'], eiswueste: ['eis'], lava: ['feuer'], obsidian: ['feuer', 'kristall'], nebelwald: ['wald', 'schatten'],
   schattenwald: ['schatten', 'wald'], knochenoede: ['gruft', 'wueste'], geisterebene: ['gruft', 'schatten'], riff: ['kueste', 'kristall'], spiegelsee: ['wasser', 'kristall'], uralt: ['wald', 'pilz'], sturmklippen: ['himmel', 'berg'], drachenland: ['feuer', 'berg'],
-  traumwiese: ['wiese', 'himmel'], sternenfeld: ['leere', 'himmel'], goetterhain: ['himmel', 'wald'], zeitruinen: ['ruine', 'leere'], leere: ['leere'], aether: ['leere', 'himmel'], chaos: ['leere', 'feuer'], weltenrand: ['leere', 'schatten'] };
+  traumwiese: ['wiese', 'himmel'], sternenfeld: ['leere', 'himmel'], goetterhain: ['himmel', 'wald'], zeitruinen: ['ruine', 'leere'], leere: ['leere'], aether: ['leere', 'himmel'], chaos: ['leere', 'feuer'], weltenrand: ['leere', 'schatten'],
+  kristallwueste: ['kristall', 'wueste'], glasduenen: ['wueste', 'kristall', 'feuer'], sternmeer: ['kueste', 'wasser', 'leere'], aschesturm: ['asche', 'himmel'], knochenwald: ['gruft', 'wald'], scharlachsumpf: ['sumpf', 'schatten'],
+  pilzriesen: ['pilz', 'wald'], uhrwerk: ['ruine', 'kerker'], himmelsklippen: ['himmel', 'berg'], titanengraeber: ['gruft', 'berg'], mondsee: ['wasser', 'himmel'], seelenfluss: ['wasser', 'gruft', 'schatten'],
+  bernstein: ['wald', 'kristall'], splittergebirge: ['berg', 'kristall'], sonnenschmiede: ['feuer', 'himmel'], frostkrone: ['eis', 'berg'], traumwald: ['wald', 'himmel', 'schatten'], spiegelwelt: ['kristall', 'leere'],
+  zeitbruch: ['ruine', 'leere'], leerenstrand: ['kueste', 'leere'], rost: ['ruine', 'wueste', 'kerker'], sternenwrack: ['feuer', 'leere', 'kristall'], goetterdaemmerung: ['ruine', 'himmel'], urnebel: ['leere', 'schatten', 'sumpf'],
+  schwarzsonne: ['asche', 'schatten', 'feuer'], nichtsufer: ['leere', 'kueste'] };
 const LBIOK = Object.keys(LANDE_BIOMES); LBIOK.forEach((k, i) => { const B = LANDE_BIOMES[k]; B.key = k; B.i = i; B.map = B.g[2]; B.hab = LBHAB[k] || ['wiese']; B.trs = B.tr.map(s => { const [t, v] = s.split('.'); return [t, +v || 0]; }); });
 // Silben für Eigennamen (bleiben unübersetzt)
 const LSY = [['Ar', 'Bel', 'Cor', 'Dal', 'El', 'Fen', 'Gal', 'Har', 'Il', 'Jor', 'Kal', 'Lor', 'Mir', 'Nor', 'Or', 'Pel', 'Quel', 'Ral', 'Sar', 'Tal', 'Ul', 'Var', 'Wen', 'Yr', 'Zar', 'Ash', 'Bra', 'Dun', 'Eld', 'Gor', 'Isk', 'Mor', 'Ny', 'Rho', 'Syl', 'Thra', 'Val', 'Xan'], ['a', 'e', 'i', 'o', 'u', 'ae', 'ia', 'or', 'en', 'an', 'el', 'ir', 'um', 'ar'], ['n', 'ra', 'th', 'dor', 'wyn', 'mir', 'gard', 'las', 'rim', 'ven', 'sk', 'nor', 'dal', 'ia', 'eth', 'ok', 'un', 'is', 'ion', 'heim']];
@@ -173,7 +254,7 @@ function lCell(rx, ry) {
   if (dist < LRC * 1.15) R.biome = 'wiese';   // rund ums Tor: freundliche Wiesen
   else if (dist > LWR - 30) R.biome = 'weltenrand';
   else {
-    const T = lTemp(sx, sy), Mo = lMoist(sx, sy), rg = Math.min(ring, 11); let best = null, bs = 1e9;
+    const T = lTemp(sx, sy), Mo = lMoist(sx, sy), rg = Math.min(ring, LRMAX); let best = null, bs = 1e9;
     for (const k of LBIOK) { const B = LANDE_BIOMES[k]; if (rg < B.r[0] || rg > B.r[1]) continue; const s = Math.abs(T - B.t) * 1.2 + Math.abs(Mo - B.m) + lF(rx * 7 + B.i, ry, 41) * .34; if (s < bs) { bs = s; best = k; } }
     R.biome = best || 'wiese';
   }
@@ -261,6 +342,21 @@ function lToolSitesNear(x, y, rad) {
   }
   return out;
 }
+// Ende der Welt: Stätten kurz vor dem Rand – am Ende jedes Alten Weges (neben dem Weg) und dazwischen etwa alle 157 Chunks (≈ 25 min am Rand entlang)
+const LEDGE = LWR - 4, LEDGEN = 360;
+// Rand der Welt in Richtung a (Chunks; wie in lGenIt verrauscht) – das Denkmal steht 0,6 Chunks davor: vom Denkmal aus sieht man das Nichts
+function lEdgeR(a) { let r = LWR; for (let k = 0; k < 5; k++) r = LWR + (lVN(Math.cos(a) * r / 5, Math.sin(a) * r / 5, 5) - .5) * 4; return r; }
+function lEdgeAt(a, j, key, road) { const r = lEdgeR(a) - .6; return { j, x: Math.cos(a) * r, y: Math.sin(a) * r, key, road }; }
+function lEdgeSite(j) { return lEdgeAt(2 * Math.PI * (j + .5 + .5 * (lF(j, 0, 111) - .5)) / LEDGEN, j, 'E' + j); }
+function lEdgeRoad(k) { return lEdgeAt(lRoadAng(k, LWR - 1) + .3 / LWR, -1 - k, 'Ew' + k, k); }
+function lEdgeNearRoad(s) { for (let k = 0; k < LROADS; k++) { const r = lEdgeRoad(k); if (Math.hypot(r.x - s.x, r.y - s.y) < 60) return true; } return false; }
+function lEdgeSitesNear(x, y, rad) {
+  const out = [], rho = Math.hypot(x, y); if (rho + rad < LEDGE - 1) return out;
+  for (let k = 0; k < LROADS; k++) { const s = lEdgeRoad(k); if (Math.hypot(s.x - x, s.y - y) < rad) out.push(s); }
+  const j0 = Math.round(Math.atan2(y, x) / (2 * Math.PI) * LEDGEN - .5), span = Math.min(LEDGEN >> 1, Math.ceil(rad / (2 * Math.PI * LEDGE / LEDGEN)) + 1);
+  for (let d = -span; d <= span; d++) { const j = ((j0 + d) % LEDGEN + LEDGEN) % LEDGEN, s = lEdgeSite(j); if (Math.hypot(s.x - x, s.y - y) < rad && !lEdgeNearRoad(s)) out.push(s); }
+  return out;
+}
 
 /* ---------- Ein Chunk: feste Daten aus der Welt-Saat (für alle gleich) ---------- */
 function lCK(cx, cy) { return (cx + 16384) * 32768 + (cy + 16384); }
@@ -279,7 +375,7 @@ function lLandmark(R) {
   const h = lF(R.rx, R.ry, 81);
   return R.lm = R.dist < 5 ? _t('Weltentor') : h < .3 ? _t('Hort') : h < .72 ? LMARK[LMARKT[Math.floor(lF(R.rx, R.ry, 82) * LMARKT.length)]] : _t('Ruinenfeld');
 }
-const LPROPR = { eiche: 5, herbst: 5, tanne: 5, schnee: 5, tot: 3, kohle: 3, stein: 5, fels: 9, saeule: 7, birke: 4, pilz: 5, kaktus: 4, palme: 4, dorn: 6, kristall: 5, knochen: 6, grab: 4, eisz: 5, obs: 4, busch: 5, weide: 5, sternbaum: 5, koralle: 5, salzk: 4, schilf: 0, statue: 7, riese: 12 };
+const LPROPR = { eiche: 5, herbst: 5, tanne: 5, schnee: 5, tot: 3, kohle: 3, stein: 5, fels: 9, saeule: 7, birke: 4, pilz: 5, kaktus: 4, palme: 4, dorn: 6, kristall: 5, knochen: 6, grab: 4, eisz: 5, obs: 4, busch: 5, weide: 5, sternbaum: 5, koralle: 5, salzk: 4, schilf: 0, statue: 7, riese: 12, riesenpilz: 10, knochenbaum: 5, glasbaum: 5, zahnrad: 9, scherbe: 5, schaedel: 12, sanduhr: 6, ruest: 9 };
 function lGenFixed(cx, cy) { const it = lGenIt(cx, cy); let r; do r = it.next(); while (!r.done); return r.value; }
 // Erzeugt einen Chunk in Häppchen (yield): das Vorladen verteilt die Arbeit auf mehrere Bilder, ohne Ruckeln
 function* lGenIt(cx, cy) {
@@ -365,6 +461,11 @@ function* lGenIt(cx, cy) {
     if (!inC(s.x, s.y)) continue; const [lx, ly] = loc(s.x, s.y, 130), p = nudge(lx, ly, 50); if (!p) continue;
     clear(p[0], p[1], 100); add({ k: 'tool', tk: s.k, j: s.j, x: X0 + p[0], y: Y0 + p[1], r: 6, solid: false, guard: s.guard, key: s.key }); d.pois.push({ k: 'tool', x: X0 + p[0], y: Y0 + p[1], tk: s.k });
   }
+  // Ende der Welt: Denkmal mit Wächter und letztem Hort
+  for (const s of lEdgeSitesNear(cx + .5, cy + .5, 1.2)) {
+    if (!inC(s.x, s.y)) continue; const [lx, ly] = loc(s.x, s.y, 140), p = nudge(lx, ly, 44); if (!p) continue;
+    clear(p[0], p[1], 120); add({ k: 'end', x: X0 + p[0], y: Y0 + p[1], r: 9, solid: true, key: s.key, road: s.road }); d.pois.push({ k: 'end', x: X0 + p[0], y: Y0 + p[1] });
+  }
   // Meilensteine an den Alten Wegen (alle 50 Chunks)
   for (const k of roads) { const rho = Math.hypot(cx + .5, cy + .5), j = Math.round(rho / 50); if (j < 1) continue; const [x, y] = lRoadPt(k, j * 50); if (inC(x, y)) { const [lx, ly] = loc(x, y, 30); clear(lx, ly, 18); add({ k: 'mile', x: X0 + lx + 22, y: Y0 + ly, r: 3, solid: true, km: Math.round(j * 50 * LCK / 8000) }); } }
   // Schilder an Übergängen
@@ -415,13 +516,14 @@ function* lGenIt(cx, cy) {
 }
 function lMini(d) { return d.mc || (d.mc = lMiniChunk(d)); }
 // Kleines Kartenbild eines Chunks: eine Kachel = ein Pixel
-const LCROSSC = { planken: '#8a5a32', bruecke: '#9a8a74', pfad: '#6a8a3a', stufen: '#e8f8ff', steine: '#4a3a3a', licht: '#ffe08a', pfeiler: '#9aa2ae', schneise: '#7a6a4a', tor: '#e8b04a', anker: '#c060ff' };
+const LCROSSC = { planken: '#8a5a32', bruecke: '#9a8a74', pfad: '#6a8a3a', stufen: '#e8f8ff', steine: '#4a3a3a', licht: '#ffe08a', pfeiler: '#9aa2ae', schneise: '#7a6a4a', tor: '#e8b04a', anker: '#c060ff',
+  kseil: '#8ab0ff', kraut: '#8ac86a', schwebe: '#9aa2ae', gebein: '#e8e2cf', glutstein: '#2a1e1e', wachlicht: '#ffd8f8', stunde: '#e8c860', schnitt: '#8a98a8', weltor: '#ffd24a' };
 function lMiniChunk(d) {
   const c = mk(LCT, LCT), g = c.getContext('2d'), im = g.createImageData(LCT, LCT), p = im.data, N = LPD, road = hexRgb('#a8865a'), regC = d.regs.map(R => hexRgb(LANDE_BIOMES[R.biome].map));
   for (let ty = 0; ty < LCT; ty++) for (let tx = 0; tx < LCT; tx++) {
     const i = (ty + 1) * N + tx + 1, o = (ty * LCT + tx) * 4; let col;
     if (d.bar[i]) { const Bk = LBAR[LBARK[d.bar[i] - 1]]; col = d.wk[i] >= 2 ? hexRgb(LCROSSC[Bk.x] || '#c8c0aa') : hexRgb(Bk.c[(tx + ty) % 3 ? 0 : 2]); }
-    else if (d.road[i]) col = road; else if (d.lakeT[i]) { const l = d.lakes[0]; col = hexRgb(POOLCOL[l ? l.k : 'wasser'][1]); for (const L_ of d.lakes) { const dx = (d.X0 + tx * LTS + 8 - L_.x) / (L_.rx + 6), dy = (d.Y0 + ty * LTS + 8 - L_.y) / (L_.ry + 5); if (dx * dx + dy * dy < 1) { col = hexRgb(POOLCOL[L_.k][1]); break; } } }
+    else if (d.road[i]) col = road; else if (d.lakeT[i]) { const l = d.lakes[0]; col = hexRgb(lPC(l ? l.k : 'wasser')[1]); for (const L_ of d.lakes) { const dx = (d.X0 + tx * LTS + 8 - L_.x) / (L_.rx + 6), dy = (d.Y0 + ty * LTS + 8 - L_.y) / (L_.ry + 5); if (dx * dx + dy * dy < 1) { col = hexRgb(lPC(L_.k)[1]); break; } } }
     else { col = regC[d.rg[i]]; const v = ((lH(d.cx * LCT + tx, d.cy * LCT + ty, 2) & 7) - 3) * 3; col = [clamp(col[0] + v, 0, 255), clamp(col[1] + v, 0, 255), clamp(col[2] + v, 0, 255)]; }
     p[o] = col[0]; p[o + 1] = col[1]; p[o + 2] = col[2]; p[o + 3] = 255;
   }
@@ -435,7 +537,7 @@ function lTS(k) { return LW.ts.get(k); }
 function lTSet(k, v) { LW.ts.set(k, v); }
 function lLoad(cx, cy) {
   const L = LW, key = lCK(cx, cy), d = lFixed(cx, cy);
-  const rec = { cx, cy, key, d, X0: d.X0, Y0: d.Y0, grid: d.grid.map(c => c.slice()), cv: null, g: null, ps: 0, pd: false, used: T, live: true };
+  const rec = { cx, cy, key, d, X0: d.X0, Y0: d.Y0, grid: d.grid.map(c => c.slice()), wk: d.wk, cv: null, g: null, ps: 0, pd: false, used: T, live: true };
   L.cm.set(key, rec);
   try { lTripLayer(rec); } catch (e) { console.error('Lande (Chunk):', e); }
   return rec;
@@ -451,7 +553,7 @@ function lTripLayer(rec) {
   const spot = r => { for (let k = 0; k < 18; k++) { const x = X0 + 24 + R() * (LCK - 48), y = Y0 + 24 + R() * (LCK - 48); if (free(x, y, r)) return { x, y }; } return null; };
   const add = o => { o.sk = pre + (n++); return lRecAdd(rec, o); };
   // Zustand aus diesem Ausflug (geöffnet, gesäubert) wieder anwenden
-  for (const c of rec.grid) for (const o of c) { if (o.k === 'exit' && o.t === 'schluessel') o.open = !!lTS('x' + o.id); if (o.k === 'lair' || o.k === 'tool') o.ts = lTS(o.key) || 0; }
+  for (const c of rec.grid) for (const o of c) { if (o.k === 'exit' && o.t === 'schluessel') o.open = !!lTS('x' + o.id); if (o.k === 'lair' || o.k === 'tool') o.ts = lTS(o.key) || 0; if (o.k === 'end') { const s = lTS(o.key); o.state = s === 'done' ? 'done' : s === 'won' ? 'open' : 'idle'; o.act = false; o.alive = 0; } }
   // Truhen und Fundstellen
   const wts = { holz: 1.3 - zf, eisen: .6 + zf * .4, gold: .05 + zf * .5, fluch: .05 + zf * .3, schloss: .08 + zf * .25 };
   const nS = R() < .85 ? 1 + Math.floor(R() * 2.2) : 0;
@@ -467,7 +569,7 @@ function lTripLayer(rec) {
     if (p) {
       const st2 = st, list = lWave(B.key, st2, 3 + Math.min(14, st2 * .3) + zf * 4, 7), sk = pre + (n - 1);
       const c = { k: 'camp', x: p.x, y: p.y, r: 5, solid: true, z: zf, st: st2, bk: B.key, left: list.map(t => ({ t, el: false })), alive: 0, state: 'dorm', fire: true, sk };
-      for (let k = 0; k < (dep > .01 ? 1 : 0) + (dep > .05 ? 1 : 0); k++) c.left.push({ t: pick(lPool(B.key, st2)), el: true });
+      for (let k = 0; k < (dep > .01 ? 1 : 0) + (dep > .05 ? 1 : 0) + (dep > .4 ? 1 : 0) + (dep > .75 ? 1 : 0); k++) c.left.push({ t: pick(lPool(B.key, st2)), el: true });   // tief draußen mehr Elite
       if (lTS(sk) === 'done') { c.state = 'done'; c.left = []; }
       lRecAdd(rec, c);
       for (let k = 0; k < 2; k++) { const a = R() * 6.283; lRecAdd(rec, { k: 'prop', t: 'zelt', v: k ? 1 : 0, x: p.x + Math.cos(a) * 34, y: p.y + Math.sin(a) * 20, r: 10, solid: true }); }
@@ -478,6 +580,7 @@ function lTripLayer(rec) {
   if (!gate && R() < .28 && !lTS(pre + 'p')) { const p = spot(12); if (p) { lTSet(pre + 'p', 1); L.pats.push({ x: p.x, y: p.y, tx: p.x, ty: p.y, list: lWave(B.key, st, 2.5 + Math.min(10, st * .25), 4).map(t => ({ t, el: false })), alive: 0, state: 'dorm', st, w: 0 }); } }
   // Leuchtfeuer des Spielers
   for (const cp of lMeta().cps) { const ccx = Math.floor(cp.x / LCK), ccy = Math.floor(cp.y / LCK); if (ccx === cx && ccy === cy) lRecAdd(rec, { k: 'beacon', cp, x: cp.x + LOFF, y: cp.y + LOFF, r: 4, solid: false }); }
+  lBeaconGap(rec);
   // Orte der Aufträge
   for (const m of L.mis) if (m.site && m.site.cx === cx && m.site.cy === cy && !m.done) lMisSite(rec, m);
   // Werkzeug-Horte: Runensteine fürs Rätsel
@@ -489,7 +592,21 @@ function lTripLayer(rec) {
   if (typeof encounterRoll === 'function' && !gate) { try { const e = encounterRoll(lCtxOf(cx, cy, 'enc')); if (e && isFinite(e.x) && isFinite(e.y) && !lTS('e' + key36(cx, cy))) lRecAdd(rec, { k: 'enc', enc: e, x: e.x + LOFF, y: e.y + LOFF, r: 0, solid: false, ek: 'e' + key36(cx, cy) }); } catch (e) { console.error('Lande (encounterRoll):', e); } }
 }
 function key36(cx, cy) { return cx.toString(36) + '.' + cy.toString(36); }
-function lVeinMat(bk, st, R) { const by = { schnee: 'mithril', gletscher: 'mithril', eiswueste: 'mithril', tundra: 'mithril', lava: 'glut', vulkan: 'glut', asche: 'glut', obsidian: 'glut', moor: 'adamant', giftmoor: 'adamant', blutmoor: 'adamant', ruine: 'kristall', kristall: 'kristall', salz: 'kristall', sternenfeld: 'stern', leere: 'aether', aether: 'aether', drachenland: 'schuppe' }; if (by[bk] && R() < .6) return by[bk]; return st >= 60 && R() < .3 ? 'aether' : st >= 30 && R() < .3 ? 'stern' : st >= 22 && R() < .3 ? 'schuppe' : st >= 14 && R() < .4 ? 'mithril' : 'erz'; }
+// Leuchtfeuer aus Spielständen vor den neuen Ringgrenzen (ohne cp.w), die heute in einer Barriere stehen: ringsum ein Durchgang
+// (nur für diesen Spieler, nur in seinem Ausflug) – so bleibt das Leuchtfeuer Startpunkt und Ausgang. Neue Leuchtfeuer stehen nie in einer Barriere.
+const LGAP = 7 * LTS;
+function lWalkV(v, nd) { return v === 0 || v === 3 || (v === 2 && lToolBit(nd - 1)); }
+function lBeaconGap(rec) {
+  const d = rec.d, N = LPD;
+  for (const cp of lMeta().cps) {
+    if (cp.w) continue; const lx = cp.x + LOFF - rec.X0, ly = cp.y + LOFF - rec.Y0; if (lx < -LGAP || ly < -LGAP || lx > LCK + LGAP || ly > LCK + LGAP) continue;
+    const bcx = Math.floor(cp.x / LCK), bcy = Math.floor(cp.y / LCK), bd = bcx === rec.cx && bcy === rec.cy ? d : lFixed(bcx, bcy), bi = (Math.floor((cp.y - bcy * LCK) / LTS) + 1) * N + Math.floor((cp.x - bcx * LCK) / LTS) + 1;
+    if (!bd.bar[bi] || lWalkV(bd.wk[bi], bd.nd[bi])) continue;
+    if (rec.wk === d.wk) rec.wk = d.wk.slice();
+    for (let ty = 0; ty < N; ty++) for (let tx = 0; tx < N; tx++) { const i = ty * N + tx, k = d.bar[i] - 1; if (k < 0 || LBARK[k] === 'rand' || !LBAR[LBARK[k]].x) continue; const dx = (tx - .5) * LTS - lx, dy = (ty - .5) * LTS - ly; if (dx * dx + dy * dy < LGAP * LGAP) rec.wk[i] = 3; }
+  }
+}
+function lVeinMat(bk, st, R) { const by = { schnee: 'mithril', gletscher: 'mithril', eiswueste: 'mithril', tundra: 'mithril', lava: 'glut', vulkan: 'glut', asche: 'glut', obsidian: 'glut', moor: 'adamant', giftmoor: 'adamant', blutmoor: 'adamant', ruine: 'kristall', kristall: 'kristall', salz: 'kristall', sternenfeld: 'stern', leere: 'aether', aether: 'aether', drachenland: 'schuppe', kristallwueste: 'kristall', glasduenen: 'kristall', sternmeer: 'stern', aschesturm: 'glut', knochenwald: 'adamant', scharlachsumpf: 'adamant', pilzriesen: 'adamant', uhrwerk: 'mithril', himmelsklippen: 'stern', titanengraeber: 'adamant', mondsee: 'stern', seelenfluss: 'aether', bernstein: 'schuppe', splittergebirge: 'kristall', sonnenschmiede: 'glut', frostkrone: 'mithril', traumwald: 'aether', spiegelwelt: 'kristall', zeitbruch: 'aether', leerenstrand: 'aether', rost: 'mithril', sternenwrack: 'stern', goetterdaemmerung: 'aether', urnebel: 'aether', schwarzsonne: 'glut', nichtsufer: 'aether' }; if (by[bk] && R() < .6) return by[bk]; return st >= 60 && R() < .3 ? 'aether' : st >= 30 && R() < .3 ? 'stern' : st >= 22 && R() < .3 ? 'schuppe' : st >= 14 && R() < .4 ? 'mithril' : 'erz'; }
 // Objekte in einem Kreis um (x, y) – über Chunkgrenzen hinweg
 function lGridRec(rec, x, y, rad, fn) {
   const x0 = clamp(Math.floor((x - rad - rec.X0) / LGC), 0, LGN - 1), x1 = clamp(Math.floor((x + rad - rec.X0) / LGC), 0, LGN - 1), y0 = clamp(Math.floor((y - rad - rec.Y0) / LGC), 0, LGN - 1), y1 = clamp(Math.floor((y + rad - rec.Y0) / LGC), 0, LGN - 1);
@@ -511,7 +628,7 @@ const LCVPOOL = [];
 let LRL = null;
 function lRecAt(x, y) { const L = LW; if (!L) return null; const cx = Math.floor(x / LCK) - LOC, cy = Math.floor(y / LCK) - LOC; if (LRL && LRL.cx === cx && LRL.cy === cy && LRL.live) return LRL; const r = L.cm.get(lCK(cx, cy)) || null; if (r) LRL = r; return r; }
 function lTileI(r, x, y) { return (Math.floor((y - r.Y0) / LTS) + 1) * LPD + Math.floor((x - r.X0) / LTS) + 1; }
-function lWalk(x, y) { const r = lRecAt(x, y); if (!r) return true; const i = lTileI(r, x, y), v = r.d.wk[i]; return v === 0 || v === 3 || (v === 2 && lToolBit(r.d.nd[i] - 1)); }
+function lWalk(x, y) { const r = lRecAt(x, y); if (!r) return true; const i = lTileI(r, x, y), v = r.wk[i]; return v === 0 || v === 3 || (v === 2 && lToolBit(r.d.nd[i] - 1)); }
 function lEnsure(cx, cy) { const k = lCK(cx, cy); let r = LW.cm.get(k); if (!r) r = lLoad(cx, cy); r.used = T; return r; }
 function lUnpaint(r) { if (r.cv && LCVPOOL.length < 10) LCVPOOL.push(r.cv); r.cv = r.g = null; r.ps = 0; r.pd = false; }
 function lFree(r) { lUnpaint(r); r.live = false; if (LRL === r) LRL = null; }
@@ -586,6 +703,20 @@ function lTiles(key) {
       case 'salz': { const y = Math.floor(R() * 16); px(g, 0, y, 16, 1, B.g[2]); const x = Math.floor(R() * 16); px(g, x, 0, 1, 16, B.g[2]); break; }
       case 'blut': P_(3, '#2a0e0c'); if (R() < .3) P_(1, '#a83a2a', 2, 1); break;
       case 'erde': if (R() < .4) P_(1, B.g[3], 2, 1); break;
+      // Böden der Tiefe
+      case 'glas': for (let i = 0; i < 2; i++) { let x = Math.floor(R() * 16), y = Math.floor(R() * 16); for (let k = 0; k < 4; k++) { px(g, x, y, 1, 1, k ? B.g[2] : '#ffffff'); x = (x + 1) % 16; y = (y + 15) % 16; } } if (R() < .3) P_(1, '#9ad8e8'); break;
+      case 'knochen': if (R() < .55) { const x = 1 + Math.floor(R() * 11), y = 1 + Math.floor(R() * 14); px(g, x, y, 4, 1, '#d8d0bc'); px(g, x, y - 1, 1, 1, '#e8e2cf'); px(g, x + 3, y + 1, 1, 1, '#e8e2cf'); } P_(2, '#8a8270'); break;
+      case 'metall': px(g, 0, 0, 16, 1, B.g[3]); px(g, 0, 0, 1, 16, B.g[3]); px(g, 1, 1, 15, 1, B.g[2]); for (const [x, y] of [[2, 2], [13, 2], [2, 13], [13, 13]]) px(g, x, y, 1, 1, '#c8a060'); if (R() < .3) P_(2, '#8a4a1a'); break;
+      case 'wolke': if (R() < .45) { const x = Math.floor(R() * 11), y = 1 + Math.floor(R() * 12); px(g, x, y, 5, 2, '#e8f0f8'); px(g, x + 1, y - 1, 3, 1, '#ffffff'); px(g, x, y + 2, 5, 1, B.g[2]); } break;
+      case 'mond': if (R() < .4) { const x = 2 + Math.floor(R() * 11), y = 2 + Math.floor(R() * 11); px(g, x, y, 3, 1, B.g[3]); px(g, x, y + 1, 1, 1, B.g[3]); px(g, x + 1, y + 1, 2, 1, B.g[2]); } if (R() < .4) P_(1, '#ffffff'); break;
+      case 'seele': { let x = Math.floor(R() * 16), y = Math.floor(R() * 16); for (let k = 0; k < 7; k++) { px(g, x, y, 1, 1, k % 2 ? B.g[2] : '#9af0e0'); x = (x + 1) % 16; y = (y + (R() < .5 ? 1 : 15)) % 16; } break; }
+      case 'bernstein': if (R() < .55) { const x = Math.floor(R() * 14), y = Math.floor(R() * 14); px(g, x, y, 2, 2, '#e89a2a'); px(g, x, y, 1, 1, '#ffd070'); } break;
+      case 'riss': if (R() < .6) { let x = Math.floor(R() * 16), y = 0; for (let k = 0; k < 9; k++) { px(g, x, y, 1, 1, B.g[3]); x = (x + (R() < .5 ? 1 : 15)) % 16; y = (y + 1) % 16; } } if (R() < .3) P_(1, '#e8f8ff'); break;
+      case 'traum': if (R() < .7) px(g, Math.floor(R() * 16), Math.floor(R() * 16), 1, 1, ['#ffc0e8', '#c0e0ff', '#fff0b0'][Math.floor(R() * 3)]); break;
+      case 'zeit': { const y0 = Math.floor(R() * 16); for (let x = 0; x < 16; x++) if ((x + y0) % 3) px(g, x, (y0 + Math.round(Math.sin(x / 2.5) * 1.5)) & 15, 1, 1, B.g[2]); if (R() < .35) P_(1, '#ffe08a'); break; }
+      case 'rost': if (R() < .55) P_(2, '#a8501a', 2, 1); P_(2, '#4a2410'); break;
+      case 'sternstaub': P_(3, R() < .5 ? '#ffffff' : '#c0c8ff'); if (R() < .4) P_(1, '#ffd24a'); break;
+      case 'nichts': if (R() < .35) P_(1, '#ffffff'); if (R() < .4) P_(1, '#4a3a6a', 2, 1); break;
     }
   }));
   return LTILE[key] = out;
@@ -606,7 +737,18 @@ function lBarTiles(k) {
       case 'dornen': for (let i = 0; i < 5; i++) { let x = Math.floor(R() * 16), y = Math.floor(R() * 16); for (let s = 0; s < 6; s++) { px(g, x, y, 1, 1, s % 3 ? C[3] : C[1]); x = (x + 1) % 16; y = (y + (R() < .5 ? 1 : 15)) % 16; } } P_(5, C[2]); if (R() < .3) P_(1, '#c8342c'); break;
       case 'sturm': for (let i = 0; i < 4; i++) { const y = Math.floor(R() * 16), x = Math.floor(R() * 10); px(g, x, y, 6, 1, C[2]); px(g, x + 2, y + 1, 4, 1, C[3]); } P_(10, C[1]); break;
       case 'siegel': P_(14, C[1]); px(g, 0, 7, 16, 1, C[1]); px(g, 7, 0, 1, 7, C[1]); px(g, 3, 8, 1, 8, C[1]); if (v % 2) { px(g, 6, 3, 4, 1, C[2]); px(g, 7, 2, 2, 3, C[2]); px(g, 5, 11, 6, 1, C[2]); } break;
-      case 'leere': case 'rand': P_(8, '#120a1e'); if (R() < .5) P_(1, R() < .5 ? C[2] : '#ffffff'); break;
+      case 'leere': P_(8, '#120a1e'); if (R() < .5) P_(1, R() < .5 ? C[2] : '#ffffff'); break;
+      case 'rand': if (R() < .3) P_(1, '#ffffff'); if (R() < .4) P_(1, '#2a1e44'); if (R() < .1) P_(1, '#b892f4'); break;   // das Nichts: fast schwarz, ferne Sterne
+      // Grenzen der Tiefe
+      case 'kluft': P_(36, C[1]); for (let i = 0; i < 2; i++) { const x = 1 + Math.floor(R() * 13), y = 2 + Math.floor(R() * 12); px(g, x, y, 1, 3, C[3]); px(g, x + 1, y + 1, 1, 2, C[2]); px(g, x + 1, y, 1, 1, '#ffffff'); } break;
+      case 'blutnebel': P_(26, C[1]); for (let i = 0; i < 3; i++) { const x = Math.floor(R() * 13), y = Math.floor(R() * 14); px(g, x, y, 3, 2, '#7a1e2a'); px(g, x + 1, y, 1, 1, C[2]); } break;
+      case 'abbruch': P_(20, C[1]); for (let i = 0; i < 2; i++) { const x = Math.floor(R() * 11), y = Math.floor(R() * 14); px(g, x, y, 6, 2, '#e8f4ff'); px(g, x + 1, y - 1, 4, 1, '#ffffff'); } break;
+      case 'seelenstrom': P_(24, C[1]); for (let i = 0; i < 3; i++) { const x = Math.floor(R() * 12), y = Math.floor(R() * 16); px(g, x, y, 4, 1, '#3a8a80'); } if (R() < .6) { const x = 2 + Math.floor(R() * 12), y = 2 + Math.floor(R() * 12); px(g, x, y, 1, 2, C[2]); px(g, x, y - 1, 1, 1, '#ffffff'); } break;
+      case 'sternglut': P_(24, '#ffc040'); P_(10, C[1], 2, 1); P_(4, '#ffffff'); break;
+      case 'traum': P_(24, C[1]); for (let i = 0; i < 3; i++) px(g, Math.floor(R() * 16), Math.floor(R() * 16), 1, 1, ['#ffc0f0', '#c0e0ff', '#fff0b0'][i]); if (R() < .4) P_(1, '#ffffff'); break;
+      case 'zeitstrom': P_(22, C[1]); { const y0 = Math.floor(R() * 16); for (let x = 0; x < 16; x++) px(g, x, (y0 + Math.round(Math.sin(x / 2) * 2)) & 15, 1, 1, '#8a7a3a'); } if (R() < .5) { const x = 3 + Math.floor(R() * 9), y = 3 + Math.floor(R() * 9); px(g, x, y, 3, 1, C[2]); px(g, x + 1, y + 1, 1, 1, C[2]); px(g, x, y + 2, 3, 1, C[2]); } break;
+      case 'splitter': P_(18, C[1]); for (let i = 0; i < 3; i++) { const x = Math.floor(R() * 14), y = 3 + Math.floor(R() * 12); for (let k = 0; k < 4; k++) px(g, x + (k >> 1), y - k, 1, 1, k === 3 ? '#ffffff' : C[3]); } P_(2, C[2]); break;
+      case 'weltsiegel': P_(16, C[1]); px(g, 0, 7, 16, 1, C[3]); px(g, 7, 0, 1, 16, C[3]); if (v % 2) { px(g, 6, 6, 4, 4, C[2]); px(g, 7, 5, 2, 6, C[2]); px(g, 5, 7, 6, 2, C[2]); px(g, 7, 7, 2, 2, '#ffffff'); } else P_(3, '#b892f4'); break;
     }
   }));
   return LTILE[key] = out;
@@ -616,7 +758,7 @@ function lCrossTiles(k) {
   const key = 'x:' + k; if (LTILE[key]) return LTILE[key];
   const B = LBAR[k], st = B.x, R = mulberry(hashStr(key)), base = lBarTiles(k), out = [];
   for (let v = 0; v < 2; v++) out.push(mk(16, 16, g => {
-    const opaque = ['planken', 'bruecke', 'pfad', 'stufen', 'schneise'].includes(st);
+    const opaque = ['planken', 'bruecke', 'pfad', 'stufen', 'schneise', 'kseil', 'kraut', 'gebein', 'schnitt', 'weltor'].includes(st);
     if (!opaque) g.drawImage(base[v], 0, 0);
     switch (st) {
       case 'planken': g.fillStyle = '#5e3a1e'; g.fillRect(0, 0, 16, 16); for (let x = 0; x < 16; x += 4) { px(g, x, 0, 3, 16, x % 8 ? '#8a5a32' : '#9a6a3a'); px(g, x + 1, 2 + Math.floor(R() * 12), 1, 1, '#5e3a1e'); } break;
@@ -627,6 +769,16 @@ function lCrossTiles(k) {
       case 'licht': for (let i = 0; i < 4; i++) px(g, Math.floor(R() * 16), Math.floor(R() * 16), 2, 2, 'rgba(255,224,138,.55)'); px(g, 4, 4, 8, 8, 'rgba(255,240,190,.22)'); break;
       case 'tor': px(g, 2, 0, 12, 16, '#2e2a36'); px(g, 4, 2, 8, 12, '#4a3a20'); px(g, 7, 6, 2, 3, '#e8b04a'); break;
       case 'anker': px(g, 3, 3, 10, 10, 'rgba(192,96,255,.35)'); px(g, 6, 6, 4, 4, '#c060ff'); px(g, 7, 7, 2, 2, '#ffffff'); break;
+      // Übergänge der Tiefe
+      case 'kseil': g.fillStyle = '#0a0818'; g.fillRect(0, 0, 16, 16); for (let x = 0; x < 16; x += 4) px(g, x, 2, 3, 12, x % 8 ? '#5a6a9a' : '#6a7aaa'); px(g, 0, 1, 16, 1, '#c8d8ff'); px(g, 0, 14, 16, 1, '#c8d8ff'); px(g, Math.floor(R() * 14), 1, 2, 1, '#ffffff'); break;
+      case 'kraut': g.fillStyle = '#3a2a22'; g.fillRect(0, 0, 16, 16); for (let i = 0; i < 26; i++) px(g, Math.floor(R() * 16), Math.floor(R() * 16), 1, 1, R() < .5 ? '#5a4a3a' : '#2a1e18'); for (let i = 0; i < 3; i++) { const x = Math.floor(R() * 14), y = Math.floor(R() * 14); px(g, x, y, 2, 1, '#6aa84a'); px(g, x + 1, y - 1, 1, 1, '#a0e070'); } break;
+      case 'schwebe': for (let i = 0; i < 2; i++) { const x = 1 + Math.floor(R() * 9), y = 1 + Math.floor(R() * 9); px(g, x, y + 4, 6, 2, 'rgba(0,0,40,.25)'); px(g, x, y, 6, 4, '#7a8290'); px(g, x, y, 6, 1, '#b8c0cc'); px(g, x + 1, y + 4, 4, 1, '#4a5260'); } break;
+      case 'gebein': g.fillStyle = '#b8b0a0'; g.fillRect(0, 0, 16, 16); for (let y = 0; y < 16; y += 4) for (let x = (y / 4) % 2 * 3; x < 16; x += 6) px(g, x, y, 5, 3, R() < .5 ? '#e8e2cf' : '#d8d0bc'); px(g, 0, 0, 16, 1, '#8a8270'); px(g, 0, 15, 16, 1, '#8a8270'); break;
+      case 'glutstein': for (let i = 0; i < 2; i++) { const x = 2 + Math.floor(R() * 8), y = 2 + Math.floor(R() * 8); px(g, x - 1, y - 1, 7, 6, '#ffe08a'); px(g, x, y, 5, 4, '#1e1414'); px(g, x + 1, y, 3, 1, '#4a3a3a'); } break;
+      case 'wachlicht': for (let i = 0; i < 4; i++) px(g, Math.floor(R() * 15), Math.floor(R() * 15), 2, 2, 'rgba(255,220,250,.6)'); px(g, 4, 4, 8, 8, 'rgba(255,240,255,.25)'); break;
+      case 'stunde': px(g, 3, 2, 10, 12, '#4a4460'); px(g, 4, 3, 8, 2, '#e8c860'); px(g, 4, 11, 8, 2, '#e8c860'); px(g, 6, 5, 4, 2, '#ffe08a'); px(g, 7, 7, 2, 2, '#ffe08a'); px(g, 6, 9, 4, 2, '#c8a040'); break;
+      case 'schnitt': g.fillStyle = '#4a5260'; g.fillRect(0, 0, 16, 16); for (let i = 0; i < 26; i++) px(g, Math.floor(R() * 16), Math.floor(R() * 16), 1, 1, R() < .5 ? '#6a7484' : '#3a4250'); px(g, Math.floor(R() * 16), Math.floor(R() * 16), 1, 1, '#e8f8ff'); break;
+      case 'weltor': g.fillStyle = '#2a2440'; g.fillRect(0, 0, 16, 16); px(g, 1, 0, 3, 16, '#4a4060'); px(g, 12, 0, 3, 16, '#4a4060'); px(g, 4, 0, 8, 16, '#3a3050'); px(g, 7, 2, 2, 12, '#ffd24a'); px(g, 5, 7, 6, 2, '#ffd24a'); px(g, 7, 7, 2, 2, '#ffffff'); break;
     }
   }));
   return LTILE[key] = out;
@@ -634,7 +786,7 @@ function lCrossTiles(k) {
 // Ein Häppchen Boden malen – eine Reihe Kacheln, eine Reihe Kanten, Seen und Plätze, eine Reihe Kleinkram – bis zur Frist
 function lPaintStep(rec, until) {
   if (!rec.cv) { rec.cv = LCVPOOL.pop() || mk(LCK, LCK); rec.g = rec.cv.getContext('2d'); rec.g.imageSmoothingEnabled = false; rec.ps = 0; }
-  const d = rec.d, g = rec.g, N = LPD, gx0 = rec.cx * LCT, gy0 = rec.cy * LCT, NB = LCT / 4;
+  const d = rec.d, g = rec.g, N = LPD, gx0 = rec.cx * LCT, gy0 = rec.cy * LCT, NB = LCT / 4, wk = rec.wk || d.wk;
   while (!rec.pd) {
     const ps = rec.ps++;
     if (ps < NB) {
@@ -646,7 +798,7 @@ function lPaintStep(rec, until) {
         if (uni) { g.drawImage(lMacro(d.regs[r0].biome)[lH(rec.cx * NB + bx, rec.cy * NB + by, 4) % 6], bx * 64, by * 64); continue; }
         for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) {
           const tx = bx * 4 + i, ty = by * 4 + j, k = i0 + j * N + i, h = lH(gx0 + tx, gy0 + ty, 3);
-          if (d.bar[k]) { const bk = LBARK[d.bar[k] - 1]; g.drawImage(d.wk[k] >= 2 ? lCrossTiles(bk)[h & 1] : lBarTiles(bk)[h & 3], tx * LTS, ty * LTS); }
+          if (d.bar[k]) { const bk = LBARK[d.bar[k] - 1]; g.drawImage(wk[k] >= 2 ? lCrossTiles(bk)[h & 1] : lBarTiles(bk)[h & 3], tx * LTS, ty * LTS); }
           else g.drawImage(lTiles(d.road[k] ? 'weg' : d.regs[d.rg[k]].biome)[h % 6], tx * LTS, ty * LTS);
         }
       }
@@ -672,7 +824,7 @@ function lPaintEdges(rec, ty) {
   for (let tx = 0; tx < LCT; tx++) {
     const i = (ty + 1) * N + tx + 1, X = tx * LTS, Y = ty * LTS;
     if (d.bar[i]) {
-      if (d.wk[i] >= 2) continue; const C = LBAR[LBARK[d.bar[i] - 1]].c;
+      if ((rec.wk || d.wk)[i] >= 2) continue; const C = LBAR[LBARK[d.bar[i] - 1]].c;
       if (!d.bar[i - N]) { px(g, X, Y, 16, 2, C[3]); px(g, X, Y + 2, 16, 1, C[1]); }
       if (!d.bar[i + N]) { px(g, X, Y + 14, 16, 2, C[3]); px(g, X, Y + 13, 16, 1, C[2]); }
       if (!d.bar[i - 1]) px(g, X, Y, 2, 16, C[3]); if (!d.bar[i + 1]) px(g, X + 14, Y, 2, 16, C[3]);
@@ -704,7 +856,7 @@ function lPaintEdges(rec, ty) {
 }
 function lPaintLakes(rec) {
   const g = rec.g;
-  for (const l of rec.d.lakes) { const x = l.x - rec.X0, y = l.y - rec.Y0, C = POOLCOL[l.k]; g.fillStyle = C[0]; g.beginPath(); g.ellipse(x, y, l.rx + 2, l.ry + 1.5, 0, 0, 7); g.fill(); g.fillStyle = C[1]; g.beginPath(); g.ellipse(x, y, l.rx, l.ry, 0, 0, 7); g.fill(); g.fillStyle = C[2]; g.globalAlpha = .6; g.beginPath(); g.ellipse(x - l.rx * .3, y - l.ry * .3, l.rx * .35, l.ry * .3, 0, 0, 7); g.fill(); g.globalAlpha = 1; }
+  for (const l of rec.d.lakes) { const x = l.x - rec.X0, y = l.y - rec.Y0, C = lPC(l.k); g.fillStyle = C[0]; g.beginPath(); g.ellipse(x, y, l.rx + 2, l.ry + 1.5, 0, 0, 7); g.fill(); g.fillStyle = C[1]; g.beginPath(); g.ellipse(x, y, l.rx, l.ry, 0, 0, 7); g.fill(); g.fillStyle = C[2]; g.globalAlpha = .6; g.beginPath(); g.ellipse(x - l.rx * .3, y - l.ry * .3, l.rx * .35, l.ry * .3, 0, 0, 7); g.fill(); g.globalAlpha = 1; }
   // Plätze: Tor, Lager, Horte
   const disc = (x, y, r, c1, c2, n) => { const R = mulberry(lH(Math.round(x), Math.round(y), 5)); for (let dy = -r; dy <= r; dy++) { const hw = Math.floor(Math.sqrt(r * r - dy * dy) * 1.25); px(g, x - hw, y + dy, hw * 2 + 1, 1, c1); } for (let k = 0; k < n; k++) { const a = R() * 6.283, rr = Math.sqrt(R()) * r; px(g, x + Math.cos(a) * rr * 1.25, y + Math.sin(a) * rr, 2, 1, c2); } };
   for (const p of rec.d.pois) {
@@ -713,6 +865,7 @@ function lPaintLakes(rec) {
     else if (p.k === 'out') disc(x, y, 62, p.gate ? '#6e5a40' : '#6a5a42', '#8a7656', 120);
     else if (p.k === 'lair') disc(x, y, 34, '#3e3438', '#d8d0bc', 30);
     else if (p.k === 'tool') { disc(x, y, 46, '#4a4652', '#6a6672', 90); for (let a = 0; a < 6.28; a += .26) px(g, x + Math.cos(a) * 56, y + Math.sin(a) * 44, 2, 2, LANDE_TOOLS[p.tk].c); }
+    else if (p.k === 'end') { disc(x, y + 6, 60, '#241e34', '#4a4060', 140); for (let a = 0; a < 6.28; a += .16) px(g, x + Math.cos(a) * 72, y + 6 + Math.sin(a) * 56, 2, 2, Math.floor(a * 6) % 3 ? '#b892f4' : '#ffd24a'); for (let a = 0; a < 6.28; a += .9) px(g, x + Math.cos(a) * 40, y + 6 + Math.sin(a) * 30, 3, 2, '#ffd24a'); }
   }
 }
 function lPaintDeco(rec, ty) {
@@ -735,17 +888,30 @@ function lPaintDeco(rec, ty) {
       case 'kristall': if (r < .04) { px(g, x, y - 3, 2, 3, '#8ab0ff'); px(g, x, y - 3, 1, 1, '#ffffff'); } break;
       case 'salz': if (r < .06) { px(g, x, y, 2, 2, '#ffffff'); px(g, x + 2, y + 1, 1, 1, '#c8c4bc'); } break;
       case 'blut': if (r < .05) { px(g, x, y, 3, 1, '#6a1a1a'); px(g, x + 1, y + 1, 2, 1, '#4a0e0e'); } break;
+      // Kleinkram der Tiefe
+      case 'scherbe': if (r < .05) { px(g, x, y - 3, 1, 3, '#e8f8ff'); px(g, x + 1, y - 2, 1, 2, B.g[3]); px(g, x - 1, y - 1, 1, 1, '#9ad8e8'); } break;
+      case 'zahnrad': if (r < .025) { px(g, x - 1, y - 1, 3, 3, '#a8803a'); px(g, x, y, 1, 1, B.g[0]); px(g, x, y - 2, 1, 1, '#c8a060'); px(g, x, y + 2, 1, 1, '#c8a060'); px(g, x - 2, y, 1, 1, '#c8a060'); px(g, x + 2, y, 1, 1, '#c8a060'); } else if (r < .05) px(g, x, y, 2, 1, '#6a4a22'); break;
+      case 'feder': if (r < .04) { px(g, x, y, 4, 1, '#ffffff'); px(g, x + 1, y - 1, 2, 1, '#e8f0f8'); px(g, x + 3, y + 1, 1, 1, '#c8d0e0'); } break;
+      case 'seele': if (r < .03) { px(g, x, y, 2, 2, '#9af0e0'); px(g, x, y, 1, 1, '#ffffff'); } else if (r < .06) px(g, x, y, 1, 1, '#3a8a80'); break;
+      case 'bernstein': if (r < .05) { px(g, x, y - 1, 2, 2, '#e89a2a'); px(g, x, y - 1, 1, 1, '#ffd070'); } else if (r < .09) px(g, x, y, 2, 1, '#8a5a1a'); break;
+      case 'muschel': if (r < .04) { const c = R() < .5 ? '#c0c8ff' : '#ffe0f0'; px(g, x - 1, y, 3, 1, c); px(g, x, y - 1, 1, 3, c); px(g, x, y, 1, 1, '#ffffff'); } break;
+      case 'riss': if (r < .03) { let cx = x, cy = y; for (let k = 0; k < 5; k++) { px(g, cx, cy, 1, 1, k % 2 ? '#ffe08a' : '#b892f4'); cx += Math.floor(R() * 3 - 1); cy += 1; } } break;
+      case 'rost': if (r < .05) { px(g, x, y, 2, 2, '#8a3a14'); px(g, x, y, 1, 1, '#c8642a'); } else if (r < .08) px(g, x, y, 3, 1, '#5a2a10'); break;
+      case 'krater': if (r < .015) { px(g, x - 2, y - 1, 5, 1, B.g[3]); px(g, x - 3, y, 1, 1, B.g[3]); px(g, x + 3, y, 1, 1, B.g[3]); px(g, x - 2, y + 1, 5, 1, B.g[2]); px(g, x, y, 1, 1, '#ffd24a'); } else if (r < .04) px(g, x, y, 1, 1, '#ffffff'); break;
+      case 'traum': if (r < .06) { const fc = ['#ffc0e8', '#c0e0ff', '#fff0b0', '#e0c0ff'][Math.floor(R() * 4)]; px(g, x, y, 1, 2, '#5a6a8a'); px(g, x - 1, y - 1, 3, 1, fc); px(g, x, y - 2, 1, 1, fc); } break;
     }
   }
 }
 
 /* ---------- Pflanzen, Felsen, Zelte, Wahrzeichen ---------- */
-// Kronenfarben: 0–2 Grün, 3 Traum, 4 Schatten, 5 Blüte, 6 Geist, 7 Blut, 8 Gold, 9 Uralt, 10 Nebel, 11 Dschungel
-const LTPAL = [['#1e4a1e', '#2e6a2a', '#4a9a3a', '#7ac25a'], ['#163a1a', '#24582a', '#3a7a34', '#62a64a'], ['#24481c', '#3a6a24', '#5a9a32', '#8ac84a'], ['#1a3a4a', '#2a6a7a', '#5ab0b0', '#a0f0e0'], ['#1a1028', '#2e1e48', '#4a3470', '#7a5aa8'], ['#5a1e3a', '#a03a6a', '#e070a0', '#ffc0d8'], ['#3a4250', '#6a7686', '#a8b4c4', '#e8f0ff'], ['#200808', '#4a1010', '#7a1a1a', '#c03030'], ['#5a3a10', '#9a6a1a', '#d8a83a', '#ffe08a'], ['#0e2a24', '#1a4a3e', '#2a6a5a', '#4a9a7a'], ['#2a3440', '#3e4a58', '#5a6878', '#8a98a8'], ['#0e3a14', '#1a5a1e', '#2a8a2a', '#5ac04a']];
-const LSTONE = [['#4a4450', '#625c68', '#7e7884', '#a8a2ae'], ['#6a7888', '#8a98a8', '#aab8c6', '#ffffff'], ['#1e1618', '#34282a', '#4a3a3a', '#ff6a2a'], ['#8a6a3a', '#b08a50', '#d0aa70', '#f0d8a0'], ['#5a2418', '#8a3a24', '#b05a3a', '#d8885a'], ['#0e0a14', '#221a2e', '#3a2e4a', '#8a6ac0'], ['#8a8270', '#b0a890', '#d0c8b0', '#f0ead8'], ['#2a3a6a', '#4a6aa8', '#7aa0e0', '#d0e8ff'], ['#3a4a3a', '#4a5e46', '#62785a', '#8aa07a']];
+// Kronenfarben: 0–2 Grün, 3 Traum, 4 Schatten, 5 Blüte, 6 Geist, 7 Blut, 8 Gold, 9 Uralt, 10 Nebel, 11 Dschungel, 12 Mond, 13 Bernstein, 14 Wachtraum, 15 Seele, 16 Dämmerung
+const LTPAL = [['#1e4a1e', '#2e6a2a', '#4a9a3a', '#7ac25a'], ['#163a1a', '#24582a', '#3a7a34', '#62a64a'], ['#24481c', '#3a6a24', '#5a9a32', '#8ac84a'], ['#1a3a4a', '#2a6a7a', '#5ab0b0', '#a0f0e0'], ['#1a1028', '#2e1e48', '#4a3470', '#7a5aa8'], ['#5a1e3a', '#a03a6a', '#e070a0', '#ffc0d8'], ['#3a4250', '#6a7686', '#a8b4c4', '#e8f0ff'], ['#200808', '#4a1010', '#7a1a1a', '#c03030'], ['#5a3a10', '#9a6a1a', '#d8a83a', '#ffe08a'], ['#0e2a24', '#1a4a3e', '#2a6a5a', '#4a9a7a'], ['#2a3440', '#3e4a58', '#5a6878', '#8a98a8'], ['#0e3a14', '#1a5a1e', '#2a8a2a', '#5ac04a'],
+  ['#2a3450', '#4a5a80', '#8aa0c8', '#e0ecff'], ['#6a3a0a', '#b06a14', '#e8a030', '#ffd88a'], ['#5a3a6a', '#a070b0', '#f0b0e0', '#fff0ff'], ['#0e3a3a', '#1e6a64', '#4ab0a0', '#a8fff0'], ['#3a1e4a', '#6a3a7a', '#c8783a', '#ffd070']];
+const LSTONE = [['#4a4450', '#625c68', '#7e7884', '#a8a2ae'], ['#6a7888', '#8a98a8', '#aab8c6', '#ffffff'], ['#1e1618', '#34282a', '#4a3a3a', '#ff6a2a'], ['#8a6a3a', '#b08a50', '#d0aa70', '#f0d8a0'], ['#5a2418', '#8a3a24', '#b05a3a', '#d8885a'], ['#0e0a14', '#221a2e', '#3a2e4a', '#8a6ac0'], ['#8a8270', '#b0a890', '#d0c8b0', '#f0ead8'], ['#2a3a6a', '#4a6aa8', '#7aa0e0', '#d0e8ff'], ['#3a4a3a', '#4a5e46', '#62785a', '#8aa07a'],
+  ['#8a8270', '#c8c0aa', '#e8e2cf', '#fffaf0'], ['#4a7a8a', '#8ac8d8', '#c8f0f8', '#ffffff'], ['#5a4418', '#8a6a2a', '#c8a050', '#ffe08a'], ['#4a5a7a', '#7a8aaa', '#aab8d8', '#ffffff'], ['#4a2410', '#7a3a18', '#a8582a', '#d88a4a'], ['#6a3a08', '#a8641a', '#e8a030', '#ffe0a0'], ['#08060e', '#1a1428', '#2e2444', '#ffffff']];   // 9 Gebein, 10 Glas, 11 Messing, 12 Mondstein, 13 Rost, 14 Bernstein, 15 Nichts
 function lPropImg(t, v) {
   const key = t + ':' + v; if (LPROP[key]) return LPROP[key];
-  const tree = !['stein', 'fels', 'zelt', 'wagen', 'schild', 'menhir', 'grab', 'salzk', 'knochen', 'fahne'].includes(t), sp = t === 'saeule' ? crop(80, 80, 16, 48) : lSpr(t, v), sw = t === 'wagen' ? 15 : t === 'zelt' ? 13 : t === 'tanne' || t === 'schnee' ? 7 : t === 'saeule' ? 9 : t === 'schilf' || t === 'fahne' ? 3 : Math.max(5, Math.round(sp.width * .36));
+  const tree = !['stein', 'fels', 'zelt', 'wagen', 'schild', 'menhir', 'grab', 'salzk', 'knochen', 'fahne', 'zahnrad', 'scherbe', 'schaedel', 'sanduhr', 'ruest'].includes(t), sp = t === 'saeule' ? crop(80, 80, 16, 48) : lSpr(t, v), sw = t === 'wagen' ? 15 : t === 'zelt' ? 13 : t === 'tanne' || t === 'schnee' ? 7 : t === 'saeule' ? 9 : t === 'schilf' || t === 'fahne' ? 3 : Math.max(5, Math.round(sp.width * .36));
   const W = Math.max(sp.width, sw * 2 + 2), H = sp.height + 4, c = mk(W, H, g => { g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(W / 2, sp.height - 2 + (t === 'saeule' ? 3 : 0), sw, sw * .38, 0, 0, 6.283); g.fill(); g.drawImage(sp, Math.floor((W - sp.width) / 2), 0); });
   return LPROP[key] = { c, ox: Math.floor(W / 2), oy: sp.height - (t === 'saeule' ? 4 : 2), h: sp.height, tree };
 }
@@ -797,14 +963,14 @@ function lPaint(k, v) {
     case 'kaktus': { b = PB(16, 26); const C = ['#1e5a2a', '#2e8a3a', '#5ac05a']; b.rect(6, 4, 4, 21, C[1]); b.rect(6, 4, 1, 21, C[2]); b.rect(9, 4, 1, 21, C[0]); b.rect(2, 10, 3, 2, C[1]); b.rect(2, 6, 2, 5, C[1]); b.rect(11, 13, 3, 2, C[1]); b.rect(12, 8, 2, 6, C[1]); for (let i = 0; i < 6; i++) b.set(6 + Math.floor(R() * 4), 6 + Math.floor(R() * 18), '#e8e2cf'); if (R() < .5) b.set(8, 3, '#f786a0'); break; }
     case 'palme': { b = PB(26, 34); for (let y = 12; y < 33; y++) { const x = 12 + Math.round(Math.sin(y / 7) * 2); b.rect(x, y, 3, 1, y % 3 ? '#8a6a3a' : '#6a4a22'); } const C = ['#1e5a1e', '#2e8a2a', '#5ac04a']; for (const [dx, dy] of [[-11, 4], [11, 4], [-8, -2], [8, -2], [0, -5], [-12, 9], [12, 9]]) b.line(13, 11, 13 + dx, 11 + dy, C[1]); b.disc(13, 11, 2.5, '#6a4a22'); for (let i = 0; i < 6; i++) b.set(3 + R() * 20, 4 + R() * 10, C[2]); break; }
     case 'dorn': { b = PB(22, 18); const C = ['#0e1e0a', '#1e3a14', '#2e5a1e']; b.disc(11, 11, 8, C[1]); b.disc(8, 9, 5, C[2]); b.disc(15, 10, 4.5, C[2]); for (let i = 0; i < 14; i++) { const a = R() * 6.283, r = 6 + R() * 4; b.set(11 + Math.cos(a) * r, 10 + Math.sin(a) * r * .7, '#c8b070'); } for (let i = 0; i < 3; i++) b.set(5 + R() * 12, 6 + R() * 8, '#c8342c'); break; }
-    case 'kristall': { const C = [['#1e3a8a', '#4a7ae8', '#b0d0ff'], ['#7a1e5a', '#d84aa0', '#ffc0e8'], ['#2a1048', '#6a3ac0', '#c8a0ff'], ['#6a7a8a', '#b8c8d8', '#ffffff'], ['#7a5a10', '#e8b04a', '#fff3c0']][v] || ['#1e3a8a', '#4a7ae8', '#b0d0ff']; b = PB(18, 26); for (const [x, h, w] of [[8, 22, 3], [4, 13, 2], [12, 16, 2], [14, 9, 2]]) { for (let y = 0; y < h; y++) { const ww = Math.max(1, Math.round(w * Math.min(1, (y + 1) / 4))); b.rect(x - ww + 1, 25 - h + y, ww * 2 - 1, 1, y < 2 ? C[2] : C[1]); } b.line(x, 25 - h + 2, x, 24, C[2]); b.line(x + 1, 25 - h + 3, x + 1, 24, C[0]); } break; }
+    case 'kristall': { const C = [['#1e3a8a', '#4a7ae8', '#b0d0ff'], ['#7a1e5a', '#d84aa0', '#ffc0e8'], ['#2a1048', '#6a3ac0', '#c8a0ff'], ['#6a7a8a', '#b8c8d8', '#ffffff'], ['#7a5a10', '#e8b04a', '#fff3c0'], ['#14081e', '#4a2a7a', '#e0c8ff'], ['#5a0a14', '#c8283a', '#ffb0b8'], ['#6a3a08', '#e8962a', '#ffe0a0']][v] || ['#1e3a8a', '#4a7ae8', '#b0d0ff']; b = PB(18, 26); for (const [x, h, w] of [[8, 22, 3], [4, 13, 2], [12, 16, 2], [14, 9, 2]]) { for (let y = 0; y < h; y++) { const ww = Math.max(1, Math.round(w * Math.min(1, (y + 1) / 4))); b.rect(x - ww + 1, 25 - h + y, ww * 2 - 1, 1, y < 2 ? C[2] : C[1]); } b.line(x, 25 - h + 2, x, 24, C[2]); b.line(x + 1, 25 - h + 3, x + 1, 24, C[0]); } break; }
     case 'knochen': { b = PB(26, 18); if (v === 2) { b = PB(36, 34); for (let i = 0; i < 4; i++) { const x = 6 + i * 8; for (let y = 4; y < 32; y++) b.set(x + Math.round(Math.sin(y / 9) * 3), y, y < 6 ? '#fffaf0' : '#d8d0bc'); } b.rect(2, 31, 32, 2, '#a8a08a'); break; } if (v === 0) { b.rect(3, 14, 20, 2, '#d8d0bc'); for (let i = 0; i < 5; i++) { const x = 5 + i * 4; b.line(x, 14, x - 2, 5 + i % 2, '#e8e2cf'); b.set(x - 2, 5 + i % 2, '#fffaf0'); } } else { b.disc(8, 10, 4.5, '#e8e2cf'); b.set(6, 10, '#1a1420'); b.set(9, 10, '#1a1420'); b.rect(6, 13, 5, 2, '#d8d0bc'); b.line(13, 15, 23, 11, '#d8d0bc'); b.line(14, 11, 22, 16, '#c8c0aa'); } break; }
     case 'grab': { b = PB(12, 18); const C = ['#5a5868', '#7a7888', '#9a98a8']; if (v === 0) { b.rect(5, 2, 2, 14, C[1]); b.rect(2, 5, 8, 2, C[1]); b.rect(5, 2, 1, 14, C[2]); } else { b.rect(2, 5, 8, 11, C[1]); b.disc(6, 5, 4, C[1]); b.rect(2, 5, 2, 11, C[2]); b.rect(4, 8, 4, 1, C[0]); b.rect(5, 6, 2, 5, C[0]); } b.rect(1, 16, 10, 2, '#3a3440'); break; }
     case 'eisz': { b = PB(18, 30); const C = ['#5a7898', '#a8d0e8', '#e8f8ff']; if (v === 0) { for (let y = 0; y < 28; y++) { const hw = Math.max(1, Math.round(y / 4)); b.rect(9 - hw, y + 1, hw * 2, 1, y % 5 ? C[1] : C[2]); } b.line(9, 4, 9, 28, C[2]); } else { b.rect(2, 12, 14, 16, C[1]); b.rect(2, 12, 14, 2, C[2]); b.rect(2, 12, 2, 16, C[2]); b.rect(14, 14, 2, 14, C[0]); b.line(6, 16, 11, 24, C[0]); } break; }
     case 'obs': { const C = v ? ['#1a0a2a', '#3a1a5a', '#c060ff'] : ['#0e0a14', '#2a2238', '#ff8a3a']; b = PB(14, 26); for (let y = 0; y < 24; y++) { const hw = Math.max(1, Math.round(y / 5)); b.rect(7 - hw, y + 1, hw * 2, 1, C[1]); } b.line(7, 3, 6, 24, C[0]); b.line(8, 6, 9, 22, C[2]); break; }
-    case 'weide': { const C = v ? ['#4a5a6a', '#8a9aaa', '#d0e0f0'] : ['#1e4a1e', '#3a7a2a', '#6aa84a']; b = PB(26, 32); b.rect(12, 14, 3, 17, WOOD[0]); b.disc(13, 11, 10, C[0]); b.disc(12, 9, 8, C[1]); for (let i = 0; i < 9; i++) { const x = 4 + i * 2.2; b.line(x, 10, x + (R() - .5) * 2, 22 + R() * 6, C[i % 2 ? 1 : 2]); } break; }
+    case 'weide': { const C = [['#1e4a1e', '#3a7a2a', '#6aa84a'], ['#4a5a6a', '#8a9aaa', '#d0e0f0'], ['#0e3a3a', '#2a8a80', '#9af0e0'], ['#3a4a6a', '#8aa0c8', '#ffffff']][v] || ['#4a5a6a', '#8a9aaa', '#d0e0f0']; b = PB(26, 32); b.rect(12, 14, 3, 17, WOOD[0]); b.disc(13, 11, 10, C[0]); b.disc(12, 9, 8, C[1]); for (let i = 0; i < 9; i++) { const x = 4 + i * 2.2; b.line(x, 10, x + (R() - .5) * 2, 22 + R() * 6, C[i % 2 ? 1 : 2]); } break; }
     case 'sternbaum': { const C = v ? ['#0a0612', '#1a0e2a', '#c060ff'] : ['#1a2a5a', '#2a4aa8', '#ffe08a']; b = PB(24, 32); b.rect(11, 14, 3, 17, v ? '#1a1018' : '#3a2a4a'); b.disc(12, 11, 10, C[0]); b.disc(11, 10, 8, C[1]); for (let i = 0; i < 7; i++) { const x = 4 + R() * 16, y = 3 + R() * 14; b.set(x, y, C[2]); b.set(x + 1, y, '#ffffff'); } break; }
-    case 'koralle': { const C = [['#8a3a1e', '#e8703a', '#ffb070'], ['#7a1e4a', '#e05a9a', '#ffb0d8'], ['#8a8a8a', '#d8d8d0', '#ffffff']][v % 3]; b = PB(20, 22); for (const [x0, y0, x1, y1] of [[10, 21, 10, 6], [10, 14, 4, 6], [10, 12, 16, 4], [5, 9, 3, 3], [15, 7, 18, 2]]) { b.line(x0, y0, x1, y1, C[1]); b.line(x0 + 1, y0, x1 + 1, y1, C[0]); b.set(x1, y1, C[2]); } break; }
+    case 'koralle': { const C = [['#8a3a1e', '#e8703a', '#ffb070'], ['#7a1e4a', '#e05a9a', '#ffb0d8'], ['#8a8a8a', '#d8d8d0', '#ffffff'], ['#1a2a6a', '#6a8aff', '#e0e8ff']][v % 4]; b = PB(20, 22); for (const [x0, y0, x1, y1] of [[10, 21, 10, 6], [10, 14, 4, 6], [10, 12, 16, 4], [5, 9, 3, 3], [15, 7, 18, 2]]) { b.line(x0, y0, x1, y1, C[1]); b.line(x0 + 1, y0, x1 + 1, y1, C[0]); b.set(x1, y1, C[2]); } break; }
     case 'salzk': { b = PB(16, 16); for (const [x, h] of [[4, 8], [8, 12], [12, 7]]) { b.rect(x - 1, 15 - h, 3, h, '#e8e4dc'); b.rect(x - 1, 15 - h, 1, h, '#ffffff'); b.set(x, 14 - h, '#ffffff'); b.rect(x + 1, 16 - h, 1, h - 1, '#b8b4ac'); } break; }
     case 'schilf': { b = PB(12, 16); const C = v ? ['#6a5a2a', '#8a7a4a'] : ['#3a5a1a', '#5a7a2a']; for (let i = 0; i < 4; i++) { const x = 2 + i * 2.5; b.line(x, 15, x + (i - 1.5), 3 + i % 2 * 2, C[i % 2]); } b.rect(4, 2, 1, 3, '#6a4a22'); b.rect(8, 4, 1, 3, '#6a4a22'); break; }
     case 'fahne': { b = PB(16, 34); b.rect(2, 2, 2, 31, WOOD[0]); b.rect(4, 3, 11, 9, '#2a5a9a'); b.rect(4, 3, 11, 1, '#57c7e6'); b.rect(8, 6, 3, 3, '#e8b04a'); b.set(14, 12, '#2a5a9a'); b.set(12, 12, '#2a5a9a'); break; }
@@ -852,6 +1018,71 @@ function lPaint(k, v) {
     case 'karte': { b = PB(14, 12); b.rect(2, 2, 10, 8, '#e8dcc0'); b.rect(1, 1, 2, 10, '#c8a87a'); b.rect(11, 1, 2, 10, '#c8a87a'); b.line(4, 7, 7, 4, '#c8463c'); b.line(7, 4, 10, 6, '#c8463c'); b.set(9, 6, '#1a1420'); break; }
     case 'relikt': { b = PB(12, 14); b.line(2, 1, 6, 5, '#e8b04a'); b.line(10, 1, 6, 5, '#e8b04a'); b.disc(6, 9, 3.5, '#e8b04a'); b.disc(6, 9, 2, '#57c7e6'); b.set(5, 8, '#ffffff'); break; }
     case 'lstein': { b = PB(12, 14); b.disc(6, 8, 4.5, '#7a3a1e'); b.disc(6, 7, 3.5, '#ff8a3a'); b.disc(5, 6, 1.8, '#ffe08a'); b.set(4, 5, '#ffffff'); break; }
+    // Pflanzen und Dinge der Tiefe
+    case 'riesenpilz': {
+      const C = [['#4a1e6a', '#8a3ac8', '#e0a8ff', '#ffffff'], ['#1e3a7a', '#3a7ad8', '#9ae8ff', '#e8ffff'], ['#7a1414', '#c8342c', '#ffd0c8', '#ffffff']][v % 3];
+      b = PB(40, 54); b.rect(16, 24, 8, 29, '#d8d2bf'); b.rect(16, 24, 2, 29, '#efe8d4'); b.rect(22, 24, 2, 29, '#a8a08a'); b.rect(13, 50, 14, 3, '#a8a08a');
+      for (let y = 0; y < 20; y++) { const hw = Math.round(Math.sqrt(Math.max(0, 1 - Math.pow((19 - y) / 20, 2))) * 19); for (let x = 20 - hw; x < 20 + hw; x++) b.set(x, y + 5, y < 3 ? C[2] : x > 20 + hw * .5 ? C[0] : C[1]); }
+      b.rect(2, 24, 36, 2, C[0]); for (let i = 0; i < 7; i++) b.disc(6 + R() * 28, 10 + R() * 11, 1.2 + R() * 1.4, C[2]); for (let i = 0; i < 4; i++) b.set(8 + R() * 24, 9 + R() * 12, C[3]);
+      break;
+    }
+    case 'knochenbaum': {
+      const C = v ? ['#a89a80', '#d8ccb0', '#7a1e1e'] : ['#c8c0aa', '#efe8d4', '#3a3440']; b = PB(28, 40);
+      b.rect(12, 14, 4, 25, C[0]); b.rect(12, 14, 2, 25, C[1]); b.disc(11, 38, 2, C[0]); b.disc(17, 38, 2, C[0]);
+      for (let i = 0; i < 4; i++) { const y = 18 + i * 5; for (let k = 0; k < 10 - i * 2; k++) { b.set(11 - k, y - Math.round(Math.sqrt(k) * 2.2), C[1]); b.set(16 + k, y - Math.round(Math.sqrt(k) * 2.2), C[1]); } }
+      b.disc(14, 8, 6, C[1]); b.disc(14, 10, 5, C[0]); b.rect(11, 8, 2, 2, C[2]); b.rect(15, 8, 2, 2, C[2]); b.rect(12, 12, 4, 1, C[2]);
+      break;
+    }
+    case 'glasbaum': {
+      const C = v ? ['#8a3a6a', '#e080c0', '#ffd0f0'] : ['#2a6a8a', '#7ad0e8', '#e0ffff']; b = PB(24, 36);
+      b.rect(11, 18, 2, 17, C[0]); b.line(12, 24, 6, 18, C[0]); b.line(12, 22, 18, 16, C[0]);
+      for (const [cx, cy, r] of [[12, 10, 8], [6, 15, 5], [18, 14, 5]]) { b.disc(cx, cy, r, C[1]); b.disc(cx - r * .3, cy - r * .3, r * .45, C[2]); }
+      for (let i = 0; i < 6; i++) b.set(4 + R() * 16, 4 + R() * 14, '#ffffff'); for (let y = 4; y < 20; y += 3) b.set(12, y, C[0]);
+      break;
+    }
+    case 'zahnrad': {
+      const C = v ? ['#5a2a10', '#8a4a1e', '#c8743a'] : ['#6a4a1a', '#a8803a', '#e8c070']; b = PB(30, 32);
+      b.rect(13, 26, 4, 5, '#3a3440'); b.rect(8, 30, 14, 2, '#3a3440');
+      for (let k = 0; k < 10; k++) { const a = k / 10 * 6.283; b.rect(Math.round(15 + Math.cos(a) * 12) - 1, Math.round(14 + Math.sin(a) * 12) - 1, 3, 3, C[0]); }
+      b.disc(15, 14, 11, C[0]); b.disc(15, 14, 10, C[1]); b.disc(15, 14, 6, C[0]); b.disc(15, 14, 3.5, C[1]); b.disc(15, 14, 1.5, '#1a1420');
+      for (let k = 0; k < 4; k++) { const a = k / 4 * 6.283 + .4; b.line(15 + Math.cos(a) * 4, 14 + Math.sin(a) * 4, 15 + Math.cos(a) * 9, 14 + Math.sin(a) * 9, C[0]); }
+      b.line(9, 7, 13, 5, C[2]); b.set(8, 10, C[2]);
+      break;
+    }
+    case 'scherbe': {
+      const C = [['#3a6a8a', '#9ad8e8', '#ffffff'], ['#8a6a1a', '#ffd24a', '#fff8d0'], ['#2a0e4a', '#8a4ad8', '#e0c8ff']][v % 3]; b = PB(18, 28);
+      for (const [x, h, w, lean] of [[8, 26, 3, 1], [4, 15, 2, -1], [13, 18, 2, 1]]) for (let y = 0; y < h; y++) { const ww = Math.max(1, Math.round(w * (y + 1) / h + .3)), xo = Math.round(lean * (h - y) / 6); b.rect(x - ww + 1 + xo, 27 - h + y, ww * 2 - 1, 1, y < 3 ? C[2] : C[1]); b.set(x + xo + ww - 1, 27 - h + y, C[0]); }
+      break;
+    }
+    case 'schaedel': {
+      const C = ['#a89a80', '#d8ccb0', '#efe8d4', '#2a2228']; b = PB(40, 30);
+      b.disc(20, 13, 12, C[1]); b.rect(10, 13, 20, 10, C[1]); b.disc(16, 9, 6, C[2]); b.disc(14, 14, 3.5, C[3]); b.disc(26, 14, 3.5, C[3]); b.rect(19, 18, 2, 3, C[3]);
+      for (let x = 12; x < 29; x += 3) b.rect(x, 23, 2, 4, C[2]); b.rect(10, 27, 20, 2, C[0]); b.line(28, 4, 31, 10, C[0]); b.line(30, 8, 33, 7, C[0]); b.rect(2, 26, 7, 3, C[0]); b.rect(32, 25, 6, 4, C[0]);
+      break;
+    }
+    case 'sanduhr': {
+      const C = ['#4a4460', '#6a6488', '#e8c860', '#ffe08a']; b = PB(16, 30);
+      b.rect(2, 0, 12, 3, C[1]); b.rect(2, 27, 12, 3, C[1]); b.rect(2, 3, 1, 24, C[0]); b.rect(13, 3, 1, 24, C[0]);
+      for (let y = 0; y < 12; y++) { const hw = Math.max(1, 5 - Math.round(y * 5 / 12)); b.rect(8 - hw, 3 + y, hw * 2, 1, '#a8b4d0'); b.rect(8 - hw, 26 - y, hw * 2, 1, '#a8b4d0'); }
+      b.rect(5, 4, 6, 3, C[2]); b.rect(7, 7, 2, 13, C[3]); b.rect(4, 22, 8, 4, C[2]); b.rect(5, 21, 6, 1, C[3]);
+      break;
+    }
+    case 'ruest': {
+      const C = ['#4a2410', '#7a3a18', '#a8582a', '#d88a4a']; b = PB(32, 26);
+      b.disc(16, 14, 12, C[1]); b.rect(4, 14, 24, 10, C[1]); b.disc(13, 10, 6, C[2]); b.rect(6, 14, 20, 3, C[0]); b.rect(15, 17, 2, 7, C[0]); b.rect(9, 18, 4, 1, '#1a1014'); b.rect(19, 18, 4, 1, '#1a1014');
+      b.rect(15, 1, 2, 4, C[2]); b.rect(2, 23, 28, 3, C[0]); for (let i = 0; i < 8; i++) b.set(6 + R() * 20, 6 + R() * 16, R() < .5 ? C[3] : '#3a1a0a');
+      break;
+    }
+    case 'weltende': {
+      const C = ['#2a2440', '#4a4060', '#6a608a', '#9a90b8']; b = PB(46, 76);
+      b.rect(4, 64, 38, 10, C[0]); b.rect(6, 62, 34, 3, C[2]); b.rect(6, 62, 34, 1, C[3]);
+      b.rect(8, 20, 7, 42, C[1]); b.rect(8, 20, 2, 42, C[2]); b.rect(31, 28, 7, 34, C[1]); b.rect(31, 28, 2, 34, C[2]);
+      for (let x = 8; x < 28; x++) b.rect(x, 14 + Math.round(Math.abs(x - 22) * .35), 1, 6, C[1]);
+      b.rect(8, 14, 18, 1, C[3]); b.line(28, 18, 31, 26, C[0]);
+      for (let y = 24; y < 60; y += 7) { b.rect(10, y, 3, 2, '#ffd24a'); b.rect(33, y + 3, 3, 2, '#b892f4'); }
+      b.disc(23, 40, 5, '#ffd24a'); b.disc(23, 40, 3, '#fff8d0'); b.set(23, 33, '#ffffff'); b.set(23, 47, '#ffffff'); b.set(16, 40, '#ffffff'); b.set(30, 40, '#ffffff');
+      break;
+    }
     case 'mod': { b = PB(12, 12); b.disc(6, 6, 4.5, '#3a2a5a'); b.disc(6, 6, 3, '#b892f4'); b.rect(5, 3, 2, 6, '#ffffff'); b.rect(3, 5, 6, 2, '#e8d8ff'); break; }
     default: b = PB(4, 4); b.rect(0, 0, 4, 4, '#ff00ff');
   }
@@ -934,13 +1165,13 @@ function lMetaFix(d) {
   d = d && typeof d === 'object' ? d : {};
   const old = !d.v && (Array.isArray(d.tx) || d.runs > 0);   // Spielstand aus 6.0: Weltstufen gibt es nicht mehr
   const map = {}; if (d.map && typeof d.map === 'object') for (const k in d.map) if (/^-?\d+,-?\d+$/.test(k) && typeof d.map[k] === 'string' && d.map[k].length <= 44) map[k] = d.map[k];
-  const cps = (Array.isArray(d.cps) ? d.cps : []).filter(c => c && isFinite(c.x) && isFinite(c.y) && Math.hypot(c.x, c.y) < LWR * LCK).slice(0, LCPMAX).map(c => ({ i: lNum(c.i), x: Math.round(c.x), y: Math.round(c.y), t: lNum(c.t), u: lNum(c.u) }));
+  const cps = (Array.isArray(d.cps) ? d.cps : []).filter(c => c && isFinite(c.x) && isFinite(c.y) && Math.hypot(c.x, c.y) < LWR * LCK).slice(0, LCPMAX).map(c => ({ i: lNum(c.i), x: Math.round(c.x), y: Math.round(c.y), t: lNum(c.t), u: lNum(c.u), w: c.w ? 1 : 0 }));   // w: gesetzt in der Welt mit 20 Ringen (ohne w: vielleicht in einer neuen Barriere)
   const tx = Array.isArray(d.tx) ? d.tx.reduce((a, v) => a + lNum(v), 0) : 0;
   return {
     v: 2, runs: lNum(d.runs), ext: lNum(d.ext), deaths: lNum(d.deaths), aband: lNum(d.aband), best: lNum(d.best), rep: lNum(d.rep), done: lNum(d.done), keys: Math.min(99, lNum(d.keys)), kills: lNum(d.kills), bosses: lNum(d.bosses), rivals: lNum(d.rivals), tips: lNum(d.tips),
     tools: lNum(d.tools) & ((1 << LANDE_TOOLS.length) - 1), stones: Math.min(99, d.stones == null ? (old ? 1 + Math.min(4, Math.floor(tx / 3)) : 1) : lNum(d.stones)), cps, cpn: Math.max(lNum(d.cpn), ...cps.map(c => c.i + 1), 0),
     start: d.start === 'tor' || cps.some(c => 'c' + c.i === d.start) ? d.start : 'tor', map, regs: (Array.isArray(d.regs) ? d.regs : []).filter(s => typeof s === 'string' && s.length < 16).slice(0, 40000),
-    far: lNum(d.far), walk: lNum(d.walk), nights: lNum(d.nights), cross: lNum(d.cross),
+    far: lNum(d.far), walk: lNum(d.walk), nights: lNum(d.nights), cross: lNum(d.cross), ring: Math.min(LRMAX, Math.max(lNum(d.ring), lRingOf(lNum(d.far) / 10000 * LWR))), end: lNum(d.end), endN: lNum(d.endN),
     box: (Array.isArray(d.box) ? d.box : []).filter(lEntryOk).slice(0, LBOX),
     cur: d.cur && typeof d.cur === 'object' && d.cur.hero ? d.cur : null
   };
@@ -996,7 +1227,11 @@ function landeCtx(cx, cy, salt) { return lCtxOf(Math.floor(+cx) || 0, Math.floor
 function landeBeacons() { try { if (!SAVE || !SAVE.meta) return []; return lMeta().cps.map(c => ({ name: lCpName(c), x: c.x, y: c.y, i: c.i })); } catch (_) { return []; } }
 // Aussagen über einen Ort (Welt-Pixel): Region, Biom, Stufe, Tiefe, Entfernung zum Tor
 function lInfoW(wx, wy) { const R = lRegAtC(wx / LCK, wy / LCK); return { R, B: LANDE_BIOMES[R.biome], stage: R.stage, depth: Math.min(1, Math.hypot(wx, wy) / LCK / LWR), km: Math.hypot(wx, wy) / 8000 }; }
-function lKm(px_) { const m = px_ / 8; return m < 1000 ? _t('{n} m', { n: Math.round(m / 10) * 10 }) : _t('{n} km', { n: (m / 1000).toLocaleString(LOCALE, { maximumFractionDigits: m < 10000 ? 1 : 0 }) }); }
+function lKm(px_) { const m = px_ / 8; return lNb(m < 1000 ? _t('{n} m', { n: Math.round(m / 10) * 10 }) : _t('{n} km', { n: (m / 1000).toLocaleString(LOCALE, { maximumFractionDigits: m < 10000 ? 1 : 0 }) })); }
+// Zahl und Einheit nicht umbrechen („770 m“, „2,1 km“, „12 %“): geschütztes Leerzeichen nach einer Ziffer
+function lNb(s) { return String(s).replace(/(\d) (?=\S)/g, '$1\u00a0'); }
+// Ring an einem Abstand vom Tor (Chunks)
+function lRingOf(rho) { let r = 0; while (r < LRMAX && LRING[r] <= rho) r++; return r; }
 
 /* ---------- Begleiter (Schnittstelle aus js/pets.js, alles optional) ---------- */
 function lPetApi() { return typeof petActive === 'function' && typeof petBagSize === 'function'; }
@@ -1172,6 +1407,7 @@ function landeStart(sid) {
 function lBegin(st) {
   st = st || lStarts()[0];
   const M = lMeta(), seed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
+  lPoolReg();
   if (LW) for (const r of LW.cm.values()) lFree(r);
   const L = LW = { id: uid(), seed, on: false, t: 0, cm: new Map(), ts: new Map(), fog: new Map(), regs: new Set(), pack: [], mis: [], misOn: false, misFrom: null, pats: [], rivals: [], beast: null, offers: new Map(), healFree: true, scrolls: 0, xs: [], buffT: 0, buffV: 0, sleep: [], near: null, dig: 0, digO: null, tick: 0, hudT: 0, mapT: 0, huntT: 50, revT: 0, kills: 0, chests: 0, msgT: {}, hurtT: -9, ch: 0, chEx: null, danger: 0, reg: null, pcx: null, pcy: null, q: [], farT: 0, rivT: 150 + Math.random() * 120, start: st.id, nights: 0, cross: new Set(), lx: 0, ly: 0, ambA: 0, hazT: 0, newR: 0 };
   LRL = null;
@@ -1309,7 +1545,9 @@ function lSpawn(type, x, y, o) {
   // Kampagnen-Qual raus, Tiefen-Qual rein (gleiche Formel wie die Qual der Kampagne)
   const q0 = Math.pow(1.3, qualOf(P.act)), qd = lQualOf(st), mh = Math.pow(1.3, qd) / q0, ma = Math.pow(1.3, qd * .8) / Math.pow(q0, .8);
   if (mh !== 1) { e.hp = e.maxHp = Math.max(1, Math.round(e.maxHp * mh)); e.atk *= ma; if (e.armorMax) { e.armorMax *= mh; e.armor = e.armorMax; } }
-  if (B.ea && !e.affixes.includes(B.ea) && (e.elite || Math.random() < .35)) e.affixes.push(B.ea);
+  for (const a of [].concat(B.ea || [])) if (!e.affixes.includes(a) && (e.elite || Math.random() < .35)) lAffix(e, a);
+  // tief draußen (ab ~30 % Tiefe): ein zufälliges Affix mehr – am Rand bei fast der Hälfte der Gegner
+  const dep = lDepthAt(x, y); if (dep > .3 && !o.boss && Math.random() < Math.min(.45, (dep - .3) * .65)) { const k = Object.keys(AFFIX).filter(a => !e.affixes.includes(a)); if (k.length) lAffix(e, pick(k)); }
   e.lw = { src: o.src || null, rec: o.rec || null }; e.lpx = e.x; e.lpy = e.y;
   lSetStage(lStage(P.x, P.y));
   return e;
@@ -1324,6 +1562,8 @@ HOOK.spawn.push(e => {
   if (mh === 1) return;
   e.hp = e.maxHp = Math.max(1, Math.round(e.maxHp * mh)); e.atk *= ma; if (e.armorMax) { e.armorMax *= mh; e.armor = e.armorMax; }
 });
+// Affix nachträglich (Biom, Tiefe): wie in spawnEnemy auch die Werte (schnell, Riese, gepanzert)
+function lAffix(e, a) { e.affixes.push(a); if (a === 'schnell') { e.spd *= 1.6; e.cdMul = .7; } else if (a === 'riese') { e.sc *= 1.3; e.hp = e.maxHp = Math.round(e.maxHp * 1.6); e.mass *= 2; } else if (a === 'gepanzert' && !e.armorMax) e.armorMax = e.armor = e.maxHp * .6; }
 function lSpawnGroup(src, list, x, y, rad) {
   list.forEach((r, i) => { const a = i / list.length * 6.283 + Math.random() * .5, d = rad * (.5 + Math.random() * .5); lSpawn(r.t, x + Math.cos(a) * d, y + Math.sin(a) * d * .7, { elite: r.el, src, rec: r }); });
   src.alive = (src.alive || 0) + list.length;
@@ -1336,7 +1576,7 @@ function lDespawn(e) {
     if (s.rival) { s.hp = clamp(e.hp / e.maxHp, .05, 1); s.state = 'roam'; s.x = e.x; s.y = e.y; }
     if (s.left && s.state === 'act' && !s.alive) s.state = 'dorm';
     if (s.list && s.state === 'act' && !s.alive) { s.state = 'dorm'; s.x = e.x; s.y = e.y; }
-    if ((s.k === 'lair' || s.k === 'tool') && s.act && !s.alive) { s.act = false; if (s.k === 'tool' && s.state === 'fight') s.state = 'idle'; $('bossbar').hidden = true; lMusic(); }
+    if ((s.k === 'lair' || s.k === 'tool' || s.k === 'end') && s.act && !s.alive) { s.act = false; if ((s.k === 'tool' || s.k === 'end') && s.state === 'fight') s.state = 'idle'; $('bossbar').hidden = true; lMusic(); }
   }
   fxAnim('ring', e.x, e.y - 6, { sc: .5, dur: .4, add: true });
 }
@@ -1567,8 +1807,8 @@ function lPush(e, r) {
 function lWalkP(x, y) { return lWalk(x, y) && lWalk(x + 4, y) && lWalk(x - 4, y) && lWalk(x, y + 3) && lWalk(x, y - 3); }
 // Gegen eine Barriere gelaufen: was ist das, was fehlt, wo ist der nächste Übergang?
 function lBlocked(x, y) {
-  const L = LW, r = lRecAt(x, y); if (!r) return; const i = lTileI(r, x, y); let bk = r.d.bar[i] - 1, nd = r.d.nd[i] - 1, v = r.d.wk[i];
-  if (bk < 0) { for (const [dx, dy] of [[4, 0], [-4, 0], [0, 3], [0, -3]]) { const r2 = lRecAt(x + dx, y + dy); if (!r2) continue; const j = lTileI(r2, x + dx, y + dy); if (r2.d.bar[j]) { bk = r2.d.bar[j] - 1; nd = r2.d.nd[j] - 1; v = r2.d.wk[j]; break; } } }
+  const L = LW, r = lRecAt(x, y); if (!r) return; const i = lTileI(r, x, y); let bk = r.d.bar[i] - 1, nd = r.d.nd[i] - 1, v = r.wk[i];
+  if (bk < 0) { for (const [dx, dy] of [[4, 0], [-4, 0], [0, 3], [0, -3]]) { const r2 = lRecAt(x + dx, y + dy); if (!r2) continue; const j = lTileI(r2, x + dx, y + dy); if (r2.d.bar[j]) { bk = r2.d.bar[j] - 1; nd = r2.d.nd[j] - 1; v = r2.wk[j]; break; } } }
   if (bk < 0) return; const B = LBAR[LBARK[bk]];
   if (B.key === 'rand') { lMsg('rand', _t('Hier endet die Welt. Dahinter ist nur noch das Nichts.'), '#c8c0d8', 6); statMax('landeEdge', 1); return; }
   const T_ = nd >= 0 ? LANDE_TOOLS[nd] : null;
@@ -1590,6 +1830,8 @@ HOOK.update.push(dt => {
   if (state === 'play' && !lWalkP(P.x, P.y)) { const nx = P.x, ny = P.y; if (lWalkP(nx, L.ly)) P.y = L.ly; else if (lWalkP(L.lx, ny)) P.x = L.lx; else { P.x = L.lx; P.y = L.ly; } if (P.dash) P.dash.t = P.dash.dur; lBlocked(nx, ny); }
   if (state === 'play') { const d = Math.hypot(P.x - L.lx, P.y - L.ly); if (d < 60) L.walk = (L.walk || 0) + d; }
   L.lx = P.x; L.ly = P.y;
+  // Pfützen der Tiefe (die vier alten wirken in js/combat.js)
+  if (state === 'play' && P.z < 2 && !P.leap) { const pl = inPool(P.x, P.y), F = pl && LPOOLX[pl.k]; if (F) { if (F.slow) P.slowT = Math.max(P.slowT, F.slow); if (F.res) P.res = Math.max(0, P.res - P.st.resMax * F.res * dt); if (F.dmg && P.poolT <= 0 && P.roll <= 0) { P.poolT = .5; hurtPlayer(F.dmg[0] + stageNum() * F.dmg[1], null); } } }
   if (P.z < 4 && !P.leap) lPush(P, P.r);
   for (const e of enemies) {
     if (e.dead) continue;
@@ -1620,7 +1862,7 @@ function lTick(dt) {
   const ph = lPhase(L.t), nt = lNight(L.t);
   if (ph !== L.danger) { const was = L.danger; L.danger = ph; const D = LDNG[ph]; if (D.b) { lBanner(D.b, D.s); sfx(ph === 3 ? 'heal' : 'spec'); if (ph === 2) shake(3); } if (ph === 2) { L.nights++; L.beastN = true; } if (ph === 3 && was === 2) { lMisEvent('dawn'); M.nights++; } lMusic(); }
   const R = L.reg, B = LANDE_BIOMES[R ? R.biome : 'wiese'], hz = B.haz && !lToolBit(LHAZ[B.haz].tool) ? B.haz : null;
-  bg.b.dark = clamp((B.dark || 0) + nt * .44 + (hz === 'dunkel' ? .32 : 0) + Math.min(.12, lDepthAt(P.x, P.y) * .4), 0, .82);
+  bg.b.dark = clamp((B.dark || 0) + nt * .44 + (hz === 'dunkel' ? .32 : hz === 'traum' ? .26 : 0) + Math.min(.12, lDepthAt(P.x, P.y) * .4), 0, .82);
   if (M.cur) { const fight = lDanger(); if (!!M.cur.fight !== fight) { M.cur.fight = fight; persist(); } }
   lReveal();
   lSetStage(lStage(P.x, P.y));
@@ -1652,10 +1894,11 @@ function lTick(dt) {
       case 'npc': if (d < nd) { nd = d; L.near = o; } break;
       case 'lair': if (!o.ts && !o.act && d < 250 && enemies.length < 30) { let ok = true; try { if (typeof bossLairReady === 'function') ok = !!bossLairReady(o.key); } catch (_) { ok = false; } if (ok && lBossAt(o, o.key)) { o.act = true; sfx('boom'); shake(6); lMsg('lair', _t('Ein Hort! Sein Wächter erwacht.'), '#ff6a5a', 8); } } break;
       case 'tool': lToolTick(o, d); break;
+      case 'end': lEndTick(o, d); break;
       case 'rune': if (o.site.state !== 'open' && o.site.state !== 'done' && !o.on && d < 12) lRune(o); break;
       case 'enc': if (d < 34 && !o.used) lEncounter(o); break;
       case 'arte': case 'arteT': lArteTick(o, d); break;
-      case 'mile': if (d < 40 && !L.msgT['mile' + o.km]) { L.msgT['mile' + o.km] = T; toast(_t('Meilenstein: {n} km vom Weltentor', { n: o.km }), '#efe2bf'); } break;
+      case 'mile': if (d < 40 && !L.msgT['mile' + o.km]) { L.msgT['mile' + o.km] = T; toast(lNb(_t('Meilenstein: {n} km vom Weltentor', { n: o.km })), '#efe2bf'); } break;
       case 'cross': if (d < 30 && o.need >= 0 && lToolBit(o.need) && !L.cross.has(o)) { L.cross.add(o); const T_ = LANDE_TOOLS[o.need]; toast(_t('Mit {tool} über {bar}!', { tool: T_.n, bar: LBAR[LBARK[o.kind]].n }), T_.c); lMeta().cross++; } break;
     }
   }
@@ -1697,6 +1940,8 @@ function lRegionTick(first) {
   else lMsg('reg', lRegName(R) + ' · ' + sub, rate.c, 1);
   if (was && R.stage > was.stage * 1.25 && rate.c === '#ff4a4a') lMsg('deadly', _t('Vorsicht: Die Gegner hier sind für dich tödlich stark!'), '#ff4a4a', 30);
   if (B.haz && !lToolBit(LHAZ[B.haz].tool)) setTimeout(() => { if (LW && LW.on) toast(LHAZ[B.haz].s, LHAZ[B.haz].c); }, 1200);
+  // Meilenstein: zum ersten Mal in einem neuen Ring (für immer gemerkt)
+  const M = lMeta(); if (R.ring > M.ring) { M.ring = R.ring; persist(); if (!first) { lBanner(_t('{n}. GRENZE ÜBERWUNDEN', { n: R.ring }), R.ring >= LRMAX ? _t('Der Weltenrand – dahinter liegt nur noch das Ende der Welt.') : _t('Ring {n} von {m}: neue Biome, stärkere Gegner, bessere Beute.', { n: R.ring, m: LRMAX })); sfx('ach'); } }
 }
 // Gefahren der Biome: ohne das passende Werkzeug tut es weh
 function lHazardTick(hz) {
@@ -1707,6 +1952,16 @@ function lHazardTick(hz) {
   else if (hz === 'hitze') { if (P.hp > m * .15) P.hp = Math.max(m * .15, P.hp - m * .005); part(P.x + rnd(-6, 6), P.y, rnd(2, 10), 0, 0, 25, '#ff8a3a', .5, 1, -20, 1); }
   else if (hz === 'sturm') { if (Math.random() < .3) { const a = (lVN(T * .1, 0, 9) - .5) * 12; P.vx += Math.cos(a) * 160; P.vy += Math.sin(a) * 80; for (let i = 0; i < 6; i++) part(P.x + rnd(-20, 20), P.y, rnd(4, 20), Math.cos(a) * 120, Math.sin(a) * 60, 0, '#c8d0e0', .4, 1, 0, 0); } }
   else if (hz === 'leere') { P.res = Math.max(0, P.res - P.st.resMax * .08); if (P.hp > m * .2) P.hp = Math.max(m * .2, P.hp - m * .003); part(P.x + rnd(-6, 6), P.y, rnd(4, 16), 0, 0, 20, '#c060ff', .6, 1, -12, 1); }
+  // Gefahren der Tiefe: stärker, aber nie tödlich (Untergrenze), damit Kämpfe entscheiden
+  else if (hz === 'blut') { if (P.hp > m * .15) P.hp = Math.max(m * .15, P.hp - m * .008); part(P.x + rnd(-8, 8), P.y, rnd(2, 14), 0, 0, 20, '#ff5a6a', .6, 1, -6, 1); }
+  else if (hz === 'sporen') { if (P.hp > m * .12) P.hp = Math.max(m * .12, P.hp - m * .007); P.poisonT = Math.max(P.poisonT || 0, .6); P.slowT = Math.max(P.slowT, .3); part(P.x + rnd(-6, 6), P.y, rnd(4, 16), 0, 0, 20, '#c8a0ff', .6, 1, -8, 1); }
+  else if (hz === 'hoehe') { if (Math.random() < .45) { const a = (lVN(T * .13, 3, 9) - .5) * 12; P.vx += Math.cos(a) * 230; P.vy += Math.sin(a) * 110; for (let i = 0; i < 8; i++) part(P.x + rnd(-24, 24), P.y, rnd(4, 24), Math.cos(a) * 160, Math.sin(a) * 70, 0, '#ffffff', .4, 1, 0, 0); } }
+  else if (hz === 'seelen') { P.res = Math.max(0, P.res - P.st.resMax * .06); if (P.hp > m * .2) P.hp = Math.max(m * .2, P.hp - m * .005); part(P.x + rnd(-8, 8), P.y, rnd(4, 18), 0, 0, 25, '#9af0e0', .7, 1, -14, 1); }
+  else if (hz === 'glut') { if (P.hp > m * .12) P.hp = Math.max(m * .12, P.hp - m * .008); part(P.x + rnd(-6, 6), P.y, rnd(2, 10), 0, 0, 25, '#ffd04a', .5, 1, -24, 1); }
+  else if (hz === 'frost') { P.slowT = Math.max(P.slowT, .9); if (P.hp > m * .18) P.hp = Math.max(m * .18, P.hp - m * .005); part(P.x + rnd(-6, 6), P.y, rnd(4, 16), 0, 0, 20, '#ffffff', .6, 1, -4, 1); }
+  else if (hz === 'traum') { if (Math.random() < .35) P.slowT = Math.max(P.slowT, .8); if (P.hp > m * .25) P.hp = Math.max(m * .25, P.hp - m * .003); part(P.x + rnd(-8, 8), P.y, rnd(6, 20), 0, 0, 20, pick(['#ffc0e8', '#c0e0ff', '#fff0b0']), .7, 1, -6, 1); }
+  else if (hz === 'zeit') { if (Math.random() < .4) { P.slowT = Math.max(P.slowT, .6); for (let i = 0; i < P.cds.length; i++) P.cds[i] = Math.max(P.cds[i] || 0, .5); } P.res = Math.max(0, P.res - P.st.resMax * .04); part(P.x + rnd(-8, 8), P.y, rnd(2, 20), 0, 0, -20, '#ffe08a', .6, 1, 10, 1); }
+  else if (hz === 'splitter') { if (Math.random() < .35) { if (P.hp > m * .1) P.hp = Math.max(m * .1, P.hp - m * .03); burst(P.x + rnd(-6, 6), P.y - 4, 4, '#e8f8ff', 10, 50, 1); sfx('hit'); } }
 }
 // Schwebeteilchen je Biom (statt der Teilchen der Arenen)
 function lAmbient(dt) {
@@ -1730,7 +1985,73 @@ function lAmbient(dt) {
     case 'blasen': P_({ z: 0, vx: rnd(-2, 2), vy: 0, vz: rnd(8, 16), col: '#9ad8ee', life: 2.5, max: 2.5 }); break;
     case 'regen': for (let i = 0; i < 3; i++) parts.push({ x: cam.x + rnd(-20, VW), y: cam.y + rnd(-10, VH), z: rnd(30, 60), vx: 20, vy: 6, vz: -120, g: 0, col: '#8a9ab8', life: .5, max: .5, s: 1 }); break;
     case 'leere': P_({ vx: rnd(-3, 3), vy: rnd(-3, 3), vz: rnd(2, 6), col: Math.random() < .5 ? '#c060ff' : '#1a0a2a', glow: 1 }); break;
+    // Teilchen der Tiefe
+    case 'kristall': P_({ z: 0, vx: rnd(-2, 2), vy: 0, vz: rnd(6, 14), col: Math.random() < .5 ? '#b0d0ff' : '#ffffff', glow: 1, blink: 1 }); break;
+    case 'glas': if (Math.random() < .6) P_({ z: rnd(0, 6), col: '#ffffff', glow: 1, blink: 1, life: 1.2, max: 1.2 }); break;
+    case 'sternmeer': P_({ z: 0, vx: rnd(-2, 2), vy: 0, vz: rnd(8, 16), col: Math.random() < .6 ? '#c0c8ff' : '#ffe08a', glow: 1, blink: 1, life: 2.5, max: 2.5 }); break;
+    case 'aschesturm': for (let i = 0; i < 3; i++) parts.push({ x: cam.x - 10 + rnd(0, VW), y: cam.y + rnd(0, VH), z: rnd(2, 40), vx: rnd(70, 120), vy: rnd(-6, 6), vz: -rnd(2, 6), g: 0, col: Math.random() < .2 ? '#ff8a3a' : Math.random() < .5 ? '#6a6264' : '#8a8284', life: 1.6, max: 1.6, s: 1 }); break;
+    case 'blutnebel': if (Math.random() < .6) P_({ z: rnd(0, 8), vx: rnd(-4, 4), vy: rnd(-1, 1), col: 'rgba(200,40,60,.32)', life: 4, max: 4, s: 3 }); break;
+    case 'riesensporen': P_({ vx: rnd(-3, 3), vy: rnd(-2, 2), vz: rnd(2, 5), col: Math.random() < .5 ? '#c890ff' : '#9ae8ff', glow: 1, blink: 1, s: 2 }); break;
+    case 'dampf': if (Math.random() < .5) P_({ z: 0, vx: rnd(-3, 3), vy: 0, vz: rnd(10, 18), col: 'rgba(220,220,210,.35)', life: 2.5, max: 2.5, s: 3 }); else P_({ col: '#ffb03a', glow: 1, life: .6, max: .6 }); break;
+    case 'wolke': if (Math.random() < .6) P_({ x: cam.x - 10, z: rnd(10, 40), vx: rnd(60, 100), vy: rnd(-3, 3), col: 'rgba(255,255,255,.45)', life: 5, max: 5, s: 4 }); break;
+    case 'seele': P_({ z: 0, vx: rnd(-3, 3), vy: 0, vz: rnd(6, 12), col: Math.random() < .6 ? '#9af0e0' : '#ffffff', glow: 1, blink: 1, s: 2, life: 3.5, max: 3.5 }); break;
+    case 'mond': P_({ vx: rnd(-2, 2), vy: rnd(-2, 2), vz: rnd(-1, 1), col: Math.random() < .6 ? '#e0e8ff' : '#9ab0d8', glow: 1, blink: 1 }); break;
+    case 'bernstein': P_({ vx: rnd(-3, 3), vy: rnd(-2, 2), vz: rnd(-1, 2), col: Math.random() < .6 ? '#ffb040' : '#ffe0a0', glow: 1, blink: 1 }); break;
+    case 'splitter': if (Math.random() < .6) P_({ z: rnd(30, 50), vx: rnd(-4, 4), vy: rnd(1, 3), vz: -rnd(30, 50), col: Math.random() < .5 ? '#e8f8ff' : '#9ad8e8', life: 1.2, max: 1.2 }); break;
+    case 'sonne': P_({ y: cam.y + VH + 4, z: 0, vx: rnd(-5, 5), vy: rnd(-45, -30), vz: rnd(0, 4), col: Math.random() < .5 ? '#ffd04a' : '#fff0a0', life: 4, max: 4, glow: 1 }); break;
+    case 'frost': for (let i = 0; i < 4; i++) parts.push({ x: cam.x + rnd(-20, VW), y: cam.y + rnd(-10, VH), z: rnd(20, 60), vx: rnd(14, 26), vy: rnd(2, 6), vz: -rnd(14, 24), g: 0, col: Math.random() < .7 ? '#ffffff' : '#bfefff', life: 3, max: 3, s: 1 }); break;
+    case 'traum': P_({ vx: rnd(-3, 3), vy: rnd(-3, 3), vz: rnd(1, 3), col: pick(['#ffc0e8', '#c0e0ff', '#fff0b0', '#e0c0ff']), glow: 1, blink: 1, s: 2 }); break;
+    case 'zeit': P_({ z: 0, vx: rnd(-1, 1), vy: 0, vz: rnd(10, 20), col: Math.random() < .6 ? '#ffe08a' : '#c8a040', life: 2.5, max: 2.5 }); break;
+    case 'rost': if (Math.random() < .6) P_({ z: rnd(20, 50), vx: rnd(6, 14), vy: rnd(1, 4), vz: -rnd(6, 12), col: pick(['#c8642a', '#8a3a14', '#e8904a']), life: 4, max: 4 }); break;
+    case 'sternfall': if (Math.random() < .3) P_({ x: cam.x + rnd(0, VW), z: 70, vx: rnd(30, 60), vy: rnd(10, 20), vz: -rnd(60, 90), col: Math.random() < .6 ? '#ffe08a' : '#ffffff', glow: 1, life: 1, max: 1 }); else P_({ col: '#ffd24a', glow: 1, blink: 1 }); break;
+    case 'daemmer': P_({ vx: rnd(-3, 3), vy: rnd(-2, 2), vz: rnd(1, 3), col: Math.random() < .5 ? '#ffd070' : '#b892f4', glow: 1, blink: 1 }); break;
+    case 'urnebel': if (Math.random() < .6) P_({ z: rnd(0, 10), vx: rnd(-5, 5), vy: rnd(-1, 1), col: pick(['rgba(160,120,220,.3)', 'rgba(120,200,220,.3)', 'rgba(255,180,220,.25)']), life: 4, max: 4, s: 3 }); break;
+    case 'schwarz': P_({ y: cam.y + VH + 4, z: 0, vx: rnd(-5, 5), vy: rnd(-35, -20), vz: rnd(0, 4), col: Math.random() < .6 ? '#1a0a0a' : '#c8342c', life: 4, max: 4, glow: Math.random() < .3 ? 1 : 0 }); break;
+    case 'nichts': P_({ vx: rnd(-8, 8), vy: rnd(-8, 8), vz: rnd(-1, 1), col: Math.random() < .7 ? '#ffffff' : '#c060ff', glow: 1, blink: 1, life: 2, max: 2 }); break;
   }
+}
+// Ende der Welt: beim allerersten Besuch (einmal je Konto) Banner und Belohnung; ein Wächter (Teil B: Rang nahe 1200) hütet den letzten Hort.
+// Der Wächter kehrt wie jeder Hort-Boss nach 3 Tagen zurück (bossLairReady), der Hort füllt sich in jedem Ausflug mit neuer Beute.
+function lEndTick(o, d) {
+  const L = LW, M = lMeta();
+  if (d < 420 && !L.msgT['end' + o.key]) {
+    L.msgT['end' + o.key] = T;
+    if (!M.end) lEndFirst(o);
+    else { lBanner(_t('ENDE DER WELT'), o.state === 'done' ? _t('Der letzte Hort ist leer. Dahinter ist nur noch das Nichts.') : _t('Ein Wächter hütet den letzten Hort. Dahinter ist nur noch das Nichts.')); sfx('spec'); }
+  }
+  if (o.state === 'idle' && d < 230 && enemies.length < 28) {
+    let ok = true; try { if (typeof bossLairReady === 'function') ok = !!bossLairReady(o.key); } catch (_) { ok = false; }
+    if (!ok) { o.state = 'rest'; lMsg('endrest', _t('Der Wächter am Ende der Welt ruht noch – sein Hort füllt sich erst wieder, wenn er zurückkehrt.'), '#c8c0d8', 20); return; }
+    o.state = 'fight'; o.act = true; o.alive = 0;
+    if (!lBossAt(o, o.key, { edge: true })) {   // ohne Teil B: ein Champion mit Gefolge
+      const st = lStage(o.x, o.y) + 6, pool = lPool(lBioAt(o.x, o.y), st), strong = pool.filter(k => EN[k].cost >= 4);
+      lSpawn(pick(strong.length ? strong : pool), o.x, o.y - 44, { elite: true, champ: true, name: _t('Wächter am Ende der Welt'), tint: 'rgba(255,210,80,.35)', src: o, st, instant: false });
+      for (let i = 0; i < 3; i++) lSpawn(pick(pool), o.x + (i - 1) * 46, o.y - 12, { elite: true, src: o, st, instant: false });
+      o.alive = 4;
+    }
+    shake(7); sfx('boom'); flash = { a: .3, c: '255,210,120' };
+  }
+  if (o.state === 'open' && d < 30) {
+    o.state = 'done'; lTSet(o.key, 'done'); M.endN = Math.min(1e6, (M.endN || 0) + 1); persist();
+    const st = lStage(o.x, o.y), dep = lDepthAt(o.x, o.y), list = [{ t: 'item', it: lItem(4, 5, st + 4) }, { t: 'item', it: lItem(3, 4, st + 4) }, { t: 'item', it: lItem(3, 4, st + 2) }, { t: 'gold', n: Math.round(800 + Math.min(st, 240) * 40) }, { t: 'gem', k: randomGem(st + 12), n: 1 }, { t: 'stone' }];
+    if (Math.random() < .35) list.push({ t: 'item', it: makeMythic() });
+    const eg = lEgg(10, lBioAt(o.x, o.y), dep); if (eg) list.push({ t: 'egg', d: eg });
+    for (let i = 0; i < 2; i++) { const m = lMod(dep, 4); if (m) list.push(m); }
+    const pk = lPart(st, .5); if (pk) list.push({ t: 'part', k: pk, n: 1 });
+    lBurst({ x: o.x, y: o.y + 24 }, list); burst(o.x, o.y - 30, 18, '#ffd24a', 40, 110, 1); rings.push({ x: o.x, y: o.y - 20, r: 6, max: 90, life: .8, max2: .8, col: '#ffd24a' }); flash = { a: .35, c: '255,230,160' }; sfx('myth');
+    lBanner(_t('DER LETZTE HORT'), _t('Was der Rand der Welt hergibt – jetzt nur noch lebend hinaus!'));
+  }
+}
+// Erster Besuch am Ende der Welt (einmal je Konto): großes Banner, 3 Leuchtfeuersteine aufs Konto, ein Geschenk des Randes am Boden (in den Rucksack – heimbringen!)
+function lEndFirst(o) {
+  const M = lMeta(); M.end = Date.now(); M.stones = Math.min(99, M.stones + 3); stat('landeEnd'); persist();
+  const st = lStage(o.x, o.y), dep = lDepthAt(o.x, o.y), list = [{ t: 'item', it: makeMythic() }, { t: 'item', it: lItem(4, 6, st + 6) }, { t: 'gold', n: Math.round(3000 + Math.min(st, 240) * 60) }];
+  const eg = lEgg(12, lBioAt(o.x, o.y), dep); if (eg) list.push({ t: 'egg', d: eg });
+  const m = lMod(dep, 5); if (m) list.push(m);
+  setTimeout(() => { if (LW && LW.on) lBurst({ x: o.x, y: o.y + 30 }, list); }, 900);
+  flash = { a: .5, c: '255,240,200' }; shake(5); sfx('myth'); setTimeout(() => sfx('ach'), 600);
+  for (let i = 0; i < 3; i++) rings.push({ x: o.x, y: o.y - 30, r: 6 + i * 10, max: 120 + i * 40, life: .9 + i * .2, max2: .9 + i * .2, col: i % 2 ? '#b892f4' : '#ffd24a' });
+  lBanner(_t('DAS ENDE DER WELT'), _t('Du bist den ganzen Weg gegangen – 24 Stunden vom Weltentor. Der Rand schenkt dir 3 Leuchtfeuersteine und einen Schatz. Bring ihn lebend heim!'));
 }
 // Werkzeug-Hort: Wächter oder Rätsel, dann liegt das Werkzeug auf dem Sockel
 function lToolTick(o, d) {
@@ -1914,6 +2235,7 @@ function lKillPost(e) {
   }
   if (s.list && s.state === 'act' && !s.alive) s.state = 'done';
   if (s.k === 'lair' && !s.alive) { s.ts = 1; s.act = false; lTSet(s.key, 1); M.bosses++; lMusic(); }
+  if (s.k === 'end' && s.state === 'fight' && !s.alive) { s.state = 'open'; s.act = false; lTSet(s.key, 'won'); M.bosses++; lBanner(_t('DER WÄCHTER IST GEFALLEN'), _t('Der letzte Hort am Ende der Welt ist offen – geh zum Denkmal!')); sfx('clear'); lMusic(); $('bossbar').hidden = true; }
   if (s.k === 'tool' && s.state === 'fight' && !s.alive) { s.state = 'open'; s.act = false; lBanner(_t('DER HORT IST OFFEN'), _t('Hol dir {tool} vom Sockel!', { tool: LANDE_TOOLS[s.tk].n })); sfx('clear'); lMusic(); $('bossbar').hidden = true; }
   if (s.B && e.boss) {
     s.state = 'dead'; L.beast = null; M.bosses++; lMisEvent('boss', s); lMusic();
@@ -1942,7 +2264,7 @@ function lDraw(o) {
       // Bild mit eingebackenem Schatten (ein drawImage je Baum); Spieler hinter der Krone: durchsichtig
       const s = lPropImg(o.t, o.v), behind = s.tree && P.y < o.y && P.y > o.y - s.h && Math.abs(P.x - o.x) < s.c.width / 2;
       if (behind) ctx.globalAlpha = .5; ctx.drawImage(s.c, x - s.ox, y - s.oy); ctx.globalAlpha = 1;
-      if (o.t === 'sternbaum' || o.t === 'kristall' || o.t === 'pilz' && o.v === 1) addLight(x, y - 12, 22, .45);
+      if (o.t === 'sternbaum' || o.t === 'kristall' || o.t === 'glasbaum' || o.t === 'scherbe' || (o.t === 'pilz' || o.t === 'riesenpilz') && o.v === 1) addLight(x, y - (o.t === 'riesenpilz' ? 30 : 12), o.t === 'riesenpilz' ? 40 : 22, .45);
       return;
     }
     case 'mark': {
@@ -1991,6 +2313,12 @@ function lDraw(o) {
       return;
     }
     case 'lair': { const s = lSpr('hort', 0); ctx.drawImage(s, x - 22, y - 26); if (!o.ts) { addLight(x, y - 10, 30, .5); if (Math.random() < .1) part(o.x + rnd(-10, 10), o.y - 6, rnd(0, 8), 0, 0, 20, '#ff5a4a', .6, 1, -6, 1); } return; }
+    case 'end': {
+      const s = lSpr('weltende', 0), open = o.state === 'open'; lShadow(x, y, 20); ctx.drawImage(s, x - 23, y - 74);
+      const p = .6 + .4 * Math.sin(T * 2.4); addLight(x, y - 36, 70 + p * 20, open ? 1 : .8); if (Math.random() < .25) part(o.x + rnd(-6, 6), o.y - 30, rnd(0, 20), rnd(-10, 10), 0, rnd(10, 30), Math.random() < .5 ? '#ffd24a' : '#b892f4', .9, 1, -8, 1);
+      if (open) { ctx.globalAlpha = .5 + .3 * Math.sin(T * 5); ctx.fillStyle = '#ffd24a'; ctx.fillRect(x - 12, y - 4, 24, 3); ctx.globalAlpha = 1; }
+      return;
+    }
     case 'tool': {
       const s = lSpr('sockel', 0); lShadow(x, y, 10); ctx.drawImage(s, x - 10, y - 14);
       if (o.state !== 'done' && !lToolBit(o.tk)) { const img = lToolImg(o.tk), b = Math.round(Math.sin(T * 3) * 2), open = o.state === 'open'; ctx.globalAlpha = open ? 1 : .55; ctx.drawImage(img, x - 8, y - 32 + b); ctx.globalAlpha = 1; addLight(x, y - 24, open ? 50 : 26, open ? 1 : .5); if (open && Math.random() < .3) part(o.x + rnd(-6, 6), o.y - 10, rnd(10, 30), 0, 0, 25, LANDE_TOOLS[o.tk].c, .7, 1, -10, 1); }
@@ -2067,6 +2395,7 @@ HOOK.postRender.push(() => {
     else if (o.k === 'exit') { const open = lExitOpen(o); ptext(o.t === 'tor' ? _t('WELTENTOR') : o.t === 'schluessel' && !o.open ? _t('SCHLÜSSELTOR') : o.t === 'mond' ? (open ? _t('MONDTOR · OFFEN') : _t('MONDTOR · ZU')) : _t('TOR DER ALTEN'), x, y - (o.t === 'tor' ? 56 : 46) + bob, open ? '#8ef0a8' : '#c8c0d8', 6); }
     else if (o.k === 'beacon') ptext(_t('LEUCHTFEUER'), x, y - 46 + bob, '#ffd24a', 6);
     else if (o.k === 'tool' && o.state !== 'done' && !lToolBit(o.tk)) ptext(LANDE_TOOLS[o.tk].n.toLocaleUpperCase(LOCALE), x, y - 42 + bob, LANDE_TOOLS[o.tk].c, 6);
+    else if (o.k === 'end') ptext(_t('ENDE DER WELT'), x, y - 86 + bob, '#ffd24a', 6);
     else if (o.k === 'lair' && !o.ts && Math.hypot(o.x - P.x, o.y - P.y) < 200) ptext(_t('HORT'), x, y - 34, '#ff6a5a', 6);
     else if (o.k === 'cross' && Math.hypot(o.x - P.x, o.y - P.y) < 150) { const own = o.need < 0 || lToolBit(o.need); ptext(o.need < 0 ? _t('BRÜCKE') : (own ? '✓ ' : '✗ ') + LANDE_TOOLS[o.need].n.toLocaleUpperCase(LOCALE), x, y - 34, own ? '#8ef0a8' : '#ff8a7a', 6); }
     else if (o.k === 'mile' && Math.hypot(o.x - P.x, o.y - P.y) < 90) ptext(_t('{n} KM', { n: o.km }), x, y - 22, '#efe2bf', 6);
@@ -2180,7 +2509,7 @@ function lIconPx(g, X0, Y0, pat, col, edge, m) {
   for (const [dx, dy, c] of [[-1, 0, '#000'], [1, 0, '#000'], [0, -1, '#000'], [0, 1, '#000'], [0, 0, col]]) { g.fillStyle = c; for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (pat[j][i] === '#') g.fillRect(ox_ + i * m + dx, oy_ + j * m + dy, m, m); }
   if (edge) { g.fillStyle = edge; for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (pat[j][i] === 'o') g.fillRect(ox_ + i * m, oy_ + j * m, m, m); }
 }
-const LPAT = { DOT: ['##', '##'], RING: ['.###.', '#ooo#', '#ooo#', '#ooo#', '.###.'], DIA: ['..#..', '.###.', '#####', '.###.', '..#..'], CAMP: ['#.#', '.#.', '#.#'], SKULL: ['.###.', '#####', '#o#o#', '#####', '.#.#.'], STAR: ['..#..', '.###.', '#####', '.#.#.'], FIRE: ['..#..', '.###.', '.#o#.', '#####'], TENT: ['..#..', '.###.', '##o##', '#ooo#'], PED: ['.###.', '#ooo#', '.###.', '#####'] };
+const LPAT = { DOT: ['##', '##'], RING: ['.###.', '#ooo#', '#ooo#', '#ooo#', '.###.'], DIA: ['..#..', '.###.', '#####', '.###.', '..#..'], CAMP: ['#.#', '.#.', '#.#'], SKULL: ['.###.', '#####', '#o#o#', '#####', '.#.#.'], STAR: ['..#..', '.###.', '#####', '.#.#.'], FIRE: ['..#..', '.###.', '.#o#.', '#####'], TENT: ['..#..', '.###.', '##o##', '#ooo#'], PED: ['.###.', '#ooo#', '.###.', '#####'], END: ['.#.#.', '#####', '#o.o#', '#o.o#', '#####'] };
 // Minikarte: das Gelände der geladenen Chunks, der Held in der Mitte
 function lMiniDraw(cv, sz) {
   const L = LW, g = cv.getContext('2d'); g.imageSmoothingEnabled = false; g.fillStyle = '#0c0a10'; g.fillRect(0, 0, sz, sz);
@@ -2196,6 +2525,7 @@ function lMiniDraw(cv, sz) {
       case 'exit': I(o.x, o.y, 'RING', lExitOpen(o) ? '#6ae08a' : o.t === 'schluessel' ? '#ffd24a' : '#8ab8ff', lExitOpen(o) ? '#1e6a3a' : '#1a1420'); break;
       case 'beacon': I(o.x, o.y, 'FIRE', '#ffd24a', '#ff6a2a'); break;
       case 'tool': if (!lToolBit(o.tk)) I(o.x, o.y, 'PED', LANDE_TOOLS[o.tk].c, '#1a1420'); break;
+      case 'end': I(o.x, o.y, 'END', '#ffd24a', '#b892f4'); break;
       case 'lair': if (!o.ts) I(o.x, o.y, 'SKULL', '#ff6a5a', '#1a1420'); break;
       case 'cross': I(o.x, o.y, 'DIA', o.need < 0 || lToolBit(o.need) ? '#79c24e' : '#ff6a5a'); break;
       case 'enc': I(o.x, o.y, 'STAR', '#b892f4'); break;
@@ -2340,7 +2670,7 @@ ON.l_cpok = () => {
   if (lCpBlock()) { sfx('deny'); lCpScreen(); return; }
   const L = LW, M = lMeta(), old = lCpOld();
   if (old) { M.cps.splice(M.cps.indexOf(old), 1); for (const r of L.cm.values()) for (const c of r.grid) for (const o of c.slice()) if (o.k === 'beacon' && o.cp === old) lRecDel(r, o); }
-  const cp = { i: M.cpn++, x: Math.round(P.x - LOFF), y: Math.round(P.y - LOFF), t: Date.now(), u: Date.now() };
+  const cp = { i: M.cpn++, x: Math.round(P.x - LOFF), y: Math.round(P.y - LOFF), t: Date.now(), u: Date.now(), w: 1 };
   M.stones--; M.cps.push(cp); M.start = 'c' + cp.i; const nR = L.regs.size; lCommit(); stat('landeCps');
   const r = lRecAt(P.x, P.y); if (r) lRecAdd(r, { k: 'beacon', cp, x: cp.x + LOFF, y: cp.y + LOFF, r: 4, solid: false });
   P.y += 30; L.ly = P.y; if (!lWalkP(P.x, P.y)) { P.y -= 60; L.ly = P.y; }
@@ -2351,14 +2681,14 @@ ON.l_cpok = () => {
 /* ---------- Karte der Lande: zoombar, von der ganzen bekannten Welt bis zur Umgebung ---------- */
 const LMV = { z: 24, cx: 0, cy: 0, from: 'trip', ptr: new Map(), raf: 0 };
 const LMCOL = {}; function lMC(h) { return LMCOL[h] || (LMCOL[h] = hexRgb(h)); }
-function lMapCol(wx, wy) { const c = lClassC(wx / LCK, wy / LCK); if (c.bar >= 0) { const B = LBAR[LBARK[c.bar]]; return lMC(c.cross ? (LCROSSC[B.x] || '#c8c0aa') : B.c[0] === '#050208' || B.c[0] === '#0a0612' || B.c[0] === '#120e18' ? '#2a2236' : B.c[0]); } if (c.road) return lMC('#a8865a'); return lMC(LANDE_BIOMES[c.R.biome].map); }
+function lMapCol(wx, wy) { const c = lClassC(wx / LCK, wy / LCK); if (c.bar >= 0) { const B = LBAR[LBARK[c.bar]]; return lMC(c.cross ? (LCROSSC[B.x] || '#c8c0aa') : B.key === 'rand' ? '#000000' : B.c[0] === '#050208' || B.c[0] === '#0a0612' || B.c[0] === '#120e18' || B.c[0] === '#14122a' ? '#2a2236' : B.c[0]); } if (c.road) return lMC('#a8865a'); return lMC(LANDE_BIOMES[c.R.biome].map); }
 function lMapScreen(from) {
   LMV.from = from || (LW && LW.on ? 'trip' : 'gate');
   if (LMV.from === 'trip') { if (!LW || !LW.on) return; setState('menu'); showHud(false); LMV.cx = P.x - LOFF; LMV.cy = P.y - LOFF; LMV.z = 16; }
   else lMapFit();
   const L = LW && LW.on ? LW : null, I = L ? lInfoW(P.x - LOFF, P.y - LOFF) : null, M = lMeta();
   const leg = [['#ffd24a', _t('Leuchtfeuer / Ausgang')], ['#57e6c8', _t('Tor der Alten')], ['#57c7e6', _t('Außenposten')], ['#ff6a5a', _t('Hort')], ['#c890ff', _t('Übergang')], ['#e8dcc0', _t('Werkzeug-Hort')]];
-  const info = L ? `<p class="sub" style="margin-top:0"><b style="color:${lRate(I.stage).c}">${esc(lRegName(I.R))}</b><br>${esc(I.B.n)} · ${_t('Stufe {n}', { n: I.stage })} · ${_t('für dich {r}', { r: lRate(I.stage).n })}<br>${_t('{d} vom Weltentor · Tiefe {p} %', { d: lKm(Math.hypot(P.x - LOFF, P.y - LOFF)), p: (I.depth * 100).toLocaleString(LOCALE, { maximumFractionDigits: 2 }) })}</p>` : `<p class="sub" style="margin-top:0">${_t('Regionen entdeckt: {n} · weiteste Reise: {d}', { n: M.regs.length, d: lKm(M.far / 10000 * LWR * LCK) })}</p>`;
+  const info = L ? `<p class="sub" style="margin-top:0"><b style="color:${lRate(I.stage).c}">${esc(lRegName(I.R))}</b><br>${esc(I.B.n)} · ${_t('Stufe {n}', { n: I.stage })} · ${_t('für dich {r}', { r: lRate(I.stage).n })}<br>${lNb(_t('{d} vom Weltentor · Tiefe {p} %', { d: lKm(Math.hypot(P.x - LOFF, P.y - LOFF)), p: (I.depth * 100).toLocaleString(LOCALE, { maximumFractionDigits: 2 }) }))}</p>` : `<p class="sub" style="margin-top:0">${_t('Regionen entdeckt: {n} · weiteste Reise: {d}', { n: M.regs.length, d: lKm(M.far / 10000 * LWR * LCK) })}</p>`;
   const tools = `<div class="ltools">${LANDE_TOOLS.map((t, i) => `<div class="${lToolBit(i) ? '' : 'no'}" style="--c:${t.c}" title="${esc(t.n)}"><img src="${iconURL(['pa', 'lt_' + t.key])}" alt="${esc(t.n)}"></div>`).join('')}</div>`;
   const back = LMV.from === 'trip' ? 'l_resume' : 'l_gate';
   showOverlay(`${lHead(_t('KARTE DER LANDE'), back, L ? `<span class="pill" style="background:${LDNG[L.danger].c}">${LDNG[L.danger].n} · ${lClock(L.t)}</span>` : '')}
@@ -2406,6 +2736,7 @@ function lMapRender(lo) {
   const nt = lNextTool(), me = LW && LW.on ? { x: (P.x - LOFF) / LCK, y: (P.y - LOFF) / LCK } : { x: LMV.cx / LCK, y: LMV.cy / LCK };
   if (nt >= 0) { const N = lToolN(nt); let best = null, bd = 1e9; for (let j = 0; j < N; j++) { const s = lToolSite(nt, j), d = Math.hypot(s.x - me.x, s.y - me.y); if (d < bd) { bd = d; best = s; } } if (best) { const r = mulberry(lH(nt, best.j, 75)), hx = (best.x + (r() - .5) * 3) * LCK, hy = (best.y + (r() - .5) * 3) * LCK, rad = Math.max(5, 2.6 * LCK / z); g.save(); g.setLineDash([3, 3]); g.strokeStyle = LANDE_TOOLS[nt].c; g.lineWidth = 1; g.beginPath(); g.arc(X(hx), Y(hy), rad, 0, 6.283); g.stroke(); g.restore(); g.drawImage(lToolImg(nt), Math.round(X(hx)) - 6, Math.round(Y(hy)) - 6, 12, 12); } }
   if (vr < 1600) for (const s of lToolSitesNear(vc.x, vc.y, vr)) if (known(s.x * LCK, s.y * LCK)) { I(s.x * LCK, s.y * LCK, 'PED', LANDE_TOOLS[s.k].c, '#1a1420'); if (!lToolBit(s.k) && z < 400) g.drawImage(lToolImg(s.k), Math.round(X(s.x * LCK)) - 4, Math.round(Y(s.y * LCK)) - 13, 8, 8); }
+  if (vr < 1600) for (const s of lEdgeSitesNear(vc.x, vc.y, vr)) if (known(s.x * LCK, s.y * LCK)) I(s.x * LCK, s.y * LCK, 'END', '#ffd24a', '#b892f4');
   // Tore, Außenposten, Horte, Wahrzeichen
   if (z <= 512) {
     const cells = (G_, fn) => { const a = Math.floor((LMV.cx - S / 2 * z) / LCK / G_) - 1, b = Math.floor((LMV.cx + S / 2 * z) / LCK / G_) + 1, c = Math.floor((LMV.cy - S / 2 * z) / LCK / G_) - 1, d = Math.floor((LMV.cy + S / 2 * z) / LCK / G_) + 1; for (let j = c; j <= d; j++) for (let i = a; i <= b; i++) fn(i, j); };
@@ -2550,7 +2881,7 @@ function lGate(from) {
   <h3>${_t('WAS ÜBERLEBT')}</h3>${petHTML}
   <div class="lrules"><div style="--c:var(--blood)">${_t('Stirbst du, sind Ausrüstung und Rucksack verloren.')}</div><div style="--c:var(--moss)">${_t('Nur die Begleiter-Tasche kommt heim – dein Begleiter teleportiert mit dir zurück.')}</div><div style="--c:var(--gold)">${_t('Raus kommst du durch ein Tor der Alten, das Weltentor oder ein Leuchtfeuer: hineinstellen und warten.')}</div><div style="--c:#57c7e6">${_t('Die Karte wird nur gesichert, wenn du ein Leuchtfeuer setzt oder entkommst – wer fällt, vergisst den Weg seit dem letzten Leuchtfeuer.')}</div><div style="--c:var(--blood)">${_t('Abbrechen geht nur außerhalb des Kampfes – wer mitten im Kampf das Spiel schließt, fällt.')}</div></div>
   <h3>${_t('RUF: {n}', { n: LREP[r].n.toLocaleUpperCase(LOCALE) })}</h3>${nx ? `<div class="lbar"><i style="width:${Math.round((M.rep - LREP[r].at) / (nx.at - LREP[r].at) * 100)}%"></i></div><p class="sub" style="margin-top:0">${_t('Noch {n} Ruf bis {r}: {d}', { n: nx.at - M.rep, r: nx.n, d: nx.d })}</p>` : ''}
-  <div class="stats"><span>${_t('AUSFLÜGE {n}', { n: M.runs })}</span><span style="color:var(--moss)">${_t('ENTKOMMEN {n}', { n: M.ext })}</span><span style="color:var(--blood)">${_t('GEFALLEN {n}', { n: M.deaths })}</span><span style="color:var(--gold)">${_t('BESTE BEUTE {n}', { n: fmt(M.best) })}</span><span>${_t('REGIONEN {n}', { n: M.regs.length })}</span><span>${_t('WEITESTE REISE {d}', { d: lKm(M.far / 10000 * LWR * LCK) })}</span></div>${box}
+  <div class="stats"><span>${_t('AUSFLÜGE {n}', { n: M.runs })}</span><span style="color:var(--moss)">${_t('ENTKOMMEN {n}', { n: M.ext })}</span><span style="color:var(--blood)">${_t('GEFALLEN {n}', { n: M.deaths })}</span><span style="color:var(--gold)">${_t('BESTE BEUTE {n}', { n: fmt(M.best) })}</span><span>${_t('REGIONEN {n}', { n: M.regs.length })}</span><span>${_t('WEITESTE REISE {d}', { d: lKm(M.far / 10000 * LWR * LCK) })}</span><span>${_t('GRENZEN {n}/{m}', { n: M.ring, m: LRMAX })}</span>${M.end ? `<span style="color:#ffd24a">${_t('ENDE DER WELT ERREICHT')}</span>` : ''}</div>${box}
   <div class="menu foot"><button class="btn" data-act="l_go" ${lvOk ? '' : 'disabled'}>${lvOk ? _t('Betreten: {n}', { n: esc(sel.n) }) : _t('Ab Level {n} – dir fehlen noch {m}', { n: 5, m: 5 - P.lv })}</button></div>`;
   if (LG.from === 'hide' && typeof stationShell === 'function' && G && G.type === 'versteck') stationShell('weltentor', `<p class="sub" style="margin-top:0">${_t('Hinter dem Tor liegen die Endlosen Lande: eine Welt ohne Ende, für alle dieselbe – die beste Beute, aber wer dort stirbt, verliert, was er trägt.')}</p>${body}`, true);
   else showOverlay(`${lHead(_t('DIE ENDLOSEN LANDE'), 'l_back')}<p class="sub" style="margin-top:0">${_t('Die beste Beute – aber wer dort stirbt, verliert, was er trägt.')}</p>${body}`, true);
@@ -2567,7 +2898,7 @@ HOOK.titleBtns.push(() => { if (LW && LW.on && P) lAbandon('title'); return ''; 
 /* ---------- Weltentor im Versteck: Station, Bild, Wächterin ---------- */
 BUILD.weltentor.npc = _t('Torhüterin Ysra'); BUILD.weltentor.body = 'knightf';
 SPEAKERS.ysra = { n: _t('Torhüterin Ysra'), sp: 'knightf', c: '#6ae08a' };
-NPCTALK.weltentor = [[1, 'ysra', _t('Hinter dem Tor liegen die Endlosen Lande. Wer dort fällt, kommt nackt zurück – wenn überhaupt.')], [1, 'ysra', _t('Nimm deinen Begleiter mit. Was in seiner Tasche steckt, bringt er immer heim.')], [1, 'ysra', _t('Je weiter du gehst, desto härter wird es. Ein Leuchtfeuer sichert den Weg, den du gegangen bist.')], [3, 'ysra', _t('Schluchten, Flüsse, Giftnebel … ohne das richtige Werkzeug kommst du nicht weiter. Die Kundschafterinnen wissen, wo eins liegt.')]];
+NPCTALK.weltentor = [[1, 'ysra', _t('Hinter dem Tor liegen die Endlosen Lande. Wer dort fällt, kommt nackt zurück – wenn überhaupt.')], [1, 'ysra', _t('Nimm deinen Begleiter mit. Was in seiner Tasche steckt, bringt er immer heim.')], [1, 'ysra', _t('Je weiter du gehst, desto härter wird es. Ein Leuchtfeuer sichert den Weg, den du gegangen bist.')], [3, 'ysra', _t('Schluchten, Flüsse, Giftnebel … ohne das richtige Werkzeug kommst du nicht weiter. Die Kundschafterinnen wissen, wo eins liegt.')], [5, 'ysra', _t('Zwanzig Grenzen liegen zwischen hier und dem Rand. Hinter der elften helfen nur noch Meisterwerkzeuge – und am Ende der Welt wartet ein Denkmal auf den, der so weit kommt.')]];
 HOOK.station.push((h, id) => { if (h || id !== 'weltentor') return h; lGate('hide'); return true; });
 HOOK.drawStation.push((o, x, y, r, lv) => {
   if (o.id !== 'weltentor') return;
@@ -2580,7 +2911,11 @@ HOOK.drawStation.push((o, x, y, r, lv) => {
   r(-18, -1, 36, 3, '#3a3440'); r(-16, -2, 32, 1, '#5a5662');
   addLight(x, y - 16, 46, .9); if (Math.random() < .25) part(o.x + rnd(-8, 8), o.y, rnd(0, 26), 0, 0, rnd(10, 30), Math.random() < .5 ? '#6ae08a' : '#c8ffd8', .7, 1, -8, 1);
 });
-HOOK.artIcon.push((name, b) => {
+HOOK.artIcon.push(lArt);
+// Bilder der Lande; Meisterwerkzeuge (b = Grundwerkzeug): dessen Bild, dazu zwei goldene Striche (II) und ein Funkeln in ihrer Farbe
+function lArt(name, b) {
+  const ti = name.startsWith('lt_') ? LTOOLK[name.slice(3)] : null, T2 = ti != null ? LANDE_TOOLS[ti] : null;
+  if (T2 && T2.b != null) { lArt('lt_' + LANDE_TOOLS[T2.b].key, b); b.rect(0, 0, 1, 5, '#ffd24a'); b.rect(2, 0, 1, 5, '#ffd24a'); b.set(15, 0, '#ffffff'); b.set(14, 1, T2.c); b.set(15, 1, T2.c); b.set(13, 0, T2.c); return; }
   switch (name) {
     case 'tor': b.rect(2, 3, 3, 12, '#5a5662'); b.rect(11, 3, 3, 12, '#5a5662'); b.rect(1, 1, 14, 3, '#6a6672'); b.rect(2, 3, 1, 12, '#8a8692'); b.disc(8, 9, 3.5, '#2e8a52'); b.disc(8, 9, 2.2, '#6ae08a'); b.set(8, 9, '#e0ffe8'); b.set(3, 6, '#6ae08a'); b.set(12, 9, '#6ae08a'); break;
     case 'l_pack': b.rect(4, 4, 8, 10, '#8a5a32'); b.rect(3, 6, 10, 7, '#8a5a32'); b.rect(4, 4, 8, 2, '#b07a48'); b.rect(6, 2, 4, 3, '#5e3a1e'); b.rect(7, 8, 2, 2, '#e8b04a'); b.rect(3, 12, 10, 1, '#5e3a1e'); break;
@@ -2608,5 +2943,5 @@ HOOK.artIcon.push((name, b) => {
     case 'lt_sternenschluessel': b.rect(7, 7, 2, 8, '#b0b8ff'); b.rect(9, 12, 2, 1, '#b0b8ff'); b.rect(9, 14, 2, 1, '#b0b8ff'); b.disc(8, 5, 3.5, '#4a4ad0'); b.set(8, 1, '#ffffff'); b.set(4, 5, '#ffffff'); b.set(12, 5, '#ffffff'); b.disc(8, 5, 1.5, '#ffffff'); break;
     case 'lt_leereanker': b.rect(7, 2, 2, 11, '#c060ff'); b.disc(8, 3, 2, '#c060ff'); b.set(8, 3, null); b.rect(5, 5, 6, 1, '#c060ff'); b.line(3, 10, 8, 14, '#9a40d8'); b.line(13, 10, 8, 14, '#9a40d8'); b.set(3, 9, '#ffffff'); b.set(13, 9, '#ffffff'); break;
   }
-});
+}
 HOOK.boot.push(() => { try { if (LG.note) { toast(LG.note, '#e8b04a'); LG.note = null; } } catch (_) { } });
