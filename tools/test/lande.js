@@ -51,6 +51,8 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
     const s = await page.evaluate(([HERO_]) => {
       eval('(' + HERO_ + ')')(); const o = {};
       o.biomes = Object.keys(LANDE_BIOMES).length; o.tools = LANDE_TOOLS.length;
+      o.hab = Object.values(LANDE_BIOMES).every(B => Array.isArray(B.hab) && B.hab.length && (typeof PET_HABS === 'undefined' || B.hab.every(h => PET_HABS.includes(h))));
+      if (typeof eggForBiome === 'function' && typeof PET_SP !== 'undefined') { let fit = 0; for (let i = 0; i < 40; i++) { const d = eggForBiome('vulkan', .2, 1); if ((PET_SP[d.sp].hab || []).some(h => LANDE_BIOMES.vulkan.hab.includes(h))) fit++; } o.eggFit = fit >= 20; } else o.eggFit = true;
       o.stage = [worldStage(0), worldStage(.005), worldStage(.042), worldStage(.25), worldStage(.5), worldStage(1)];
       o.mono = o.stage.every((v, i) => !i || v > o.stage[i - 1]);
       const c = landeCtx(10, 20, 'test'); o.ctx = c.cx === 10 && c.cy === 20 && c.depth > 0 && c.stage >= 6 && !!LANDE_BIOMES[c.biome] && typeof c.region === 'string' && typeof c.R === 'function' && c.R() === landeCtx(10, 20, 'test').R();
@@ -63,6 +65,7 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
       o.ringX = LRING.every((R, k) => [0, 1, 2, 3, 4, 5].some(rd => !!lRoadCross(rd, k)));
       return o;
     }, [HERO.toString()]);
+    ok(s.hab && s.eggFit, 'Biome haben Lebensräume (hab, Marken aus PET_HABS): Eier passen meist zum Gebiet');
     ok(s.biomes >= 40 && s.inWorld >= 44, `${s.biomes} Biome, ${s.inWorld} davon in der Welt gefunden${s.missing.length ? ' (fehlt: ' + s.missing.join(', ') + ')' : ''}`);
     ok(s.tools === 11 && s.ringX, '11 Werkzeuge, jede Ringgrenze hat Übergänge an den Alten Wegen');
     ok(s.mono && s.stage[0] === 6 && s.stage[5] === 240, 'Stufe nach Tiefe: ' + s.stage.join(' → ') + ' (Tor wie Grenzland, Weltrand fast unmöglich)');
