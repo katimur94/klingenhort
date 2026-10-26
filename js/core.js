@@ -288,7 +288,7 @@ function migrateV1(o) {
   if (has(eq.helm)) c.gear.helm = makeItem({ slot: 'helm', base: 'helm', tier: tr(eq.helm), rar: 0 });
   for (const L of (Array.isArray(o.loot) ? o.loot : [])) {
     if (!L) continue;
-    if ((L.type === 'sword' || L.type === 'axe') && c.bag.length < 30) { const it = makeItem({ slot: 'weapon', base: L.type, tier: tr(L.tier), rar: tr(L.rar) }); if (L.name) it.name = String(L.name); c.bag.push(it); }
+    if ((L.type === 'sword' || L.type === 'axe') && c.bag.length < bagCap()) { const it = makeItem({ slot: 'weapon', base: L.type, tier: tr(L.tier), rar: tr(L.rar) }); if (L.name) it.name = String(L.name); c.bag.push(it); }
     else c.gold += 50 + tr(L.rar) * 40;
   }
   c.act = Math.max(1, Math.floor(((o.stage || 1) - 1) / 7) + 1);

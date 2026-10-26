@@ -16,7 +16,7 @@
    ========================================================= */
 
 /* ---------- Daten ---------- */
-const MK_H = 3600000, MK_MIN = 60000, MK_BAG = 30, MK_DUR = [1, 4, 12, 24];
+const MK_H = 3600000, MK_MIN = 60000, MK_DUR = [1, 4, 12, 24];   // Beutelgröße: bagCap() (js/items.js)
 const MK_RV = [.5, .9, 1.6, 3, 6.5, 5.5, 16];   // Seltenheit: Gewöhnlich … Mythisch
 const MK_AFW = { krit: 1.2, tempo: 1.1, raub: 1, feuer: .9, frost: .9, wucht: 1.3 }, MK_AFA = { leben: 1.2, panzer: 1, heil: .8, schutz: 1.3, eile: .9, glueck: 1 };
 const MK_MYW = { klinge: 1.25, zorn: 1.15, ernter: 1.1, phoenix: 1.3, dornen: 1.05, krone: 1.2, eisherz: 1, midas: 1.25 };
@@ -454,12 +454,13 @@ function mkEggGive(d) {
   } catch (e) { console.error('Basar (Ei):', e); }
   return false;
 }
+const MK_FROM = new WeakMap();   // Gegenstand kam aus dem Lager (für „zurück“, wenn Verkauf oder Einstellen scheitert)
 const MK_HERO = {
   ok: () => !!(P && SAVE && SAVE.active >= 0 && SAVE.chars[SAVE.active] && SAVE.chars[SAVE.active].id === P.id),
   gold: () => P.gold || 0,
   pay(n) { P.gold -= n; }, earn(n) { P.gold += n; },
   stash: () => SAVE.meta.hide && Array.isArray(SAVE.meta.hide.stash) && typeof stashCap === 'function' ? SAVE.meta.hide.stash : null,
-  room: () => P.bag.length < MK_BAG || !!(MK_HERO.stash() && MK_HERO.stash().length < stashCap()),
+  room: () => P.bag.length < bagCap() || !!(MK_HERO.stash() && MK_HERO.stash().length < stashCap()),
   // null = passt, sonst Fehler-Schlüssel
   can(e) {
     if (e.t === 'item') return MK_HERO.room() ? null : 'full';
@@ -470,7 +471,8 @@ const MK_HERO = {
   give(e) {
     switch (e.t) {
       case 'item': {
-        const S = MK_HERO.stash(), to = P.bag.length < MK_BAG ? 'bag' : S && S.length < stashCap() ? 'stash' : null; if (!to) return null;
+        const S = MK_HERO.stash(), back = MK_FROM.get(e.it) === 'stash' && S && S.length < stashCap();   // Zurück ins Lager, wenn es von dort kam
+        const to = back ? 'stash' : P.bag.length < bagCap() ? 'bag' : S && S.length < stashCap() ? 'stash' : null; if (!to) return null; MK_FROM.delete(e.it);
         const it = e.it; hook('pickup', it); if (it.rar === 6) statMax('myths', 1); (to === 'bag' ? P.bag : S).push(it); return to;
       }
       case 'mat': gainMat(e.k, e.n); return 'vorrat';
@@ -487,7 +489,7 @@ const MK_HERO = {
     if (!mkO(s)) return null;
     const n = Math.floor(+s.n), stack = (o, ok) => { if (!ok || !(n >= 1) || ((o && o[s.k]) || 0) < n) return null; o[s.k] -= n; if ((s.t === 'part' || s.t === 'mod') && o[s.k] <= 0) delete o[s.k]; return { t: s.t, k: s.k, n }; };
     switch (s.t) {
-      case 'item': { const i = P.bag.findIndex(x => x.uid === s.uid); return i < 0 ? null : { t: 'item', it: P.bag.splice(i, 1)[0] }; }
+      case 'item': { const i = P.bag.findIndex(x => x.uid === s.uid); if (i >= 0) return { t: 'item', it: P.bag.splice(i, 1)[0] }; const S = MK_HERO.stash(), j = S ? S.findIndex(x => x.uid === s.uid) : -1; if (j < 0) return null; const it = S.splice(j, 1)[0]; MK_FROM.set(it, 'stash'); return { t: 'item', it }; }   // auch aus dem Lager
       case 'mat': return stack(P.mats, mkHas(MK_MATV, s.k));
       case 'gem': return stack(P.gems, mkGemV(s.k) > 0);
       case 'part': return stack(P.parts, mkPartOk(s.k));
@@ -741,7 +743,7 @@ HOOK.boot.push(() => {
 });
 
 /* ---------- Oberfläche ---------- */
-const MK = { from: 'hide', tab: 'buy', cat: 'item', sel: null, n: 1, amt: 0, amtFor: null, set: null, conf: 0, tm: 0, k: 0, fl: {}, back: null, stamp: null, op: 0, guard: 0 };
+const MK = { from: 'hide', tab: 'buy', cat: 'item', isrc: 'bag', bst: false, sel: null, n: 1, amt: 0, amtFor: null, set: null, conf: 0, tm: 0, k: 0, fl: {}, back: null, stamp: null, op: 0, guard: 0 };
 function mkErr(r) {
   return {
     gold: _t('Zu wenig Gold.'), full: _t('Beutel und Lager sind voll. Mach zuerst Platz.'), nest: _t('Dein Brutnest ist voll.'), pets: _t('Eier kann diese Version noch nicht annehmen.'),
@@ -821,28 +823,30 @@ function mkBuyHTML(now) {
 }
 // VERKAUFEN: sofort an Hedda oder versteigern
 function mkCats() {
-  const c = [['item', _t('GEGENSTÄNDE'), P.bag.length]], n = (o, ok) => Object.keys(o || {}).filter(k => o[k] > 0 && ok(k)).length;
+  const c = [['item', _t('GEGENSTÄNDE'), P.bag.length + (stashOn() ? stashItems().length : 0)]], n = (o, ok) => Object.keys(o || {}).filter(k => o[k] > 0 && ok(k)).length;
   const m = n(P.mats, k => mkHas(MK_MATV, k)), g = n(P.gems, k => mkGemV(k) > 0), p = n(P.parts, mkPartOk), x = n(P.mods, mkModOk), e = typeof eggExport === 'function' ? mkEggs().length : 0;
   if (m) c.push(['mat', _t('MATERIAL'), m]); if (g) c.push(['gem', _t('EDELSTEINE'), g]); if (p) c.push(['part', _t('BAUTEILE'), p]); if (x) c.push(['mod', _t('MODS'), x]); if (e) c.push(['egg', _t('EIER'), e]);
   return c;
 }
 function mkSrc() {
   const s = MK.sel; if (!s) return null;
-  if (MK.cat === 'item') { const it = P.bag.find(x => x.uid === s); return it ? { src: { t: 'item', uid: s }, e: { t: 'item', it }, have: 1 } : null; }
+  if (MK.cat === 'item') { const it = P.bag.find(x => x.uid === s) || stashItems().find(x => x.uid === s); return it ? { src: { t: 'item', uid: s }, e: { t: 'item', it }, have: 1, st: inStash(it) } : null; }
   const k = s.slice(s.indexOf(':') + 1);
   if (MK.cat === 'egg') { const d = mkEggs()[+k]; return d && mkSpOk(d.sp) ? { src: { t: 'egg', i: +k }, e: { t: 'egg', d: Object.assign({}, d, { egg: 1 }) }, have: 1 } : null; }
   const o = MK.cat === 'mat' ? P.mats : MK.cat === 'gem' ? P.gems : MK.cat === 'mod' ? P.mods : P.parts, have = (o && o[k]) || 0, ok = MK.cat === 'mat' ? mkHas(MK_MATV, k) : MK.cat === 'gem' ? mkGemV(k) > 0 : MK.cat === 'mod' ? mkModOk(k) : mkPartOk(k);
   if (!ok || have < 1) return null;
   const n = clamp(MK.n, 1, have); return { src: { t: MK.cat, k, n }, e: { t: MK.cat, k, n }, have };
 }
-const mkBulk = () => P.bag.filter(it => it.rar <= 1 && !it.gems.length && !it.up && !it.fz && !it.mw && !it.skin && !it.set && !it.myth && !(Array.isArray(it.mods) && it.mods.length));
+const mkBulk = () => P.bag.concat(MK.bst && stashOn() ? stashItems() : []).filter(plainItem);   // auf Wunsch mit dem Lager
 function mkSellHTML() {
   const cats = mkCats(); if (!cats.some(c => c[0] === MK.cat)) MK.cat = 'item';
   const S = mkSrc(); if (MK.sel && !S) MK.sel = null;
   let h = `<p class="sub mk-l">${_t('Sofort verkaufen bringt Gold auf die Hand. Versteigern bringt meist mehr – dauert aber.')}</p><div class="opts">${cats.map(c => `<button class="opt${MK.cat === c[0] ? ' sel' : ''}" data-act="mk_cat" data-id="${c[0]}">${c[1]}<small>${c[2]}</small></button>`).join('')}</div>`, list = '';
   if (MK.cat === 'item') {
-    const B = mkBulk(), bg = B.reduce((a, it) => a + mkQuote({ t: 'item', it }), 0);
-    list = `<div class="box"><h3 style="margin-top:0">${_t('BEUTEL {n}/30', { n: P.bag.length })}</h3><div class="grid">${P.bag.map(it => itemSlot(it, 'mk_sel', it.uid === MK.sel)).join('') || `<p class="sub">${_t('Leer')}</p>`}</div></div>`
+    if (MK.isrc === 'stash' && !stashOn()) MK.isrc = 'bag';
+    const B = mkBulk(), bg = B.reduce((a, it) => a + mkQuote({ t: 'item', it }), 0), st = MK.isrc === 'stash', IL = st ? stashItems() : P.bag;
+    list = `${srcTabs('mk_isrc', MK.isrc)}<div class="box">${st ? capHead(_t('LAGER'), IL.length, stashCap()) : capHead(_t('BEUTEL'), IL.length, bagCap())}${itemGridHTML(IL.map(it => itemSlot(it, 'mk_sel', it.uid === MK.sel)), st ? 'mkst' : 'mkbag', st ? _t('Das Lager ist leer.') : '')}</div>`
+      + (stashOn() ? `<button class="opt chk mkbst${MK.bst ? ' sel' : ''}" data-act="mk_bst" aria-pressed="${!!MK.bst}"><i class="cb"></i>${_t('Lager einbeziehen')}</button>` : '')
       + (B.length ? `<button class="btn alt" data-act="mk_bulk" style="width:100%;margin-top:8px;min-height:44px">${MK.conf === 'bulk' ? _t('Sicher? {n} Gegenstände für {g} Gold', { n: B.length, g: mkG(bg) }) : _t('Gewöhnliche & Magische sofort verkaufen ({g} Gold)', { g: mkG(bg) })}</button>` : '');
   } else {
     const rows = [];
@@ -857,7 +861,7 @@ function mkSellHTML() {
   if (S) {
     const q = mkQuote(S.e);
     const amt = S.have > 1 ? `<div class="mk-amt"><button class="btn alt" data-act="mk_n" data-id="-10">−10</button><button class="btn alt" data-act="mk_n" data-id="-1">−</button><b>${S.e.n}<small>${_t('von {n}', { n: S.have })}</small></b><button class="btn alt" data-act="mk_n" data-id="1">+</button><button class="btn alt" data-act="mk_n" data-id="10">+10</button></div>` : '';
-    side = mkSheet(`${amt}<div class="mk-act"><button class="btn${MK.conf === 'sell' ? ' red' : ''}" data-act="mk_sell">${MK.conf === 'sell' ? _t('Wirklich? Für') : _t('Sofort verkaufen')} <i class="coin"></i>${mkG(q)}</button><button class="btn alt" data-act="mk_set">${_t('Versteigern …')}</button></div>${mkDetail(S.e)}${mkChart(S.e)}`);
+    side = mkSheet(`${amt}${S.st ? `<p class="sub" style="margin:0 0 6px"><span class="pill dim">${_t('IM LAGER')}</span></p>` : ''}<div class="mk-act"><button class="btn${MK.conf === 'sell' ? ' red' : ''}" data-act="mk_sell">${MK.conf === 'sell' ? _t('Wirklich? Für') : _t('Sofort verkaufen')} <i class="coin"></i>${mkG(q)}</button><button class="btn alt" data-act="mk_set">${_t('Versteigern …')}</button></div>${mkDetail(S.e)}${mkChart(S.e)}`);
   }
   return h + `<div class="split"><div>${list}</div>${side}</div>`;
 }
@@ -930,6 +934,8 @@ ON.mk_back = () => mkClose();
 ON.mk_tab = id => { MK.tab = id; MK.sel = null; MK.conf = 0; sfx('click'); mkShow(); };
 ON.mk_sel = id => { MK.sel = id || null; MK.conf = 0; MK.amtFor = null; if (id && MK.tab === 'sell' && MK.cat !== 'item') { const o = MK.cat === 'mat' ? P.mats : MK.cat === 'gem' ? P.gems : MK.cat === 'mod' ? P.mods : P.parts, k = id.slice(id.indexOf(':') + 1); MK.n = Math.max(1, (o && o[k]) || 1); } sfx('click'); mkShow(); };
 ON.mk_cat = id => { MK.cat = id; MK.sel = null; MK.conf = 0; sfx('click'); mkShow(); };
+ON.mk_isrc = id => { MK.isrc = id === 'stash' ? 'stash' : 'bag'; MK.sel = null; MK.conf = 0; sfx('click'); mkShow(); };
+ON.mk_bst = () => { MK.bst = !MK.bst; MK.conf = 0; sfx('click'); mkShow(); };
 ON.mk_buy = id => mkRun(MARKET.buy(id), r => { if (r.ok) { sfx('buy'); toast(_t('Gekauft!') + ' ' + mkWhere(r.where, mkName(r.e)), '#79c24e'); saveChar(); } else mkSay(r); mkShow(); });
 ON.mk_n = id => { const S = mkSrc(); if (S) MK.n = clamp((S.e.n || 1) + (+id || 0), 1, S.have); mkShow(); };
 ON.mk_sell = () => {

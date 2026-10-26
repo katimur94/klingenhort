@@ -51,7 +51,7 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     const off = L.find(x => x.e.t === 'item'), price = mkOfferPrice(off), g0 = P.gold, rb = MARKET.buy(off.id);
     o.buy = rb.ok && rb.where === 'bag' && P.gold === g0 - price && P.bag.length === 1 && off.n === 0 && MARKET.buy(off.id).err === 'gone';
     const stk = L.find(x => x.e.t === 'mat'); if (stk) { const m0 = P.mats[stk.e.k] || 0; MARKET.buy(stk.id); o.buyMat = P.mats[stk.e.k] === m0 + stk.e.n; } else o.buyMat = true;
-    while (P.bag.length < 30) P.bag.push(makeItem({ slot: 'helm', tier: 0, rar: 0 }));
+    while (P.bag.length < bagCap()) P.bag.push(makeItem({ slot: 'helm', tier: 0, rar: 0 }));
     const it2 = L.find(x => x.e.t === 'item' && x.n > 0), r2 = MARKET.buy(it2.id); o.stash = r2.ok && r2.where === 'stash' && SAVE.meta.hide.stash.length === 1;
     while (SAVE.meta.hide.stash.length < stashCap()) SAVE.meta.hide.stash.push(makeItem({ slot: 'helm', tier: 0, rar: 0 }));
     const it3 = L.find(x => x.e.t === 'item' && x.n > 0), g1 = P.gold, r3 = MARKET.buy(it3.id); o.full = r3.err === 'full' && P.gold === g1 && it3.n === 1;

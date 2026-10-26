@@ -4,7 +4,7 @@
    ========================================================= */
 
 let P = null; // aktiver Charakter (gespeicherte Felder + Laufzeit-Felder)
-const PERSIST = ['id', 'name', 'cls', 'diff', 'hc', 'lv', 'xp', 'gold', 'potions', 'sp', 'talents', 'paragon', 'pxp', 'pp', 'gear', 'bag', 'mats', 'gems', 'dyes', 'dye', 'act', 'map', 'rebirths', 'buffs', 'stats', 'created', 'dead', 'maxAct', 'res', 'rage', 'look', 'fate', 'story', 'parts', 'mastery'];
+const PERSIST = ['id', 'name', 'cls', 'diff', 'hc', 'lv', 'xp', 'gold', 'potions', 'sp', 'talents', 'paragon', 'pxp', 'pp', 'gear', 'bag', 'mats', 'gems', 'dyes', 'dye', 'act', 'map', 'rebirths', 'buffs', 'stats', 'created', 'dead', 'maxAct', 'res', 'rage', 'look', 'fate', 'story', 'parts', 'mastery', 'birds'];
 
 function newChar(cls, name, diff, hc, look) {
   const C = CLASSES[cls];
@@ -132,7 +132,37 @@ function equipFromBag(i) {
   if (setCount(it.set) >= 3) stat('fullset');
   return true;
 }
-function addToBag(it) { hook('pickup', it); if (it.rar === 6) statMax('myths', 1); if (P.bag.length >= 30) { const g = itemPrice(it); P.gold += g; return g; } P.bag.push(it); return 0; }
+function addToBag(it) { hook('pickup', it); if (it.rar === 6) statMax('myths', 1); if (P.bag.length >= bagCap()) { const g = itemPrice(it); P.gold += g; return g; } P.bag.push(it); return 0; }
+/* ---------- Taschen (6.2): die Sattlerei (Versteck, Stufe 0–10) macht Beutel, Rucksack der Lande und Begleiter-Taschen größer ---------- */
+function sattlerLv() { return clamp(Math.floor(hideLv('sattler')) || 0, 0, 10); }
+function bagCap() { return 30 + 6 * sattlerLv(); }   // Beutel des Helden: 30 … 90
+/* Lager (Schatzkammer, gemeinsam für alle Helden): Gegenstände dort lassen sich auch beim Händler, im Basar und an der Werkbank
+   verkaufen und bearbeiten – sie bleiben dabei im Lager. Neues kommt in den Beutel, ist er voll, ins Lager. */
+function stashItems() { return SAVE && SAVE.meta.hide && Array.isArray(SAVE.meta.hide.stash) ? SAVE.meta.hide.stash : []; }
+function stashOn() { return hideLv('lager') > 0 || stashItems().length > 0; }
+function inStash(it) { return !!it && stashItems().includes(it); }
+// Liste, in der ein loser Gegenstand liegt (Beutel oder Lager), sonst null (angelegt oder fremd)
+function itemList(it) { return !it ? null : P.bag.includes(it) ? P.bag : inStash(it) ? stashItems() : null; }
+function itemTake(it) { const L = itemList(it); if (!L) return false; L.splice(L.indexOf(it), 1); return true; }
+// Neues von der Werkbank: in den Beutel, ist er voll, ins Lager → 'bag' | 'stash' | null (kein Platz)
+function roomFor() { return P.bag.length < bagCap() || (typeof stashCap === 'function' && stashItems().length < stashCap()); }
+function itemPut(it) {
+  if (P.bag.length < bagCap()) { addToBag(it); return 'bag'; }
+  if (typeof stashCap === 'function' && SAVE && stashItems().length < stashCap()) { hook('pickup', it); if (it.rar === 6) statMax('myths', 1); stashItems().push(it); return 'stash'; }
+  return null;
+}
+// Anlegen aus Beutel oder Lager: was vorher angelegt war, liegt danach an derselben Stelle
+function equipItem(it) {
+  const L = itemList(it); if (!L || !canEquip(it)) return false;
+  if (L === P.bag) return equipFromBag(P.bag.indexOf(it));
+  const old = P.gear[it.slot], i = L.indexOf(it); P.gear[it.slot] = it; if (old) L[i] = old; else L.splice(i, 1);
+  computeStats(); P.hp = Math.min(P.hp, P.st.hp); if (setCount(it.set) >= 3) stat('fullset');
+  return true;
+}
+// Sammel-Verkauf und -Zerlegen lassen Wertvolles aus: Sockelsteine, Aufwertung, Verschmelzung, Meisterwerk, Aussehen, Mods
+function plainItem(it) { return it.rar <= 1 && !it.gems.length && !it.up && !it.fz && !it.mw && !it.skin && !it.set && !it.myth && !(Array.isArray(it.mods) && it.mods.length); }
+// Reihenfolge für „Sortieren“: Art, Seltenheit, Stufe, Aufwertung
+function itemSortKey(a, b) { const o = { weapon: 0, armor: 1, helm: 2 }; return (o[a.slot] - o[b.slot]) || (b.rar - a.rar) || (b.tier - a.tier) || (b.up - a.up) || (itemScore(b) - itemScore(a)); }
 
 /* ---------- Werte berechnen ---------- */
 const AFFKEY = { krit: 'crit', tempo: 'aspd', raub: 'leech', feuer: 'burnW', frost: 'frostW', wucht: 'wdmg', leben: 'hp', panzer: 'def', heil: 'regen', schutz: 'dr', eile: 'spd', glueck: 'gold' };
@@ -238,7 +268,7 @@ function forgeItem(tier, slot) {
   payMats(c.mats); P.gold -= c.gold;
   const it = randomItem(stageNum(), 1, { slot, tier, setChance: .03 });
   if (hideLv('schmiede') >= 4 && Math.random() < .2 && it.rar < 4) { it.rar++; rollAffixes(it); if (it.rar === 4 && !it.name) it.name = pick(LEGEND[slot === 'weapon' ? it.base : slot]); }
-  addToBag(it); if (it.rar === 4) stat('legs');
+  if (!itemPut(it)) addToBag(it); if (it.rar === 4) stat('legs');
   return it;
 }
 
@@ -282,7 +312,7 @@ function fusePreview(a, b) {
 function fuseItems(a, b) {
   const err = fuseCheck(a, b); if (err) return { r: 'err', msg: err };
   const c = fuseCost(a, b); if (!canAfford(c.mats, c.gold)) return { r: 'poor' };
-  const bi = P.bag.indexOf(b); if (bi < 0) return { r: 'err', msg: _t('Das Opfer muss im Beutel liegen.') };
+  if (!itemList(b)) return { r: 'err', msg: _t('Das Opfer muss im Beutel liegen.') };   // Beutel oder Lager
   payMats(c.mats); P.gold -= c.gold;
   const ch = fuseChance(a, b), res = fusePreview(a, b), lucky = ch < 1 && ch > 0 && Math.random() < ch;
   if (lucky) {
@@ -294,7 +324,7 @@ function fuseItems(a, b) {
   if (res.rar === 4) stat('legs');
   for (const g of b.gems) gainGem(g);
   if (typeof modTakeBack === 'function') modTakeBack(b);   // Mods des Opfers zurück in den Vorrat (js/mods.js)
-  P.bag.splice(bi, 1); Object.assign(a, res); stat('fusions'); computeStats();
+  itemTake(b); Object.assign(a, res); stat('fusions'); computeStats();
   return { r: 'ok', up: lucky, it: a };
 }
 /* ---------- Zusatzwerte einzeln (6.1, Oberfläche in js/mods.js): Stufe, Umschmieden, Veredeln, Affix-Essenz ----------

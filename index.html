@@ -218,6 +218,22 @@ h3{font-family:var(--f-display);font-weight:400;font-size:9px;color:var(--gold);
 .opts.langs .opt{flex:1 1 40%;font-size:10px;min-height:52px}
 .langbtn{float:right;margin:0 0 8px 10px}
 .opt.sel{box-shadow:inset 0 0 0 3px var(--gold);background:var(--stone-hi)}
+/* Große Taschen (6.2): Kopf „BEUTEL 42/66“ mit Füllstand, Raster scrollt ab vier Reihen für sich, Umschalter Beutel | Lager */
+.caph{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:0 0 8px}
+.caph h3{margin:0;flex:1 1 auto;line-height:1.6}.caph h3 b{font-weight:400;color:var(--gold)}.caph h3 b.full{color:#ff7a6a}
+.caph>i{flex:1 0 100%;height:4px;background:var(--night);box-shadow:0 0 0 1px var(--stone-hi);position:relative}
+.caph>i:after{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--p);background:var(--moss)}.caph>i.full:after{background:var(--blood)}.caph>i.warn:after{background:var(--gold)}.caph h3 b.warn{color:#ffd24a}
+.igrid.scroll{max-height:min(46vh,372px);max-height:min(46dvh,372px);overflow-y:auto;overscroll-behavior:contain;padding:3px 6px 3px 3px;margin:0 -6px 0 -3px;scrollbar-width:thin;scrollbar-color:var(--gold-dk) var(--night)}
+.igrid.scroll.tall{max-height:min(58vh,520px);max-height:min(58dvh,520px)}
+.igrid .row{margin-bottom:5px}
+.opts.srct{margin-bottom:8px}.srct .opt{min-height:48px}
+.sellall{display:grid;gap:6px;margin:2px 0 4px}.sellall .btn{width:100%}
+.opt.mkbst,.opt.zrst{display:block;width:100%;margin:8px 0 0;min-height:44px;font-size:8px;text-align:left;padding-left:12px}
+.opt.chk{display:flex;align-items:center;gap:8px;text-align:left;padding-left:12px;min-height:44px}
+i.cb{flex:none;display:inline-block;width:16px;height:16px;background:var(--night);box-shadow:inset 0 0 0 2px var(--parch-dim);position:relative}
+.sel>i.cb,.on>i.cb,[aria-pressed="true"]>i.cb{background:var(--gold);box-shadow:inset 0 0 0 2px var(--gold-dk)}
+.sel>i.cb:after,.on>i.cb:after,[aria-pressed="true"]>i.cb:after{content:"";position:absolute;left:5px;top:1px;width:4px;height:8px;border:solid var(--night);border-width:0 3px 3px 0;transform:rotate(45deg)}
+.opt.zrst{margin:0 0 6px}
 input[type=text]{font:20px var(--f-body);background:var(--night);color:var(--parch);border:2px solid var(--stone-hi);padding:8px;width:100%;box-sizing:border-box}
 textarea{width:100%;box-sizing:border-box;font:16px var(--f-body);background:var(--night);color:var(--parch);border:2px solid var(--stone-hi);padding:8px}
 /* Weltkarte */
@@ -464,6 +480,7 @@ body.bigui h3{font-size:10px}body.bigui h2{font-size:17px}
 <script src="js/artefakte.js"></script>
 <script src="js/mods.js"></script>
 <script src="js/lande.js"></script>
+<script src="js/voegel.js"></script>
 <script src="js/market.js"></script>
 <script src="js/world.js"></script>
 <script src="js/combat.js"></script>

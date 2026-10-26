@@ -20,10 +20,13 @@ document.head.insertAdjacentHTML('beforeend', '<style>@keyframes idle4{from{back
 // Gleicher Bildschirm (Titel und Reiter unverändert): Scroll-Position behalten, sonst nach oben
 let ovKey = '';
 function showOverlay(html, wide) {
-  const was = ov.hidden ? null : panel.scrollTop;
+  const was = ov.hidden ? null : panel.scrollTop, keep = {};
+  if (!ov.hidden) for (const e of panel.querySelectorAll('[data-sk]')) keep[e.dataset.sk] = e.scrollTop;   // eigene Scroll-Bereiche (große Raster)
   panel.className = 'panel' + (wide ? ' wide' : ''); panel.innerHTML = html; ov.hidden = false;
   const h = panel.querySelector('h1,h2'), t = panel.querySelector('.tab[aria-selected="true"]'), key = (h ? h.textContent : '') + '|' + (t ? t.textContent : '');
-  panel.scrollTop = key === ovKey && was != null ? was : 0; ovKey = key;
+  panel.scrollTop = key === ovKey && was != null ? was : 0;
+  if (key === ovKey) for (const e of panel.querySelectorAll('[data-sk]')) if (keep[e.dataset.sk]) e.scrollTop = keep[e.dataset.sk];
+  ovKey = key;
   fitPanel();
   const f = panel.querySelector('.btn:not(:disabled)'); if (f && !isTouch) f.focus({ preventScroll: true });
 }
@@ -56,7 +59,19 @@ function costHTML(c, gold) {
 }
 function itemSlot(it, act, sel) { return `<button class="slot${sel ? ' sel' : ''}" data-act="${act}" data-id="${it.uid}" style="box-shadow:inset 0 0 0 2px ${itemColor(it)}${sel ? ',0 0 0 2px #e8b04a' : ''}" aria-label="${esc(itemName(it))}"><img src="${itemIconURL(it)}" alt="">${it.up ? `<span class="u">+${it.up}</span>` : ''}${it.gems.length ? `<span class="n">◆${it.gems.length}</span>` : it.fz ? `<span class="n">★${it.fz}</span>` : ''}</button>`; }
 function itemDetail(it, actions) { return `<div class="detail"><div style="display:flex;gap:10px;align-items:center"><div class="ic big" style="box-shadow:inset 0 0 0 2px ${itemColor(it)}"><img src="${itemIconURL(it)}" alt=""></div><div><div class="nm" style="color:${itemColor(it)}">${esc(itemName(it))}</div><div class="st" style="color:var(--parch-dim);font-size:16px">${RAR[it.rar].n} ${it.slot === 'weapon' ? WT[it.base].label : AR[it.slot].label} · ${MAT[it.tier].n} (${_t('Stufe {n}', { n: it.tier + 1 })})${canEquip(it) ? '' : ` · <span style="color:var(--blood)">${_t('nicht für deine Klasse')}</span>`}</div></div></div><ul>${itemLines(it).map(l => '<li>' + esc(l) + '</li>').join('')}</ul><div class="acts" style="justify-content:flex-start">${actions || ''}</div></div>`; }
-function findItem(id) { for (const s of ['weapon', 'armor', 'helm']) if (P.gear[s] && P.gear[s].uid === id) return { it: P.gear[s], eq: s }; const i = P.bag.findIndex(x => x.uid === id); return i >= 0 ? { it: P.bag[i], bi: i } : null; }
+// angelegt (eq), im Beutel (bi) oder im Lager (si, gemeinsam für alle Helden)
+function findItem(id) { if (!id) return null; for (const s of ['weapon', 'armor', 'helm']) if (P.gear[s] && P.gear[s].uid === id) return { it: P.gear[s], eq: s }; const i = P.bag.findIndex(x => x.uid === id); if (i >= 0) return { it: P.bag[i], bi: i }; const S = stashItems(), j = S.findIndex(x => x.uid === id); return j >= 0 ? { it: S[j], si: j } : null; }
+// Kopf eines Rasters: „BEUTEL 42/66“ mit Füllstand, rechts optional Knöpfe
+function capHead(label, n, max, right) { const p = max ? clamp(n / max, 0, 1) : 0, f = n >= max ? ' full' : p >= .85 ? ' warn' : ''; return `<div class="caph"><h3>${label} <b class="${f}">${n}/${max}</b></h3>${right || ''}<i class="${f}" style="--p:${Math.round(p * 100)}%"></i></div>`; }
+// Gegenstands-Raster: ab vier Reihen scrollt es für sich (Position bleibt beim Neuzeichnen, data-sk)
+function itemGridHTML(slots, sk, empty) { return slots.length ? `<div class="igrid${slots.length > 24 ? ' scroll' : ''}" data-sk="${sk}"><div class="grid">${slots.join('')}</div></div>` : `<p class="sub">${empty || _t('Leer')}</p>`; }
+// Umschalter „Beutel | Lager“ über einer Liste (Händler, Basar, Werkbank) – nur wenn es ein Lager gibt
+function srcTabs(act, cur) { if (!stashOn()) return ''; const o = (k, l, n, m) => `<button class="opt${cur === k ? ' sel' : ''}" data-act="${act}" data-id="${k}" aria-pressed="${cur === k}">${l}<small>${n}/${m}</small></button>`; return `<div class="opts srct">${o('bag', _t('BEUTEL'), P.bag.length, bagCap())}${o('stash', _t('LAGER'), stashItems().length, stashCap())}</div>`; }
+// Verkaufen aus Beutel oder Lager → Gold (back: z. B. Mods zurück in den Vorrat)
+function sellItem(it, back) { if (!itemTake(it)) return 0; if (back) back(it); const g = itemPrice(it); P.gold += g; return g; }
+function sellAllList(withStash) { return P.bag.concat(withStash ? stashItems() : []).filter(plainItem); }
+// Sammel-Verkauf beim Händler: Beutel, auf Wunsch mit Lager (back: Mods zurück)
+function sellAll(back) { let g = 0; for (const it of sellAllList(mSellStash && stashOn())) g += sellItem(it, back); if (g) sfx('coin'); toast(_t('+{n} Gold', { n: g })); saveChar(); persist(); openMerchant(); }
 // Steuerungs-Hilfe passend zur gerade benutzten Eingabe (Finger oder Maus/Tastatur); data-help: wird beim Wechsel ausgetauscht
 function helpHTML() {
   return '<b>' + _t('STEUERUNG') + '</b>' + (isTouch
@@ -300,7 +315,7 @@ function openChar(tab, back) {
   const tab_ = (k, l) => `<button class="tab" role="tab" aria-selected="${charTab === k}" data-act="ctab" data-id="${k}">${l}</button>`;
   let body = '';
   if (charTab === 'gear') {
-    const sel = selItem && findItem(selItem);
+    let sel = selItem && findItem(selItem); if (sel && sel.si != null) sel = null;   // Lager-Gegenstände zeigt der Charakter nicht
     let gear = ''; for (const s of ['weapon', 'armor', 'helm']) { const it = P.gear[s]; gear += `<div class="gearslot"><div style="font-size:14px;color:var(--parch-dim)">${s === 'weapon' ? _t('Waffe') : AR[s].label}</div>${it ? itemSlot(it, 'isel', sel && sel.it === it) : ''}</div>`; }
     const sets = {}; for (const s of ['weapon', 'armor', 'helm']) { const it = P.gear[s]; if (it && it.set) sets[it.set] = (sets[it.set] || 0) + 1; }
     const side = sel ? `<div class="side sheet"><button class="btn alt sm sheetx" data-act="isel" data-id="" aria-label="${_t('Schließen')}"><span class="x">×</span></button>${itemDetail(sel.it, sel.eq ? '' : `${canEquip(sel.it) ? `<button class="btn sm" data-act="equip" data-id="${sel.it.uid}">${_t('Anlegen')}</button>` : ''}<button class="btn alt sm" data-act="sell" data-id="${sel.it.uid}">${_t('Verkaufen')} <i class="coin"></i>${itemPrice(sel.it)}</button>${hookHTML('itemActions', sel.it)}`)}${sel.eq ? '' : compareHTML(sel.it)}</div>`
@@ -308,7 +323,7 @@ function openChar(tab, back) {
     body = `<div class="split"><div><div class="box"><div style="display:flex;gap:12px;align-items:center">${heroHTML(P, 2.4)}<div class="stats" style="flex:1"><span>${_t('SCH {n}', { n: Math.round(st.wbase * st.dmgMul) })}</span><span>${_t('LP {n}', { n: st.hp })}</span><span>${_t('VER {n}', { n: Math.round(st.def) })}</span><span>${_t('KRIT {n}', { n: pct(st.crit) })}</span><span>${_t('KRIT-SCH {n}', { n: pct(st.critdmg) })}</span><span>${_t('TEMPO {n}/s', { n: (1 / st.cd).toFixed(1) })}</span>${st.dr ? `<span>${_t('MINDERUNG {n}', { n: pct(st.dr) })}</span>` : ''}${st.dodge ? `<span>${_t('AUSWEICHEN {n}', { n: pct(st.dodge) })}</span>` : ''}${st.regen ? `<span>${_t('REGEN {n}', { n: st.regen.toFixed(1) })}</span>` : ''}${st.leech ? `<span>${_t('LEBENSRAUB {n}', { n: pct(st.leech) })}</span>` : ''}${st.gold ? `<span>${_t('GOLD +{n}', { n: pct(st.gold) })}</span>` : ''}${st.m.xp ? `<span>${_t('EP +{n}', { n: pct(st.m.xp) })}</span>` : ''}</div></div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px">${gear}</div>
       ${Object.keys(sets).map(k => `<p style="font-size:16px;color:#4ade80;margin:8px 0 0">${SETS[k].n} ${sets[k]}/3 – ${sets[k] >= 2 ? SETS[k].d2 : ''}${sets[k] >= 3 ? ' · ' + SETS[k].d3 : ''}</p>`).join('')}</div>
-      <div class="box" style="margin-top:10px"><h3 style="margin-top:0">${_t('BEUTEL {n}/30', { n: P.bag.length })}</h3><div class="grid">${P.bag.map(it => itemSlot(it, 'isel', sel && sel.it === it)).join('') || '<p class="sub">' + _t('Leer') + '</p>'}</div></div></div>${side}</div>`;
+      <div class="box" style="margin-top:10px">${capHead(_t('BEUTEL'), P.bag.length, bagCap(), P.bag.length > 1 ? `<button class="btn alt sm" data-act="bagsort">${_t('Sortieren')}</button>` : '')}${itemGridHTML(P.bag.map(it => itemSlot(it, 'isel', sel && sel.it === it)), 'cbag')}</div></div>${side}</div>`;
   } else if (charTab === 'tal') {
     body = `<div class="head"><p class="sub" style="margin:0">${_t('Freie Punkte: {n} · 1 Punkt pro Level', { n: `<b style="color:var(--gold)">${P.sp}</b>` })}</p><button class="btn alt sm" data-act="respec" ${spentPoints() ? '' : 'disabled'}>${_t('Zurücksetzen ({gold} Gold)', { gold: respecCost() })}</button></div><div class="tree">`;
     TALENTS[P.cls].forEach(([bn, nodes], bi) => {
@@ -352,7 +367,7 @@ function gemListHTML(withAct) {
 /* ---------- Werkbank (Karte, Schmiede, Juwelier): js/forge.js – openWorkbench ---------- */
 
 /* ---------- Händler ---------- */
-let mTab = 'buy';
+let mTab = 'buy', mSrc = 'bag', mSellStash = false;   // Verkaufen: aus Beutel oder Lager; Sammel-Verkauf auf Wunsch mit Lager
 function genShop() {
   const C = CLASSES[P.cls], st = stageNum(), stock = [];
   const maxT = REQ.filter(r => r <= P.lv).length - 1;
@@ -371,7 +386,10 @@ function openMerchant() {
     if (st >= 10) extra.push(['mithril', _t('Mithrilerz'), 180, ['mat', 'mithril']]); if (st >= 16) extra.push(['adamant', _t('Adamanterz'), 260, ['mat', 'adamant']]); if (st >= 28) extra.push(['schuppe', _t('Drachenschuppe'), 480, ['mat', 'schuppe']]);
     body += extra.map(([k, n, p, ic]) => `<div class="row" style="cursor:default"><div class="ic"><img src="${iconURL(ic)}" alt=""></div><div><div class="nm">${n}</div></div><button class="btn sm" data-act="buyx" data-id="${k}" data-i="${p}" ${P.gold >= p && !(k === 'potion' && P.potions >= potMax()) ? '' : 'disabled'}><i class="coin"></i>${p}</button></div>`).join('');
   } else {
-    body = P.bag.length ? P.bag.map(it => `<div class="row" style="cursor:default"><div class="ic"><img src="${itemIconURL(it)}" alt=""></div><div><div class="nm" style="color:${itemColor(it)}">${esc(itemName(it))}</div><div class="st">${itemLines(it).slice(0, 2).join(' · ')}</div></div><button class="btn sm" data-act="msell" data-id="${it.uid}"><i class="coin"></i>${itemPrice(it)}</button></div>`).join('') + `<button class="btn alt" data-act="sellall" style="width:100%;margin-top:6px">${_t('Alle Gewöhnlichen & Magischen verkaufen')}</button>` : '<p class="sub">' + _t('Dein Beutel ist leer.') + '</p>';
+    if (mSrc === 'stash' && !stashOn()) mSrc = 'bag';
+    const L = mSrc === 'stash' ? stashItems() : P.bag, all = sellAllList(mSellStash && stashOn()), g = all.reduce((a, it) => a + itemPrice(it), 0);
+    const bulk = all.length || (stashOn() && sellAllList(true).length) ? `<div class="sellall">${stashOn() ? `<button class="opt chk${mSellStash ? ' sel' : ''}" data-act="mstash" aria-pressed="${!!mSellStash}"><i class="cb"></i>${_t('Lager einbeziehen')}</button>` : ''}<button class="btn alt" data-act="sellall" ${all.length ? '' : 'disabled'}>${_t('Alle Gewöhnlichen & Magischen verkaufen')} (${all.length} · <i class="coin"></i>${fmt(g)})</button></div><p class="sub" style="margin:0 0 6px">${_t('Aufgewertetes, Gesockeltes, Verschmolzenes und Gegenstände mit Mods bleiben verschont.')}</p>` : '';
+    body = srcTabs('msrc', mSrc) + bulk + (L.length ? `<div class="igrid${L.length > 8 ? ' scroll tall' : ''}" data-sk="msell">${L.map(it => `<div class="row" style="cursor:default"><div class="ic" style="box-shadow:inset 0 0 0 2px ${itemColor(it)}"><img src="${itemIconURL(it)}" alt=""></div><div><div class="nm" style="color:${itemColor(it)}">${esc(itemName(it))}</div><div class="st">${itemLines(it).slice(0, 2).join(' · ')}</div></div><button class="btn sm" data-act="msell" data-id="${it.uid}"><i class="coin"></i>${itemPrice(it)}</button></div>`).join('')}</div>` : '<p class="sub">' + (mSrc === 'stash' ? _t('Das Lager ist leer.') : _t('Dein Beutel ist leer.')) + '</p>');
   }
   showOverlay(`<div class="head"><h2>${_t('HÄNDLER BORIN')}</h2><div class="hbtns"><div class="gold"><i class="coin"></i>${fmt(P.gold)}</div><button class="btn sm" data-act="mdone">${_t('Weiterziehen')}</button></div></div>
   <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px"><img class="px" src="${iconURL(['sp', 'dwarf'])}" alt="" style="width:48px;height:48px;object-fit:contain"><p class="sub" style="margin:0">${_t('„Mein Vetter. Gute Ware, faire Preise. Meistens.“')}</p></div>
@@ -567,8 +585,9 @@ panel.addEventListener('click', ev => {
     case 'title': if (G && G.daily) restoreFromDaily(); else if (G && G.type && G.type !== 'versteck') undoRoomEntry(); saveChar(); titleScene(); showTitle(); break;
     case 'ctab': charTab = id; openChar(); break;
     case 'isel': selItem = id; openChar(); break;
-    case 'equip': { const f = findItem(id); if (f && f.bi != null) { equipFromBag(f.bi); sfx('swing'); saveChar(); } selItem = id; openChar(); break; }
-    case 'sell': { const f = findItem(id); if (f && f.bi != null) { P.gold += itemPrice(f.it); P.bag.splice(f.bi, 1); sfx('coin'); saveChar(); } selItem = null; openChar(); break; }
+    case 'equip': { const f = findItem(id); if (f && !f.eq) { equipItem(f.it); sfx('swing'); saveChar(); } selItem = id; openChar(); break; }
+    case 'sell': { const f = findItem(id); if (f && !f.eq && sellItem(f.it)) { sfx('coin'); saveChar(); persist(); } selItem = null; openChar(); break; }
+    case 'bagsort': P.bag.sort(itemSortKey); sfx('click'); saveChar(); openChar(); break;
     case 'tal': { const [bi, ni] = id.split(',').map(Number); if (learnTalent(bi, ni)) { sfx('click'); saveChar(); } else sfx('deny'); openChar(); break; }
     case 'respec': if (respec()) { sfx('craft'); saveChar(); } openChar(); break;
     case 'pp': { const free = P.paragon - (P.pp.dmg + P.pp.hp + P.pp.def + P.pp.crit); if (free > 0) { P.pp[id]++; computeStats(); saveChar(); sfx('click'); } openChar(); break; }
@@ -579,8 +598,10 @@ panel.addEventListener('click', ev => {
     case 'mtab': mTab = id; openMerchant(); break;
     case 'buy': { const s = P.map.shop.stock[i]; if (s && !s.sold && P.gold >= s.price) { P.gold -= s.price; s.sold = true; const g = addToBag(s.it); if (!g && canEquip(s.it) && itemScore(s.it) > itemScore(P.gear[s.it.slot])) { equipFromBag(P.bag.length - 1); toast(_t('{item} angelegt', { item: itemName(s.it) })); } sfx('buy'); saveChar(); } openMerchant(); break; }
     case 'buyx': { const p = i; if (P.gold < p) break; P.gold -= p; if (id === 'potion') P.potions = Math.min(potMax(), P.potions + 1); else if (id === 'gem') gainGem(pick(GEMORDER) + ':0'); else if (id === 'erz' || id === 'leder') gainMat(id, 5); else gainMat(id, 1); sfx('buy'); saveChar(); openMerchant(); break; }
-    case 'msell': { const f = findItem(id); if (f && f.bi != null) { P.gold += itemPrice(f.it); P.bag.splice(f.bi, 1); sfx('coin'); saveChar(); } openMerchant(); break; }
-    case 'sellall': { let g = 0; P.bag = P.bag.filter(it => { if (it.rar <= 1 && !it.gems.length && !it.up && !it.fz && !it.mw && !it.skin) { g += itemPrice(it); return false; } return true; }); P.gold += g; if (g) sfx('coin'); toast(_t('+{n} Gold', { n: g })); saveChar(); openMerchant(); break; }
+    case 'msell': { const f = findItem(id); if (f && !f.eq && sellItem(f.it)) { sfx('coin'); saveChar(); persist(); } openMerchant(); break; }
+    case 'sellall': sellAll(); break;
+    case 'msrc': mSrc = id === 'stash' ? 'stash' : 'bag'; sfx('click'); openMerchant(); break;
+    case 'mstash': mSellStash = !mSellStash; sfx('click'); openMerchant(); break;
     case 'mdone': nodeLeave(); break;
     case 'shrine': { const S = SHRINES[i]; if (S.instant === 'blood') { P.hp = Math.max(1, P.hp - P.st.hp * .3); P.sp++; toast(_t('+1 Talentpunkt'), '#b892f4'); } else if (S.instant === 'coin') gainFate(1, true); else { P.buffs.push({ n: S.bn || S.n, buff: S.buff, rooms: S.rooms }); computeStats(); toast(_t('{n} aktiv', { n: S.n }), '#b892f4'); } sfx('ach'); nodeLeave(); break; }
     case 'sdone': nodeLeave(); break;
@@ -604,7 +625,7 @@ panel.addEventListener('click', ev => {
     case 'brew': { const r = craft('potion'); if (r.r === 'ok') { sfx('heal'); toast(r.msg, '#79c24e'); } saveChar(); openAlchemy(); break; }
     case 'elix': { const E = ELIXIRS[i]; if (canAfford(E.cost, E.gold)) { payMats(E.cost); P.gold -= E.gold; P.buffs.push({ n: E.bn || E.n, buff: E.buff, rooms: E.rooms }); computeStats(); sfx('heal'); toast(_t('{n} wirkt', { n: E.n }), '#b892f4'); saveChar(); } openAlchemy(); break; }
     case 'stin': { if (selItem !== id) { selItem = id; openStash(); break; } const k = P.bag.findIndex(x => x.uid === id); if (k >= 0 && SAVE.meta.hide.stash.length < stashCap()) { SAVE.meta.hide.stash.push(P.bag.splice(k, 1)[0]); sfx('coin'); selItem = null; saveChar(); persist(); } else toast(_t('Das Lager ist voll')); openStash(); break; }
-    case 'stout': { if (selItem !== id) { selItem = id; openStash(); break; } const S = SAVE.meta.hide.stash, k = S.findIndex(x => x.uid === id); if (k >= 0 && P.bag.length < 30) { P.bag.push(S.splice(k, 1)[0]); sfx('coin'); selItem = null; saveChar(); persist(); } else toast(_t('Dein Beutel ist voll')); openStash(); break; }
+    case 'stout': { if (selItem !== id) { selItem = id; openStash(); break; } const S = SAVE.meta.hide.stash, k = S.findIndex(x => x.uid === id); if (k >= 0 && P.bag.length < bagCap()) { P.bag.push(S.splice(k, 1)[0]); sfx('coin'); selItem = null; saveChar(); persist(); } else toast(_t('Dein Beutel ist voll')); openStash(); break; }
     case 'collect': collectProd(id); openProd(id); break;
     case 'ltab': openStation('bibliothek', id); break;
     case 'spin': doSpin(); break;

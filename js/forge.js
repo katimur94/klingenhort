@@ -167,7 +167,7 @@ function salvPreview(it) {
   return { n: [a + add, b + add], g: [g, Math.min(5, g + 1)], types: grp, M };
 }
 function salvage(it, R) {
-  const bi = P.bag.indexOf(it); if (bi < 0) return null;
+  if (!itemList(it)) return null;   // Beutel oder Lager
   R = R || { n: 0, parts: {}, mats: {}, gems: 0, xp: 0 };
   const grp = it.slot === 'weapon' ? PARTW : PARTA, give = k => { padd(k, 1); R.parts[k] = (R.parts[k] || 0) + 1; }, M = salvMats(it);
   let gs = 0;
@@ -180,13 +180,13 @@ function salvage(it, R) {
   if (M.x && Math.random() < .35) { gainMat(M.x, 1); R.mats[M.x] = (R.mats[M.x] || 0) + 1; }
   for (const g of it.gems) { gainGem(g); R.gems++; }
   if (typeof modTakeBack === 'function') R.mods = (R.mods || 0) + modTakeBack(it);
-  P.bag.splice(bi, 1);
+  itemTake(it);
   const xp = 4 + 2 * it.tier + 3 * Math.min(it.rar, 5) + (it.rar === 6 ? 8 : 0) + 2 * gs; R.xp += xp; R.n++;
   SAVE.meta.smith.salv++; smithXP(xp);
   return R;
 }
-// alle einfachen Gegenstände einer Seltenheit (ohne Sockelsteine, Aufwertung, Verschmelzung)
-function salvBulkList(r) { return P.bag.filter(x => x.rar === r && !x.gems.length && !x.up && !x.fz && !x.mw && !x.set && !x.myth && !hasMods(x)); }
+// alle einfachen Gegenstände einer Seltenheit (ohne Sockelsteine, Aufwertung, Verschmelzung, Mods) – auf Wunsch mit dem Lager
+function salvBulkList(r, withStash) { return P.bag.concat(withStash && stashOn() ? stashItems() : []).filter(x => x.rar === r && !x.gems.length && !x.up && !x.fz && !x.mw && !x.set && !x.myth && !hasMods(x)); }
 
 /* ---------- Meisterwerk schmieden ---------- */
 const MW = { slot: 'weapon', tier: -1, base: null, form: null, pick: {}, step: 1 };
@@ -212,7 +212,7 @@ function mwState() {
   for (const t of grp) { picks[t] = mwPick(t); if (picks[t]) sum += pparse(picks[t]).g; else if (!miss) miss = t; }
   const tier = MW.tier, cost = mwCost(tier, slot, sum), rar = mwRar(sum);
   const elK = picks[slot === 'weapon' ? 'kern' : 'rune'], el = elK ? pparse(elK).el : null;
-  const ok = !miss && forgeOk(tier) && canAfford(cost.mats, cost.gold) && P.bag.length < 30;
+  const ok = !miss && forgeOk(tier) && canAfford(cost.mats, cost.gold) && roomFor();
   return { slot, grp, picks, sum, miss, tier, cost, rar, el, ok };
 }
 function mwPreviewItem(s) {
@@ -230,7 +230,7 @@ function mwCraft() {
   const it = makeItem({ slot: s.slot, base: s.slot === 'weapon' ? MW.base : s.slot, tier: s.tier, rar, form: s.slot === 'weapon' ? MW.form : undefined });
   it.mw = {}; for (const t of s.grp) it.mw[t] = pparse(s.picks[t]).g;
   it.el = s.el;
-  addToBag(it); if (rar === 4) stat('legs'); stat('mwMade');
+  if (!itemPut(it)) addToBag(it); if (rar === 4) stat('legs'); stat('mwMade');
   SAVE.meta.smith.made++; smithXP(60 + 10 * s.sum * s.sum / 3);
   return { it, lucky };
 }
@@ -327,7 +327,7 @@ function partImg(k, cls) { const p = pparse(k); return `<img${cls ? ` class="${c
    ZERLEGEN   – alte Gegenstände zu Bauteilen · WERKSTATT – Bauteile, Edelsteine, Rezepte, Farben, Veredeln
    Jede Station kann, was sie bisher konnte (WB_CAN). Alte Reiter-Namen (wbTab = 'up', 'sock', 'mw' …) öffnen den passenden Bereich. */
 let wbTab = 'ver', wbFree = false, wbMode = 'node', fuseA = null, fuseB = null;
-const WB = { act: null, sub: null, bag: false, help: null, swap: {} };
+const WB = { act: null, sub: null, bag: false, help: null, swap: {}, src: 'bag', zst: false };   // src: Liste Beutel oder Lager, zst: Sammel-Zerlegen mit Lager
 const WB_SECS = { node: ['ver', 'sch', 'zer', 'ws'], act: ['ver', 'sch', 'zer', 'ws'], smith: ['ver', 'sch', 'zer', 'ws'], jewel: ['ver', 'ws'] };
 const WB_CAN = { node: 'up mods fuse sock drill reroll refine umbau extract salv parts gems rez dye', smith: 'up mods fuse drill reroll refine umbau extract salv parts rez dye', jewel: 'mods sock gems trans' };
 WB_CAN.act = WB_CAN.node;
@@ -481,8 +481,10 @@ function gemCombPlan() {
 function gemCombAll() { let n = 0; for (let gr = 0; gr < 4; gr++) for (const id of GEMORDER) while (combineGem(id, gr)) n++; return n; }
 
 /* ---------- Bereich VERBESSERN: erst Gegenstand, dann alles dazu ---------- */
-function verItems() { return ['weapon', 'armor', 'helm'].map(s => P.gear[s]).filter(Boolean).concat(P.bag); }
-function fuseCands(it) { return P.bag.filter(x => x !== it && x.slot === it.slot); }
+function verItems() { return ['weapon', 'armor', 'helm'].map(s => P.gear[s]).filter(Boolean).concat(P.bag, stashItems()); }
+function fuseCands(it) { return P.bag.concat(stashItems()).filter(x => x !== it && x.slot === it.slot); }   // Opfer aus Beutel und Lager
+const wbFull = () => stashOn() ? _t('Beutel und Lager sind voll.') : _t('Dein Beutel ist voll.');
+const wbList = () => WB.src === 'stash' && stashOn() ? stashItems() : P.bag;   // gezeigte Liste: Beutel oder Lager
 function fuseBest(it) { let best = null, bs = -1; for (const x of fuseCands(it)) { const s = itemScore(fusePreview(it, x)) * (1 + fuseChance(it, x) * .3); if (s > bs) { bs = s; best = x; } } return best; }
 function mwSwapPreview(it, t, k) {
   const p = pparse(k), x = JSON.parse(JSON.stringify(it)); x.mw[t] = p.g; if (PART[t].el) x.el = p.el;
@@ -500,14 +502,14 @@ function verActs(it) {
   const A = [], md = typeof modVerBody === 'function';   // Mods, Veredeln, Extrahieren: js/mods.js
   if (wbCan('up')) A.push('up'); if (md && wbCan('mods')) A.push('mods'); if (wbCan('fuse')) A.push('fuse'); if (wbCan('sock') || wbCan('drill')) A.push('sock');
   if (wbCan('reroll')) A.push('reroll'); if (md && wbCan('refine')) A.push('refine'); if (wbCan('umbau') && it.mw) A.push('umbau');
-  if (md && wbCan('extract') && P.bag.includes(it)) A.push('extract'); if (wbCan('salv') && P.bag.includes(it)) A.push('salv');
+  if (md && wbCan('extract') && itemList(it)) A.push('extract'); if (wbCan('salv') && itemList(it)) A.push('salv');
   return A;
 }
 // Kopfzeile einer Aktion: Bild, Name, Zustand (grün = geht, rot = Material fehlt, grau = gerade nichts zu tun)
 function verHead(k, it) {
   switch (k) {
     case 'up': { const c = it.up < 10 && upCost(it, it.up + 1); return { ic: iconURL(['pa', 'wbup']), n: _t('AUFWERTEN'), st: c ? _t('+{a} → +{b} · {p} % Chance', { a: it.up, b: it.up + 1, p: Math.round(c.chance * 100) }) : _t('Maximal aufgewertet.'), cls: !c ? '' : canAfford(c.mats, c.gold) ? 'ok' : 'bad' }; }
-    case 'fuse': { const n = fuseCands(it).length, mx = (it.fz || 0) >= fuseMax(); return { ic: iconURL(['pa', 'wbfuse']), n: _t('VERSCHMELZEN'), st: mx ? _t('Maximal verschmolzen ({n} ★)', { n: fuseMax() }) : n ? _t('{n} passende Opfer im Beutel', { n }) : _t('Kein passendes Opfer im Beutel'), cls: mx || !n ? '' : 'ok' }; }
+    case 'fuse': { const C = fuseCands(it), n = C.length, ns = C.filter(inStash).length, mx = (it.fz || 0) >= fuseMax(); return { ic: iconURL(['pa', 'wbfuse']), n: _t('VERSCHMELZEN'), st: mx ? _t('Maximal verschmolzen ({n} ★)', { n: fuseMax() }) : n ? (ns ? _t('{n} passende Opfer in Beutel und Lager', { n }) : _t('{n} passende Opfer im Beutel', { n })) : _t('Kein passendes Opfer im Beutel'), cls: mx || !n ? '' : 'ok' }; }
     case 'sock': { const free = it.sockets - it.gems.length; return { ic: iconURL(['gem', 'saphir', 3]), n: _t('SOCKEL'), st: it.sockets ? _t('{free} von {n} frei', { free, n: it.sockets }) + (it.gems.length ? ' · ◆' + it.gems.length : '') : _t('Keine Sockel'), cls: free > 0 && wbCan('sock') && gemKeys().length ? 'ok' : '' }; }
     case 'reroll': { if (typeof modVerHead === 'function') return modVerHead(k, it); const R = recipeById('reroll'), n = Object.keys(it.aff).length; return { ic: iconURL(['fx', 'sparks', 2]), n: _t('UMSCHMIEDEN'), st: !it.rar ? _t('Keine Zusatzwerte') : n === 1 ? _t('1 Zusatzwert neu würfeln') : _t('{n} Zusatzwerte neu würfeln', { n }), cls: it.rar && canAfford(R.cost, R.gold) ? 'ok' : '' }; }
     case 'mods': case 'refine': case 'extract': return modVerHead(k, it);
@@ -526,13 +528,15 @@ function verBody(k, it) {
   if (k === 'fuse') {
     if ((it.fz || 0) >= fuseMax()) return h + `<p class="wbwhy">${esc(fuseCheck(it, null))}</p>`;
     const C = fuseCands(it);
-    if (!C.length) return h + `<p class="wbwhy">${_t('Du brauchst einen zweiten Gegenstand derselben Art ({art}) im Beutel – er wird geopfert.', { art: slotLabel(it.slot) })}</p>`;
+    if (!C.length) return h + `<p class="wbwhy">${stashOn() ? _t('Du brauchst einen zweiten Gegenstand derselben Art ({art}) in Beutel oder Lager – er wird geopfert.', { art: slotLabel(it.slot) }) : _t('Du brauchst einen zweiten Gegenstand derselben Art ({art}) im Beutel – er wird geopfert.', { art: slotLabel(it.slot) })}</p>`;
     const Bf = fuseB && findItem(fuseB), B = Bf && C.includes(Bf.it) ? Bf.it : null;
-    h += `<div class="wbrowh"><span>${_t('Opfer antippen – es vergeht:')}</span>${C.length > 1 ? `<button class="btn alt sm" data-act="fbest">${_t('Bestes wählen')}</button>` : ''}</div><div class="grid wbvict">${C.map(x => `<button class="slot${x === B ? ' fb' : ''}" data-act="fsel" data-id="${x.uid}" style="box-shadow:inset 0 0 0 2px ${itemColor(x)}${x === B ? ',0 0 0 3px #c8463c' : ''}" aria-label="${esc(itemName(x))}"><img src="${itemIconURL(x)}" alt="">${x === B ? `<span class="u" style="color:#ff6a5a">${_t('OPFER')}</span>` : x.up ? `<span class="u">+${x.up}</span>` : ''}${x.fz ? `<span class="n">★${x.fz}</span>` : ''}</button>`).join('')}</div>`;
+    const vict = x => `<button class="slot${x === B ? ' fb' : ''}" data-act="fsel" data-id="${x.uid}" style="box-shadow:inset 0 0 0 2px ${itemColor(x)}${x === B ? ',0 0 0 3px #c8463c' : ''}" aria-label="${esc(itemName(x))}"><img src="${itemIconURL(x)}" alt="">${x === B ? `<span class="u" style="color:#ff6a5a">${_t('OPFER')}</span>` : x.up ? `<span class="u">+${x.up}</span>` : ''}${x.fz ? `<span class="n">★${x.fz}</span>` : ''}</button>`, Cb = C.filter(x => !inStash(x)), Cs = C.filter(inStash);
+    h += `<div class="wbrowh"><span>${_t('Opfer antippen – es vergeht:')}</span>${C.length > 1 ? `<button class="btn alt sm" data-act="fbest">${_t('Bestes wählen')}</button>` : ''}</div>${Cb.length ? `<div class="igrid${Cb.length > 18 ? ' scroll' : ''}" data-sk="wbvb"><div class="grid wbvict">${Cb.map(vict).join('')}</div></div>` : ''}${Cs.length ? `<p class="wbdim">${_t('Aus dem Lager:')}</p><div class="igrid${Cs.length > 18 ? ' scroll' : ''}" data-sk="wbvs"><div class="grid wbvict">${Cs.map(vict).join('')}</div></div>` : ''}`;
     if (!B) return h + wbBtn('fuse', _t('Verschmelzen'), _t('Tippe zuerst ein Opfer an.'));
     const R = fusePreview(it, B), ch = fuseChance(it, B), c = fuseCost(it, B);
     h += `<p class="wbline">${_t('Opfer: {item}', { item: `<b style="color:${itemColor(B)}">${esc(itemName(B))}</b>` })}</p>` + cmpHTML(it, R);
     if (ch > 0 && ch < 1) h += `<p class="wbline">${_t('Dazu {chance} auf {rar} mit einem weiteren Zusatzwert.', { chance: `<b style="color:var(--rune)">${_t('{p} % Chance', { p: Math.round(ch * 100) })}</b>`, rar: it.rar === 4 ? `<b style="color:#ff4fd8">${_t('MYTHISCH')}</b>` : RAR[it.rar + 1].n })}</p>`;
+    if (inStash(B)) h += `<p class="wbline">${_t('Das Opfer liegt im Lager.')}</p>`;
     if (B.gems.length) h += `<p class="wbline">${_t('Edelsteine des Opfers kommen zurück in den Vorrat.')}</p>`;
     return h + wbCost(c.mats, c.gold) + wbBtn('fuse', _t('Verschmelzen'), canAfford(c.mats, c.gold) ? '' : true);
   }
@@ -580,18 +584,18 @@ function verBody(k, it) {
 }
 function verPickHTML(it) {
   const gear = ['weapon', 'armor', 'helm'].map(s => { const x = P.gear[s]; return x ? `<button class="wbgear${x === it ? ' sel' : ''}" data-act="wsel" data-id="${x.uid}" style="--c:${itemColor(x)}" aria-label="${esc(itemName(x))}"><span class="slot0"><img src="${itemIconURL(x)}" alt="">${x.up ? `<em>+${x.up}</em>` : ''}</span><small>${slotLabel(s)}</small></button>` : `<div class="wbgear"><span class="slot0" style="--c:var(--stone-hi)"></span><small>${slotLabel(s)}</small></div>`; }).join('');
-  const inBag = P.bag.includes(it);
-  const bag = `<button class="wbgear bag${inBag ? ' sel' : ''}" data-act="wb_bag" aria-expanded="${WB.bag}" style="--c:${inBag ? itemColor(it) : 'var(--stone-hi)'}"><span class="slot0">${inBag ? `<img src="${itemIconURL(it)}" alt="">` : `<b>${P.bag.length}</b>`}</span><small>${_t('Beutel')} ${WB.bag ? '▴' : '▾'}</small></button>`;
-  const grid = P.bag.length ? `<div class="grid">${P.bag.map(x => itemSlot(x, 'wsel', x === it)).join('')}</div>` : `<p class="sub">${_t('Dein Beutel ist leer.')}</p>`;
-  return `<div class="wbpick">${gear}${bag}</div><div class="wbbag${WB.bag ? ' open' : ''}"><h3>${_t('BEUTEL {n}/30', { n: P.bag.length })}</h3>${grid}</div>`;
+  const loose = !!itemList(it), L = wbList(), st = L !== P.bag;
+  const bag = `<button class="wbgear bag${loose ? ' sel' : ''}" data-act="wb_bag" aria-expanded="${WB.bag}" style="--c:${loose ? itemColor(it) : 'var(--stone-hi)'}"><span class="slot0">${loose ? `<img src="${itemIconURL(it)}" alt="">` : `<b>${L.length}</b>`}</span><small>${st ? _t('Lager') : _t('Beutel')} ${WB.bag ? '▴' : '▾'}</small></button>`;
+  const grid = itemGridHTML(L.map(x => itemSlot(x, 'wsel', x === it)), st ? 'wbst' : 'wbbag', st ? _t('Das Lager ist leer.') : _t('Dein Beutel ist leer.'));
+  return `<div class="wbpick">${gear}${bag}</div><div class="wbbag${WB.bag ? ' open' : ''}">${srcTabs('wb_src', st ? 'stash' : 'bag')}${st ? capHead(_t('LAGER'), L.length, stashCap()) : capHead(_t('BEUTEL'), P.bag.length, bagCap())}${grid}</div>`;
 }
 function verHTML(it) {
   if (!it) return wbIntro('ver', WB_INTRO.ver()) + `<p class="sub">${_t('Wähle einen Gegenstand aus dem Beutel.')}</p>`;
   const acts = verActs(it), f = findItem(it.uid);
   if (WB.act !== '' && !acts.includes(WB.act)) WB.act = acts.find(k => verHead(k, it).cls === 'ok') || acts[0] || '';
-  const top = f && f.eq ? `<span class="pill">${_t('ANGELEGT')}</span>` : canEquip(it) ? `<button class="btn sm" data-act="mw_equip" data-id="${it.uid}">${_t('Anlegen')}</button>` : '';
+  const top = (f && f.eq ? `<span class="pill">${_t('ANGELEGT')}</span>` : canEquip(it) ? `<button class="btn sm" data-act="mw_equip" data-id="${it.uid}">${_t('Anlegen')}</button>` : '') + (f && f.si != null ? `<span class="pill dim" style="align-self:center">${_t('IM LAGER')}</span>` : '');
   const list = acts.map(k => { const H = verHead(k, it), open = WB.act === k; return `<div class="wbact${open ? ' open' : ''}"><button class="wbah" data-act="wb_act" data-id="${k}" aria-expanded="${open}"><img src="${H.ic}" alt=""><span><b>${H.n}</b><small class="${H.cls}">${H.st}</small></span><i>${open ? '▴' : '▾'}</i></button>${open ? `<div class="wbab">${verBody(k, it)}</div>` : ''}</div>`; }).join('');
-  return `${wbIntro('ver', WB_INTRO.ver())}<div class="split wbver"><div>${verPickHTML(it)}</div><div class="side">${itemDetail(it, top)}${f && f.bi != null ? compareHTML(it) : ''}<div class="wbacts">${list}</div></div></div>`;
+  return `${wbIntro('ver', WB_INTRO.ver())}<div class="split wbver"><div>${verPickHTML(it)}</div><div class="side">${itemDetail(it, top)}${f && !f.eq ? compareHTML(it) : ''}<div class="wbacts">${list}</div></div></div>`;
 }
 
 /* ---------- Bereich SCHMIEDEN: Meisterwerk in 5 Schritten ---------- */
@@ -605,7 +609,7 @@ function mwFormFx(F) {
 }
 function mwWhy(s) {
   return s.miss ? _t('Es fehlt noch: {part}', { part: PART[s.miss].n }) : !forgeOk(s.tier) ? _t('Dieses Material kannst du ab Level {lv} verarbeiten.', { lv: REQ[s.tier] })
-    : P.bag.length >= 30 ? _t('Dein Beutel ist voll.') : canAfford(s.cost.mats, s.cost.gold) ? '' : _t('Dir fehlt noch Material oder Gold – siehe oben.');
+    : !roomFor() ? wbFull() : canAfford(s.cost.mats, s.cost.gold) ? '' : _t('Dir fehlt noch Material oder Gold – siehe oben.');
 }
 function mwWizardHTML() {
   mwInit();
@@ -635,7 +639,7 @@ function mwWizardHTML() {
       return `<button class="row wbmat${t === s.tier ? ' sel' : ''}" data-act="mw_mat" data-i="${t}" ${lock ? 'disabled' : ''}><div class="ic"><img src="${mwSampleURL(s.slot, t, MW.base, MW.form)}" alt=""></div><div><div class="nm" style="color:${Mt.m[2]}">${esc(Mt.n)}${s.slot !== 'weapon' ? ' · ' + esc(C.names[t][s.slot === 'armor' ? 0 : 1]) : ''}</div><div class="st">${_t('Stufe {n}', { n: t + 1 })}${lock ? ' · <span class="wbbad">' + _t('ab Level {lv}', { lv: REQ[t] }) + '</span>' : ''}</div>${lock ? '' : costHTML(c.mats, 0)}</div><span class="wbradio">${t === s.tier ? '✓' : ''}</span></button>`;
     }).join('');
     if (top + 2 < TIERS) main += `<p class="sub">${_t('Noch {n} bessere Materialien ab Level {lv}.', { n: TIERS - top - 2, lv: REQ[top + 2] })}</p>`;
-    const qc = forgeCost(s.tier, s.slot), qwhy = !forgeOk(s.tier) ? _t('Dieses Material kannst du ab Level {lv} verarbeiten.', { lv: REQ[s.tier] }) : P.bag.length >= 30 ? _t('Dein Beutel ist voll.') : canAfford(qc.mats, qc.gold) ? '' : true;
+    const qc = forgeCost(s.tier, s.slot), qwhy = !forgeOk(s.tier) ? _t('Dieses Material kannst du ab Level {lv} verarbeiten.', { lv: REQ[s.tier] }) : !roomFor() ? wbFull() : canAfford(qc.mats, qc.gold) ? '' : true;
     main += `<div class="wbbox">${wbIntro('quick', _t('Ohne Bauteile? Schnell schmieden: ein Zufallsstück aus {mat}.', { mat: esc(M.n) }))}${wbCost(qc.mats, qc.gold)}${wbBtn('forge', _t('Schnell schmieden'), qwhy, { cls: 'alt' })}</div>`;
     nav = back + next('', 3);
   } else if (st === 3) {
@@ -671,9 +675,9 @@ function fgLastHTML(tab) {
   }
   if (L.k === 'mw') {
     const f = findItem(L.uid); if (!f) return '';
-    const btns = (f.bi != null && canEquip(f.it) ? `<button class="btn sm" data-act="mw_equip" data-id="${f.it.uid}">${_t('Anlegen')}</button>` : f.eq ? `<span class="pill">${_t('ANGELEGT')}</span>` : '')
+    const btns = (!f.eq && canEquip(f.it) ? `<button class="btn sm" data-act="mw_equip" data-id="${f.it.uid}">${_t('Anlegen')}</button>` : f.eq ? `<span class="pill">${_t('ANGELEGT')}</span>` : '')
       + `<button class="btn alt sm" data-act="mw_again">${_t('Noch eins schmieden')}</button>${wbCan('up') ? `<button class="btn alt sm" data-act="mw_ver" data-id="${f.it.uid}">${_t('Verbessern ›')}</button>` : ''}`;
-    return `<div class="fglast"><b>${L.quick ? _t('GESCHMIEDET') : L.lucky ? _t('MEISTERSTÜCK! SELTENHEIT +1') : _t('MEISTERWERK GESCHMIEDET')}</b>${itemDetail(f.it, btns)}${f.bi != null ? compareHTML(f.it) : ''}</div>`;
+    return `<div class="fglast"><b>${L.quick ? _t('GESCHMIEDET') : L.lucky ? _t('MEISTERSTÜCK! SELTENHEIT +1') : _t('MEISTERWERK GESCHMIEDET')}</b>${itemDetail(f.it, btns)}${!f.eq ? compareHTML(f.it) : ''}${f.si != null ? `<p class="wbline">${_t('Der Beutel war voll – es liegt im Lager.')}</p>` : ''}</div>`;
   }
   return '';
 }
@@ -681,11 +685,12 @@ function fgLastHTML(tab) {
 /* ---------- Bereich ZERLEGEN ---------- */
 function zrTabHTML(it0) {
   FG.scr = 'wb';
-  let it = it0 && P.bag.includes(it0) ? it0 : P.bag[0] || null; if (it && it !== it0) selItem = it.uid;
-  const grid = P.bag.length ? `<div class="grid" style="margin-bottom:8px">${P.bag.map(x => itemSlot(x, 'wsel', x === it)).join('')}</div>` : `<p class="sub">${_t('Dein Beutel ist leer. Angelegte Ausrüstung kann nicht zerlegt werden.')}</p>`;
+  const Lz = wbList(), st = Lz !== P.bag;
+  let it = it0 && Lz.includes(it0) ? it0 : Lz[0] || null; if (it && it !== it0) selItem = it.uid;
+  const grid = srcTabs('wb_src', st ? 'stash' : 'bag') + itemGridHTML(Lz.map(x => itemSlot(x, 'wsel', x === it)), st ? 'zrst' : 'zrbag', st ? _t('Das Lager ist leer.') : _t('Dein Beutel ist leer. Angelegte Ausrüstung kann nicht zerlegt werden.'));
   let armed = '';
   const bulk = [0, 1].map(r => {
-    const L = salvBulkList(r), n = L.length, arm = zrArm === 'all' + r;
+    const L = salvBulkList(r, WB.zst), n = L.length, arm = zrArm === 'all' + r;
     if (arm) { let a = 0, b = 0; for (const x of L) { const pv = salvPreview(x); a += pv.n[0]; b += pv.n[1]; } armed = _t('{n} Gegenstände ergeben etwa {k} Bauteile. Nochmal tippen zum Bestätigen.', { n, k: a === b ? a : a + '–' + b }); }
     return `<button class="btn ${arm ? 'red' : 'alt'}" data-act="zr_all" data-id="${r}" ${n ? '' : 'disabled'}>${arm ? _t('Sicher? {n} zerlegen', { n }) : r ? _t('Alles Magische zerlegen ({n})', { n }) : _t('Alles Gewöhnliche zerlegen ({n})', { n })}</button>`;
   }).join('');
@@ -695,7 +700,8 @@ function zrTabHTML(it0) {
     side = `<div class="row zrcard" style="cursor:default"><div class="ic" style="box-shadow:inset 0 0 0 2px ${itemColor(it)}"><img src="${itemIconURL(it)}" alt=""></div><div><div class="nm" style="color:${itemColor(it)}">${esc(itemName(it))}</div><div class="st">${RAR[it.rar].n} ${it.slot === 'weapon' ? WT[it.base].label : AR[it.slot].label} · ${MAT[it.tier].n}${it.up ? ' · +' + it.up : ''}${it.gems.length ? ' · ◆' + it.gems.length : ''}</div></div><button class="btn ${arm ? 'red' : ''} sm" data-act="zr_one" data-id="${it.uid}">${arm ? _t('Wirklich zerlegen?') : _t('Zerlegen')}</button></div>`
       + `<p class="sub" style="margin:4px 0 0">${esc(salvTxt(it))}</p>${arm ? `<p class="wbwhy">${_t('Wertvoller Gegenstand – nochmal tippen zum Bestätigen.')}</p>` : ''}`;
   } else side = `<p class="sub">${_t('Wähle einen Gegenstand aus dem Beutel.')}</p>`;
-  return `<div class="mwhead"><div>${smithBarHTML()}</div><div>${wbIntro('zer', WB_INTRO.zer())}</div></div>${fgLastHTML('zer')}<div class="zrbulk">${bulk}</div><p class="${armed ? 'wbwhy' : 'wbline'}">${armed || _t('Ein Tipp für alle einfachen Gegenstände – Aufgewertetes, Verschmolzenes, Gesockeltes, Sets und Meisterwerke bleiben verschont.')}</p><div class="split"><div>${grid}</div><div class="side sheet">${side}</div></div>`;
+  const zst = stashOn() ? `<button class="opt chk zrst${WB.zst ? ' sel' : ''}" data-act="wb_zst" aria-pressed="${!!WB.zst}"><i class="cb"></i>${_t('Lager einbeziehen')}</button>` : '';
+  return `<div class="mwhead"><div>${smithBarHTML()}</div><div>${wbIntro('zer', WB_INTRO.zer())}</div></div>${fgLastHTML('zer')}${zst}<div class="zrbulk">${bulk}</div><p class="${armed ? 'wbwhy' : 'wbline'}">${armed || _t('Ein Tipp für alle einfachen Gegenstände – Aufgewertetes, Verschmolzenes, Gesockeltes, Sets und Meisterwerke bleiben verschont.')}</p><div class="split"><div>${grid}</div><div class="side sheet">${side}</div></div>`;
 }
 
 /* ---------- Bereich WERKSTATT: Bauteile, Edelsteine, Rezepte, Farben, Veredeln ---------- */
@@ -818,6 +824,8 @@ function combToast(r) { if (r.n) { const p = pparse(r.best); sfx('craft'); toast
 // Bereiche, Auswahl, Hilfe
 ON.wtab = id => { wbTab = id; WB.help = null; zrArm = null; FG.last = null; if (MW.step === 5) MW.step = 1; sfx('click'); openWorkbench(); };
 ON.wsel = id => { if (selItem !== id) { fuseB = null; WB.swap = {}; } selItem = id; WB.bag = false; zrArm = null; sfx('click'); openWorkbench(); };
+ON.wb_src = id => { WB.src = id === 'stash' ? 'stash' : 'bag'; const L = wbList(); if (L.length && !(selItem && L.some(x => x.uid === selItem))) { selItem = L[0].uid; fuseB = null; WB.swap = {}; } WB.bag = true; zrArm = null; sfx('click'); openWorkbench(); };
+ON.wb_zst = () => { WB.zst = !WB.zst; zrArm = null; sfx('click'); openWorkbench(); };
 ON.wb_bag = () => { WB.bag = !WB.bag; sfx('click'); openWorkbench(); };
 ON.wb_act = id => { WB.act = WB.act === id ? '' : id; WB.help = null; zrArm = null; sfx('click'); openWorkbench(); };
 ON.wb_help = id => { WB.help = WB.help === id ? null : id; sfx('click'); fgRerender(); };
@@ -871,7 +879,7 @@ ON.mw_best = () => { for (const t of mwGroup(MW.slot)) MW.pick[t] = mwOptions(t)
 ON.fg_combgrp = id => { const grp = mwGroup(id === 'weapon' ? 'weapon' : 'armor'); combToast(combAll(grp)); for (const t of grp) delete MW.pick[t]; fgDone(); fgRerender(); };
 ON.fg_combat = () => { combToast(combAll(PARTORDER)); MW.pick = {}; fgDone(); fgRerender(); };
 ON.forge = () => {
-  mwInit(); const it = P.bag.length < 30 ? forgeItem(MW.tier, MW.slot) : null;
+  mwInit(); const it = roomFor() ? forgeItem(MW.tier, MW.slot) : null;
   if (!it) { sfx('deny'); openWorkbench(); return; }
   sfx('craft'); toast(_t('{item} geschmiedet', { item: itemName(it) }), RAR[it.rar].c);
   FG.last = { tab: 'mw', k: 'mw', uid: it.uid, quick: true }; MW.step = 5; selItem = it.uid; fgDone(); openWorkbench(); fgTop();
@@ -883,7 +891,7 @@ ON.mw_make = () => {
   toast(r.lucky ? _t('MEISTERSTÜCK! {item}', { item: itemName(r.it) }) : _t('{item} geschmiedet', { item: itemName(r.it) }), RAR[r.it.rar].c);
   FG.last = { tab: 'mw', k: 'mw', uid: r.it.uid, lucky: r.lucky }; MW.step = 5; selItem = r.it.uid; fgDone(); fgRerender(); fgTop();
 };
-ON.mw_equip = id => { const f = findItem(id); if (f && f.bi != null && equipFromBag(f.bi)) { sfx('swing'); toast(_t('{item} angelegt', { item: itemName(f.it) }), RAR[f.it.rar].c); } else sfx('deny'); fgDone(); fgRerender(); };
+ON.mw_equip = id => { const f = findItem(id); if (f && !f.eq && equipItem(f.it)) { sfx('swing'); toast(_t('{item} angelegt', { item: itemName(f.it) }), RAR[f.it.rar].c); } else sfx('deny'); fgDone(); fgRerender(); };
 ON.mw_again = () => { FG.last = null; MW.step = 3; sfx('click'); openWorkbench(); fgTop(); };
 ON.mw_ver = id => { FG.last = null; MW.step = 1; selItem = id; wbTab = 'ver'; WB.act = null; sfx('click'); openWorkbench(); };
 // Bauteile kombinieren (Listen in Werkstatt und Charakter)
@@ -899,13 +907,13 @@ ON.fg_comball = id => {
 };
 // Zerlegen
 ON.zr_one = id => {
-  const f = findItem(id); if (!f || f.bi == null) { sfx('deny'); fgRerender(); return; }
+  const f = findItem(id); if (!f || f.eq) { sfx('deny'); fgRerender(); return; }
   if (salvRisky(f.it) && zrArm !== id) { zrArm = id; sfx('click'); fgRerender(); return; }
   zrArm = null; const R = salvage(f.it); if (R) { FG.last = Object.assign({ tab: 'zer', k: 'salv' }, R); sfx('craft'); selItem = null; if (wbTab !== 'zer') { const ks = Object.keys(R.parts); toast(ks.length ? _t('Zerlegt: {list}', { list: ks.map(k => { const p = pparse(k); return pshort(p.t, p.g, p.el) + (R.parts[k] > 1 ? ' ×' + R.parts[k] : ''); }).join(', ') }) : _t('Zerlegt – nur Materialien'), '#ffd24a'); } }
   fgDone(); fgRerender(); if (wbTab === 'zer') fgTop();
 };
 ON.zr_all = id => {
-  const r = +id, L = salvBulkList(r); if (!L.length) { sfx('deny'); fgRerender(); return; }
+  const r = +id, L = salvBulkList(r, WB.zst); if (!L.length) { sfx('deny'); fgRerender(); return; }
   if (zrArm !== 'all' + r) { zrArm = 'all' + r; sfx('click'); fgRerender(); return; }
   zrArm = null; let R = null; for (const it of L) R = salvage(it, R) || R;
   if (R) { FG.last = Object.assign({ tab: 'zer', k: 'salv' }, R); sfx('craft'); shake(2); selItem = null; }

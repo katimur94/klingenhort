@@ -235,27 +235,28 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
       const put = c => { c.x = P.x; c.y = P.y; c.z = 0; c.vz = 0; c.vx = c.vy = 0; c.t = 1; pickups.push(c); };
       put({ k: 'coin', v: 25 }); put({ k: 'mat', m: 'erz', n: 3 }); put({ k: 'loot', it: makeItem({ slot: 'helm', base: 'helm', tier: 1, rar: 4 }) }); put({ k: 'lpart', pk: 'klinge:2', n: 1 }); put({ k: 'lmod', mk: 'test:1', n: 2 });
       updPickups(.016);
-      o.gold = LW.pack.some(e => e.t === 'gold' && e.n === 25) && P.gold === gold0; o.mat = LW.pack.some(e => e.t === 'mat' && e.k === 'erz' && e.n === 3) && (P.mats.erz || 0) === mats0;
-      o.item = LW.pack.some(e => e.t === 'item' && e.it.lw === LW.id); o.part = LW.pack.some(e => e.t === 'part' && e.k === 'klinge:2'); o.mod = LW.pack.some(e => e.t === 'mod' && e.k === 'test:1' && e.n === 2);
-      put({ k: 'coin', v: 5 }); updPickups(.016); o.stack = LW.pack.filter(e => e.t === 'gold').length === 1 && LW.pack.find(e => e.t === 'gold').n === 30;
+      // 6.2: Stapelbares in den Sammelbeutel (LW.pouch), Gegenstände in Rucksack-Plätze
+      o.gold = lPouchHas('gold') === 25 && P.gold === gold0; o.mat = lPouchHas('erz') === 3 && (P.mats.erz || 0) === mats0;
+      o.item = LW.pack.some(e => e.t === 'item' && e.it.lw === LW.id) && LW.pack.length === 1; o.part = lPouchHas('part:klinge:2') === 1; o.mod = lPouchHas('mod:test:1') === 2;
+      put({ k: 'coin', v: 5 }); updPickups(.016); o.stack = lPouchHas('gold') === 30 && !LW.pack.some(e => e.t === 'gold');
       const s0 = SAVE.meta.lande.stones; put({ k: 'lstone' }); updPickups(.016); o.stone = SAVE.meta.lande.stones === s0 + 1;
       P.hp = 10; put({ k: 'heart' }); updPickups(.016); o.heart = P.hp > 10;
-      while (LW.pack.length < lCap()) LW.pack.push({ t: 'mat', k: MATORDER[LW.pack.length % 13], n: 1 }); LW.pack.length = lCap();
-      const it = makeItem({ slot: 'weapon', base: CLASSES[P.cls].start, tier: 1, rar: 1 }); put({ k: 'loot', it }); updPickups(.016); o.full = pickups.some(c => c.it === it) && LW.pack.length === lCap();
+      while (LW.pack.length < lCap()) LW.pack.push({ t: 'item', it: makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 0 }) });
+      const it = makeItem({ slot: 'weapon', base: CLASSES[P.cls].start, tier: 1, rar: 1 }); put({ k: 'loot', it }); put({ k: 'coin', v: 7 }); updPickups(.016); o.full = pickups.some(c => c.it === it) && LW.pack.length === lCap() && lPouchHas('gold') === 37;
       LW.pack.length = 4; const parts0 = JSON.stringify(P.parts); const e = lSpawn('goblin', P.x + 30, P.y, {}); lKillPre(e); P.parts['griff:3'] = (P.parts['griff:3'] || 0) + 1; lKillPost(e);
-      o.parts = LW.pack.some(x => x.t === 'part' && x.k === 'griff:3') && JSON.stringify(P.parts) === parts0;
+      o.parts = lPouchHas('part:griff:3') === 1 && JSON.stringify(P.parts) === parts0;
       // echte Mods (js/mods.js): Bodenbeute „mod“ → landePackAdd → Rucksack, daheim über modGive
-      LW.pack.length = 0; pickups.length = 0; o.realMod = true;
+      LW.pack.length = 0; LW.pouch = {}; pickups.length = 0; o.realMod = true;
       if (typeof modRoll === 'function' && typeof modDrop === 'function') {
         const k = modRoll(.1, 1), n0 = (P.mods && P.mods[k]) || 0; lDrop(P.x, P.y, { t: 'mod', k, n: 1 }); for (const c of pickups) { c.t = 1; c.z = 0; c.vz = 0; c.vx = c.vy = 0; c.x = P.x; c.y = P.y; } updPickups(.016);
-        const inPack = LW.pack.some(e => e.t === 'mod' && e.k === k) && ((P.mods && P.mods[k]) || 0) === n0; lDeliver(LW.pack.splice(0)); o.realMod = inPack && P.mods[k] === n0 + 1;
+        const inPack = lPouchHas('mod:' + k) === 1 && ((P.mods && P.mods[k]) || 0) === n0; lDeliver(lPouchTakeAll()); o.realMod = inPack && P.mods[k] === n0 + 1;
       }
-      LW.pack.length = 0; pickups.length = 0; return o;
+      LW.pack.length = 0; LW.pouch = {}; pickups.length = 0; return o;
     }, [CALM.toString()]);
-    ok(pk.gold && pk.mat && pk.item && pk.part && pk.mod, 'Beute (Gold, Material, Gegenstand, Bauteil, Mod) kommt in den Rucksack, nicht nach Hause');
-    ok(pk.realMod, 'Mods aus js/mods.js: Bodenbeute über landePackAdd in den Rucksack, daheim über modGive');
+    ok(pk.gold && pk.mat && pk.item && pk.part && pk.mod, 'Beute: Gegenstand in den Rucksack, Gold, Material, Bauteil, Mod in den Sammelbeutel – nichts direkt nach Hause' + (pk.gold && pk.mat && pk.item && pk.part && pk.mod ? '' : ' ' + JSON.stringify(pk)));
+    ok(pk.realMod, 'Mods aus js/mods.js: Bodenbeute über landePackAdd in den Sammelbeutel, daheim über modGive');
     ok(pk.stack && pk.heart && pk.stone, 'Gold stapelt sich, Herzen heilen wie immer, Leuchtfeuersteine gehen gleich aufs Konto');
-    ok(pk.full && pk.parts, 'Rucksack voll: Beute bleibt liegen; Bauteile aus Kills wandern in den Rucksack');
+    ok(pk.full && pk.parts, 'Rucksack voll: Gegenstand bleibt liegen, Gold kommt trotzdem in den Sammelbeutel; Bauteile aus Kills wandern in den Sammelbeutel');
     const eg = await page.evaluate(() => {
       const o = {}, n0 = SAVE.meta.pets.eggs.length; P.inv = 999; LW.pack.length = 0; pickups.length = 0;
       const d = lEgg(2); o.roll = !!d && !!PET_SP[d.sp];
@@ -344,7 +345,7 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
       lMisEvent('kill'); lMisEvent('kill'); o.done = k.done;
       const rep0 = SAVE.meta.lande.rep; ON.l_claim(null, null, LW.mis.indexOf(k)); o.claim = k.paid && SAVE.meta.lande.rep === rep0 + k.rep;
       const tr = lNear(P.x, P.y, 300).find(n => n.k === 'npc' && n.role === 'trade'); LW.tnpc = tr; LW.offers.set(tr.op, [{ give: [{ t: 'gold', n: 50 }], get: { t: 'gem', k: 'rubin:1', n: 1 } }]); LW.pack = [{ t: 'gold', n: 60 }];
-      ON.l_buyo(null, null, 0); o.trade = LW.pack.some(e => e.t === 'gem') && LW.pack.find(e => e.t === 'gold').n === 10;
+      ON.l_buyo(null, null, 0); o.trade = lPouchHas('gem:rubin:1') === 1 && lPouchHas('gold') === 10 && !LW.pack.length;
       LW.t = LDAY * .75; LW.tick = 0; lTick(.016); o.night = LW.danger === 2 && bg.b.dark > .3; LW.t = LDAY * .2; LW.tick = 0; lTick(.016); o.day = LW.danger === 0;
       // Giftluft: ohne Kräutermaske tut es weh, mit nicht
       let R = null; for (let r = 60; r < 200 && !R; r += 2) for (let a = 0; a < 6.283 && !R; a += .05) { const c = lCell(Math.round(Math.cos(a) * r / LRC), Math.round(Math.sin(a) * r / LRC)); if (c.biome === 'giftmoor') R = c; }
@@ -425,7 +426,7 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
         o.bossOk = !!e && e.bossId === id;
         if (e) {
           killEnemy(e, 1, 0);
-          const n = t => LW.pack.filter(x => x.t === t).reduce((s, x) => s + (x.n || 1), 0);
+          const n = t => LW.pack.concat(lPouchList()).filter(x => x.t === t).reduce((s, x) => s + (x.n || 1), 0);   // Rucksack und Sammelbeutel
           o.bPack = { part: n('part'), egg: pickups.filter(c => c.k === 'legg').length, mod: n('mod') };
           o.bHome = { parts: Object.values(P.parts).reduce((s, v) => s + v, 0), mods: Object.values(P.mods || {}).reduce((s, v) => s + v, 0), eggs: SAVE.meta.pets.eggs.length };
         }
@@ -579,7 +580,7 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
     ok(await inView('[data-act="l_tobag"]'), pre + 'Rucksack: „In die Begleiter-Tasche“ sichtbar');
     await shot('05_inv');
     await tap('[data-act="l_tobag"]');
-    ok(await page.evaluate(() => lBag(LW.pet).length === 1 && LW.pack.length === 2), pre + 'Gegenstand liegt jetzt in der Begleiter-Tasche');
+    ok(await page.evaluate(() => lBag(LW.pet).length === 1 && LW.pack.length === 0 && lPouchHas('gold') === 120 && lPouchHas('erz') === 6), pre + 'Gegenstand liegt jetzt in der Begleiter-Tasche, Gold und Erz im Sammelbeutel');
     await tap('[data-act="l_resume"]');
     // Karte groß über die Minikarte, zoomen
     await page.locator('#lhMap').tap(); await page.waitForTimeout(400);

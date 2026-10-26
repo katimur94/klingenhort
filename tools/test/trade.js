@@ -91,7 +91,7 @@ const PETS_MOCK = () => {
     // 5) einmal pro Code und Konto, eigener Code, voller Beutel
     o.own = trAccept(back.p) === 'own';
     SAVE.meta.trades.own = []; const n0 = P.bag.length; o.first = trAccept(back.p) === 'ok' && P.bag.length === n0 + 1; o.second = trAccept(back.p) === 'used' && P.bag.length === n0 + 1;
-    const c2 = trParse(trMake('i', trItemData(sw))).p; SAVE.meta.trades.own = []; while (P.bag.length < 30) P.bag.push(makeItem({ slot: 'helm', tier: 0, rar: 0 }));
+    const c2 = trParse(trMake('i', trItemData(sw))).p; SAVE.meta.trades.own = []; while (P.bag.length < bagCap()) P.bag.push(makeItem({ slot: 'helm', tier: 0, rar: 0 }));
     o.full = trAccept(c2) === 'bag' && !SAVE.meta.trades.got.includes(c2.id); P.bag.length = 2;
     // 6) Bündel: Absender verliert, Empfänger bekommt
     P.mats = { erz: 10, leder: 4 }; P.gems = { 'rubin:1': 3 }; P.parts = { 'klinge:2': 2 };

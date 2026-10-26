@@ -798,7 +798,7 @@ function arteIconURL(kind, v) { const k = kind + ':' + (v | 0); if (AICO[k]) ret
 /* ---------- Belohnungen geben: daheim (sicher) oder als Beute vor die Füße (Freiwelt: in den Rucksack) ---------- */
 function aRow(icon, label, col, sub) { return `<div class="row arrow" style="cursor:default"><div class="ic" style="box-shadow:inset 0 0 0 2px ${col}"><img src="${icon}" alt=""></div><div><div class="nm" style="color:${col}">${esc(label)}</div>${sub ? `<div class="st">${esc(sub)}</div>` : ''}</div><span></span></div>`; }
 function aItemHome(it) {
-  if (P.bag.length < 30) { addToBag(it); return _t('Im Beutel'); }
+  if (P.bag.length < bagCap()) { addToBag(it); return _t('Im Beutel'); }
   const S = SAVE.meta.hide.stash, cap = typeof stashCap === 'function' ? stashCap() : 0;
   if (S.length < cap) { hook('pickup', it); S.push(it); return _t('Im Lager'); }
   const g = addToBag(it); return _t('Kein Platz: für {n} Gold verkauft', { n: fmt(g) });

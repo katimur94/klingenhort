@@ -129,16 +129,18 @@ function openAlchemy() {
   else body += '<p class="sub">' + _t('Elixiere gibt es ab Stufe 3.') + '</p>';
   stationShell('alchemie', body);
 }
-/* Schatzkammer: Lager für alle Helden */
-function stashCap() { return 12 * hideLv('lager'); }
+/* Schatzkammer: Lager für alle Helden – bis Stufe 15 (6.2), große Raster scrollen für sich */
+const STASH_CAP = [0, 12, 24, 36, 48, 60, 80, 100, 125, 150, 180, 210, 250, 300, 350, 400];
+function stashCap() { return STASH_CAP[clamp(Math.floor(hideLv('lager')) || 0, 0, 15)]; }
 function openStash() {
   const S = SAVE.meta.hide.stash, cap = stashCap(), sel = selItem && (P.bag.find(x => x.uid === selItem) || S.find(x => x.uid === selItem));
   const slot = (it, act) => `<button class="slot" data-act="${act}" data-id="${it.uid}" style="box-shadow:inset 0 0 0 2px ${itemColor(it)}${sel === it ? ',0 0 0 2px #e8b04a' : ''}" aria-label="${esc(itemName(it))}"><img src="${itemIconURL(it)}" alt="">${it.up ? `<span class="u">+${it.up}</span>` : ''}${it.fz ? `<span class="n">★${it.fz}</span>` : ''}</button>`;
   stationShell('lager', `<p class="sub">${_t('Antippen zum Auswählen, nochmal antippen zum Verschieben. Das Lager teilen sich alle deine Helden.')}</p>
-  <div class="split"><div><div class="box"><h3 style="margin-top:0">${_t('BEUTEL {n}/{max}', { n: P.bag.length, max: 30 })}</h3><div class="grid">${P.bag.map(it => slot(it, 'stin')).join('') || `<p class="sub">${_t('Leer')}</p>`}</div></div>
-  <div class="box" style="margin-top:10px"><h3 style="margin-top:0">${_t('LAGER {n}/{max}', { n: S.length, max: cap })}</h3><div class="grid">${S.map(it => slot(it, 'stout')).join('') || `<p class="sub">${_t('Leer')}</p>`}</div></div></div>
+  <div class="split"><div><div class="box">${capHead(_t('BEUTEL'), P.bag.length, bagCap(), P.bag.length > 1 ? `<button class="btn alt sm" data-act="stsort" data-id="bag">${_t('Sortieren')}</button>` : '')}${itemGridHTML(P.bag.map(it => slot(it, 'stin')), 'stbag')}</div>
+  <div class="box" style="margin-top:10px">${capHead(_t('LAGER'), S.length, cap, S.length > 1 ? `<button class="btn alt sm" data-act="stsort" data-id="stash">${_t('Sortieren')}</button>` : '')}${itemGridHTML(S.map(it => slot(it, 'stout')), 'ststash')}</div></div>
   ${sel ? `<div class="side sheet">${itemDetail(sel, `<button class="btn sm" data-act="${P.bag.includes(sel) ? 'stin' : 'stout'}" data-id="${sel.uid}">${P.bag.includes(sel) ? _t('Ins Lager legen') : _t('In den Beutel')}</button>`)}</div>` : `<div class="side"><p class="sub" style="margin-top:0">${_t('Tippe einen Gegenstand an.')}</p></div>`}</div>`, true);
 }
+ON.stsort = id => { const L = id === 'stash' ? SAVE.meta.hide.stash : P.bag; L.sort(itemSortKey); sfx('click'); saveChar(); persist(); openStash(); };
 /* Trainingsplatz */
 function openTraining() {
   const lv = hideLv('training');

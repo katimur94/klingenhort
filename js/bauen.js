@@ -248,7 +248,7 @@ const GHIDE = [
 ];
 // prop = Bild aus den Landen, hits = Treffer, grow = nachwachsen (s), out = sicher [von, bis], extra = [Material, Chance, von, bis]
 const GHK = {
-  baum: { prop: 'eiche', v: 0, r: 5, hits: 4, grow: 300, out: { holz: [3, 5] }, extra: [['feder', .3, 1, 2], ['samen', .2, 1, 1]], snd: 'wood', kind: 'baum' },
+  baum: { prop: 'eiche', v: 0, r: 5, hits: 4, grow: 300, out: { holz: [3, 5] }, extra: [['feder', .4, 1, 2], ['samen', .2, 1, 1]], snd: 'wood', kind: 'baum' },
   fels: { prop: 'fels', v: 0, r: 8, hits: 5, grow: 360, out: { stein: [3, 5] }, extra: [['erz', .3, 1, 2]], snd: 'mine', kind: 'fels' },
   stein: { prop: 'stein', v: 0, r: 5, hits: 3, grow: 300, out: { stein: [2, 3] }, extra: [], snd: 'mine', kind: 'stein' },
   busch: { prop: 'busch', v: 0, r: 4, hits: 2, grow: 180, out: { faser: [2, 3] }, extra: [['samen', .7, 1, 2]], snd: 'dig', kind: 'busch' }
@@ -386,7 +386,7 @@ function gatherYield(o, kind) {
     case 'knochen': add('knochen', ri(2, 3) * m); if (o.t === 'knochenbaum') add('holz', 1); break;
     case 'pilz': add('faser', ri(2, 3) * (o.t === 'riesenpilz' ? 2 : 1)); if (R() < .5) add('samen', 1); break;
     case 'kaktus': add('faser', ri(2, 3)); if (R() < .4) add('holz', 1); break;
-    case 'busch': add('faser', ri(1, 2)); if (R() < .45) add('samen', 1); if (R() < .08) add('feder', 1); break;
+    case 'busch': add('faser', ri(1, 2)); if (R() < .45) add('samen', 1); if (R() < .12) add('feder', 1); break;
     case 'stein': case 'fels': {
       const big = kind === 'fels' ? 2 : 1, rv = o.t === 'salzk' ? 6 : o.v, mr = GMARMOR[rv] != null ? GMARMOR[rv] : clamp((st - 15) / 60, 0, .35), ob = GOBS[rv] != null ? GOBS[rv] : st >= 35 ? clamp((st - 35) / 100, 0, .3) : 0;
       add('stein', (big > 1 ? ri(3, 5) : ri(1, 3)) * m); if (R() < mr) add('marmor', ri(1, 2) * big); if (R() < ob) add('obsidian', ri(1, 2) * big); if (big > 1 && R() < .25) add('erz', ri(1, 2));
