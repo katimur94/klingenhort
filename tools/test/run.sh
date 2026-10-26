@@ -25,6 +25,7 @@ run node tools/test/screens.js 390 844 /tmp/klingenhort-test/screens-hoch
 run node tools/test/screens.js 844 390 /tmp/klingenhort-test/screens-quer
 run node tools/test/screens.js 1280 720 /tmp/klingenhort-test/screens-pc pc
 run node tools/test/forge.js /tmp/klingenhort-test/forge
+run node tools/test/mods.js /tmp/klingenhort-test/mods
 run node tools/test/pets.js /tmp/klingenhort-test/pets
 run node tools/test/mastery.js /tmp/klingenhort-test/mastery
 run node tools/test/trade.js 390 844 /tmp/klingenhort-test/trade
