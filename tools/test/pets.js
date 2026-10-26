@@ -236,8 +236,8 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     petCast = oc; o.casts = casts; o.spellsAll = PET_SPELLS.every(k => casts[k] > 0); o.shield = shieldUsed;
     // Mods (Teil M) reisen im Beutel und kommen beim Helden an (ohne modGive: P.mods)
     const bp = petGive('wal', { lv: 30 }); bp.bag = []; const okMod = petBagAdd(bp, { t: 'mod', k: 'glyphe_kette:3', n: 2 }), badMod = petBagAdd(bp, { t: 'mod', k: '__proto__', n: 1 });
-    const mg0 = window.modGive; window.modGive = undefined; P.mods = {}; petBagEmpty(bp); window.modGive = mg0;
-    o.mods = okMod && !badMod && P.mods['glyphe_kette:3'] === 2 && !!petLootFix({ t: 'mod', k: 'rune_kraft:1', n: 1 }) && !petLootFix({ t: 'mod', k: 5 });
+    P.mods = {}; petBagEmpty(bp);
+    o.mods = okMod && !badMod && P.mods['glyphe_kette:3'] === 2 && !!petLootFix({ t: 'mod', k: 'rune_kraft:1', n: 1 }) && !petLootFix({ t: 'mod', k: 5 }) && (typeof modValid !== 'function' || !petLootFix({ t: 'mod', k: 'glyphe_quatsch:3', n: 1 }));
     // Tausch: Gene, Mutation, Talente, Ausrüstung und Zauber reisen mit; Zucht-Eier behalten ihre Gene
     const tr = petGive('fuchs', { lv: 50, gn: [11, 22, 33, 44, 55], mu: 'gold' }); tr.tl = '500000000000000'; tr.mg = ['blitz', null, null]; tr.eq = { h: petGearNew('h', 2, 40) };
     const d = petExport(M.list.indexOf(tr)), dj = JSON.parse(JSON.stringify(trPlain(d, 0)));

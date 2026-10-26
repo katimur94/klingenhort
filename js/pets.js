@@ -1586,8 +1586,8 @@ function petLootFix(e) {
     case 'part': return typeof e.k === 'string' && e.k.length < 40 && /^[a-z]+(:[a-z]+)?:\d+$/.test(e.k) ? { t: 'part', k: e.k, n: n(e.n) } : null;
     case 'egg': { if (!e.d || !PET_SP[e.d.sp]) return null; const d = { egg: 1, sp: e.d.sp, tier: PET_SP[e.d.sp].t }, gn = petGenesFix(e.d.gn); if (gn) d.gn = gn; if (PET_MUT[e.d.mu]) d.mu = e.d.mu; return { t: 'egg', d }; }
     case 'gold': return { t: 'gold', n: n(e.n) };
-    // Mods aus js/mods.js (Teil M): Schlüssel wie 'glyphe_kette:3'; ob es den Mod gibt, prüft mods.js beim Ausliefern
-    case 'mod': return typeof e.k === 'string' && /^[a-z0-9_][a-z0-9_:.-]{0,39}$/i.test(e.k) && !/^(__proto__|constructor|prototype)$/.test(e.k) ? { t: 'mod', k: e.k, n: n(e.n) } : null;
+    // Mods aus js/mods.js (Teil M): Schlüssel wie 'glyphe_kette:3' – gültig laut modValid (ohne mods.js: nur das Format)
+    case 'mod': { if (typeof e.k !== 'string' || !/^[a-z0-9_][a-z0-9_:.-]{0,39}$/i.test(e.k) || /^(__proto__|constructor|prototype)$/.test(e.k)) return null; if (typeof modValid === 'function') { try { if (!modValid(e.k)) return null; } catch (_) { return null; } } return { t: 'mod', k: e.k, n: n(e.n) }; }
   }
   return null;
 }
