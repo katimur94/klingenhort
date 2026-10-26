@@ -28,6 +28,7 @@ const ARTE_SEED = 61061, ARTE_NC = 830, ACK = 768, AWR = 9000, ASTEP = 16;   // 
 const AGATE = .5;   // das Weltentor steht in der Mitte von Chunk (0, 0)
 function aH(a, b, c, d) { let h = 0x9E3779B9 ^ ARTE_SEED; for (const x of [a, b, c, d]) { if (x === undefined) break; h = Math.imul(h ^ (x | 0), 0x85EBCA6B); h ^= h >>> 13; h = Math.imul(h, 0xC2B2AE35); h ^= h >>> 16; } return h >>> 0; }
 const aPk = (R, a) => a[Math.floor(R() * a.length)];
+function aShuf(R, a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
 function aFill(t, V) { return String(t).replace(/\{(\w+)\}/g, (m, k) => (V[k] != null ? V[k] : m)); }
 function aNum(n) { try { return Number(n).toLocaleString(typeof LOCALE !== 'undefined' ? LOCALE : 'de-DE'); } catch (_) { return String(n); } }
 function aLocal() { return SAVE && SAVE.meta ? SAVE.meta.arte : null; }
@@ -601,7 +602,7 @@ function aChain(c) {
   beats.push(th.e);
   const kinds = [], col = [], days = [], names = []; let day = 1 + Math.floor(R() * 3), pref = [];
   for (let i = 0; i < L; i++) {
-    if (!pref.length) pref = th.kinds.slice().sort(() => R() - .5);
+    if (!pref.length) pref = aShuf(R, th.kinds.slice());
     let k = R() < .72 ? pref.shift() : aPk(R, AKINDS); for (let t = 0; t < 4 && kinds.includes(k); t++) k = aPk(R, AKINDS);
     kinds.push(k); col.push(Math.floor(R() * 6)); days.push(day); day += 1 + Math.floor(R() * 5);
     const nm = AKIND[k].nm.map(x => aFill(x, V)), o = Math.floor(R() * nm.length); let n = nm[o];
@@ -1370,7 +1371,7 @@ function encounterRoll(ctx) {
     let res = null;
     if (d0 >= 3 && T.n < 4) {
       const R = mulberry(aH(20, cx, cy, T.seed)), first = !!M && !Object.keys(M.enc).some(k => M.enc[k] > 0);
-      if (R() < (first ? .09 : .013 + Math.min(.012, dep * .03))) {
+      if (R() < (first ? .05 : .013 + Math.min(.012, dep * .03))) {
         const cat = aCatOf(ctx.biome), W = {};
         for (const k in ENCD) { const D = ENCD[k]; if (dep < (D.d0 || 0) || (D.once && M && M.enc[k]) || (D.only && !D.bio.includes(cat))) continue; W[k] = (D.w || 1) * (D.bio && D.bio.includes(cat) ? 3 : 1) * (D.bio && !D.bio.includes('x') && !D.bio.includes(cat) && cat !== 'x' ? .35 : 1); }
         const k = wpick(W, R);

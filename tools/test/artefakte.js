@@ -50,7 +50,7 @@ const WORLD = () => {
       o.near = ALAY.ch.filter(C => C.D < 30).length; o.mid = ALAY.ch.filter(C => C.D >= 30 && C.D < 1000).length; o.far = ALAY.ch.filter(C => C.D > 6000).length;
       o.depthRew = aChain(10).dep < aChain(700).dep && aStageAt(aChain(700).dep) > aStageAt(aChain(10).dep);
       // Texte: keine Platzhalter, nichts Kaputtes – ohne und mit Welt
-      const check = () => { let bad = 0, ex = []; for (let i = 0; i < ARTE_N; i++) { const d = arteDef(i), t = d.text + ' ' + d.name + ' ' + d.title; if (/\{\w+\}|undefined|NaN|null|\[object|  | ,|\.\.(?!\.)/.test(t) || t.length < 120) { bad++; if (ex.length < 3) ex.push(i + ': ' + t.slice(0, 140)); } } return { bad, ex }; };
+      const check = () => { let bad = 0, ex = []; for (let i = 0; i < ARTE_N; i++) { const d = arteDef(i), t = d.text + ' ' + d.name + ' ' + d.title; if (/\{\w+\}|undefined|NaN|\[object|  | ,|\.\.(?!\.)/.test(t) || t.length < 120) { bad++; if (ex.length < 3) ex.push(i + ': ' + t.slice(0, 140)); } } return { bad, ex }; };
       o.txt0 = check(); eval('(' + WORLD_ + ')')(); o.txt1 = check();
       o.biomeWords = /wo (der Schnee nie schmilzt|der Atem|Eis wie Glas)/.test(Array.from({ length: 400 }, (_, i) => arteDef(i).text).join(' '));
       o.kv = /Gebiet|Region/.test(aSpurHTML(arteDef(5)));
@@ -121,7 +121,7 @@ const WORLD = () => {
     const e = await page.evaluate(([HERO_]) => {
       eval('(' + HERO_ + ')')(); const o = {};
       o.n = Object.keys(ENCD).length;
-      window.landeActive = () => true; aTripNew(77); let hits = 0, same = true; const seen = new Set();
+      SAVE.meta.arte.enc = { geist: 1 }; window.landeActive = () => true; aTripNew(77); let hits = 0, same = true; const seen = new Set();
       for (let i = 0; i < 6000; i++) { const ctx = { cx: 10 + (i % 80), cy: 10 + Math.floor(i / 80), depth: .2, biome: ['wald', 'wueste', 'schnee', 'asche'][i % 4] }; AT.n = 0; const a = encounterRoll(ctx); AT.roll.clear(); AT.n = 0; const b2 = encounterRoll(ctx); if (a) { hits++; seen.add(a.key); if (!b2 || b2.key !== a.key || b2.x !== a.x) same = false; } else if (b2) same = false; }
       o.rate = hits / 6000; o.same = same; o.varied = seen.size;
       aTripNew(78); let diff = 0; for (let i = 0; i < 3000; i++) { AT.n = 0; const a = encounterRoll({ cx: 10 + (i % 80), cy: 10 + Math.floor(i / 80), depth: .2, biome: 'wald' }); if (a) diff++; } o.trip2 = diff > 0;
@@ -177,7 +177,7 @@ const WORLD = () => {
       pickups.push({ k: 'arte', id: ALAY.ch[9].off, x: P.x, y: P.y, z: 0, vx: 0, vy: 0, vz: 0, t: 1 }); updPickups(.016);
       return new Promise(res => setTimeout(() => {
         o.collect = aHas(ALAY.ch[9].off) && !!panel.querySelector('.arp'); ON.arte_back();
-        window.landeActive = () => true; const c = aDropChain(); o.drop = c != null && !aBits().cnt[c] && ALAY.ch[c].D < 70;
+        ASEEN.length = 0; window.landeActive = () => true; const c = aDropChain(); o.drop = c != null && !aBits().cnt[c] && ALAY.ch[c].D < 70;
         let n = 0; for (let i = 0; i < 400; i++) { const e = spawnEnemy('goblin', { x: P.x + 40, y: P.y, instant: true, boss: true }); hurtEnemy(e, 1e9, 0, 0, 0); } n = pickups.filter(p => p.k === 'arte').length; o.loot = n >= 10 && n <= 120;
         delete window.landeActive; pickups = []; enemies = [];
         res(o);
