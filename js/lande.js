@@ -1152,7 +1152,7 @@ function lEntryOk(e) {
   if (!e || typeof e !== 'object') return false;
   switch (e.t) {
     case 'item': return !!e.it && typeof e.it === 'object' && !!e.it.slot && !!e.it.uid;
-    case 'mat': return !!MATS[e.k] && e.n > 0;
+    case 'mat': return Object.prototype.hasOwnProperty.call(MATS, e.k) && e.n > 0;
     case 'gem': return typeof e.k === 'string' && !!GEMS[e.k.split(':')[0]] && e.n > 0;
     case 'part': return typeof e.k === 'string' && e.n > 0;
     case 'egg': return !!e.d && typeof e.d === 'object';
@@ -1363,7 +1363,7 @@ function lPouchTakeAll() { const l = lPouchList(); LW.pouch = {}; return l; }
 function landePouchAdd(k, n, quiet) {
   if (!lOn()) return false;
   const e = lPouchEntry(k, n); if (!e || !(e.n > 0) || !lEntryOk(e)) return false;
-  lPouch(); lPouchPut(e); if (!quiet) lGot(e); return true;
+  lPouch(); if (!lPouchPut(e)) return false; if (!quiet) lGot(e); return true;
 }
 
 /* ---------- Heimbringen: Beutel → Lager → Fundkiste → verkauft (Vögel: Lager → Beutel → Fundkiste) ---------- */
@@ -2653,10 +2653,10 @@ function lInv() {
     : `<div class="box" style="margin-top:10px"><p class="sub" style="margin:0">${lPetApi() ? _t('Kein Begleiter dabei: Stirbst du, ist alles verloren.') : _t('Ohne Begleiter-Tasche: Stirbst du, ist alles verloren.')}</p></div>`;
   const pouchG = pouch.map(e => lSlot(e, 'u:' + lPouchKey(e), LG.sel === 'u:' + lPouchKey(e))).join('');
   const pouchBox = `<div class="box lpouch"><h3 style="margin-top:0;line-height:1.6">${_t('SAMMELBEUTEL')} <span class="lpdim">${_t('ohne Platzgrenze · {n} G', { n: fmt(lSum(pouch)) })}</span></h3>${pouch.length ? `<div class="lpg">${pouchG}</div>` : `<p class="sub" style="margin:0">${_t('Gold, Material, Edelsteine, Bauteile und Mods landen hier – sie brauchen keinen Platz im Rucksack.')}</p>`}</div>`;
-  const birds = typeof birdBarHTML === 'function' ? birdBarHTML() : '';
+  const birds = typeof birdBarHTML === 'function' ? birdBarHTML() : '', bTop = typeof birdTotal === 'function' && birdTotal() > 0;   // Vögel dabei: oben, sonst der Hinweis unten
   showOverlay(`${lHead(_t('RUCKSACK {n}/{max}', { n: L.pack.length, max: cap }), 'l_resume', `<span class="pill dim">${_t('{n} G', { n: fmt(lSum(L.pack) + lSum(pouch)) })}</span>`)}
-  ${birds}<div class="split"><div>${gearBox('lnw')}
-  <div class="box lpk"><h3 style="margin-top:0;line-height:1.6">${_t('Rucksack').toLocaleUpperCase(LOCALE)} <span style="font-family:var(--f-body);font-size:17px;color:#ff8a7a">${_t('geht beim Tod verloren')}</span></h3><div class="${L.pack.length > 24 ? 'igrid scroll' : ''}" data-sk="lpack"><div class="grid">${packG}</div></div><div class="acts" style="justify-content:flex-start;margin-top:8px">${lJunk().length ? `<button class="btn ${LG.arm === 'junk' ? 'red' : 'alt'} sm" data-act="l_junk">${LG.arm === 'junk' ? _t('Wirklich {n} wegwerfen?', { n: lJunk().length }) : _t('Plunder wegwerfen ({n})', { n: lJunk().length })}</button>` : ''}${L.scrolls ? `<button class="btn alt sm" data-act="l_scroll">${_t('Rückkehrrolle lesen ({n})', { n: L.scrolls })}</button>` : ''}</div></div>${pouchBox}${petBox}</div>${side}</div>`, true);
+  <div class="split"><div>${bTop ? birds : ''}${gearBox('lnw')}
+  <div class="box lpk"><h3 style="margin-top:0;line-height:1.6">${_t('Rucksack').toLocaleUpperCase(LOCALE)} <span style="font-family:var(--f-body);font-size:17px;color:#ff8a7a">${_t('geht beim Tod verloren')}</span></h3><div class="${L.pack.length > 24 ? 'igrid scroll' : ''}" data-sk="lpack"><div class="grid">${packG}</div></div><div class="acts" style="justify-content:flex-start;margin-top:8px">${lJunk().length ? `<button class="btn ${LG.arm === 'junk' ? 'red' : 'alt'} sm" data-act="l_junk">${LG.arm === 'junk' ? _t('Wirklich {n} wegwerfen?', { n: lJunk().length }) : _t('Plunder wegwerfen ({n})', { n: lJunk().length })}</button>` : ''}${L.scrolls ? `<button class="btn alt sm" data-act="l_scroll">${_t('Rückkehrrolle lesen ({n})', { n: L.scrolls })}</button>` : ''}</div></div>${pouchBox}${petBox}${bTop ? '' : birds}</div>${side}</div>`, true);
 }
 function lJunk() { const low = MATORDER.slice(0, 4); return LW.pack.filter(e => (e.t === 'item' && e.it.rar === 0 && (!canEquip(e.it) || !P.gear[e.it.slot] || itemScore(e.it) <= itemScore(P.gear[e.it.slot]))) || (e.t === 'mat' && low.includes(e.k))); }
 ON.l_junk = () => { if (LG.arm !== 'junk') { LG.arm = 'junk'; lInv(); return; } const j = new Set(lJunk()); LW.pack = LW.pack.filter(e => !j.has(e)); LG.arm = null; LG.sel = null; sfx('wood'); toast(_t('{n} Dinge weggeworfen', { n: j.size }), '#a8997e'); lInv(); };
@@ -2691,7 +2691,7 @@ ON.l_drop = () => {
 ON.l_scroll = () => { if (!LW.scrolls) return; LW.scrolls--; LW.xs.push({ k: 'exit', t: 'rolle', x: P.x, y: P.y + 2, r: 0, ph: 0, open: true, solid: false, id: 'rolle' }); toast(_t('Ein Rückweg öffnet sich unter deinen Füßen – bleib stehen!'), '#e8dcc0'); sfx('cast'); lResume(); };
 ON.l_quit = () => {
   if (lDanger()) { setState('menu'); showOverlay(`<div class="center"><h2>${_t('MITTEN IM KAMPF!')}</h2><p class="sub">${_t('Abbrechen geht nur, wenn dich gerade nichts angreift. Lauf weg oder kämpfe!')}</p><div class="menu"><button class="btn" data-act="l_resume">${_t('Weiter')}</button></div></div>`); return; }
-  setState('menu'); showOverlay(`<div class="center"><h2>${_t('AUSFLUG ABBRECHEN?')}</h2><p class="sub">${_t('Der Rucksack bleibt in den Landen, und was du seit dem letzten Leuchtfeuer erkundet hast, ist vergessen. Du behältst die Ausrüstung, mit der du aufgebrochen bist, und alles in der Begleiter-Tasche.')}</p><div class="menu"><button class="btn red" data-act="l_quitok">${_t('Ja, abbrechen')}</button><button class="btn alt" data-act="l_resume">${_t('Weiter erkunden')}</button></div></div>`);
+  setState('menu'); showOverlay(`<div class="center"><h2>${_t('AUSFLUG ABBRECHEN?')}</h2><p class="sub">${_t('Rucksack und Sammelbeutel bleiben in den Landen, und was du seit dem letzten Leuchtfeuer erkundet hast, ist vergessen. Du behältst die Ausrüstung, mit der du aufgebrochen bist, alles in der Begleiter-Tasche und was Vögel schon heimgebracht haben.')}</p><div class="menu"><button class="btn red" data-act="l_quitok">${_t('Ja, abbrechen')}</button><button class="btn alt" data-act="l_resume">${_t('Weiter erkunden')}</button></div></div>`);
 };
 ON.l_quitok = () => { const r = lAbandon('quit'); toast(r.lost.length ? _t('Ausflug abgebrochen – {n} Dinge sind verloren.', { n: r.lost.length }) : _t('Ausflug abgebrochen.'), '#ff8a5a'); enterHideout(); };
 ON.l_wake = () => { lRelease(); enterHideout(); };
@@ -2941,7 +2941,7 @@ function lGate(from) {
   ${tools}
   <h3>${_t('WAS DU RISKIERST · {n} GOLD', { n: fmt(gv) })}</h3>${gear.map(it => landeLootHTML({ t: 'item', it })).join('')}
   <h3>${_t('WAS ÜBERLEBT')}</h3>${petHTML}
-  <div class="lrules"><div style="--c:var(--blood)">${_t('Stirbst du, sind Ausrüstung und Rucksack verloren.')}</div><div style="--c:var(--moss)">${_t('Nur die Begleiter-Tasche kommt heim – dein Begleiter teleportiert mit dir zurück.')}</div><div style="--c:var(--gold)">${_t('Raus kommst du durch ein Tor der Alten, das Weltentor oder ein Leuchtfeuer: hineinstellen und warten.')}</div><div style="--c:#57c7e6">${_t('Die Karte wird nur gesichert, wenn du ein Leuchtfeuer setzt oder entkommst – wer fällt, vergisst den Weg seit dem letzten Leuchtfeuer.')}</div><div style="--c:var(--blood)">${_t('Abbrechen geht nur außerhalb des Kampfes – wer mitten im Kampf das Spiel schließt, fällt.')}</div></div>
+  <div class="lrules"><div style="--c:var(--blood)">${_t('Stirbst du, sind Ausrüstung, Rucksack und Sammelbeutel verloren.')}</div><div style="--c:var(--moss)">${_t('Nur die Begleiter-Tasche kommt heim – dein Begleiter teleportiert mit dir zurück.')}</div><div style="--c:#9ae8ff">${_t('Gold, Material und Edelsteine landen im Sammelbeutel – ohne Platzgrenze. Magische Vögel bringen Beute schon unterwegs heim (dabei: {n}).', { n: typeof birdTotal === 'function' ? birdTotal() : 0 })}</div><div style="--c:var(--gold)">${_t('Raus kommst du durch ein Tor der Alten, das Weltentor oder ein Leuchtfeuer: hineinstellen und warten.')}</div><div style="--c:#57c7e6">${_t('Die Karte wird nur gesichert, wenn du ein Leuchtfeuer setzt oder entkommst – wer fällt, vergisst den Weg seit dem letzten Leuchtfeuer.')}</div><div style="--c:var(--blood)">${_t('Abbrechen geht nur außerhalb des Kampfes – wer mitten im Kampf das Spiel schließt, fällt.')}</div></div>
   <h3>${_t('RUF: {n}', { n: LREP[r].n.toLocaleUpperCase(LOCALE) })}</h3>${nx ? `<div class="lbar"><i style="width:${Math.round((M.rep - LREP[r].at) / (nx.at - LREP[r].at) * 100)}%"></i></div><p class="sub" style="margin-top:0">${_t('Noch {n} Ruf bis {r}: {d}', { n: nx.at - M.rep, r: nx.n, d: nx.d })}</p>` : ''}
   <div class="stats"><span>${_t('AUSFLÜGE {n}', { n: M.runs })}</span><span style="color:var(--moss)">${_t('ENTKOMMEN {n}', { n: M.ext })}</span><span style="color:var(--blood)">${_t('GEFALLEN {n}', { n: M.deaths })}</span><span style="color:var(--gold)">${_t('BESTE BEUTE {n}', { n: fmt(M.best) })}</span><span>${_t('REGIONEN {n}', { n: M.regs.length })}</span><span>${_t('WEITESTE REISE {d}', { d: lKm(M.far / 10000 * LWR * LCK) })}</span><span>${_t('GRENZEN {n}/{m}', { n: M.ring, m: LRMAX })}</span>${M.end ? `<span style="color:#ffd24a">${_t('ENDE DER WELT ERREICHT')}</span>` : ''}</div>${box}
   <div class="menu foot"><button class="btn" data-act="l_go" ${lvOk ? '' : 'disabled'}>${lvOk ? _t('Betreten: {n}', { n: esc(sel.n) }) : _t('Ab Level {n} – dir fehlen noch {m}', { n: 5, m: 5 - P.lv })}</button></div>`;

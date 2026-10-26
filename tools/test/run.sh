@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Alle automatischen Tests. Aufruf aus dem Repo: bash tools/test/run.sh
 # Startet das Spiel lokal auf Port 8777, prüft Handy (hoch/quer), iPhone, TikTok-Browser,
-# PC (Maus, Tastatur, Bildschirm-Erkennung, HD), alte Spielstände, Schmiede, Begleiter, Meisterschaft, Tausch, Auren, Basar, Verlorene Lande, Tausend Bosse, alle Sprachen und fotografiert alle Bildschirme nach /tmp/klingenhort-test/screens-*.
+# PC (Maus, Tastatur, Bildschirm-Erkennung, HD), alte Spielstände, Schmiede, Begleiter, Meisterschaft, Tausch, Auren, Basar, Verlorene Lande, Taschen & Vögel, Tausend Bosse, alle Sprachen und fotografiert alle Bildschirme nach /tmp/klingenhort-test/screens-*.
 # Rückgabe 0 = alles grün, sonst 1.
 cd "$(dirname "$0")/../.."
 PORT=8777; export BASE="http://localhost:$PORT/"
@@ -33,6 +33,7 @@ run node tools/test/trade.js 390 844 /tmp/klingenhort-test/trade
 run node tools/test/auras.js /tmp/klingenhort-test/auras
 run node tools/test/market.js 390 844 /tmp/klingenhort-test/market
 run node tools/test/lande.js /tmp/klingenhort-test/lande
+run node tools/test/taschen.js /tmp/klingenhort-test/taschen
 run node tools/test/bosses.js /tmp/klingenhort-test/bosses
 run node tools/test/artefakte.js /tmp/klingenhort-test/artefakte
 run node tools/i18n/check.js

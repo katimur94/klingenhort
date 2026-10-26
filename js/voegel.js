@@ -161,7 +161,6 @@ ON.v_go = () => {
   lResume(); birdChirp(k); setTimeout(() => sfx('loot'), 650);
   toast(_t('{bird} fliegt heim: {list}', { bird: BIRDS[k].n, list: p.join(' · ') || _t('geliefert') }), BIRDS[k].c);
 };
-ON.l_birds = ON.v_open;
 
 /* ---------- Bilder: sitzend (v_art) und fliegend (v_art_1/_2, Flügel oben/unten) ---------- */
 const VPAL = {   // dunkel, Körper, Bauch, Schnabel, Akzent
@@ -247,7 +246,7 @@ HOOK.draw.push(list => {
 
 document.head.insertAdjacentHTML('beforeend', `<style>
 .vbar{display:flex;align-items:center;gap:8px;background:var(--stone-lo);padding:6px 8px;margin:0 0 10px;box-shadow:inset 3px 0 0 #57c7e6}
-.vbar.none{font-size:16px;line-height:1.1;color:var(--parch-dim)}.vbar img{width:28px;height:28px;image-rendering:pixelated;flex:none}
+.box+.vbar{margin:10px 0 0}.vbar.none{font-size:16px;line-height:1.1;color:var(--parch-dim)}.vbar img{width:28px;height:28px;image-rendering:pixelated;flex:none}
 .vbar .vlist{display:flex;flex-wrap:wrap;gap:4px 10px;flex:1;min-width:0;font-family:var(--f-display);font-size:8px}.vbar .vlist span{display:inline-flex;align-items:center;gap:2px}
 .vbar .btn{flex:none;min-height:44px}
 .vtiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin-bottom:8px}

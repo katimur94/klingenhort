@@ -62,7 +62,7 @@ function itemDetail(it, actions) { return `<div class="detail"><div style="displ
 // angelegt (eq), im Beutel (bi) oder im Lager (si, gemeinsam für alle Helden)
 function findItem(id) { if (!id) return null; for (const s of ['weapon', 'armor', 'helm']) if (P.gear[s] && P.gear[s].uid === id) return { it: P.gear[s], eq: s }; const i = P.bag.findIndex(x => x.uid === id); if (i >= 0) return { it: P.bag[i], bi: i }; const S = stashItems(), j = S.findIndex(x => x.uid === id); return j >= 0 ? { it: S[j], si: j } : null; }
 // Kopf eines Rasters: „BEUTEL 42/66“ mit Füllstand, rechts optional Knöpfe
-function capHead(label, n, max, right) { const p = max ? clamp(n / max, 0, 1) : 0, f = n >= max ? ' full' : ''; return `<div class="caph"><h3>${label} <b class="${f}">${n}/${max}</b></h3>${right || ''}<i class="${f}" style="--p:${Math.round(p * 100)}%"></i></div>`; }
+function capHead(label, n, max, right) { const p = max ? clamp(n / max, 0, 1) : 0, f = n >= max ? ' full' : p >= .85 ? ' warn' : ''; return `<div class="caph"><h3>${label} <b class="${f}">${n}/${max}</b></h3>${right || ''}<i class="${f}" style="--p:${Math.round(p * 100)}%"></i></div>`; }
 // Gegenstands-Raster: ab vier Reihen scrollt es für sich (Position bleibt beim Neuzeichnen, data-sk)
 function itemGridHTML(slots, sk, empty) { return slots.length ? `<div class="igrid${slots.length > 24 ? ' scroll' : ''}" data-sk="${sk}"><div class="grid">${slots.join('')}</div></div>` : `<p class="sub">${empty || _t('Leer')}</p>`; }
 // Umschalter „Beutel | Lager“ über einer Liste (Händler, Basar, Werkbank) – nur wenn es ein Lager gibt

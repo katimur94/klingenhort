@@ -592,7 +592,7 @@ function verHTML(it) {
   if (!it) return wbIntro('ver', WB_INTRO.ver()) + `<p class="sub">${_t('Wähle einen Gegenstand aus dem Beutel.')}</p>`;
   const acts = verActs(it), f = findItem(it.uid);
   if (WB.act !== '' && !acts.includes(WB.act)) WB.act = acts.find(k => verHead(k, it).cls === 'ok') || acts[0] || '';
-  const top = (f && f.eq ? `<span class="pill">${_t('ANGELEGT')}</span>` : canEquip(it) ? `<button class="btn sm" data-act="mw_equip" data-id="${it.uid}">${_t('Anlegen')}</button>` : '') + (f && f.si != null ? `<span class="pill dim">${_t('IM LAGER')}</span>` : '');
+  const top = (f && f.eq ? `<span class="pill">${_t('ANGELEGT')}</span>` : canEquip(it) ? `<button class="btn sm" data-act="mw_equip" data-id="${it.uid}">${_t('Anlegen')}</button>` : '') + (f && f.si != null ? `<span class="pill dim" style="align-self:center">${_t('IM LAGER')}</span>` : '');
   const list = acts.map(k => { const H = verHead(k, it), open = WB.act === k; return `<div class="wbact${open ? ' open' : ''}"><button class="wbah" data-act="wb_act" data-id="${k}" aria-expanded="${open}"><img src="${H.ic}" alt=""><span><b>${H.n}</b><small class="${H.cls}">${H.st}</small></span><i>${open ? '▴' : '▾'}</i></button>${open ? `<div class="wbab">${verBody(k, it)}</div>` : ''}</div>`; }).join('');
   return `${wbIntro('ver', WB_INTRO.ver())}<div class="split wbver"><div>${verPickHTML(it)}</div><div class="side">${itemDetail(it, top)}${f && !f.eq ? compareHTML(it) : ''}<div class="wbacts">${list}</div></div></div>`;
 }
