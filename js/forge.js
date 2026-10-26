@@ -155,7 +155,8 @@ function combAll(types) {
 }
 
 /* ---------- Zerlegen ---------- */
-function salvRisky(it) { return it.rar >= 3 || !!it.mw || !!it.set || !!it.myth || it.up >= 5 || !!it.fz || it.gems.length > 0; }
+const hasMods = it => !!(it && Array.isArray(it.mods) && it.mods.length);   // Mods (js/mods.js) kommen beim Zerlegen zurück
+function salvRisky(it) { return it.rar >= 3 || !!it.mw || !!it.set || !!it.myth || it.up >= 5 || !!it.fz || it.gems.length > 0 || hasMods(it); }
 function salvGrade(it) { return 1 + Math.floor(it.tier / 3); }
 function salvMats(it) { const m = it.slot === 'weapon' ? 'erz' : 'leder', F = FORGE[it.tier], x = Object.keys(it.slot === 'weapon' ? F.w : F.a).find(k => k !== m); return { m, x: it.tier >= 2 ? x : null }; }
 // Was ein Gegenstand ungefähr ergibt (Vorschau)
@@ -178,13 +179,14 @@ function salvage(it, R) {
   const mn = ri(1, 2) + (it.rar >= 3 ? 1 : 0); gainMat(M.m, mn); R.mats[M.m] = (R.mats[M.m] || 0) + mn;
   if (M.x && Math.random() < .35) { gainMat(M.x, 1); R.mats[M.x] = (R.mats[M.x] || 0) + 1; }
   for (const g of it.gems) { gainGem(g); R.gems++; }
+  if (typeof modTakeBack === 'function') R.mods = (R.mods || 0) + modTakeBack(it);
   P.bag.splice(bi, 1);
   const xp = 4 + 2 * it.tier + 3 * Math.min(it.rar, 5) + (it.rar === 6 ? 8 : 0) + 2 * gs; R.xp += xp; R.n++;
   SAVE.meta.smith.salv++; smithXP(xp);
   return R;
 }
 // alle einfachen Gegenstände einer Seltenheit (ohne Sockelsteine, Aufwertung, Verschmelzung)
-function salvBulkList(r) { return P.bag.filter(x => x.rar === r && !x.gems.length && !x.up && !x.fz && !x.mw && !x.set && !x.myth); }
+function salvBulkList(r) { return P.bag.filter(x => x.rar === r && !x.gems.length && !x.up && !x.fz && !x.mw && !x.set && !x.myth && !hasMods(x)); }
 
 /* ---------- Meisterwerk schmieden ---------- */
 const MW = { slot: 'weapon', tier: -1, base: null, form: null, pick: {}, step: 1 };
@@ -327,7 +329,7 @@ function partImg(k, cls) { const p = pparse(k); return `<img${cls ? ` class="${c
 let wbTab = 'ver', wbFree = false, wbMode = 'node', fuseA = null, fuseB = null;
 const WB = { act: null, sub: null, bag: false, help: null, swap: {} };
 const WB_SECS = { node: ['ver', 'sch', 'zer', 'ws'], act: ['ver', 'sch', 'zer', 'ws'], smith: ['ver', 'sch', 'zer', 'ws'], jewel: ['ver', 'ws'] };
-const WB_CAN = { node: 'up fuse sock drill reroll umbau salv parts gems rez dye', smith: 'up fuse drill reroll umbau salv parts rez dye', jewel: 'sock gems trans' };
+const WB_CAN = { node: 'up mods fuse sock drill reroll refine umbau extract salv parts gems rez dye', smith: 'up mods fuse drill reroll refine umbau extract salv parts rez dye', jewel: 'mods sock gems trans' };
 WB_CAN.act = WB_CAN.node;
 const wbCan = k => (WB_CAN[wbMode] || WB_CAN.node).split(' ').includes(k);
 const WB_OLD = { up: ['ver', 'up'], fuse: ['ver', 'fuse'], sock: ['ver', 'sock'], craft: ['ws', 'rez'], forge: ['sch'], mw: ['sch'], gems: ['ws', 'gems'], dye: ['ws', 'dye'], trans: ['ws', 'trans'] };
@@ -342,7 +344,10 @@ const WB_INTRO = {
   up: () => _t('Macht den Gegenstand stärker, bis +10.'),
   fuse: () => _t('Opfere einen zweiten Gegenstand derselben Art für bessere Werte.'),
   sock: () => _t('Edelsteine in freie Sockel setzen – feste Boni.'),
-  reroll: () => _t('Zusatzwerte neu würfeln – reiner Zufall.'),
+  mods: () => _t('Mods geben neue Kräfte – manche wecken zusammen eine Resonanz.'),
+  reroll: () => _t('Einen Zusatzwert austauschen – zufällig oder mit einer Affix-Essenz.'),
+  refine: () => _t('Einen Zusatzwert um eine Stufe stärker machen.'),
+  extract: () => _t('Gegenstand opfern – ein Zusatzwert bleibt als Affix-Essenz.'),
   umbau: () => _t('Bessere Bauteile in dein Meisterwerk einbauen.'),
   salv: () => _t('Gegenstand in Bauteile und Material zerlegen.'),
   parts: () => _t('Drei gleiche Bauteile ergeben eins der nächsten Stufe.'),
@@ -357,7 +362,10 @@ const WB_HELP = {
   up: () => _t('Jede Stufe bis +10 macht den Gegenstand stärker. Bis +5 klappt es immer, danach sinkt die Chance. Geht es schief, sind nur die Materialien weg – der Gegenstand bleibt. Ab +5 leuchtet er, ab +8 bekommt er eine Aura.'),
   fuse: () => _t('Ein zweiter Gegenstand derselben Art wird geopfert. Deiner behält Aussehen und Namen und bekommt die höhere Stufe und Aufwertung beider, die besten Zusatzwerte, einen Zusatzwert mehr und +6 % Grundwerte (★). Gleiche Seltenheit: Chance auf die nächste – zwei Legendäre können sogar Mythisch werden.'),
   sock: () => _t('Edelsteine geben feste Boni: Rubin Schaden, Saphir Verteidigung, Smaragd Krit, Amethyst Lebenspunkte, Topas Gold. Drei gleiche ergeben in der Werkstatt einen besseren. Entfernen kostet Gold, die Steine kommen zurück.'),
-  reroll: () => _t('Würfelt alle Zusatzwerte neu. Die Anzahl bleibt, die Werte sind Zufall – es kann besser oder schlechter werden.'),
+  reroll: () => _t('Tippe einen Zusatzwert an. Umschmieden macht daraus einen zufälligen anderen mit derselben Stufe – jedes Mal an diesem Gegenstand wird es teurer. Mit einer Affix-Essenz bestimmst du selbst, was kommt.'),
+  refine: () => _t('Veredeln hebt einen Zusatzwert um eine Stufe. Die Seltenheit setzt die Grenze: Magisch bis Stufe 3, Legendär bis 6, Mythisch bis 8 – Meisterwerke eine Stufe mehr. Es klappt immer.'),
+  extract: () => _t('Der Gegenstand geht verloren, ein Zusatzwert deiner Wahl bleibt als Affix-Essenz. Die setzt du unter UMSCHMIEDEN in einen anderen Gegenstand derselben Art ein (Waffe oder Rüstung/Helm) – höchstens bis zu dessen Stufen-Grenze. Edelsteine und Mods kommen zurück in den Vorrat.'),
+  mods: () => _t('Jeder Gegenstand hat Mod-Plätze nach Seltenheit (Gewöhnlich 1 … Mythisch 5, Meisterwerk +1). Runen geben feste Werte, Glyphen lösen Effekte aus, Essenzen bestimmen das Element, Kerne verbessern Fähigkeiten, Prägungen leuchten. Jede Art nur einmal je Gegenstand, nur eine Essenz. Einsetzen ist kostenlos, Herausnehmen kostet Gold – der Mod kommt zurück. Bestimmte Mods zusammen wecken eine Resonanz: siehe Resonanz-Buch.'),
   umbau: () => _t('Setzt ein besseres Bauteil in dein Meisterwerk. Das alte kommt eine Stufe tiefer zurück. Aufwertung, Sterne und Edelsteine bleiben. Steigt die Summe der Stufen, steigt auch die Seltenheit.'),
   salv: () => _t('Waffen geben Waffen-Bauteile, Rüstungen und Helme geben Rüstungs-Bauteile, dazu etwas Material. Höhere Seltenheit, Aufwertung und Sterne geben mehr. Edelsteine kommen zurück in den Vorrat. Angelegtes kann nicht zerlegt werden.'),
   mw: () => _t('Ein Meisterwerk baust du selbst: Waffen aus Klinge, Griff und Elementkern, Rüstung und Helm aus Panzerplatte, Polsterung und Rune. Bessere Bauteile geben bessere Werte und eine höhere Seltenheit. Bauteile bekommst du von Gegnern (Elite und Bosse öfter) und beim Zerlegen.'),
@@ -484,13 +492,14 @@ function salvTxt(it) {
   const pv = salvPreview(it), types = pv.types ? pv.types.map(t => pbase(t, PART[t].el ? it.el : null)).join(', ') : '', g = pv.g ? GRADE[pv.g[0]].n + '–' + GRADE[pv.g[1]].n : '';
   const y = pv.mw ? (pv.mw.length ? _t('Ergibt: {list} (je eine Stufe tiefer)', { list: pv.mw.join(', ') }) : _t('Ergibt keine Bauteile (alle auf Stufe Roh).'))
     : pv.n[1] === 1 ? _t('Ergibt 1 Bauteil ({types}), Stufe {g}', { types, g }) : _t('Ergibt {n} Bauteile ({types}), Stufe {g}', { n: pv.n[0] === pv.n[1] ? pv.n[0] : pv.n[0] + '–' + pv.n[1], types, g });
-  const m = (pv.M.x ? _t('Dazu {m} und vielleicht {x}.', { m: MATS[pv.M.m].n, x: MATS[pv.M.x].n }) : _t('Dazu {m}.', { m: MATS[pv.M.m].n })) + (it.gems.length ? ' ' + _t('Edelsteine kommen zurück in den Vorrat.') : '');
+  const m = (pv.M.x ? _t('Dazu {m} und vielleicht {x}.', { m: MATS[pv.M.m].n, x: MATS[pv.M.x].n }) : _t('Dazu {m}.', { m: MATS[pv.M.m].n })) + (it.gems.length ? ' ' + _t('Edelsteine kommen zurück in den Vorrat.') : '') + (hasMods(it) ? ' ' + _t('Mods kommen zurück in den Vorrat.') : '');
   return y + (y.endsWith('.') ? ' ' : '. ') + m + ' ' + _t('Beim Händler: {gold} Gold.', { gold: itemPrice(it) });
 }
 function verActs(it) {
-  const A = [];
-  if (wbCan('up')) A.push('up'); if (wbCan('fuse')) A.push('fuse'); if (wbCan('sock') || wbCan('drill')) A.push('sock');
-  if (wbCan('reroll')) A.push('reroll'); if (wbCan('umbau') && it.mw) A.push('umbau'); if (wbCan('salv') && P.bag.includes(it)) A.push('salv');
+  const A = [], md = typeof modVerBody === 'function';   // Mods, Veredeln, Extrahieren: js/mods.js
+  if (wbCan('up')) A.push('up'); if (md && wbCan('mods')) A.push('mods'); if (wbCan('fuse')) A.push('fuse'); if (wbCan('sock') || wbCan('drill')) A.push('sock');
+  if (wbCan('reroll')) A.push('reroll'); if (md && wbCan('refine')) A.push('refine'); if (wbCan('umbau') && it.mw) A.push('umbau');
+  if (md && wbCan('extract') && P.bag.includes(it)) A.push('extract'); if (wbCan('salv') && P.bag.includes(it)) A.push('salv');
   return A;
 }
 // Kopfzeile einer Aktion: Bild, Name, Zustand (grün = geht, rot = Material fehlt, grau = gerade nichts zu tun)
@@ -499,7 +508,8 @@ function verHead(k, it) {
     case 'up': { const c = it.up < 10 && upCost(it, it.up + 1); return { ic: iconURL(['pa', 'wbup']), n: _t('AUFWERTEN'), st: c ? _t('+{a} → +{b} · {p} % Chance', { a: it.up, b: it.up + 1, p: Math.round(c.chance * 100) }) : _t('Maximal aufgewertet.'), cls: !c ? '' : canAfford(c.mats, c.gold) ? 'ok' : 'bad' }; }
     case 'fuse': { const n = fuseCands(it).length, mx = (it.fz || 0) >= fuseMax(); return { ic: iconURL(['pa', 'wbfuse']), n: _t('VERSCHMELZEN'), st: mx ? _t('Maximal verschmolzen ({n} ★)', { n: fuseMax() }) : n ? _t('{n} passende Opfer im Beutel', { n }) : _t('Kein passendes Opfer im Beutel'), cls: mx || !n ? '' : 'ok' }; }
     case 'sock': { const free = it.sockets - it.gems.length; return { ic: iconURL(['gem', 'saphir', 3]), n: _t('SOCKEL'), st: it.sockets ? _t('{free} von {n} frei', { free, n: it.sockets }) + (it.gems.length ? ' · ◆' + it.gems.length : '') : _t('Keine Sockel'), cls: free > 0 && wbCan('sock') && gemKeys().length ? 'ok' : '' }; }
-    case 'reroll': { const R = recipeById('reroll'), n = Object.keys(it.aff).length; return { ic: iconURL(['fx', 'sparks', 2]), n: _t('UMSCHMIEDEN'), st: !it.rar ? _t('Keine Zusatzwerte') : n === 1 ? _t('1 Zusatzwert neu würfeln') : _t('{n} Zusatzwerte neu würfeln', { n }), cls: it.rar && canAfford(R.cost, R.gold) ? 'ok' : '' }; }
+    case 'reroll': { if (typeof modVerHead === 'function') return modVerHead(k, it); const R = recipeById('reroll'), n = Object.keys(it.aff).length; return { ic: iconURL(['fx', 'sparks', 2]), n: _t('UMSCHMIEDEN'), st: !it.rar ? _t('Keine Zusatzwerte') : n === 1 ? _t('1 Zusatzwert neu würfeln') : _t('{n} Zusatzwerte neu würfeln', { n }), cls: it.rar && canAfford(R.cost, R.gold) ? 'ok' : '' }; }
+    case 'mods': case 'refine': case 'extract': return modVerHead(k, it);
     case 'umbau': { const n = mwGroup(it.slot).filter(t => mwSwapOpts(it, t).length).length; return { ic: iconURL(['pa', 'amboss']), n: _t('UMBAUEN'), st: n ? _t('Bessere Bauteile vorrätig!') : mwGroup(it.slot).map(t => pshort(t, it.mw[t] || 0, PART[t].el ? it.el : null)).join(' · '), cls: n ? 'ok' : '' }; }
     case 'salv': { const pv = salvPreview(it), n = pv.mw ? String(pv.mw.length) : pv.n[0] === pv.n[1] ? pv.n[0] : pv.n[0] + '–' + pv.n[1]; return { ic: iconURL(['pa', 'wbzer']), n: _t('ZERLEGEN'), st: _t('ergibt {n} Bauteile', { n }), cls: '' }; }
   }
@@ -543,6 +553,7 @@ function verBody(k, it) {
     }
     return h;
   }
+  if (typeof modVerBody === 'function' && (k === 'mods' || k === 'reroll' || k === 'refine' || k === 'extract')) return h + modVerBody(k, it);
   if (k === 'reroll') {
     const R = recipeById('reroll'), pool = it.slot === 'weapon' ? AFFW : AFFA, L = Object.keys(it.aff).map(a => pool[a].s(it.aff[a]));
     if (L.length) h += `<ul class="wbgems">${L.map(l => `<li>${esc(l)}</li>`).join('')}</ul>`;
@@ -655,7 +666,7 @@ function fgLastHTML(tab) {
   const L = FG.last; if (!L || L.tab !== tab) return '';
   if (L.k === 'salv') {
     const chips = Object.keys(L.parts).map(k => `<span>${partImg(k)}<b style="color:${gradeCol(pparse(k).g)}">${esc(pshort(pparse(k).t, pparse(k).g, pparse(k).el))}</b>${L.parts[k] > 1 ? ' ×' + L.parts[k] : ''}</span>`).join('') + Object.keys(L.mats).map(m => `<span><img src="${iconURL(['mat', m])}" alt="">${L.mats[m]} ${MATS[m].n}</span>`).join('');
-    return `<div class="fglast"><b>${L.n === 1 ? _t('ZERLEGT: 1 GEGENSTAND') : _t('ZERLEGT: {n} GEGENSTÄNDE', { n: L.n })}</b><div class="fgchips">${chips}</div><small>${_t('+{xp} Schmiede-EP', { xp: fmt(L.xp) })}${L.gems ? ' · ' + _t('{n} Edelsteine zurück in den Vorrat', { n: L.gems }) : ''}</small></div>`;
+    return `<div class="fglast"><b>${L.n === 1 ? _t('ZERLEGT: 1 GEGENSTAND') : _t('ZERLEGT: {n} GEGENSTÄNDE', { n: L.n })}</b><div class="fgchips">${chips}</div><small>${_t('+{xp} Schmiede-EP', { xp: fmt(L.xp) })}${L.gems ? ' · ' + _t('{n} Edelsteine zurück in den Vorrat', { n: L.gems }) : ''}${L.mods ? ' · ' + _t('{n} Mods zurück in den Vorrat', { n: L.mods }) : ''}</small></div>`;
   }
   if (L.k === 'mw') {
     const f = findItem(L.uid); if (!f) return '';
@@ -733,9 +744,13 @@ function openWorkbench(mode) {
   else { const t = extra.find(t => t.k === wbTab); if (t) body = t.body(it, `<div class="grid" style="margin-bottom:8px">${all.map(x => itemSlot(x, 'wsel', x === it)).join('')}</div>`, all); }
   const st = wbMode === 'smith' || wbMode === 'jewel', title = wbMode === 'smith' ? _t('SCHMIEDE') : wbMode === 'jewel' ? _t('JUWELIER') : _t('WERKBANK');
   const lab = k => WB_SEC[k] ? WB_SEC[k][0] : extra.find(t => t.k === k).label(), ic = k => iconURL(['pa', WB_SEC[k] ? WB_SEC[k][1] : 'amboss']);
+  // Querformat: die rechte Spalte scrollt für sich – beim Neuzeichnen (gleicher Bereich, gleicher Gegenstand) dort bleiben
+  const sd = !ov.hidden && panel.querySelector('.split > .side'), sTop = sd ? sd.scrollTop : 0, sKey = wbTab + '|' + selItem;
   showOverlay(`<div class="head"><h2>${title}</h2><div class="hbtns"><div class="gold"><i class="coin"></i>${fmt(P.gold)}</div><button class="btn ${st ? 'alt ' : ''}sm" data-act="wbdone">${st ? _t('Zurück') : _t('Weiter')}</button></div></div>
   <div class="tabs wbsecs" role="tablist" style="--n:${secs.length}">${secs.map(k => `<button class="tab wbsec" role="tab" aria-selected="${wbTab === k}" data-act="wtab" data-id="${k}"><img src="${ic(k)}" alt=""><span>${lab(k)}</span></button>`).join('')}</div>
   ${body}${st ? `<div class="wbnpc">${npcLine(wbMode === 'smith' ? 'schmiede' : 'juwelier')}${buildHTML(wbMode === 'smith' ? 'schmiede' : 'juwelier')}</div>` : ''}`, true);
+  if (sTop && WB.sKey === sKey) { const s2 = panel.querySelector('.split > .side'); if (s2) s2.scrollTop = sTop; }
+  WB.sKey = sKey;
 }
 
 /* ---------- Charakter-Reiter BAUTEILE ---------- */

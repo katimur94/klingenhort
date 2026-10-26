@@ -3,7 +3,7 @@
    KLINGENHORT – Basar – kaufen, verkaufen, versteigern (offline simuliert, später online)
    Hängt sich über HOOK/ON (js/core.js) ins Spiel ein.
    Marktwert für alle Systeme: itemValue(it), lootValue(eintrag) → fairer Preis in Gold.
-   Ware = Beute-Eintrag: { t: 'item', it } | { t: 'mat', k, n } | { t: 'gem', k, n } | { t: 'part', k, n } | { t: 'egg', d } | { t: 'gold', n }
+   Ware = Beute-Eintrag: { t: 'item', it } | { t: 'mat', k, n } | { t: 'gem', k, n } | { t: 'part', k, n } | { t: 'mod', k, n } (js/mods.js) | { t: 'egg', d } | { t: 'gold', n }
    Schnittstelle MARKET – heute eine lokale Simulation, später ersetzt ein Server dieselben Methoden:
      now() · tick(now) → Ereignisse · listings('shop'|'auc'|'own'|'box') · buy(id) · sell(eintrag) · quote(eintrag)
      auction(eintrag, start, sofortkauf, stunden) · bid(id, gebot) · buyout(id) · cancel(id) · claim(i|'all') · history(eintrag) · estimate(…)
@@ -68,6 +68,8 @@ function mkPartOk(k) {
   if (typeof pvalid === 'function') { try { return !!pvalid(k); } catch (_) { return false; } }
   return /^[a-z]{2,12}(:[a-z]{2,12})?:(10|[1-9])$/.test(k);
 }
+const mkModOk = k => typeof modValid === 'function' && typeof k === 'string' && modValid(k);
+const mkModV = k => mkModOk(k) ? modValue(k) : 0;
 function mkPartV(k) { const a = String(k).split(':'), g = clamp(Math.floor(+a[a.length - 1]) || 1, 1, 10); return 35 * Math.pow(2.9, g - 1) * (a.length > 2 ? 1.1 : 1); }
 function mkGemV(k) { const a = String(k).split(':'), gr = +a[1]; return mkHas(GEMS, a[0]) && mkI(gr, 0, 4) && a.length === 2 ? MK_GEMV[gr] * (MK_GEMF[a[0]] || 1) : 0; }
 const mkSpOk = sp => typeof sp === 'string' && /^[a-z0-9_]{2,24}$/i.test(sp) && !['__proto__', 'constructor', 'prototype'].includes(sp);
@@ -103,13 +105,14 @@ function itemValue(it) {
     if (it.set === 'drache') v *= 1.15;
     if (mkO(it.mw)) { v *= 1.15; for (const k in it.mw) { const g = Math.floor(+it.mw[k]) || 0; if (g >= 1 && /^[a-z]{2,12}$/.test(k)) v += mkPartV(k + ':' + clamp(g, 1, 10)) * .6; } }
     if (Array.isArray(it.gems)) for (const g of it.gems.slice(0, 3)) v += mkGemV(g) * .8;
+    if (Array.isArray(it.mods)) for (const k of it.mods.slice(0, 6)) v += mkModV(k) * .8;
     return mkR(v);
   } catch (_) { return 0; }
 }
 // Wert eines Stücks (Materialien, Edelsteine, Bauteile) bzw. des ganzen Eintrags
 function mkUnit(e) {
   if (!mkO(e)) return 0;
-  switch (e.t) { case 'mat': return mkHas(MK_MATV, e.k) ? MK_MATV[e.k] : 0; case 'gem': return mkGemV(e.k); case 'part': return mkPartOk(e.k) ? mkPartV(e.k) : 0; case 'gold': return 1; }
+  switch (e.t) { case 'mat': return mkHas(MK_MATV, e.k) ? MK_MATV[e.k] : 0; case 'gem': return mkGemV(e.k); case 'part': return mkPartOk(e.k) ? mkPartV(e.k) : 0; case 'mod': return mkModV(e.k); case 'gold': return 1; }
   return lootValue(e);
 }
 function lootValue(e) {
@@ -120,6 +123,7 @@ function lootValue(e) {
     case 'mat': return mkHas(MK_MATV, e.k) ? MK_MATV[e.k] * n : 0;
     case 'gem': return mkR(mkGemV(e.k) * n);
     case 'part': return mkPartOk(e.k) ? mkR(mkPartV(e.k) * n) : 0;
+    case 'mod': return mkModOk(e.k) ? mkR(mkModV(e.k) * n) : 0;
     case 'egg': return mkO(e.d) && mkSpOk(e.d.sp) ? mkR(mkEggV(e.d)) : 0;
     case 'gold': return n;
   }
@@ -137,7 +141,7 @@ HOOK.itemLines.push((it, L) => { const v = itemValue(it); if (v > 0) L.push(_t('
 
 /* ---------- Spielstand ---------- */
 function mkDef() { return { v: 1, seed: (Math.random() * 2147483647) | 0, rs: (Math.random() * 2147483647) | 0, clk: 0, init: 0, shop: {}, auc: [], own: [], spawn: [], box: [], log: [], hist: {}, vol: 0, sold: 0, bought: 0, best: 0, unseen: 0, rk: 0 }; }
-const MK_IKEYS = ['uid', 'slot', 'base', 'tier', 'rar', 'up', 'aff', 'sockets', 'gems', 'set', 'name', 'suf', 'fz', 'form', 'myth', 'el', 'mw', 'skin'];
+const MK_IKEYS = ['uid', 'slot', 'base', 'tier', 'rar', 'up', 'aff', 'sockets', 'gems', 'set', 'name', 'suf', 'fz', 'form', 'myth', 'el', 'mw', 'skin', 'mods'];
 function mkFixItem(d) {
   if (!mkO(d)) return null;
   let it = null;
@@ -145,6 +149,7 @@ function mkFixItem(d) {
   else if (['weapon', 'armor', 'helm'].includes(d.slot) && mkI(d.tier, 0, TIERS - 1) && mkI(d.rar, 0, 6) && (d.slot !== 'weapon' || mkHas(WT, d.base))) { it = makeItem({ slot: d.slot, base: d.base, tier: d.tier, rar: d.rar }); }
   if (!it) return null;
   if (typeof d.uid === 'string' && /^[a-z0-9]{4,30}$/i.test(d.uid)) it.uid = d.uid;
+  if (Array.isArray(d.mods)) { const ms = d.mods.filter(mkModOk).slice(0, 6); if (ms.length) it.mods = ms; }
   if (mkO(d.skin)) { const s = {}; if (mkI(d.skin.tier, 0, TIERS - 1)) s.tier = d.skin.tier; if (typeof d.skin.form === 'string') s.form = d.skin.form.slice(0, 12); if (Object.keys(s).length) it.skin = s; }
   // Felder anderer Systeme (später ergänzt) als einfache Daten behalten
   let n = 0;
@@ -159,6 +164,7 @@ function mkFixE(e) {
     case 'mat': return mkHas(MK_MATV, e.k) && mkI(n, 1, 99999) ? { t: 'mat', k: e.k, n } : null;
     case 'gem': return typeof e.k === 'string' && mkGemV(e.k) > 0 && mkI(n, 1, 9999) ? { t: 'gem', k: e.k, n } : null;
     case 'part': return mkPartOk(e.k) && mkI(n, 1, 9999) ? { t: 'part', k: e.k, n } : null;
+    case 'mod': return mkModOk(e.k) && mkI(n, 1, 9999) ? { t: 'mod', k: e.k, n } : null;
     case 'egg': { if (!mkO(e.d) || !mkSpOk(e.d.sp)) return null; const d = typeof trPlain === 'function' ? trPlain(e.d, 1, 1e9) : { sp: e.d.sp }; return mkO(d) ? { t: 'egg', d: Object.assign(d, { egg: 1, sp: e.d.sp }) } : null; }
     case 'gold': return mkI(n, 1, 1e10) ? { t: 'gold', n } : null;
   }
@@ -259,6 +265,7 @@ function mkGenE(R, kind, lv, cls, auc, sl) {
     return mkPartOk(k) ? { t: 'part', k, n: 1 + (R() < .3 ? 1 : 0) } : null;
   }
   if (kind === 'egg') { const sp = mkEggRoll(R, auc); return sp ? { t: 'egg', d: { egg: 1, sp } } : null; }
+  if (kind === 'mod') { if (typeof modRoll !== 'function') return null; const k = modRoll(clamp(lv / 60, 0, .35) + (auc ? .08 : 0), 1, R); return mkModOk(k) ? { t: 'mod', k, n: 1 } : null; }
   return null;
 }
 const mkOfferPrice = o => Math.max(1, mkR(lootValue(o.e) * o.f));
@@ -269,6 +276,7 @@ function mkShopGen() {
   add(mkGenE(R, 'mat', lv), 1 + Math.floor(R() * 3)); add(mkGenE(R, 'mat', lv), 1 + Math.floor(R() * 2));
   add(mkGenE(R, 'gem', lv), 1 + Math.floor(R() * 2)); add(mkGenE(R, 'part', lv), 1 + Math.floor(R() * 2));
   if (R() < .6) add(mkGenE(R, 'egg', lv), 1);
+  if (typeof modRoll === 'function' && R() < .6) add(mkGenE(R, 'mod', lv), 1);
   return L;
 }
 // Angebote des Händlers: je Held, alle 4 Stunden neu (die Uhr läuft nur vorwärts – kein Neuwürfeln durch Uhr-Tricks)
@@ -394,11 +402,12 @@ function mkKey(e) {
     case 'mat': return 'm.' + e.k;
     case 'gem': return 'g.' + e.k;
     case 'part': { const a = e.k.split(':'); return 'p.' + a[0] + '.' + a[a.length - 1]; }
+    case 'mod': return 'x.' + e.k;
     case 'egg': return 'e.' + mkEggTier(e.d).t;
   }
   return '';
 }
-const mkPer = e => e && (e.t === 'mat' || e.t === 'gem' || e.t === 'part') ? Math.max(1, e.n | 0) : 1;
+const mkPer = e => e && (e.t === 'mat' || e.t === 'gem' || e.t === 'part' || e.t === 'mod') ? Math.max(1, e.n | 0) : 1;
 function mkHistAdd(e, price, t) {
   const M = mkM(), k = mkKey(e); if (!k) return;
   const H = M.hist[k] || (M.hist[k] = []); H.push([t, Math.round(price / mkPer(e))]); if (H.length > 12) H.splice(0, H.length - 12);
@@ -467,20 +476,22 @@ const MK_HERO = {
       case 'mat': gainMat(e.k, e.n); return 'vorrat';
       case 'gem': P.gems[e.k] = (P.gems[e.k] || 0) + e.n; return 'vorrat';
       case 'part': if (!P.parts) P.parts = {}; P.parts[e.k] = (P.parts[e.k] || 0) + e.n; return 'vorrat';
+      case 'mod': return typeof modGive === 'function' && modGive(e.k, e.n) ? 'vorrat' : null;
       case 'gold': P.gold += e.n; return 'gold';
       case 'egg': return mkEggGive(e.d) ? 'nest' : null;
     }
     return null;
   },
-  // aus dem Besitz nehmen: { t: 'item', uid } | { t: 'mat'|'gem'|'part', k, n } | { t: 'egg', i } → Eintrag oder null
+  // aus dem Besitz nehmen: { t: 'item', uid } | { t: 'mat'|'gem'|'part'|'mod', k, n } | { t: 'egg', i } → Eintrag oder null
   take(s) {
     if (!mkO(s)) return null;
-    const n = Math.floor(+s.n), stack = (o, ok) => { if (!ok || !(n >= 1) || ((o && o[s.k]) || 0) < n) return null; o[s.k] -= n; if (s.t === 'part' && o[s.k] <= 0) delete o[s.k]; return { t: s.t, k: s.k, n }; };
+    const n = Math.floor(+s.n), stack = (o, ok) => { if (!ok || !(n >= 1) || ((o && o[s.k]) || 0) < n) return null; o[s.k] -= n; if ((s.t === 'part' || s.t === 'mod') && o[s.k] <= 0) delete o[s.k]; return { t: s.t, k: s.k, n }; };
     switch (s.t) {
       case 'item': { const i = P.bag.findIndex(x => x.uid === s.uid); return i < 0 ? null : { t: 'item', it: P.bag.splice(i, 1)[0] }; }
       case 'mat': return stack(P.mats, mkHas(MK_MATV, s.k));
       case 'gem': return stack(P.gems, mkGemV(s.k) > 0);
       case 'part': return stack(P.parts, mkPartOk(s.k));
+      case 'mod': return stack(P.mods, mkModOk(s.k));
       case 'egg': {
         if (typeof eggExport !== 'function' || !mkEggs()[s.i]) return null;
         let d = null; try { d = eggExport(s.i); } catch (_) { d = null; }
@@ -598,6 +609,7 @@ function mkName(e) {
     case 'mat': return x + MATS[e.k].n;
     case 'gem': { const [id, gr] = e.k.split(':'); return x + _t('{grade} {gem}', { grade: GEMGRADE[+gr], gem: GEMS[id].n }); }
     case 'part': return x + mkPartName(e.k);
+    case 'mod': return x + (mkModOk(e.k) ? modName(e.k) : '?');
     case 'egg': return mkEggName(e.d);
     case 'gold': return _t('{n} Gold', { n: mkG(e.n) });
   }
@@ -609,6 +621,7 @@ function mkCol(e) {
     case 'mat': return MATS[e.k].c;
     case 'gem': return GEMS[e.k.split(':')[0]].c;
     case 'part': { const a = e.k.split(':'), g = +a[a.length - 1]; return typeof gradeCol === 'function' ? gradeCol(g) : '#c8c8c8'; }
+    case 'mod': return mkModOk(e.k) ? modCol(e.k) : '#c8c8c8';
     case 'egg': return mkTierInfo(mkEggTier(e.d).t).c || '#efe2bf';
   }
   return '#e8b04a';
@@ -619,6 +632,7 @@ function mkIcon(e) {
     case 'mat': return iconURL(['mat', e.k]);
     case 'gem': { const [id, gr] = e.k.split(':'); return iconURL(['gem', id, +gr]); }
     case 'part': return mkPartIcon(e.k);
+    case 'mod': return mkModOk(e.k) ? modIconURL(e.k) : iconURL(['pa', 'muenze']);
     case 'egg': return mkEggIcon(e.d);
   }
   return iconURL(['pa', 'muenze']);
@@ -629,6 +643,7 @@ function mkSub(e) {
     case 'mat': return _t('Material');
     case 'gem': { const [id, gr] = e.k.split(':'); return GEMS[id].s(GEMS[id].v[+gr]); }
     case 'part': return _t('Bauteil für die Schmiede');
+    case 'mod': return mkModOk(e.k) ? MOD_FAM[modParse(e.k).f].n : _t('Mod');
     case 'egg': return mkTierInfo(mkEggTier(e.d).t).n || _t('Begleiter-Ei');
   }
   return '';
@@ -637,6 +652,7 @@ function mkLines(e) {
   const L = [], u = mkUnit(e), n = mkPer(e);
   if (e.t === 'part') { const a = e.k.split(':'), g = +a[a.length - 1]; if (typeof pdesc === 'function') { try { const s = pdesc(a[0], g, a.length > 2 ? a[1] : null); if (s) L.push(s); } catch (_) { } } }
   if (e.t === 'gem') L.push(mkSub(e));
+  if (e.t === 'mod' && mkModOk(e.k)) L.push(modDesc(e.k));
   if (e.t === 'egg') L.push(_t('Kommt in dein Brutnest. Gut gepflegt schlüpft daraus ein Begleiter.'));
   if (n > 1) L.push(_t('Marktwert: {n} Gold je Stück', { n: mkG(u) }), _t('Zusammen: {n} Gold', { n: mkG(lootValue(e)) }));
   else L.push(_t('Marktwert: {n} Gold', { n: mkG(lootValue(e)) }));
@@ -667,7 +683,7 @@ function mkChart(e) {
 }
 // kurze Zeile: Seltenheit/Art · Wert · ▲ besser als die angelegte Ausrüstung
 function mkShort(e) {
-  let s = e.t === 'item' ? RAR[e.it.rar].n : e.t === 'gem' ? _t('Edelstein') : e.t === 'part' ? _t('Bauteil') : e.t === 'egg' ? mkSub(e) : mkSub(e);
+  let s = e.t === 'item' ? RAR[e.it.rar].n : e.t === 'gem' ? _t('Edelstein') : e.t === 'part' ? _t('Bauteil') : mkSub(e);
   s = esc(s) + ' · ' + _t('Wert {n}', { n: mkPrice(lootValue(e)) });
   if (e.t === 'item' && P && P.gear && canEquip(e.it) && P.gear[e.it.slot]) { const d = itemScore(e.it) / Math.max(1, itemScore(P.gear[e.it.slot])) - 1; if (d > .02) s += ' <span style="color:var(--moss)" title="+' + Math.round(d * 100) + ' %">▲</span>'; }
   return s;
@@ -806,8 +822,8 @@ function mkBuyHTML(now) {
 // VERKAUFEN: sofort an Hedda oder versteigern
 function mkCats() {
   const c = [['item', _t('GEGENSTÄNDE'), P.bag.length]], n = (o, ok) => Object.keys(o || {}).filter(k => o[k] > 0 && ok(k)).length;
-  const m = n(P.mats, k => mkHas(MK_MATV, k)), g = n(P.gems, k => mkGemV(k) > 0), p = n(P.parts, mkPartOk), e = typeof eggExport === 'function' ? mkEggs().length : 0;
-  if (m) c.push(['mat', _t('MATERIAL'), m]); if (g) c.push(['gem', _t('EDELSTEINE'), g]); if (p) c.push(['part', _t('BAUTEILE'), p]); if (e) c.push(['egg', _t('EIER'), e]);
+  const m = n(P.mats, k => mkHas(MK_MATV, k)), g = n(P.gems, k => mkGemV(k) > 0), p = n(P.parts, mkPartOk), x = n(P.mods, mkModOk), e = typeof eggExport === 'function' ? mkEggs().length : 0;
+  if (m) c.push(['mat', _t('MATERIAL'), m]); if (g) c.push(['gem', _t('EDELSTEINE'), g]); if (p) c.push(['part', _t('BAUTEILE'), p]); if (x) c.push(['mod', _t('MODS'), x]); if (e) c.push(['egg', _t('EIER'), e]);
   return c;
 }
 function mkSrc() {
@@ -815,11 +831,11 @@ function mkSrc() {
   if (MK.cat === 'item') { const it = P.bag.find(x => x.uid === s); return it ? { src: { t: 'item', uid: s }, e: { t: 'item', it }, have: 1 } : null; }
   const k = s.slice(s.indexOf(':') + 1);
   if (MK.cat === 'egg') { const d = mkEggs()[+k]; return d && mkSpOk(d.sp) ? { src: { t: 'egg', i: +k }, e: { t: 'egg', d: Object.assign({}, d, { egg: 1 }) }, have: 1 } : null; }
-  const o = MK.cat === 'mat' ? P.mats : MK.cat === 'gem' ? P.gems : P.parts, have = (o && o[k]) || 0, ok = MK.cat === 'mat' ? mkHas(MK_MATV, k) : MK.cat === 'gem' ? mkGemV(k) > 0 : mkPartOk(k);
+  const o = MK.cat === 'mat' ? P.mats : MK.cat === 'gem' ? P.gems : MK.cat === 'mod' ? P.mods : P.parts, have = (o && o[k]) || 0, ok = MK.cat === 'mat' ? mkHas(MK_MATV, k) : MK.cat === 'gem' ? mkGemV(k) > 0 : MK.cat === 'mod' ? mkModOk(k) : mkPartOk(k);
   if (!ok || have < 1) return null;
   const n = clamp(MK.n, 1, have); return { src: { t: MK.cat, k, n }, e: { t: MK.cat, k, n }, have };
 }
-const mkBulk = () => P.bag.filter(it => it.rar <= 1 && !it.gems.length && !it.up && !it.fz && !it.mw && !it.skin && !it.set && !it.myth);
+const mkBulk = () => P.bag.filter(it => it.rar <= 1 && !it.gems.length && !it.up && !it.fz && !it.mw && !it.skin && !it.set && !it.myth && !(Array.isArray(it.mods) && it.mods.length));
 function mkSellHTML() {
   const cats = mkCats(); if (!cats.some(c => c[0] === MK.cat)) MK.cat = 'item';
   const S = mkSrc(); if (MK.sel && !S) MK.sel = null;
@@ -833,6 +849,7 @@ function mkSellHTML() {
     if (MK.cat === 'mat') for (const k of MATORDER) { if ((P.mats[k] || 0) > 0) rows.push([k, { t: 'mat', k, n: P.mats[k] }]); }
     else if (MK.cat === 'gem') { for (const id of GEMORDER) for (let gr = 0; gr < 5; gr++) { const k = id + ':' + gr; if ((P.gems[k] || 0) > 0) rows.push([k, { t: 'gem', k, n: P.gems[k] }]); } }
     else if (MK.cat === 'part') { for (const k of Object.keys(P.parts || {}).sort()) if (P.parts[k] > 0 && mkPartOk(k)) rows.push([k, { t: 'part', k, n: P.parts[k] }]); }
+    else if (MK.cat === 'mod') { for (const k of (typeof modStock === 'function' ? modStock() : [])) if (mkModOk(k)) rows.push([k, { t: 'mod', k, n: P.mods[k] }]); }
     else mkEggs().forEach((d, i) => { if (mkSpOk(d.sp)) rows.push([String(i), { t: 'egg', d: Object.assign({}, d, { egg: 1 }) }]); });
     list = rows.map(([k, e]) => mkRow(e, `<div class="mk-p"><small>${_t('je {n}', { n: fmt(mkUnit(e)) })}</small></div>`, { act: 'mk_sel', id: MK.cat + ':' + k, sel: MK.sel === MK.cat + ':' + k, st: e.t === 'egg' ? esc(mkSub(e)) : _t('{n} Stück · Wert {v}', { n: e.n, v: fmt(lootValue(e)) }) })).join('');
   }
@@ -911,7 +928,7 @@ function mkSay(r, ok) { if (r && r.ok) { if (ok) toast(ok, '#79c24e'); } else { 
 ON.mk_open = id => mkOpen(id || 'map');
 ON.mk_back = () => mkClose();
 ON.mk_tab = id => { MK.tab = id; MK.sel = null; MK.conf = 0; sfx('click'); mkShow(); };
-ON.mk_sel = id => { MK.sel = id || null; MK.conf = 0; MK.amtFor = null; if (id && MK.tab === 'sell' && MK.cat !== 'item') { const o = MK.cat === 'mat' ? P.mats : MK.cat === 'gem' ? P.gems : P.parts, k = id.slice(id.indexOf(':') + 1); MK.n = Math.max(1, (o && o[k]) || 1); } sfx('click'); mkShow(); };
+ON.mk_sel = id => { MK.sel = id || null; MK.conf = 0; MK.amtFor = null; if (id && MK.tab === 'sell' && MK.cat !== 'item') { const o = MK.cat === 'mat' ? P.mats : MK.cat === 'gem' ? P.gems : MK.cat === 'mod' ? P.mods : P.parts, k = id.slice(id.indexOf(':') + 1); MK.n = Math.max(1, (o && o[k]) || 1); } sfx('click'); mkShow(); };
 ON.mk_cat = id => { MK.cat = id; MK.sel = null; MK.conf = 0; sfx('click'); mkShow(); };
 ON.mk_buy = id => mkRun(MARKET.buy(id), r => { if (r.ok) { sfx('buy'); toast(_t('Gekauft!') + ' ' + mkWhere(r.where, mkName(r.e)), '#79c24e'); saveChar(); } else mkSay(r); mkShow(); });
 ON.mk_n = id => { const S = mkSrc(); if (S) MK.n = clamp((S.e.n || 1) + (+id || 0), 1, S.have); mkShow(); };

@@ -291,8 +291,64 @@ function fuseItems(a, b) {
   }
   if (res.rar === 4) stat('legs');
   for (const g of b.gems) gainGem(g);
+  if (typeof modTakeBack === 'function') modTakeBack(b);   // Mods des Opfers zurück in den Vorrat (js/mods.js)
   P.bag.splice(bi, 1); Object.assign(a, res); stat('fusions'); computeStats();
   return { r: 'ok', up: lucky, it: a };
+}
+/* ---------- Zusatzwerte einzeln (6.1, Oberfläche in js/mods.js): Stufe, Umschmieden, Veredeln, Affix-Essenz ----------
+   Stufe eines Zusatzwerts = die Seltenheit, zu der sein Wert gehört (pool[k].f(Stufe)): Magisch 1 … Mythisch 6.
+   Veredeln hebt einen Wert um eine Stufe – höchstens Seltenheit + 2 (Set wie Episch + 2, Meisterwerk +1), nie über AFF_MAX. */
+const AFF_MAX = 8;
+function affPool(it) { return it.slot === 'weapon' ? AFFW : AFFA; }
+function affVal(pool, k, s) { return +pool[k].f(s).toFixed(3); }
+function affStufe(it, k) { const A = affPool(it)[k]; if (!A || typeof it.aff[k] !== 'number') return 0; const a = A.f(0), b = A.f(1) - a; return clamp(Math.round((it.aff[k] - a) / b), 1, AFF_MAX); }
+function affCap(it) { return Math.min(AFF_MAX, (it.rar === 5 ? 5 : it.rar) + 2 + (it.mw ? 1 : 0)); }
+// Umschmieden: jedes Mal teurer (it.rr = so oft umgeschmiedet)
+function affRerollCost(it) {
+  const n = Math.min(20, it.rr || 0), wk = 1 - weekFx('smith'), c = { kristall: 1 + Math.floor(n / 3) };
+  if (n >= 6) c.stern = Math.floor((n - 3) / 3);
+  for (const m in c) c[m] = Math.max(1, Math.ceil(c[m] * wk));
+  return { mats: c, gold: Math.round((60 + PRICE[it.tier] * .05) * Math.pow(1.35, n) * wk), n };
+}
+// mögliche neue Werte für k: alle, die der Gegenstand noch nicht hat
+function affRerollOpts(it, k) { return Object.keys(affPool(it)).filter(x => x !== k && !(x in it.aff)); }
+// Wert k an derselben Stelle gegen nk tauschen (Stufe s); der Namenszusatz wandert mit
+function affSwap(it, k, nk, s) {
+  const pool = affPool(it), o = {};
+  for (const x in it.aff) { if (x === k) o[nk] = affVal(pool, nk, s); else if (x !== nk) o[x] = it.aff[x]; }
+  if (it.suf && pool[k] && it.suf === pool[k].suf) it.suf = pool[nk].suf;
+  it.aff = o;
+}
+function affReroll(it, k) {
+  if (!it || !(k in it.aff)) return null;
+  const opts = affRerollOpts(it, k); if (!opts.length) return null;
+  const c = affRerollCost(it); if (!canAfford(c.mats, c.gold)) return 'poor';
+  payMats(c.mats); P.gold -= c.gold;
+  const nk = pick(opts); affSwap(it, k, nk, affStufe(it, k)); it.rr = (it.rr || 0) + 1; computeStats();
+  return nk;
+}
+// Veredeln: eine Stufe mehr – Material nach Stufe, Gold steigt quadratisch
+function affRefineCost(it, k) {
+  const s = affStufe(it, k) + 1, wk = 1 - weekFx('smith');
+  const c = s <= 3 ? { kristall: s } : s <= 5 ? { glut: s - 2, kristall: 2 } : s <= 7 ? { stern: s - 4, glut: 2 } : { aether: 2, stern: 3 };
+  for (const m in c) c[m] = Math.max(1, Math.ceil(c[m] * wk));
+  return { mats: c, gold: Math.round(70 * s * s * (1 + it.tier * .15) * wk), s };
+}
+function affRefine(it, k) {
+  if (!it || !(k in it.aff)) return null;
+  const s = affStufe(it, k); if (s >= affCap(it)) return 'max';
+  const c = affRefineCost(it, k); if (!canAfford(c.mats, c.gold)) return 'poor';
+  payMats(c.mats); P.gold -= c.gold; it.aff[k] = affVal(affPool(it), k, s + 1); computeStats();
+  return 'ok';
+}
+// Affix-Essenz einsetzen: ersetzt den Wert rk (oder füllt einen freien Platz), Stufe höchstens bis affCap
+function affPut(it, k, s, rk) {
+  const pool = affPool(it); if (!pool[k]) return false;
+  const s2 = Math.min(s, affCap(it));
+  if (rk && rk in it.aff) affSwap(it, rk, k, s2);
+  else if (Object.keys(it.aff).length < RAR[it.rar].aff && !(k in it.aff)) it.aff[k] = affVal(pool, k, s2);
+  else return false;
+  return true;
 }
 function transmute(i) {
   const [from, to, n, gold] = TRANSMUTE[i];
