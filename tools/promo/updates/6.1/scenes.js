@@ -1,400 +1,528 @@
-// Aufnahmen für das ausführliche Video zu 6.0 „Die Verlorenen Lande“ (~75 s, Kapitel):
-// Aufhänger (Weltentor) → Verlorene Lande (Risiko, Freiwelt, Truhen, Ungeheuer, NPCs, Nacht, Entkommen, Tod)
-// → Brutnest → Aussehen & Auren → Basar → Schmiede → Was ist neu → Endkarte.
-// Alles echt aus dem Spiel: Freiwelt Bild für Bild (feste Karten über Zufall + Uhr), Menüs als Standbilder,
-// Grafiken (Eier, Kreaturen, Gegenstände) als PNG, das Schlüpfen Bild für Bild aus dem echten Schlüpf-Bildschirm.
+// Aufnahmen für das ausführliche Video zu 6.1 „Die Endlosen Lande“ (~80 s, Kapitel):
+// Aufhänger (Biome im Schnitt) → 1 Endlose Lande (48 Biome, Regionen, Karte bis zum Rand, Barriere + Werkzeug, Leuchtfeuer,
+// Nacht, Tor der Alten) → 2 1200 Bosse (Kodex, Rang 1 gegen Rang 1200, Trophäe) → 3 Artefakte (Elwas Gerücht, Fund, Lesen,
+// Suchkreis, versiegelter Schatz, Begegnungen) → 4 Kreaturen (77 Arten, Zucht, Mutationen, Ausrüstung, Zauber im Kampf)
+// → 5 Mods (Plätze, Resonanz, Glyphen im Kampf, Umschmieden/Veredeln/Extrahieren) → Was ist neu → Endkarte.
+// Alles echt aus dem Spiel: Freiwelt Bild für Bild (feste Welt-Saat, Ausflugs-Saat und Uhr festgelegt), Menüs als Standbilder,
+// Grafiken (Kreaturen, Mutationen) als PNG. Meldungen des Spiels (Banner, Hinweise) werden mit Bildnummer mitgeschrieben
+// (raw/<szene>/msgs.json) – storyboard.py zeigt genau diese Texte groß an.
 // Aufruf (Spiel muss lokal laufen, siehe tools/promo/README.md):
-//   PROMO_OUT=/tmp/klingenhort-clip-6.0 node scenes.js                  alle Szenen (BASE=http://localhost:<port>/ für einen anderen Port)
-//   PROMO_OUT=/tmp/klingenhort-clip-6.0 node scenes.js hook_a,w_run1    nur diese neu aufnehmen
-// Die Schnitt-Zeitpunkte (Truhe offen, Ei, Tod, Schlüpfen, Ausgang) stehen in raw/<szene>/log.json und chlog.json – storyboard.py liest sie.
+//   PROMO_OUT=/tmp/klingenhort-clip-6.1 BASE=http://localhost:8766/ node scenes.js            alle Szenen
+//   PROMO_OUT=/tmp/klingenhort-clip-6.1 node scenes.js region,bar_a                              nur diese neu aufnehmen
 const path = require('path'), fs = require('fs');
 const H = require(path.join(__dirname, '..', '..', 'harness'));
-const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.0';
+const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.1';
+const BASE = process.env.BASE || 'http://localhost:8766/';
+
+// Biome für Aufhänger und Raster: [Szene, Biom] – „h_vulkan“ ist ein Kampf, alle anderen laufen
+const BIOMES = ['gletscher', 'wueste', 'pilz', 'kristall', 'schattenwald', 'riff', 'sternenfeld', 'dschungel', 'herbst', 'traumwiese', 'chaos', 'goetterhain'];
 
 (async () => {
-  const R = await H.open({ out: OUT + '/raw', seed: 60 });
+  const R = await H.open({ out: OUT + '/raw', seed: 61, base: BASE });
   const { ev, page } = R;
   // Trefferzähler oben rechts ausblenden (stößt sonst an die Überschriften)
   await page.addStyleTag({ content: '#combo{display:none!important}' });
-  // Standbild nach raw/<szene>/<datei>.jpg; Bereiche (Bildschirmpixel ×2) für den Schnitt nach raw/<szene>/boxes.json
   const boxes = {};
   const still = async (scene, file, fn, arg, wait) => {
     if (fn) await ev(fn, arg); await page.waitForTimeout(wait || 350);
     fs.mkdirSync(R.out + scene, { recursive: true }); await page.screenshot({ path: `${R.out}${scene}/${file}.jpg`, type: 'jpeg', quality: 93 });
   };
+  const saveBoxes = scene => fs.writeFileSync(`${R.out}${scene}/boxes.json`, JSON.stringify(boxes[scene], null, 1));
   const rect = async (scene, key, sel, i) => {
-    const r = await ev(([sel, i]) => { const e = typeof sel === 'string' ? document.querySelectorAll(sel)[i || 0] : null; if (!e) return null; const b = e.getBoundingClientRect(); return { x: b.left * 2, y: b.top * 2, w: b.width * 2, h: b.height * 2 }; }, [sel, i]);
-    (boxes[scene] = boxes[scene] || {})[key] = r; fs.writeFileSync(`${R.out}${scene}/boxes.json`, JSON.stringify(boxes[scene], null, 1)); return r;
+    const r = await ev(([sel, i]) => { const e = document.querySelectorAll(sel)[i || 0]; if (!e) return null; const b = e.getBoundingClientRect(); return { x: b.left * 2, y: b.top * 2, w: b.width * 2, h: b.height * 2 }; }, [sel, i]);
+    (boxes[scene] = boxes[scene] || {})[key] = r; saveBoxes(scene); return r;
   };
-  // Bereich eines Elements, das per Text gefunden wird (z. B. Überschrift „WAS DU RISKIERST“)
   const rectTxt = async (scene, key, sel, re) => {
     const r = await ev(([sel, re]) => { const e = [...document.querySelectorAll(sel)].find(x => new RegExp(re).test(x.textContent)); if (!e) return null; const b = e.getBoundingClientRect(); return { x: b.left * 2, y: b.top * 2, w: b.width * 2, h: b.height * 2 }; }, [sel, re]);
-    (boxes[scene] = boxes[scene] || {})[key] = r; fs.writeFileSync(`${R.out}${scene}/boxes.json`, JSON.stringify(boxes[scene], null, 1)); return r;
+    (boxes[scene] = boxes[scene] || {})[key] = r; saveBoxes(scene); return r;
   };
   const fresh = scene => { const d = R.out + scene; fs.rmSync(d, { recursive: true, force: true }); fs.mkdirSync(d, { recursive: true }); boxes[scene] = {}; };
-  const saveLog = async scene => fs.writeFileSync(`${R.out}${scene}/log.json`, JSON.stringify(await ev(() => window.__log)));
   const info = (scene, o) => fs.writeFileSync(`${R.out}${scene}/info.json`, JSON.stringify(o, null, 1));
+  // Aufnahme mit Bildnummer (window.__fi) und Mitschrift: Meldungen des Spiels und eigenes Protokoll (window.__log) nach raw/<szene>/msgs.json
+  const cap = async (name, n, per) => {
+    if (!R.want(name)) return false;
+    await ev(() => { window.__msg = []; window.__log = []; });
+    await R.cap(name, n, `i => { window.__fi = i; (${per})(i); }`);
+    fs.writeFileSync(`${R.out}${name}/msgs.json`, JSON.stringify(await ev(() => ({ msg: window.__msg, log: window.__log })), null, 0));
+    return true;
+  };
 
-  // Hilfen im Browser
+  /* ---------- Hilfen im Browser ---------- */
   await ev(() => {
-    // Ausrüstung der vier Helden merken (der Tod in den Landen nimmt sie weg)
+    window.__msg = []; window.__fi = 0;
+    // Meldungen mitschreiben (Banner und Hinweise sind im Bild ausgeblendet – der Schnitt zeigt sie groß)
+    const _b = window.banner, _t = window.toast;
+    window.banner = function (t, s) { window.__msg.push({ f: window.__fi, k: 'b', t: String(t), s: String(s || '') }); return _b.apply(this, arguments); };
+    window.toast = function (t, c) { window.__msg.push({ f: window.__fi, k: 't', t: String(t), c: String(c || '') }); return _t.apply(this, arguments); };
+    for (const a of ACH) SAVE.meta.ach[a.id] = 1;   // Erfolge zahlen sonst zwischendurch Gold und melden sich
+    SAVE.meta.hide.intro = true; SAVE.meta.lande.tips = 0xffff; SAVE.meta.bosses.h = 2147483647;
     window.__gear0 = SAVE.chars.map(c => JSON.stringify(c.gear));
-    window.__calm = () => { P.inv = 99; P.hp = P.st.hp; P.res = P.st.resMax; __off(); };
-    // Freiwelt sauber beenden (ohne Belohnung, ohne Tod)
-    window.__lend = () => { if (LW) { try { lEnd(); } catch (e) { } LW = null; } SAVE.meta.lande.cur = null; document.body.classList.remove('lande'); lHudShow(false); };
-    // Menüs vor ruhigem Hintergrund (Titel-Szene), Kamera und Texte wieder normal
-    window.__ui = () => { __lend(); DLG = null; hideOverlay(); showHud(false); $('bossbar').hidden = true; window.__camDX = 0; window.__camDY = 0; window.__txtNo = null; window.__txtOK = null; window.__kinds = null; window.__path = null; titleScene(); texts = []; parts = []; setState('title'); };
-    window.__scene = seed => { __ui(); __seed(seed); };
-    // Held ci mit seiner Ausrüstung und einem Begleiter (Glutdrache LV 60: Tasche mit 3 Plätzen)
-    window.__hero = (ci, sp, lv) => {
-      activateChar(ci); P.gear = JSON.parse(__gear0[ci]); P.lv = 40; computeStats(); P.hp = P.st.hp;
-      const PM = SAVE.meta.pets; PM.list = []; PM.eggs = []; PM.first = true; PM.intro = true; const p = petGive(sp || 'drache', { lv: lv || 60 }); delete p.hurt; PM.act = p.id; petView = p.id; return p;
+    window.__off2 = () => { keys.KeyJ = keys.KeyA = keys.KeyD = keys.KeyW = keys.KeyS = false; };
+    // alles beenden: Freiwelt, Kampfplatz, Menüs; Kamera und Texte wie im Spiel
+    window.__ui = () => {
+      if (typeof LW !== 'undefined' && LW) { try { if (LW.on) lEnd(); } catch (e) { } try { lRelease(); } catch (e) { } LW = null; }
+      SAVE.meta.lande.cur = null; document.body.classList.remove('lande'); try { lHudShow(false); } catch (e) { }
+      if (BA) { try { bArenaClear(); } catch (e) { } BA = null; } BZ.fx = [];
+      DLG = null; hideOverlay(); showHud(false); $('bossbar').hidden = true; window.__camDX = 0; window.__camDY = 0; window.__txtNo = null; window.__txtOK = null; window.__kinds = null;
+      __off2(); titleScene(); texts = []; parts = []; setState('title');
     };
-    // Feste Freiwelt: Zufall und Uhr festlegen, damit jede Aufnahme dieselbe Karte hat
-    window.__lgo = (ti, seed, ci) => {
-      __ui(); __hero(ci || 0); hideOverlay();
-      const M = SAVE.meta.lande; M.tx = [3, 3, 3, 3, 1]; M.rep = 420; M.keys = 2; M.tips = 255;
-      __seed(seed); const dn = Date.now; Date.now = () => 1761400000000 + seed * 7919; try { lBegin(ti); } finally { Date.now = dn; }
-      P.inv = 99; __vp(2.6); __snap(); texts = []; __seed(seed + 1000);
+    // Held ci mit seiner Ausrüstung; Begleiter: Eulenbär (Mischform aus der Zucht, Sternen-Mutation, drei Zauber)
+    window.__hero = (ci, noPet) => {
+      activateChar(ci); P.gear = JSON.parse(__gear0[ci]); P.lv = 40; P.mods = {}; computeStats(); P.hp = P.st.hp;
+      const M = SAVE.meta.pets; M.list = []; M.eggs = []; M.first = true; M.intro = true; M.act = null;
+      if (!noPet) { const p = petGive('eulenbaer', { lv: 80, mu: 'sternen', pa: ['eule', 'baer'], ge: 2, gn: [88, 61, 74, 92, 55] }); delete p.hurt; p.mg = ['meteor', 'blitz', 'schild']; M.act = p.id; petView = p.id; }
+      computeStats(); P.hp = P.st.hp;
     };
-    // Held hinstellen (Nebel aufdecken, Gegner weg, Begleiter daneben)
-    window.__tp = (x, y) => { P.x = x; P.y = y; P.vx = P.vy = 0; lRevealAt(x, y, 6); for (const e of enemies) e.dead = true; enemies = []; projs = []; try { petPlace(false); } catch (e) { } __snap(); };
-    // in Richtung (tx, ty) laufen; true = angekommen
+    // Freiwelt betreten: Ausflugs-Saat und Uhr fest (gleiche Truhen, Lager, Streifen bei jeder Aufnahme)
+    window.__lgo = (o) => {
+      o = o || {}; __ui(); __hero(o.ci || 0, o.noPet); hideOverlay();
+      const M = SAVE.meta.lande; M.tools = o.tools != null ? o.tools : 0; M.stones = o.stones != null ? o.stones : 1; M.cps = []; M.cpn = 0; M.start = 'tor'; M.map = {}; M.regs = []; M.keys = 0;
+      LMAP = null; LREGS = null;
+      const seed = o.seed || 1; __seed(seed); const dn = Date.now; Date.now = () => 1761500000000 + seed * 7919; try { lBegin(); } finally { Date.now = dn; }
+      __calm(); __vp(o.vp || 2.6); __snap(); texts = []; __seed(seed + 1000);
+    };
+    // Ruhe: keine Jäger, Rivalen, Ungeheuer; Held unverwundbar
+    window.__calm = () => { if (LW) { LW.huntT = 1e9; LW.rivT = 1e9; LW.hurtT = -99; LW.beastN = false; } P.inv = 99; P.hp = P.st.hp; P.res = P.st.resMax; };
+    // nichts in der Nähe, das aufwacht (Horte, Lager, Streifen, Rivalen, Begegnungen)
+    window.__quiet = rad => { if (!LW) return; for (const o of lNear(P.x, P.y, rad || 900)) { if (o.k === 'lair') o.act = true; else if (o.k === 'camp') { o.left = []; o.state = 'done'; } else if (o.k === 'enc') o.used = true; } LW.pats = LW.pats.filter(p => Math.hypot(p.x - P.x, p.y - P.y) > 1400); LW.rivals = []; };
+    window.__clear = () => { for (const e of enemies) e.dead = true; enemies = []; projs = []; };
+    // wartende Banner vergessen (beim Teleport hätte das Spiel sonst ältere Meldungen nachgereicht)
+    window.__nomsg = () => { LBQ.length = 0; LBT = -9; window.__msg = []; };
+    // Held hinstellen (Chunks laden, Nebel aufdecken, Gegner weg, Begleiter daneben)
+    window.__tp = (x, y) => { lTeleport(x, y); __clear(); __calm(); try { petPlace(false); } catch (e) { } __snap(); };
     window.__go = (tx, ty, r) => { const dx = tx - P.x, dy = ty - P.y, d = Math.hypot(dx, dy); keys.KeyA = keys.KeyD = keys.KeyW = keys.KeyS = false; if (d < (r || 4)) return true; keys.KeyD = dx > d * .38; keys.KeyA = dx < -d * .38; keys.KeyS = dy > d * .38; keys.KeyW = dy < -d * .38; return false; };
-    // einem Weg folgen (Punkte der Straße), ab Index i
-    window.__follow = (pts, i, dir) => { window.__path = { pts, i, dir: dir || 1 }; };
-    window.__walk = () => { const p = window.__path; if (!p) return; const n = p.pts.length; while (p.i >= 0 && p.i < n - 1 && Math.hypot(p.pts[p.i][0] - P.x, p.pts[p.i][1] - P.y) < 12) p.i += p.dir; const q = p.pts[clamp(p.i + p.dir * 2, 0, n - 1)]; __go(q[0], q[1]); };
-    // erster Punkt einer Straße, an dem das Gebiet von a nach b wechselt
-    window.__bound = (ri, a, b) => { const r = LW.roads[ri]; for (let i = 1; i < r.length; i++) if (lBioAt(r[i - 1][0], r[i - 1][1]) === a && lBioAt(r[i][0], r[i][1]) === b) return i; return -1; };
-    // nichts in der Nähe, das aufwacht (Lager, Streifen, Rivalen) – für ruhige Laufbilder
-    window.__quiet = (x, y, rad) => { const L = LW; for (const c of L.camps) if (Math.hypot(c.x - x, c.y - y) < rad) { c.left = []; c.state = 'done'; } for (const p of L.pats) if (Math.hypot(p.x - x, p.y - y) < rad) p.list = []; for (const r of L.rivals) if (Math.hypot(r.x - x, r.y - y) < rad) r.state = 'gone'; };
-    // Fundstelle der Art t mit wenig Bäumen ringsum (gut zu sehen), ohne Lager in der Nähe
-    window.__spot = (t, n) => { const L = LW, dens = o => L.objs.filter(x => x.solid && x.k === 'prop' && Math.hypot(x.x - o.x, (x.y - o.y) * 1.3) < 46).length; return L.spots.filter(o => o.t === t && !o.open && o.x > 120 && o.y > 160 && o.x < L.S - 120 && o.y < L.S - 120 && !L.camps.some(c => Math.hypot(c.x - o.x, c.y - o.y) < 340)).sort((a, b) => dens(a) - dens(b))[n || 0]; };
-    // Beute für Szenen: ein Legendär, ein Episch, ein Ei, Gold, Edelstein, Material
-    window.__loot = () => [{ t: 'item', it: lItem(4, 3) }, { t: 'item', it: lItem(3, 2) }, { t: 'gold', n: 186 }, { t: 'gem', k: 'rubin:2', n: 1 }, { t: 'mat', k: 'mithril', n: 3 }];
-    // Gegenstände am Boden einsammeln (Gold, Material, Edelsteine fliegen von selbst)
-    window.__sheetTop = () => { const sh = panel.querySelector('.side.sheet'); panel.scrollTop = 0; if (sh) panel.scrollTop = sh.getBoundingClientRect().top - panel.getBoundingClientRect().top - 210; };
-    window.__collect = () => { const c = pickups.filter(c => c.k === 'loot' && c.t > .5).sort((a, b) => Math.hypot(a.x - P.x, a.y - P.y) - Math.hypot(b.x - P.x, b.y - P.y))[0]; if (c) __go(c.x, c.y, 2); else __off(); return !!c; };
+    // Gegner der Gegend nachfüllen (wie __keep, aber mit den Bewohnern des Bioms und der Tiefen-Stufe)
+    window.__lkeep = (n, atk) => {
+      P.inv = 99; P.hp = P.st.hp; P.res = P.st.resMax; keys.KeyJ = atk !== false; for (let i = 0; i < 3; i++) P.cds[i] = Math.min(P.cds[i], .2);
+      const live = enemies.filter(e => !e.dead && !e.boss);
+      if (live.length < n) { const a = Math.random() * 6.283, pool = lPool(lBioAt(P.x, P.y), lStage(P.x, P.y)); lSpawn(pick(pool), P.x + Math.cos(a) * 60, P.y + Math.sin(a) * 40, { instant: Math.random() < .5 }); }
+    };
+    // Saatpunkt der nächsten Region jedes Bioms (Chunks)
+    window.__bio = {};
+    for (let r = 1; r < 1700; r += r < 40 ? 1 : r < 300 ? 3 : 9) for (let a = 0; a < 6.283; a += Math.max(.02, 2 / r)) { const C = lCell(Math.round(Math.cos(a) * r), Math.round(Math.sin(a) * r)); if (!__bio[C.biome] || __bio[C.biome].dist > C.dist) __bio[C.biome] = { sx: C.sx, sy: C.sy, dist: C.dist }; }
+    window.__wp = (cx, cy) => ({ x: cx * LCK + LOFF, y: cy * LCK + LOFF });
+    // Lage auf dem Bildschirm (Bildpunkte im Video) eines Spielpunkts
+    window.__scr = (x, y) => ({ x: (x - CX) * SCALE * 2, y: (y - CY) * SCALE * 2 });
   });
 
   await R.news();
   if (R.want('assets')) await R.assets();
 
-  /* ---------- Aufhänger: Brunhild geht im Versteck durch das Weltentor ---------- */
-  if (R.want('hook_a')) {
-    await ev(() => {
-      __scene(11); __hero(0); SAVE.meta.hide.intro = true; enterHideout(); hideOverlay(); setState('play'); showHud(true);
-      const p = hidePos('weltentor'); P.x = p.x + 2; P.y = p.y + 62; P.face = 1; __vp(3.4); window.__camDY = -14; __snap(); __step(12); __calm();
-    });
-    await R.cap('hook_a', 48, `i => { __calm(); const p = hidePos('weltentor'); if (i >= 4) __go(p.x + 1, p.y + 4, 2); }`);
+  /* ================= 1 Die Endlosen Lande ================= */
+  // Laufbilder durch verschiedene Biome (alle Werkzeuge dabei: keine Gefahren, damit man das Gelände sieht)
+  for (const b of BIOMES) {
+    const scene = 'w_' + b; if (!R.want(scene)) continue;
+    const st = await ev(b => {
+      __lgo({ seed: 3, tools: 2047 }); const S = __bio[b], p0 = __wp(S.sx - 1.1, S.sy + .5), p = lFreeNear(p0.x, p0.y, 200) || p0;
+      __tp(p.x, p.y); __quiet(1200); P.face = 1; __step(3); __clear();
+      const R_ = lRegAt(P.x, P.y); return { b, n: LANDE_BIOMES[b].n, reg: lRegName(R_), st: lStage(P.x, P.y), depth: landeDepth() };
+    }, b);
+    await cap(scene, 36, `i => { __calm(); __quiet(900); __clear(); const t = i * .05; keys.KeyD = true; keys.KeyS = Math.sin(t * 3) > .55; keys.KeyW = Math.sin(t * 3) < -.55; window.__log.push([Math.round(P.x), Math.round(P.y)]); }`);
+    info(scene, st); console.log(scene, st.reg, 'St.', st.st);
   }
-  // Ankunft: Schnee und Wald (Wildnis), der Held läuft los, Begleiter folgt
-  if (R.want('hook_b')) {
-    await ev(() => { __lgo(1, 2, 0); __quiet(P.x, P.y, 600); __follow(LW.roads[0], 0, 1); __step(2); });
-    await R.cap('hook_b', 60, `i => { __calm(); if (i >= 6) __walk(); }`);
+  // Aufhänger: Kampf am Vulkanhang – Bewohner des Bioms, der Begleiter zaubert mit
+  if (R.want('h_fight')) {
+    const st = await ev(() => {
+      __lgo({ seed: 4, tools: 2047 }); const S = __bio.vulkan, p0 = __wp(S.sx + 1.2, S.sy - .6), p = lFreeNear(p0.x, p0.y, 200) || p0;
+      __tp(p.x, p.y); __quiet(1200); P.face = 1; window.__txtOK = /METEOR|BLITZ|SCHILD/; __vp(3.0); __snap();
+      for (let i = 0; i < 4; i++) __lkeep(5); __step(8);
+      return { n: LANDE_BIOMES.vulkan.n, reg: lRegName(lRegAt(P.x, P.y)), st: lStage(P.x, P.y) };
+    });
+    await cap('h_fight', 48, `i => { __calm(); __quiet(900); __lkeep(6); if (i % 16 < 8) { keys.KeyD = true; keys.KeyA = false; } else { keys.KeyD = false; keys.KeyA = i % 32 > 24; } }`);
+    await ev(() => { window.__txtOK = null; __off2(); });
+    info('h_fight', st);
   }
 
-  /* ---------- Was du riskierst: Weltentor-Bildschirm im Versteck ---------- */
-  if (R.want('risk')) {
-    fresh('risk');
-    await ev(() => { __scene(12); __hero(0); SAVE.meta.hide.intro = true; const M = SAVE.meta.lande; M.tx = [1]; M.rep = 420; M.runs = 7; M.ext = 5; M.deaths = 2; M.best = 48200; M.sel = 0; enterHideout(); lGate('hide'); panel.scrollTop = 0; });
-    await still('risk', 'top', () => { const h = [...panel.querySelectorAll('h3')].find(e => /RISKIERST/.test(e.textContent)); panel.scrollTop = 0; panel.scrollTop = h.getBoundingClientRect().top - panel.getBoundingClientRect().top - 30; });
-    await rectTxt('risk', 'risk', '#panel h3', 'RISKIERST'); await rectTxt('risk', 'surv', '#panel h3', 'ÜBERLEBT');
-    await rect('risk', 'rules', '#panel .lrules'); await rect('risk', 'go', '[data-act="l_go"]');
-    info('risk', await ev(() => ({ gv: lSum(['weapon', 'armor', 'helm'].map(s => ({ t: 'item', it: P.gear[s] }))), bag: lBagSize(lPet()) })));
+  // Neue Region: der Held läuft über eine Regionsgrenze (Wald → Schnee) – Banner „NEUE REGION: …“
+  if (R.want('region')) {
+    const st = await ev(() => {
+      __lgo({ seed: 5, tools: 2047 });
+      // Grenze suchen: zwei sehr verschiedene Biome nebeneinander, ohne Barriere dazwischen, nicht weit vom Tor
+      const pairs = [['wald', 'schnee'], ['herbst', 'schnee'], ['tannen', 'schnee'], ['wiese', 'schnee'], ['heide', 'schnee'], ['steppe', 'canyon'], ['wald', 'pilz'], ['fels', 'schnee']];
+      let best = null;
+      for (let r = 12; r < 60 && !best; r += 1) for (let a = 0; a < 6.283 && !best; a += .05) {
+        const x = Math.cos(a) * r, y = Math.sin(a) * r, A = lRegAtC(x, y), B = lRegAtC(x + .32, y);
+        if (A === B || !pairs.some(([p, q]) => A.biome === p && B.biome === q)) continue;
+        let ok = true; for (let k = 0; k <= 12; k++) { const c = lClassC(x - .1 + k * .04, y); if (c.bar >= 0) ok = false; }
+        if (ok) best = { x, y, a: A.biome, b: B.biome };
+      }
+      // Grenze im geladenen Gelände genau suchen, Start ~115 px davor (der Held braucht ~1,4 s bis hinüber)
+      const p0 = __wp(best.x, best.y); __tp(p0.x - 90, p0.y); __quiet(1200); __step(2);
+      const R0 = lRegAt(P.x, P.y); let gx = P.x; for (let k = 0; k < 160; k++) { if (lRegAt(gx, P.y) !== R0) break; gx += 3; }
+      __tp(gx - 115, P.y); __quiet(1200); P.face = 1; __step(3); __clear(); __nomsg();
+      return Object.assign(best, { from: lRegName(lRegAt(P.x, P.y)), to: lRegName(lRegAt(gx + 6, P.y)), toX: gx, x0: P.x });
+    });
+    console.log('Region', JSON.stringify(st));
+    await cap('region', 90, `i => { __calm(); __quiet(900); __clear(); keys.KeyD = true; keys.KeyW = keys.KeyS = false; window.__log.push([Math.round(P.x), Math.round(P.y), lRegName(lRegAt(P.x, P.y))]); }`);
+    await ev(() => __off2());
+    info('region', st);
   }
 
-  /* ---------- Freiwelt: drei Gebiete, Wege, Minikarte, Kompass ---------- */
-  // Schnee → Wald (Wildnis)
-  if (R.want('w_run1')) {
-    await ev(() => { __lgo(1, 2, 0); const i = __bound(1, 'schnee', 'wald'), r = LW.roads[1], s = r[Math.max(0, i - 22)]; __tp(s[0], s[1]); __quiet(P.x, P.y, 700); __follow(r, Math.max(0, i - 22), 1); __step(2); });
-    await R.cap('w_run1', 60, `i => { __calm(); __walk(); }`);
-  }
-  // Asche → Lava (Abgrund)
-  if (R.want('w_run2')) {
-    await ev(() => { __lgo(3, 3, 0); const i = __bound(2, 'asche', 'lava'), r = LW.roads[2], s = r[Math.max(0, i - 22)]; __tp(s[0], s[1]); __quiet(P.x, P.y, 700); __follow(r, Math.max(0, i - 22), 1); __step(2); });
-    await R.cap('w_run2', 60, `i => { __calm(); __walk(); }`);
-  }
-  // Wald → Ruinen (Grenzland)
-  if (R.want('w_run3')) {
-    await ev(() => { __lgo(0, 1, 0); const i = __bound(4, 'wald', 'ruine'), r = LW.roads[4], s = r[Math.max(0, i - 22)]; __tp(s[0], s[1]); __quiet(P.x, P.y, 700); __follow(r, Math.max(0, i - 22), 1); __step(2); });
-    await R.cap('w_run3', 60, `i => { __calm(); __walk(); }`);
-  }
-  // Große Karte mit Nebel: ein Stück der Welt erkundet (entlang der Wege aufgedeckt, wie nach ein paar Minuten)
-  if (R.want('w_map')) {
-    fresh('w_map');
+  // Karte der Lande: vom Weltentor bis an den Rand der Welt (für das Video ganz aufgedeckt: ein Gitter, das bei jedem Zoom jedes Kartenpixel trifft)
+  if (R.want('map')) {
+    fresh('map');
     await ev(() => {
-      __lgo(0, 1, 0); const L = LW;
-      for (const ri of [0, 1, 2, 4]) for (const [x, y] of L.roads[ri]) lRevealAt(x, y, 5);
-      const r = L.roads[2], q = r[Math.floor(r.length * .6)]; P.x = q[0]; P.y = q[1]; P.vx = -30; L.t = 214;
-      L.misOn = true; L.mis = lMisGen(); lMapScreen();
+      __lgo({ seed: 6, tools: 0 }); const [x, y] = lRoadPt(1, 1.2); __tp(x * LCK + LOFF, y * LCK + LOFF);
+      const map = lMap();
+      for (let L = 0; L <= 7; L++) { const s = 1 << L, r0 = L ? 200 * (1 << (L - 1)) : 0, r1 = L === 7 ? 18400 : 200 * (1 << L); for (let fy = -r1; fy <= r1; fy += s) for (let fx = -r1; fx <= r1; fx += s) { const d = Math.hypot(fx, fy); if (d < r0 || d >= r1) continue; lFSet(map, fx, fy); } }
+      lMapScreen(); LMV.cx = P.x - LOFF; LMV.cy = P.y - LOFF; LMV.z = 16; lMapRender(); panel.scrollTop = 0;
     });
-    await still('w_map', 'map');
-    await rect('w_map', 'map', '#lmapBig'); await rect('w_map', 'leg', '#panel .lleg');
+    await still('map', 'screen'); await rect('map', 'cv', '#lmapBig'); await rect('map', 'panel', '#panel');
+    const zs = []; for (let k = 0; k <= 12; k++) zs.push(16 * Math.pow(2, k));
+    const meta = [];
+    for (const z of zs) {
+      const r = await ev(z => { LMV.z = z; const t0 = performance.now(); lMapRender(); return { z, ms: Math.round(performance.now() - t0), w: $('lmapN').textContent, u: $('lmapBig').toDataURL() }; }, z);
+      R.saveData(`map/z_${z}.png`, r.u); meta.push({ z: r.z, w: r.w, ms: r.ms }); console.log('Karte z', z, r.w, r.ms + ' ms');
+    }
+    info('map', { zs: meta, edge: await ev(() => ({ km: lKm(LWR * LCK), st0: worldStage(0), st1: worldStage(1), hero: [P.x - LOFF, P.y - LOFF] })) });
+    // Karte wieder vergessen (die anderen Szenen zeigen nur, was dort erkundet ist)
+    await ev(() => { LMAP = null; SAVE.meta.lande.map = {}; lResume(); });
   }
 
-  /* ---------- Truhen und Beute: alles landet im Rucksack ---------- */
-  // Goldtruhe öffnen, Beute springt heraus, der Held sammelt ein (Zähler am Rucksack oben rechts)
-  if (R.want('l_chest')) {
-    await ev(() => {
-      __lgo(0, 1, 0); const o = __spot('gold', 0); window.__chest = o; o.loot = __loot();
-      __tp(o.x - 56, o.y + 6); __quiet(o.x, o.y, 500); P.face = 1; __step(4);
+  // Barriere ohne Werkzeug: Schlucht am Alten Weg, Übergang mit Planken – „Du brauchst: Seil“
+  if (R.want('bar_a')) {
+    const st = await ev(() => {
+      __lgo({ seed: 7, tools: 0 }); const c = lRoadCross(0, 0), [x, y] = lRoadPt(0, Math.hypot(c.px, c.py) - .24); __tp(x * LCK + LOFF, y * LCK + LOFF); __quiet(1200);
+      window.__c = c; P.face = 1; __vp(2.8); __snap(); __step(3); __nomsg();
+      return { bar: LBAR[LBARK[c.kind]].n, tool: LANDE_TOOLS[c.need].n, cx: c.px * LCK + LOFF, cy: c.py * LCK + LOFF };
     });
-    await ev(() => { window.__log = []; });
-    await R.cap('l_chest', 96, `i => { __calm(); const o = window.__chest; if (!o.open) __go(o.x, o.y, 6); else if (i > 20) __collect(); else __off(); window.__log.push([o.open ? 1 : 0, LW.pack.length, pickups.filter(c => c.k === 'loot').length]); }`);
-    await saveLog('l_chest');
-    await rect('l_chest', 'pack', '#lhPack');
-    console.log('Rucksack:', await ev(() => LW.pack.map(e => e.t + (e.t === 'item' ? ':' + e.it.rar : '')).join(' ')));
+    await cap('bar_a', 84, `i => { __calm(); __quiet(900); __clear(); const c = window.__c; __go(c.px * LCK + LOFF + 6, c.py * LCK + LOFF, 2); window.__log.push([Math.round(P.x), Math.round(P.y)]); }`);
+    await ev(() => __off2());
+    info('bar_a', st);
   }
-  // Vergrabener Schatz: stehen bleiben, graben, ein Begleiter-Ei kommt heraus
-  if (R.want('l_dig')) {
-    await ev(() => {
-      __lgo(0, 1, 0); const o = __spot('versteck', 0); window.__cache = o; const d = lEgg(3) || { egg: 1, sp: 'phoenix', tier: 5 };
-      o.loot = [{ t: 'egg', d: { egg: 1, sp: 'phoenix', tier: 5 } }, { t: 'gold', n: 240 }, { t: 'gem', k: 'saphir:3', n: 1 }];
-      __tp(o.x - 30, o.y + 2); __quiet(o.x, o.y, 500); P.face = 1; __step(4);
+  // Werkzeug-Hort mit Runenrätsel: Steine I – II – III – IV berühren, der Hort öffnet sich, das Seil liegt auf dem Sockel
+  if (R.want('bar_hort')) {
+    const st = await ev(() => {
+      __lgo({ seed: 8, tools: 0 }); const N = lToolN(0); let s = null; for (let j = 0; j < N; j++) { const q = lToolSite(0, j); if (!s || Math.hypot(q.x, q.y) < Math.hypot(s.x, s.y)) s = q; }
+      const p = __wp(s.x, s.y); __tp(p.x, p.y + 120); __quiet(1200);
+      const o = lNear(P.x, P.y, 600).find(x => x.k === 'tool'); window.__H = o; P.face = 1; __vp(2.8); __step(4); __clear(); __nomsg();
+      return { guard: o.guard, x: o.x, y: o.y, stones: o.stones.map(t => [Math.round(t.x), Math.round(t.y), t.n]) };
     });
-    await ev(() => { window.__log = []; });
-    await R.cap('l_dig', 84, `i => { __calm(); const o = window.__cache; if (!o.open) __go(o.x, o.y, 3); else __off(); window.__log.push([o.open ? 1 : 0, +LW.dig.toFixed(2), LW.pack.length]); }`);
-    await saveLog('l_dig');
+    console.log('Hort', JSON.stringify(st));
+    // nacheinander zum nächsten Stein laufen (Reihenfolge s.n), dann zum Sockel; die Wächter des Horts kämpfen gegen Held und Begleiter
+    await cap('bar_hort', 300, `i => {
+      __calm(); __quiet(900); const o = window.__H; let tgt = null;
+      if (o.state !== 'open' && o.state !== 'done') { const s = o.stones.find(t => t.n === o.lit); tgt = s; } else if (o.state === 'open') tgt = o;
+      keys.KeyJ = enemies.some(e => !e.dead && Math.hypot(e.x - P.x, e.y - P.y) < 34);
+      if (tgt) __go(tgt.x, tgt.y + (tgt === o ? 4 : 2), 2); else __off2();
+      window.__log.push([o.lit, o.state, enemies.filter(e => !e.dead).length]);
+    }`);
+    await ev(() => __off2());
+    info('bar_hort', st);
   }
-  // Rucksack: Gegenstand antippen → in die Begleiter-Tasche (die überlebt den Tod)
-  if (R.want('l_inv')) {
-    fresh('l_inv');
+  // Mit dem Seil über die Schlucht
+  if (R.want('bar_b')) {
     await ev(() => {
-      __lgo(0, 1, 0); __seed(31);
-      LW.pack = [{ t: 'item', it: lItem(4, 3) }, { t: 'item', it: lItem(3, 2) }, { t: 'egg', d: { egg: 1, sp: 'phoenix', tier: 5 } }, { t: 'item', it: lItem(2, 2) }, { t: 'gold', n: 426 }, { t: 'gem', k: 'rubin:2', n: 1 }, { t: 'mat', k: 'mithril', n: 3 }, { t: 'part', k: 'klinge:5', n: 1 }, { t: 'item', it: lItem(1, 1) }];
+      __lgo({ seed: 7, tools: 1 }); const c = lRoadCross(0, 0), [x, y] = lRoadPt(0, Math.hypot(c.px, c.py) - .22); __tp(x * LCK + LOFF, y * LCK + LOFF); __quiet(1200);
+      window.__c = c; const [x2, y2] = lRoadPt(0, Math.hypot(c.px, c.py) + 1.4); window.__t2 = [x2 * LCK + LOFF, y2 * LCK + LOFF]; P.face = 1; __vp(2.8); __snap(); __step(3); __nomsg();
+    });
+    await cap('bar_b', 96, `i => { __calm(); __quiet(900); __clear(); const c = window.__c; if (!window.__over) { if (__go(c.px * LCK + LOFF + 10, c.py * LCK + LOFF, 6)) window.__over = 1; } else __go(window.__t2[0], window.__t2[1], 4); window.__log.push([Math.round(P.x), Math.round(P.y)]); }`);
+    await ev(() => { __off2(); window.__over = 0; });
+  }
+
+  // Leuchtfeuer setzen: Bildschirm, Entzünden, das Feuer brennt in der Welt
+  if (R.want('cp_screen') || R.want('cp_light') || R.want('cp_gate')) {
+    await ev(() => {
+      __lgo({ seed: 9, tools: 1, stones: 2 }); const [x, y] = lRoadPt(1, 8); __tp(x * LCK + LOFF, y * LCK + LOFF); __quiet(1200);
+      for (const o of lNear(P.x, P.y, 400)) if (o.k === 'camp') o.state = 'done'; P.face = 1; __vp(3.0); __snap(); __step(10); __clear();
+      LW.regs.add('x1'); LW.regs.add('x2');   // auf dem Weg hierher entdeckte Regionen (für die Meldung „Karte gesichert (… neue Regionen)“)
+    });
+    fresh('cp_screen');
+    await still('cp_screen', 'screen', () => { lCpScreen(); panel.scrollTop = 0; });
+    await rect('cp_screen', 'panel', '#panel'); await rect('cp_screen', 'ok', '[data-act="l_cpok"]'); await rect('cp_screen', 'rules', '#panel .lrules');
+    await ev(() => { LW.hurtT = -99; __clear(); __nomsg(); ON.l_cpok(); });
+    // Bilder ab dem Entzünden (das Banner kam eben)
+    await R.cap('cp_light', 72, `i => { window.__fi = i + 1; __calm(); __clear(); P.face = 1; __off2(); }`);
+    fs.writeFileSync(`${R.out}cp_light/msgs.json`, JSON.stringify(await ev(() => ({ msg: window.__msg.map(m => Object.assign(m, { f: 0 })), log: [] }))));
+    // Ausflug beenden (durch das eigene Leuchtfeuer), dann das Weltentor im Versteck: Startpunkt wählen
+    fresh('cp_gate');
+    await ev(() => { const b = lNear(P.x, P.y, 200).find(x => x.k === 'beacon'); lExtract(b); ON.l_home(); hideOverlay(); lGate('hide'); panel.scrollTop = 0; });
+    await still('cp_gate', 'g0', () => { ON.l_start('tor'); panel.scrollTop = 0; }); await rect('cp_gate', 'starts', '#panel .lstart'); await rect('cp_gate', 'opt1', '#panel .lstart [data-act="l_start"]', 1); await rect('cp_gate', 'opt0', '#panel .lstart [data-act="l_start"]', 0);
+    await rectTxt('cp_gate', 'head', '#panel h3', 'STARTPUNKT');
+    await still('cp_gate', 'g1', () => { ON.l_start('c0'); panel.scrollTop = 0; });
+    info('cp_gate', await ev(() => ({ starts: [...panel.querySelectorAll('.lstart [data-act="l_start"]')].map(e => e.textContent) })));
+  }
+
+  // Die Nacht bricht an (Zeitraffer): es wird dunkel, Jäger der Nacht kommen
+  if (R.want('night')) {
+    await ev(() => {
+      __lgo({ seed: 10, tools: 2047 }); const [x, y] = lRoadPt(2, 14); __tp(x * LCK + LOFF, y * LCK + LOFF); __quiet(1500);
+      window.__rd = []; for (let k = 0; k < 60; k++) window.__rd.push(lRoadPt(2, 14 + k * .06).map(v => v * LCK + LOFF));
+      LW.t = LDAY * .56; P.face = 1; __vp(2.8); __snap(); __step(3); __clear(); __nomsg();
+    });
+    await cap('night', 132, `i => {
+      __calm(); __quiet(900); const L = LW; L.t = LDAY * (.56 + i * .0016); L.tick = 0;
+      const q = window.__rd[Math.min(window.__rd.length - 1, 2 + Math.floor(i / 5))]; __go(q[0], q[1], 6);
+      if (i === 50 || i === 78 || i === 102) { const st = lStage(P.x, P.y), pool = lPool(lBioAt(P.x, P.y), st); for (let k = 0; k < 3; k++) { const a = k * 2.1 + i; lSpawn(pick(pool), P.x + Math.cos(a) * 70, P.y + Math.sin(a) * 46, { instant: false, elite: k === 0 }); } }
+      keys.KeyJ = enemies.some(e => !e.dead && Math.hypot(e.x - P.x, e.y - P.y) < 44);
+      window.__log.push([LDNG[lPhase(L.t)].n, +lNight(L.t).toFixed(2), enemies.filter(e => !e.dead).length]);
+    }`);
+    await ev(() => __off2());
+  }
+
+  // Tor der Alten: hineinstellen, warten, entkommen
+  if (R.want('exit')) {
+    const st = await ev(() => {
+      __lgo({ seed: 11, tools: 2047 });
+      let ex = null; for (let r = 1; r < 6 && !ex; r++) for (let gy = -r; gy <= r && !ex; gy++) for (let gx = -r; gx <= r && !ex; gx++) { const e = lExitCell(gx, gy); if (e && e.t === 'portal') ex = e; }
+      const p = __wp(ex.x, ex.y); __tp(p.x + 64, p.y + 26); __quiet(1500);
+      const o = lNear(P.x, P.y, 300).find(x => x.k === 'exit'); window.__ex = o; LW.t = 300;
+      LW.pack = [{ t: 'item', it: lItem(4, 3) }, { t: 'item', it: lItem(3, 2) }, { t: 'gold', n: 1840 }, { t: 'mod', k: 'glyphe_meteor:4', n: 1 }, { t: 'gem', k: 'rubin:3', n: 1 }, { t: 'mat', k: 'mithril', n: 6 }, { t: 'part', k: 'klinge:5', n: 1 }];
       for (const e of LW.pack) if (e.t === 'item') e.it.lw = LW.id;
-      LG.sel = null; LG.arm = null; lInv(); panel.scrollTop = 0;
+      P.face = -1; __vp(3.0); __snap(); __step(3); __clear(); __nomsg();
+      return { t: o.t, x: o.x, y: o.y, need: lChannel(o) };
     });
-    await still('l_inv', 'inv0'); await rect('l_inv', 'pack', '#panel .lpk'); await rect('l_inv', 'bag', '#panel .lpk + .box');
-    await rect('l_inv', 'slot0', '[data-act="l_sel"][data-id="p:0"]');
-    await still('l_inv', 'inv1', () => { ON.l_sel('p:0'); panel.scrollTop = 0; });
-    await rect('l_inv', 'tobag', '[data-act="l_tobag"]'); await rect('l_inv', 'sheet', '#panel .side.sheet');
-    await still('l_inv', 'inv2', () => { ON.l_tobag(); panel.scrollTop = 0; });
-    await rect('l_inv', 'bag2', '#panel .lpk + .box');
+    console.log('Tor', JSON.stringify(st));
+    await cap('exit', 120, `i => { __calm(); __quiet(900); __clear(); const o = window.__ex; if (LW && LW.on) { __go(o.x, o.y + 1, 3); window.__log.push([+LW.ch.toFixed(2), $('objective').textContent]); } else window.__log.push([-1, '']); }`);
+    fresh('exit_done');
+    await ev(() => { for (let k = 0; k < 200 && LW && LW.on; k++) { __calm(); __step(1); } });
+    await still('exit_done', 'done', () => { panel.scrollTop = 0; }, null, 2400);
+    await rect('exit_done', 'panel', '#panel'); await rect('exit_done', 'kv', '#panel .kv'); await rect('exit_done', 'head', '#panel .head');
+    info('exit', st);
   }
 
-  /* ---------- Ungeheuer: ein Boss taucht auf, Kampf – dann läuft der Held weg (Kamera hält beide im Bild) ---------- */
-  // [Szene, Weltstufe, Karte, Boss, Straße] – Todesritter Varkas im Abgrund (Pyraxis fliegt zu hoch für das Bild)
-  const BOSSV = [['b_boss', 3, 3, 'Varkas', 3]];
-  for (const [scene, ti, seed, bn, ri] of BOSSV) {
+  /* ================= 2 1200 Bosse ================= */
+  // Boss-Kodex: 137 Trophäen, Rang-Bänder von Leicht bis Fast unmöglich
+  if (R.want('kodex')) {
+    fresh('kodex');
+    await ev(() => {
+      __ui(); __hero(0); const M = SAVE.meta.bosses; M.b = {}; M.l = {}; for (let i = 0; i < 137; i++) M.b[i * 3] = [29400000, 1 + i % 3, i, -i]; for (let i = 0; i < 40; i++) M.b[i * 3 + 1] = [0, 0, 5, 5]; BTROPH = -1;
+      KX.band = 0; KX.sel = -1; KX.filt = 'all'; bossKodex('title'); panel.scrollTop = 0;
+    });
+    await still('kodex', 'k0'); await rect('kodex', 'top', '#panel .bk-top'); await rect('kodex', 'bands', '#panel .bk-bands'); await rect('kodex', 'n', '#panel .bk-n');
+    await rect('kodex', 'b0', '#panel .bk-band', 0); await rect('kodex', 'b11', '#panel .bk-band', 11); await rect('kodex', 'grid', '#panel .bk-grid');
+    await still('kodex', 'k1', () => { KX.band = 11; KX.sel = -1; bossKodex(); panel.scrollTop = 0; });
+    await rect('kodex', 'grid1', '#panel .bk-grid');
+    await still('kodex', 'k2', () => { KX.band = 0; KX.sel = 9; bossKodex(); const s = panel.querySelector('.side.sheet'); panel.scrollTop = 0; if (s) panel.scrollTop = s.getBoundingClientRect().top - panel.getBoundingClientRect().top - 120; });
+    await rect('kodex', 'side', '#panel .side.sheet');
+  }
+  // Bosskämpfe im echten Kampfplatz: Rang 1 und Rang 1200 (Held unverwundbar), Mechaniken aus ihrer eigenen Liste
+  const FIGHTS = [['b_low', 0, 108], ['b_high', 1199, 132]];
+  for (const [scene, id, n] of FIGHTS) {
     if (!R.want(scene)) continue;
-    await ev(([ti, seed, bn, ri]) => {
-      __lgo(ti, seed, 0); const L = LW, r = L.roads[ri], i = Math.floor(r.length * .5), q = r[i];
-      __tp(q[0], q[1]); __quiet(q[0], q[1], 900); window.__route = r; window.__ri = i;
-      const B = L.bosses.find(b => b.B.name.includes(bn)) || L.bosses[0]; window.__B = B;
-      L.t = 60; P.face = 1; window.__txtNo = /^\d+$/; __vp(3.1); __snap(); __step(2);
-    }, [ti, seed, bn, ri]);
-    await R.cap(scene, 120, `i => {
-      __calm(); const B = window.__B, r = window.__route;
-      if (i === 2) { B.state = 'roam'; B.x = P.x + 62; B.y = P.y - 30; B.tx = B.x; B.ty = B.y; B.hp = 1; }
-      if (i < 46) { __off(); P.face = 1; keys.KeyJ = i > 20 && i < 42; }
-      else { keys.KeyJ = false; if (!window.__path) __follow(r, window.__ri, -1); __walk(); }
-      const b = enemies.find(e => e.boss && !e.dead);
-      if (b) { b.hp = Math.max(b.hp, b.maxHp * .8); const tx = clamp((b.x - P.x) * .5, -70, 70), ty = clamp((b.y - P.y) * .5 + 8, -60, 50); window.__camDX = (window.__camDX || 0) * .85 + tx * .15; window.__camDY = (window.__camDY || 0) * .85 + ty * .15; }
+    const st = await ev(id => {
+      __ui(); __hero(0); const M = SAVE.meta.bosses; M.b = {}; for (let i = 0; i < 137; i++) M.b[i * 3 + 3] = [29400000, 1, i, -i]; BTROPH = -1;
+      hideOverlay(); BA = null; slowmo = 0; hitStop = 0; bossArena(id, { practice: false }); __vp(2.6); P.inv = 1e9; for (let k = 0; k < 240 && !enemies.some(x => x.bz); k++) __step(1); __step(8);
+      const e = enemies.find(x => x.bz); P.x = e.x + 6; P.y = e.y + 64; P.face = 1; window.__camDY = -30; __snap(); window.__msg = [];
+      const B = bossDef(id); return { id, name: B.name, title: B.title, rank: B.rank, band: BBAND[B.band], mech: B.mech.map(k => BMECH[k].n), keys: B.mech, el: B.el };
+    }, id);
+    console.log(scene, JSON.stringify(st));
+    // die eigenen Mechaniken des Bosses der Reihe nach auslösen (sonst wartet er auf die Abklingzeit); beim hohen Rang mehrere gleichzeitig
+    await cap(scene, n, `i => {
+      P.inv = 1e9; P.hp = P.st.hp; P.res = P.st.resMax; const e = enemies.find(x => x.bz && !x.dead); if (!e) return;
+      e.hp = Math.max(e.hp, e.maxHp * .62); const ks = e.bDef.mech.filter(k => !BMECH[k].p), every = ${id > 600 ? 22 : 40};
+      if (i % every === 4) { const k = ks[Math.floor(i / every) % ks.length]; bossCast(e, k); window.__log.push(['cast', i, k]); }
+      const d = Math.hypot(e.x - P.x, e.y - P.y); keys.KeyJ = d < 70; __go(e.x + 4, e.y + 40, 18);
+      window.__camDX = clamp((e.x - P.x) * .4, -40, 40); window.__camDY = clamp((e.y - P.y) * .5, -50, 0);
+      window.__log.push(['z', i, BZ.fx.length]);
     }`);
-    await ev(() => { window.__camDX = 0; window.__camDY = 0; window.__path = null; window.__txtNo = null; });
-    console.log(scene, await ev(() => window.__B.B.name));
+    await ev(() => __off2());
+    info(scene, st);
   }
-
-  /* ---------- Leute in den Landen: Kundschafterin Elwa, Händler Bodo, Kräuterfrau Mirja, Rivalen ---------- */
-  if (R.want('n_camp')) {
-    await ev(() => { __lgo(0, 1, 0); const o = LW.npcs.mis; __tp(o.x - 70, o.y + 30); __quiet(o.x, o.y, 500); __step(2); });
-    await R.cap('n_camp', 40, `i => { __calm(); const o = LW.npcs.mis; __go(o.x - 16, o.y + 8, 3); }`);
-  }
-  if (R.want('n_mis')) {
-    fresh('n_mis');
-    await ev(() => { __lgo(0, 1, 0); __seed(41); const o = LW.npcs.mis; P.x = o.x - 16; P.y = o.y + 8; lMisScreen(); panel.scrollTop = 0; });
-    await still('n_mis', 'mis'); await rectTxt('n_mis', 'list', '#panel h3', 'AUFTRÄGE'); await rect('n_mis', 'say', '#panel .say');
-  }
-  if (R.want('n_trade')) {
-    fresh('n_trade');
-    await ev(() => { __lgo(0, 1, 0); __seed(42); const o = LW.npcs.trade; P.x = o.x - 16; P.y = o.y + 8; LW.pack = [{ t: 'gold', n: 2400 }, { t: 'mat', k: 'zahn', n: 12 }, { t: 'mat', k: 'kristall', n: 14 }, { t: 'mat', k: 'horn', n: 10 }, { t: 'mat', k: 'leder', n: 12 }, { t: 'mat', k: 'knochen', n: 10 }, { t: 'mat', k: 'erz', n: 10 }]; LG.tab = 'tausch'; lTradeScreen(); panel.scrollTop = 0; });
-    await still('n_trade', 'trade'); await rect('n_trade', 'say', '#panel .say');
-  }
-  // Rivale greift an (will deine Beute) – besiegt lässt er alles fallen, was er geplündert hat
-  if (R.want('n_rival')) {
+  // Erster Sieg über Rang 1200: Trophäe, Beute
+  if (R.want('b_kill')) {
     await ev(() => {
-      __lgo(1, 2, 0); const L = LW, r = L.rivals[0], q = L.roads[1][40]; __tp(q[0], q[1]); __quiet(q[0], q[1], 900);
-      r.state = 'roam'; r.loot = [{ t: 'item', it: lItem(3, 2) }, { t: 'gold', n: 160 }, { t: 'mat', k: 'mithril', n: 2 }]; r.x = P.x + 120; r.y = P.y - 50; r.tgt = null; r.leave = 9999; window.__R = r; P.face = 1; __step(1);
+      const e = enemies.find(x => x.bz && !x.dead); if (e) { e.hp = Math.max(1, e.maxHp * .02); } window.__msg = [];
     });
-    await ev(() => { window.__log = []; });
-    await R.cap('n_rival', 96, `i => { window.__log.push([window.__R.state, enemies.some(x => x.rival) ? 1 : 0]); __calm(); const e = enemies.find(x => x.rival); keys.KeyJ = !!e && i > 14; if (e && Math.hypot(e.x - P.x, e.y - P.y) > 26 && i > 10) __go(e.x - 14, e.y, 3); else if (!e && i > 30) __collect(); else if (!e) __off(); if (e && i < 46) e.hp = Math.max(e.hp, e.maxHp * .5); }`);
-    await saveLog('n_rival');
-    console.log('Rivale:', await ev(() => window.__R.name + ' ' + window.__R.state));
+    await cap('b_kill', 108, `i => { P.inv = 1e9; P.hp = P.st.hp; const e = enemies.find(x => x.bz && !x.dead); if (e) { const d = Math.hypot(e.x - P.x, e.y - P.y); keys.KeyJ = true; __go(e.x + 4, e.y + 30, 16); window.__camDX = clamp((e.x - P.x) * .4, -40, 40); window.__camDY = clamp((e.y - P.y) * .5, -50, 0); } else { __off2(); window.__camDX *= .9; window.__camDY *= .9; for (const c of pickups) c.mag = 0; } window.__log.push([e ? 1 : 0, pickups.length]); }`);
+    await ev(() => { __off2(); BA && (BA.end = 0); });
   }
 
-  /* ---------- Die Nacht bricht an: Zeitraffer – es wird dunkel, die Verderbnis wächst, Jäger der Leere ---------- */
-  if (R.want('t_night')) {
+  /* ================= 3 Artefakte & Begegnungen ================= */
+  // Außenposten am Tor: Kundschafterin Elwa kennt ein Gerücht über eine Spur
+  if (R.want('elwa_walk')) {
+    await ev(() => { __lgo({ seed: 12, tools: 0 }); const o = lNear(P.x, P.y, 500).find(n => n.k === 'npc' && n.role === 'mis'); window.__npc = o; __tp(o.x - 76, o.y + 30); __quiet(900); P.face = 1; __vp(3.0); __snap(); __step(2); __clear(); });
+    await cap('elwa_walk', 48, `i => { __calm(); __clear(); const o = window.__npc; __go(o.x - 16, o.y + 8, 3); }`);
+    await ev(() => __off2());
+  }
+  if (R.want('elwa')) {
+    fresh('elwa');
+    await ev(() => { const o = window.__npc || lNear(P.x, P.y, 500).find(n => n.k === 'npc' && n.role === 'mis'); lMisScreen(o); panel.scrollTop = 0; });
+    await still('elwa', 'mis'); await rectTxt('elwa', 'rumor', '#panel .lmis', 'Gerücht über eine Spur'); await rectTxt('elwa', 'tool', '#panel .lmis', 'Gerücht: '); await rect('elwa', 'say', '#panel .say');
+    info('elwa', await ev(() => ({ rumor: ([...panel.querySelectorAll('.lmis')].find(e => /Gerücht über eine Spur/.test(e.textContent)) || {}).textContent })));
+  }
+  // Ein Artefakt in der Welt: hinlaufen, aufheben → Lesebildschirm
+  if (R.want('a_walk')) {
+    const st = await ev(() => {
+      __lgo({ seed: 13, tools: 0 }); const r = arteRumor(0, 0), C = aChain(r.chain), s0 = C.sites[0]; window.__arc = r.chain; window.__s0 = s0;
+      __tp(s0.x + LOFF - 70, s0.y + LOFF + 30); __quiet(900); P.face = 1; __vp(3.0); __snap(); __step(2); __clear(); __nomsg();
+      return { chain: r.chain, title: C.title, L: C.L, guard: C.rw.guard };
+    });
+    console.log('Spur', JSON.stringify(st));
+    await cap('a_walk', 54, `i => { if (state !== 'play') { window.__log.push([1]); return; } __calm(); __clear(); const s = window.__s0; __go(s.x + LOFF, s.y + LOFF, 1); window.__log.push([0]); }`);
+    await ev(() => __off2());
+    info('a_walk', st);
+  }
+  if (R.want('a_read')) {
+    fresh('a_read');
+    await ev(() => { if (!document.querySelector('#panel .arp')) arteRead(aChain(window.__arc).off, 'play', { fresh: true }); panel.scrollTop = 0; });
+    await still('a_read', 'read'); await rect('a_read', 'panel', '#panel'); await rect('a_read', 'arp', '#panel .arp'); await rect('a_read', 'hint', '#panel .arhint'); await rect('a_read', 'new', '#panel .arnew'); await rect('a_read', 'side', '#panel .arside');
+    await rect('a_read', 'spur', '#panel .arspur'); await rect('a_read', 'head', '#panel .head');
+    info('a_read', await ev(() => ({ hint: (panel.querySelector('.arhint') || {}).textContent, new: (panel.querySelector('.arnew') || {}).textContent, name: (panel.querySelector('.arnm') || {}).textContent })));
+  }
+  // Karte: Suchkreis um das nächste Artefakt (aufgedeckt ist nur die Gegend, durch die der Held vom Tor hierher gelaufen ist)
+  if (R.want('a_map')) {
+    fresh('a_map');
     await ev(() => {
-      __lgo(0, 1, 0); const L = LW, r = L.roads[3]; __tp(r[10][0], r[10][1]); __quiet(r[10][0], r[10][1], 900); __follow(r, 10, 1);
-      L.rift.x = r[60][0] + 120; L.rift.y = r[60][1] + 40; L.t = 150; window.__kinds = null; __step(2);
+      ON.arte_back(); const s0 = window.__s0; for (let k = 0; k <= 12; k++) lRevealW(384 + (s0.x - 384) * k / 12, 372 + (s0.y - 372) * k / 12, 2);
+      lMapScreen(); LMV.z = 24; const h = arteHints().find(x => x.chain === window.__arc && x.k === 'arte'); LMV.cx = (P.x - LOFF + h.x) / 2; LMV.cy = (P.y - LOFF + h.y) / 2; lMapRender(); panel.scrollTop = 0;
     });
-    await R.cap('t_night', 108, `i => {
-      __calm(); const L = LW; L.t = 150 + i * 5.2; L.tick = 0; __walk();
-      if (i === 30 || i === 62 || i === 84) for (let k = 0; k < 3; k++) { const a = k * 2.1 + i; lSpawn(pick(lPool(lBioAt(P.x, P.y), lStage(P.x, P.y))), P.x + Math.cos(a) * 70, P.y + Math.sin(a) * 50, { instant: false }); }
-      keys.KeyJ = enemies.some(e => !e.dead && Math.hypot(e.x - P.x, e.y - P.y) < 40);
-    }`);
+    await still('a_map', 'map'); await rect('a_map', 'cv', '#lmapBig');
+    info('a_map', await ev(() => { const h = arteHints().find(x => x.chain === window.__arc && x.k === 'arte'), z = LMV.z, S = 240; return { hx: (h.x - LMV.cx) / z + S / 2, hy: (h.y - LMV.cy) / z + S / 2, hr: h.r / z, label: h.label }; }));
   }
-
-  /* ---------- Entkommen: im Ausgang stehen bleiben, Zähler läuft, Beute in Sicherheit ---------- */
-  if (R.want('x_exit')) {
+  // Versiegelter Schatz (noch nicht alle Teile) – und später, mit allen Teilen, geborgen
+  if (R.want('a_seal')) {
+    fresh('a_seal');
+    await ev(() => { lResume(); const C = aChain(window.__arc), t = C.sites[C.L]; window.__ts = t; __tp(t.x + LOFF, t.y + LOFF + 50); __quiet(900); for (let i = 0; i < 60 && state === 'play'; i++) { __calm(); __go(t.x + LOFF, t.y + LOFF, 1); __step(1); } __off2(); panel.scrollTop = 0; });
+    await still('a_seal', 'seal'); await rect('a_seal', 'box', '#panel .artr'); await rect('a_seal', 'panel', '#panel');
+  }
+  if (R.want('a_walk2')) {
+    // die übrigen Teile der Spur sind gefunden (gestellt: im Video übersprungen), der Held kommt zurück zum Schatz
     await ev(() => {
-      __lgo(0, 1, 0); const L = LW, ex = L.exits.find(e => e.t === 'portal'); window.__ex = ex;
-      __tp(ex.x + 46, ex.y + 8); __quiet(ex.x, ex.y, 600); L.t = 520;
-      L.pack = [{ t: 'item', it: lItem(4, 3) }, { t: 'item', it: lItem(3, 2) }, { t: 'item', it: lItem(3, 2) }, { t: 'egg', d: { egg: 1, sp: 'phoenix', tier: 5 } }, { t: 'gold', n: 1240 }, { t: 'gem', k: 'rubin:3', n: 1 }, { t: 'mat', k: 'mithril', n: 6 }, { t: 'part', k: 'klinge:5', n: 1 }];
-      for (const e of L.pack) if (e.t === 'item') e.it.lw = L.id;
-      lBag(L.pet).push({ t: 'item', it: lItem(4, 2) });
-      L.misOn = true; L.mis = lMisGen(); L.mis[0].done = true; L.mis[0].c = L.mis[0].n;
-      L.kills = 37; window.__chlog = []; P.face = -1; __step(1);
+      ON.arte_back(); const c = window.__arc, C = aChain(c); for (let i = 1; i < C.L; i++) artePickup(C.off + i, { quiet: true }); lArteReady(c);
+      const t = window.__ts; __tp(t.x + LOFF - 60, t.y + LOFF + 34); __quiet(900); P.face = 1; __step(2); __clear(); __nomsg();
     });
-    await R.cap('x_exit', 66, `i => { __calm(); const ex = window.__ex; if (LW && LW.on) { if (!__go(ex.x, ex.y + 1, 3)) {} window.__chlog.push([LW.ch, LW.chEx ? 1 : 0]); } else window.__chlog.push([-1, 0]); }`);
-    const ch = await ev(() => ({ log: window.__chlog, need: 3, on: !!(LW && LW.on) }));
-    fs.writeFileSync(R.out + 'x_exit/chlog.json', JSON.stringify(ch));
-    fresh('x_done');
-    if (ch.on) await ev(() => lExtract());
-    await still('x_done', 'done', null, null, 2600);
-    info('x_done', await ev(() => ({ kv: [...panel.querySelectorAll('.kv .pill')].map(e => e.textContent) })));
-    await rect('x_done', 'panel', '#panel'); await rect('x_done', 'pill', '#panel .kv'); await rect('x_done', 'list', '#panel .lgot');
+    await cap('a_walk2', 48, `i => { if (state !== 'play') { window.__log.push([1]); return; } __calm(); __clear(); const t = window.__ts; __go(t.x + LOFF, t.y + LOFF, 1); window.__log.push([0]); }`);
+    await ev(() => __off2());
+  }
+  if (R.want('a_open')) {
+    fresh('a_open');
+    await ev(() => { if (!document.querySelector('#panel .artr')) arteTreasureOpen(window.__arc, { noGuard: true }); panel.scrollTop = 0; });
+    await still('a_open', 'open', null, null, 600); await rect('a_open', 'panel', '#panel'); await rect('a_open', 'box', '#panel .artr'); await rectTxt('a_open', 'fund', '#panel h3', 'DEIN FUND');
+    await ev(() => ON.arte_back());
+  }
+  // Mystische Begegnungen
+  if (R.want('enc')) {
+    fresh('enc');
+    for (const k of ['sphinx', 'spiegelhexe', 'feenring', 'drache']) {
+      await still('enc', k, k => { __ui(); __hero(0); __lgo({ seed: 14, tools: 0 }); setState('play'); encounterOpen({ key: k, x: P.x, y: P.y, depth: .2, cx: 5, cy: 5, teleport: () => { } }); panel.scrollTop = 0; }, k);
+      await rect('enc', k, '#panel');
+    }
+    info('enc', await ev(() => ({ n: Object.keys(ENCD).length })));
   }
 
-  /* ---------- Tod: Pyraxis erwischt den Helden – alles weg, nur die Tasche des Begleiters kommt heim ---------- */
-  if (R.want('d_die')) {
-    await ev(() => {
-      __lgo(3, 3, 0); const L = LW, r = L.roads[3], q = r[Math.floor(r.length * .55)]; __tp(q[0], q[1]); __quiet(q[0], q[1], 900);
-      L.pack = [{ t: 'item', it: lItem(4, 3) }, { t: 'item', it: lItem(3, 2) }, { t: 'egg', d: { egg: 1, sp: 'phoenix', tier: 5 } }, { t: 'gold', n: 1240 }, { t: 'gem', k: 'rubin:3', n: 1 }];
-      for (const e of L.pack) if (e.t === 'item') e.it.lw = L.id;
-      const keep = lItem(4, 3); keep.lw = L.id; lBag(L.pet).push({ t: 'item', it: keep });
-      const B = L.bosses.find(b => /Varkas/.test(b.B.name)) || L.bosses[0]; B.state = 'roam'; B.x = P.x + 56; B.y = P.y - 20; B.tx = B.x; B.ty = B.y; B.hp = .6; L.t = 60;
-      window.__txtNo = /\d{4,}/; P.face = 1; __vp(3.1); __snap(); __step(16);
-    });
-    await ev(() => { window.__log = []; });
-    await R.cap('d_die', 72, `i => { window.__log.push(state); if (i < 12) { __calm(); P.face = 1; keys.KeyJ = true; } else if (i === 12) { keys.KeyJ = false; __off(); P.inv = 0; P.hp = Math.min(P.hp, 20); } if (i === 28 && state === 'play') { P.inv = 0; hurtPlayer(1e9, enemies.find(e => e.boss) || null); } const b = enemies.find(e => e.boss && !e.dead); if (b && state === 'play') { window.__camDX = clamp((b.x - P.x) * .5, -60, 60); window.__camDY = clamp((b.y - P.y) * .5 + 8, -50, 40); } }`);
-    await saveLog('d_die');
-    fresh('d_screen');
-    await ev(() => { for (let k = 0; k < 400 && state === 'dead'; k++) __step(1); });
-    await still('d_screen', 'screen', () => { panel.scrollTop = 0; }, null, 600);
-    await rect('d_screen', 'panel', '#panel .over'); await rect('d_screen', 'lost', '#panel .llost'); await rectTxt('d_screen', 'saved', '#panel h3', 'GERETTET');
-    console.log('Tod:', await ev(() => state + ' ' + (panel.querySelector('h2') || {}).textContent)); await ev(() => { window.__txtNo = null; });
-  }
-
-  /* ---------- Brutnest: Eier wärmen, füttern, streicheln ---------- */
-  if (R.want('e_nest')) {
-    fresh('e_nest');
-    const ids = await ev(() => {
-      __scene(51); __hero(0); SAVE.meta.hide.intro = true; P.act = 5; for (const k of MATORDER) P.mats[k] = 40;
-      const M = SAVE.meta.pets; M.eggs = []; const now = Date.now();
-      const g1 = eggGive('wal', true), g2 = eggGive('phoenix', true), g3 = eggGive('fuchs', true);
-      Object.assign(g2, { got: g2.need * .46, w: .72, f: .4, z: .85, t: now }); Object.assign(g3, { got: g3.need * .8, w: .9, f: .9, z: .6, t: now });
-      enterHideout(); openNest('hide'); panel.scrollTop = 0; return [g1.id, g2.id, g3.id];
-    });
-    await still('e_nest', 'n0'); await rect('e_nest', 'say', '#panel .say'); await rect('e_nest', 'sum', '#panel .nsum');
-    await rect('e_nest', 'card', `.ncard[data-eg="${ids[0]}"]`);
-    await rect('e_nest', 'warm', `[data-act="nestwarm"][data-id="${ids[0]}"]`); await rect('e_nest', 'feed', `[data-act="nestfeed"][data-id="${ids[0]}"]`); await rect('e_nest', 'pet', `.nacts [data-act="nestpet"][data-id="${ids[0]}"]`);
-    await still('e_nest', 'n1', id => { ON.nestwarm(id); panel.scrollTop = 0; }, ids[0]);
-    await still('e_nest', 'n2', id => { ON.nestfeed(id); panel.scrollTop = 0; }, ids[0]);
-    await still('e_nest', 'n3', id => { ON.nestpet(id); ON.nestpet(id); ON.nestpet(id); panel.scrollTop = 0; }, ids[0], 200);
-    await rect('e_nest', 'card3', `.ncard[data-eg="${ids[0]}"]`);
-  }
-  // Schlüpfen Bild für Bild: der echte Schlüpf-Bildschirm (Wackeln, Risse, Licht, Splitter, dann die Kreatur)
-  for (const [scene, sp] of [['e_hatch', 'phoenix']]) {
-    if (!R.want(scene)) continue;
-    await ev(sp => {
-      __scene(52); __hero(0); SAVE.meta.hide.intro = true; SAVE.meta.settings.calm = false; const M = SAVE.meta.pets; M.eggs = []; M.seen = ['drache'];
-      const g = eggGive(sp, true); Object.assign(g, { got: g.need, w: 1, f: 1, z: 1, t: Date.now() });
-      enterHideout(); openNest('hide'); hatchStart(g.id);
-    }, sp);
-    await ev(() => { window.__log = []; });
-    await R.cap(scene, 108, `i => { const H = HATCH; if (!H) return; for (const s of [.5, 0]) { H.t0 = performance.now() - ((i - s) / 30) * 1000 / H.sp; hatchRun(); } window.__log.push([H.burst ? 1 : 0, H.shown ? 1 : 0]); }`);
-    await saveLog(scene);
-    await rect(scene, 'cv', '#hatchcv'); await rect(scene, 'res', '#hres');
-    await ev(() => { HATCH = null; });
-  }
-  // Grafiken: Eier aller Seltenheiten (mit Rissen), alle 24 Kreaturen, Gegenstände nach Material und Seltenheit
-  if (R.want('art')) {
-    fresh('art');
+  /* ================= 4 Kreaturen ================= */
+  // Grafiken: alle 77 Arten (Stufe Erwachsen), Mutationen an einer Art, Eier
+  if (R.want('p_art')) {
+    fresh('p_art');
     const A = await ev(() => {
-      const o = { tiers: PET_TIERS.map(t => ({ n: t.n, egg: t.egg, c: t.c })), pets: [], rar: RAR.map(r => ({ n: r.n, c: r.c })), mat: MAT.map(m => m.n), items: {} };
-      o.eggs = PET_TIERS.map((_, t) => [0, 1, 2, 3].map(cr => eggURL(t, cr)));
-      for (const sp of PET_ORDER) { const S = PET_SP[sp], st = [3, 5].map(s => { const U = petImgURL(sp, s, 0, false, true); return { u: U.url, W: U.W, H: U.H }; }); o.pets.push({ sp, n: S.n, t: S.t, el: S.el, fly: S.fly, st }); }
-      const it = x => Object.assign({ uid: 'x', aff: {}, gems: [], sockets: 0, up: 0, fz: 0, set: null, name: null, suf: null }, x);
-      const cv = c => (c.c || c).toDataURL();
-      o.items.mat = []; for (let t = 0; t < TIERS; t++) o.items.mat.push(cv(weaponArt(it({ slot: 'weapon', base: 'sword', form: 'lang', tier: t, rar: 3 }))));
-      const named = (slot, r) => { const x = { slot, base: slot === 'weapon' ? 'sword' : slot, form: slot === 'weapon' ? 'lang' : undefined, tier: 5, rar: r }; if (r === 4) x.name = slot === 'weapon' ? 'Sonnenklinge' : LEGEND[slot][0]; if (r === 5) { x.set = 'lion'; x.name = SETS.lion.pieces[slot]; } if (r === 6) { x.myth = slot === 'weapon' ? 'klinge' : slot === 'armor' ? 'phoenix' : 'krone'; x.name = MYTHIC[x.myth].n; } return it(x); };
-      o.items.rarW = [0, 1, 2, 3, 4, 5, 6].map(r => cv(weaponArt(named('weapon', r))));
-      o.items.rarA = [0, 1, 2, 3, 4, 5, 6].map(r => armorArt(named('armor', r), 'knight').toDataURL());
-      o.items.rarH = [0, 1, 2, 3, 4, 5, 6].map(r => armorArt(named('helm', r), 'knight').toDataURL());
-      const my = weaponArt(named('weapon', 6)); o.items.mythFr = (my.fr || [my.c]).map(c => c.toDataURL());
+      const o = { pets: [], mut: [], tiers: PET_TIERS.map(t => ({ n: t.n, c: t.c })) };
+      for (const sp of PET_ORDER) { const S = PET_SP[sp], U = petImgURL(sp, 3, 0, false, true); o.pets.push({ sp, n: S.n, t: S.t, hy: !!S.hy, fly: !!S.fly, u: U.url, W: U.W, H: U.H }); }
+      for (const mu of ['', 'kristall', 'schatten', 'gold', 'sternen']) { const U = petImgURL('wolf', 4, 0, false, true, mu); o.mut.push({ mu, n: mu ? PET_MUT[mu].n : _t('Normal'), u: U.url, W: U.W, H: U.H }); }
+      for (const sp of ['eule', 'baer', 'eulenbaer']) { const U = petImgURL(sp, 4, 0, false, true, sp === 'eulenbaer' ? 'sternen' : ''); o['br_' + sp] = { u: U.url, W: U.W, H: U.H, n: PET_SP[sp].n }; }
       return o;
     });
-    const save = (u, f) => R.saveData('art/' + f, u);
-    A.eggs.forEach((row, t) => row.forEach((u, cr) => save(u, `egg_${t}_${cr}.png`))); delete A.eggs;
-    for (const p of A.pets) p.st.forEach((s, i) => { save(s.u, `pet_${p.sp}_${i ? 5 : 3}.png`); delete s.u; });
-    for (const k in A.items) A.items[k].forEach((u, i) => save(u, `item_${k}_${i}.png`)); A.items = Object.fromEntries(Object.entries(A.items).map(([k, v]) => [k, v.length]));
-    fs.writeFileSync(R.out + 'art/art.json', JSON.stringify(A, null, 1));
-    console.log('Grafiken: Eier, Kreaturen, Gegenstände');
+    for (const p of A.pets) { R.saveData(`p_art/pet_${p.sp}.png`, p.u); delete p.u; }
+    for (const m of A.mut) { R.saveData(`p_art/mut_${m.mu || 'normal'}.png`, m.u); delete m.u; }
+    for (const k of ['br_eule', 'br_baer', 'br_eulenbaer']) { R.saveData(`p_art/${k}.png`, A[k].u); delete A[k].u; }
+    info('p_art', A); console.log('Kreaturen', A.pets.length, 'Hybride', A.pets.filter(p => p.hy).length);
   }
-
-  /* ---------- Auren: Brunhild mit mythischen Gegenständen und vollem Set (Versteck bei Nacht) ---------- */
-  const AURAS = [['phoenix', { armor: { rar: 6, myth: 'phoenix' } }], ['eisherz', { helm: { rar: 6, myth: 'eisherz' } }], ['klinge', { weapon: { rar: 6, myth: 'klinge' } }], ['krone', { helm: { rar: 6, myth: 'krone' } }],
-    ['ernter', { weapon: { rar: 6, myth: 'ernter' } }], ['midas', { helm: { rar: 6, myth: 'midas' } }], ['zorn', { weapon: { rar: 6, myth: 'zorn' } }], ['lion', { weapon: { rar: 5, set: 'lion' }, armor: { rar: 5, set: 'lion' }, helm: { rar: 5, set: 'lion' } }]];
-  for (const [k, cfg] of AURAS) {
-    const scene = 'a_' + k; if (!R.want(scene)) continue;
-    const nm = await ev(cfg => {
-      __scene(61); __hero(0); SAVE.meta.hide.intro = true; SAVE.meta.pets.act = null; enterHideout(); hideOverlay(); setState('play'); showHud(false);
-      P.look = Object.assign({}, lookOf(P), { aura: null, wings: null });
-      for (const s of ['weapon', 'armor', 'helm']) { const d = cfg[s] || { rar: 2 }, x = makeItem({ slot: s, base: s === 'weapon' ? 'sword' : s, form: s === 'weapon' ? 'zwei' : undefined, tier: 6, rar: d.rar, set: d.set, myth: d.myth }); if (d.set) x.name = SETS[d.set].pieces[s]; P.gear[s] = x; }
-      computeStats(); G.dark = .8; P.x = BD.x0 + (BD.x1 - BD.x0) * .4; P.y = BD.y0 + (BD.y1 - BD.y0) * .38; P.face = 1; P.turn = 1; __vp(5.5); __snap(); __calm(); __step(20);
-      const A = auraOf(P); return A.myth.map(m => AURA[m].n).concat(A.set ? [AURA[A.set].n] : []).join(' + ');
-    }, cfg);
-    await R.cap(scene, 48, `i => { __calm(); P.face = 1; }`);
-    const pos = await ev(() => ({ x: (P.x - CX) * SCALE * 2, y: (P.y - CY) * SCALE * 2, s: SCALE * 2 }));
-    info(scene, { k, n: nm, pos });
-  }
-
-  /* ---------- Basar: kaufen, bieten (Bieter überbieten dich), versteigern, Marktwert ---------- */
-  if (R.want('m_bas')) {
-    fresh('m_bas');
+  // Zucht im Brutnest: Eule × Bärenjunges – Vorschau mit Chancen (Mischform Eulenbär), dann paaren
+  if (R.want('p_breed')) {
+    fresh('p_breed');
     await ev(() => {
-      __scene(71); __hero(0); SAVE.meta.hide.intro = true; P.gold = 260000; P.bag = [makeItem({ slot: 'armor', base: 'armor', tier: 6, rar: 4 }), makeItem({ slot: 'weapon', base: 'sword', tier: 5, rar: 3 }), makeItem({ slot: 'helm', base: 'helm', tier: 4, rar: 2 })];
-      const M = mkM(); M.own = []; M.box = []; M.shop = {}; enterHideout(); mkOpen('hide'); panel.scrollTop = 0;
+      __ui(); __hero(0, true); const M = SAVE.meta.pets; M.eggs = []; P.gold = 1e6; for (const k of MATORDER) P.mats[k] = 200;
+      const a = petGive('eule', { lv: 40, gn: [80, 60, 40, 70, 95] }), b = petGive('baer', { lv: 40, gn: [60, 40, 60, 30, 80] }); petGive('drache', { lv: 60, mu: 'kristall' }); petGive('wolf', { lv: 30 });
+      M.act = a.id; M.seen = PET_ORDER.slice(0, 40); M.mut = ['kristall']; window.__br = [a.id, b.id];
+      enterHideout(); PET_BR.a = PET_BR.b = null; openNest('hide');
+      document.querySelector(`.nestscr [data-act="petbrsel"][data-id="${a.id}"]`).click(); document.querySelector(`.nestscr [data-act="petbrsel"][data-id="${b.id}"]`).click();
+      const el = panel.querySelector('.nestscr .pbr'); panel.scrollTop = el ? el.offsetTop - 30 : 0;
     });
-    await still('m_bas', 'buy'); await rect('m_bas', 'say', '#panel .mk .say'); await rect('m_bas', 'tabs', '#panel .mk .tabs');
-    // eine Versteigerung mit vielen Geboten auswählen
-    const aid = await ev(() => { MARKET.tick(); const L = MARKET.listings('auc').filter(A => A.t1 - mkNow() > 20 * 60000); L.sort((a, b) => (b.e.t === 'item' ? b.e.it.rar : 0) * 10 + b.bids.length - ((a.e.t === 'item' ? a.e.it.rar : 0) * 10 + a.bids.length)); const A = L[0]; A.bo = 0; MK.tab = 'bid'; MK.sel = A.id; MK.amtFor = null; mkShow(); __sheetTop(); return A.id; });
-    await still('m_bas', 'bid0'); await rect('m_bas', 'sheet', '#panel .side.sheet'); await rect('m_bas', 'bidbtn', '[data-act="mk_bid"]'); await rect('m_bas', 'hist', '#panel .mk-hist');
-    await still('m_bas', 'bid1', id => { ON.mk_bid(id); __sheetTop(); }, aid);
-    await rect('m_bas', 'lead', '#panel .side.sheet .mk-good');
-    // Kaspar (Last-Minute-Bieter) überbietet dich
-    await ev(id => { const A = mkM().auc.find(x => x.id === id); A.bd.push({ n: 0, m: 3, k: 2, x: Date.now() + 150 }); }, aid);
-    await page.waitForTimeout(400);
-    await still('m_bas', 'bid2', () => { MARKET.tick(); mkAutoGold(); mkShow(); __sheetTop(); });
-    await rect('m_bas', 'now2', '#panel .side.sheet .mk-now'); await rect('m_bas', 'hist2', '#panel .mk-hist'); await rectTxt('m_bas', 'row2', '#panel .mk .row', 'ÜBERBOTEN');
-    // Verkaufen: Gegenstand mit Marktwert, Sofort an Hedda oder versteigern
-    await still('m_bas', 'sell', () => { MK.tab = 'sell'; MK.cat = 'item'; MK.sel = P.bag[0].uid; mkShow(); panel.scrollTop = 0; });
-    await rectTxt('m_bas', 'mw', '#panel .side.sheet li, #panel .side.sheet div', '^Marktwert'); await rect('m_bas', 'sheet3', '#panel .side.sheet');
-    await still('m_bas', 'set', () => { ON.mk_set(); panel.scrollTop = 0; });
+    await still('p_breed', 'sel'); await rect('p_breed', 'pbr', '#panel .nestscr .pbr'); await rect('p_breed', 'go', '#panel [data-act="petbrgo"]');
+    info('p_breed', await ev(() => ({ txt: (panel.querySelector('.nestscr .pbr') || {}).textContent })));
+    await still('p_breed', 'done', () => { window.__msg = []; document.querySelector('#panel [data-act="petbrgo"]').click(); panel.scrollTop = 0; });
+    await rect('p_breed', 'eggs', '#panel .nestscr .ncard', 0); await rect('p_breed', 'nsum', '#panel .nsum');
+    fs.writeFileSync(`${R.out}p_breed/msgs.json`, JSON.stringify({ msg: await ev(() => window.__msg), log: [] }));
+  }
+  // Begleiter-Reiter: Gene, Ausrüstung, Talente, Magie
+  if (R.want('p_tab')) {
+    fresh('p_tab');
+    await ev(() => {
+      __ui(); __hero(0); const M = SAVE.meta.pets, w = M.list[0]; P.gold = 1e6; for (const k of MATORDER) P.mats[k] = 200;
+      w.eq = { h: petGearNew('h', 4, 80, mulberry(3)), p: petGearNew('p', 3, 80, mulberry(4)), t: petGearNew('t', 4, 80, mulberry(5)) };
+      w.tl = petTlFix('553103300000000', 80); M.mut = ['sternen', 'kristall']; M.runes = { feuerball: 1, heilung: 2 }; computeStats();
+      setState('title'); petSub = 'ov'; openChar('pet', 'title'); panel.scrollTop = 0;
+    });
+    for (const s of ['ov', 'gen', 'eq', 'tal', 'mag']) {
+      await still('p_tab', s, s => { ON.petsub(s); const el = panel.querySelector('.psub'); panel.scrollTop = el ? el.offsetTop - 8 : 0; }, s);
+      await rect('p_tab', s + '_psub', '#panel .psub'); await rect('p_tab', s + '_panel', '#panel');
+    }
+  }
+  // Der Begleiter zaubert im Kampf (Meteor, Blitz, Schild) – in den Landen, Kristallfelder
+  if (R.want('p_fight')) {
+    await ev(() => {
+      __lgo({ seed: 15, tools: 2047 }); const S = __bio.kristall, p0 = __wp(S.sx + 1, S.sy + 1), p = lFreeNear(p0.x, p0.y, 200) || p0; __tp(p.x, p.y); __quiet(1500);
+      window.__txtOK = /METEOR|BLITZ|SCHILD/; window.__txtNo = /^\d+$/; __vp(3.2); __snap(); for (let i = 0; i < 5; i++) __lkeep(6); __step(6);
+    });
+    await cap('p_fight', 120, `i => { __calm(); __quiet(900); __lkeep(7, i % 30 > 6); keys.KeyD = keys.KeyA = false; window.__log.push([PET_RT.casts || 0]); }`);
+    await ev(() => { window.__txtOK = null; window.__txtNo = null; __off2(); });
   }
 
-  /* ---------- Schmiede: vier Bereiche, Meisterwerk in fünf Schritten ---------- */
-  if (R.want('f_wb')) {
-    fresh('f_wb');
+  /* ================= 5 Mods ================= */
+  // Werkbank: Mod-Plätze, Glyphe einsetzen, Essenz → Resonanz entdeckt, Resonanz-Buch
+  if (R.want('m_wb')) {
+    fresh('m_wb');
     await ev(() => {
-      __scene(81); __hero(0); SAVE.meta.hide.intro = true; SAVE.meta.hide.b.schmiede = 4; P.gold = 250000; for (const k of MATORDER) P.mats[k] = 60;
-      P.parts = { 'klinge:9': 1, 'griff:7': 1, 'kern:feuer:6': 1, 'klinge:4': 2, 'griff:3': 3, 'kern:frost:3': 2, 'platte:3': 2, 'polster:2': 3, 'rune:licht:4': 1 };
-      SAVE.meta.smith.lv = 23; SAVE.meta.smith.xp = 14000; P.bag = []; computeStats(); FG.last = null; WB.help = null;
-      enterHideout(); selItem = P.gear.weapon.uid; wbTab = 'ver'; WB.act = 'up'; openWorkbench('smith'); panel.scrollTop = 0;
+      __ui(); __hero(0, true); P.gold = 99999; for (const k of MATORDER) P.mats[k] = 200;
+      P.mods = { 'glyphe_kette:6': 2, 'essenz_blitz:5': 1, 'rune_kraft:5': 4, 'rune_eile:5': 1, 'kern_salve:3': 1, 'praeg_gold:2': 1, 'glyphe_meteor:6': 1, 'praeg_stern:4': 3, 'glyphe_frost:3': 1, 'kern_wucht:4': 1 };
+      SAVE.meta.mods.found = 12; SAVE.meta.mods.book = {};
+      const w = P.gear.weapon; w.mods = []; delete w.el0; computeStats(); enterHideout(); selItem = w.uid; wbTab = 'ver'; WB.act = 'mods'; WB.mod = null; openWorkbench('smith');
+      const el = panel.querySelector('.wbact.open'); panel.scrollTop = el ? el.offsetTop - 140 : 0; window.__msg = [];
     });
-    await still('f_wb', 'ver'); await rect('f_wb', 'secs', '#panel .wbsecs');
-    await still('f_wb', 's1', () => { MW.slot = 'weapon'; MW.base = 'sword'; MW.form = 'zwei'; MW.tier = 6; MW.pick = {}; FG.last = null; wbTab = 'sch'; MW.step = 1; openWorkbench('smith'); panel.scrollTop = 0; });
-    await rect('f_wb', 'steps', '#panel .mwsteps');
-    await still('f_wb', 's2', () => { MW.step = 2; MW.tier = 6; openWorkbench('smith'); panel.scrollTop = 0; });
-    await still('f_wb', 's3', () => { MW.step = 3; ON.mw_best(); panel.scrollTop = 0; });
-    await still('f_wb', 's4', () => { MW.step = 4; openWorkbench('smith'); panel.scrollTop = 0; });
-    await rect('f_wb', 'make', '[data-act="mw_make"]');
-    const it = await ev(() => { ON.mw_make(); const f = findItem(FG.last.uid); const it = f.it; panel.scrollTop = 0; return { n: itemName(it), c: itemColor(it), rar: RAR[it.rar].n, mat: MAT[it.tier].n, ic: itemIconURL(it) }; });
-    await still('f_wb', 's5'); await rect('f_wb', 'last', '#panel .fglast');
-    R.saveData('f_wb/item.png', it.ic); delete it.ic; info('f_wb', it); console.log('Meisterwerk:', it.n, it.rar);
+    const scrollMods = () => { const el = panel.querySelector('.wbact.open'); panel.scrollTop = el ? el.offsetTop - 140 : 0; };
+    await still('m_wb', 'w0', scrollMods); await rect('m_wb', 'act0', '#panel .wbact.open'); await rect('m_wb', 'slots0', '#panel .wbact.open .mslots'); await rect('m_wb', 'item0', '#panel .wbsel, #panel .detail');
+    await still('m_wb', 'w1', () => { document.querySelector('#panel [data-act="mod_pick"][data-id="glyphe_kette:6"]').click(); const el = panel.querySelector('.wbact.open'); panel.scrollTop = el ? el.offsetTop - 140 : 0; });
+    await rect('m_wb', 'act1', '#panel .wbact.open'); await rect('m_wb', 'in1', '#panel [data-act="mod_in"]'); await rect('m_wb', 'cmp1', '#panel .wbact.open .wbcmp');
+    await still('m_wb', 'w2', () => { document.querySelector('#panel [data-act="mod_in"]').click(); const el = panel.querySelector('.wbact.open'); panel.scrollTop = el ? el.offsetTop - 140 : 0; });
+    await rect('m_wb', 'slots2', '#panel .wbact.open .mslots');
+    await still('m_wb', 'w3', () => { document.querySelector('#panel [data-act="mod_pick"][data-id="essenz_blitz:5"]').click(); const el = panel.querySelector('.wbact.open'); panel.scrollTop = el ? el.offsetTop - 140 : 0; });
+    await rect('m_wb', 'act3', '#panel .wbact.open'); await rect('m_wb', 'resn', '#panel .mresn'); await rect('m_wb', 'in3', '#panel [data-act="mod_in"]');
+    await still('m_wb', 'w4', () => { document.querySelector('#panel [data-act="mod_in"]').click(); const el = panel.querySelector('.wbact.open'); panel.scrollTop = el ? el.offsetTop - 140 : 0; });
+    await rect('m_wb', 'act4', '#panel .wbact.open'); await rect('m_wb', 'slots4', '#panel .wbact.open .mslots');
+    info('m_wb', await ev(() => ({ msg: window.__msg, res: Object.keys(SAVE.meta.mods.book), resn: (panel.querySelector('.mres, .mresn') || {}).textContent, el: P.gear.weapon.el })));
+    await still('m_wb', 'book', () => { document.querySelector('#panel [data-act="mod_book"]').click(); panel.scrollTop = 0; });
+    await rect('m_wb', 'bookhead', '#panel .head'); await rect('m_wb', 'res0', '#panel .mres:not(.unk)');
+  }
+  // Glyphen im Kampf: Kettenblitz und Meteor (Stufe 10) – Sternenfeld bei Nacht
+  if (R.want('m_fight')) {
+    await ev(() => {
+      __lgo({ seed: 16, tools: 2047, noPet: true }); const w = P.gear.weapon; w.mods = []; delete w.el0;
+      for (const k of ['glyphe_kette:10', 'glyphe_meteor:10', 'essenz_blitz:8', 'glyphe_explosion:8']) modPut(w, k); computeStats();
+      const S = __bio.riff, p0 = __wp(S.sx + 1, S.sy + .8), p = lFreeNear(p0.x, p0.y, 200) || p0; __tp(p.x, p.y); __quiet(1500);
+      MODS.fired = {}; window.__txtNo = /^\d+$/; __vp(3.2); __snap(); for (let i = 0; i < 6; i++) __lkeep(8); __step(6);
+    });
+    await cap('m_fight', 132, `i => { __calm(); __quiet(900); __lkeep(9); for (const e of enemies) if (!e.dead && !e.boss) e.hp = Math.min(e.hp, e.maxHp * .55); window.__log.push(Object.assign({}, MODS.fired)); }`);
+    await ev(() => { window.__txtNo = null; __off2(); });
+  }
+  // Werkbank: Umschmieden, Veredeln, Extrahieren – vorher/nachher
+  if (R.want('m_forge')) {
+    fresh('m_forge');
+    await ev(() => {
+      __ui(); __hero(0, true); P.gold = 999999; for (const k of MATORDER) P.mats[k] = 400; P.mats.aether = 50; P.mats.stern = 50;
+      const w = P.gear.weapon; w.mods = ['glyphe_kette:6']; computeStats(); enterHideout(); selItem = w.uid; wbTab = 'ver'; WB.act = 'reroll'; WB.mod = null; openWorkbench('smith');
+      const r = panel.querySelectorAll('#panel .afrow')[1]; if (r) r.click();
+      const el = panel.querySelector('.wbact.open'); panel.scrollTop = el ? el.offsetTop - 140 : 0; window.__msg = [];
+    });
+    const sc = () => { const el = panel.querySelector('.wbact.open'); panel.scrollTop = el ? el.offsetTop - 140 : 0; };
+    await still('m_forge', 'rr0', sc); await rect('m_forge', 'rr0', '#panel .wbact.open'); await rect('m_forge', 'rrsel0', '#panel .afrow.sel, #panel .afrow[aria-selected="true"]');
+    const a0 = await ev(() => { const x = mSel(); return { k: x.S.aff, s: affPool(x.it)[x.S.aff].s(x.it.aff[x.S.aff]) }; });
+    await still('m_forge', 'rr1', () => { document.querySelector('#panel [data-act="af_rr"]').click(); const el = panel.querySelector('.wbact.open'); panel.scrollTop = el ? el.offsetTop - 140 : 0; });
+    await rect('m_forge', 'rr1', '#panel .wbact.open');
+    const a1 = await ev(() => { const x = mSel(); return { k: x.S.aff, s: affPool(x.it)[x.S.aff].s(x.it.aff[x.S.aff]) }; });
+    await still('m_forge', 'vd0', () => { document.querySelector('#panel [data-act="wb_act"][data-id="refine"]').click(); const el = panel.querySelector('.wbact.open'); panel.scrollTop = el ? el.offsetTop - 140 : 0; });
+    await rect('m_forge', 'vd0', '#panel .wbact.open');
+    const v0 = await ev(() => { const x = mSel(); return { k: x.S.aff, s: affPool(x.it)[x.S.aff].s(x.it.aff[x.S.aff]), st: affStufe(x.it, x.S.aff) }; });
+    await still('m_forge', 'vd1', () => { document.querySelector('#panel [data-act="af_ref"]').click(); const el = panel.querySelector('.wbact.open'); panel.scrollTop = el ? el.offsetTop - 140 : 0; });
+    await rect('m_forge', 'vd1', '#panel .wbact.open');
+    const v1 = await ev(() => { const x = mSel(); return { k: x.S.aff, s: affPool(x.it)[x.S.aff].s(x.it.aff[x.S.aff]), st: affStufe(x.it, x.S.aff) }; });
+    // Extrahieren: ein Gegenstand aus dem Beutel wird zur Affix-Essenz
+    await ev(() => {
+      const it = makeItem({ slot: 'weapon', base: 'sword', form: 'lang', tier: 5, rar: 6, myth: 'klinge' }); P.bag = [it]; selItem = it.uid; WB.act = 'extract'; WB.mod = null; openWorkbench('smith');
+      const r = panel.querySelectorAll('#panel .afrow')[0]; if (r) r.click(); document.querySelector('#panel [data-act="af_ex"]').click();
+    });
+    await still('m_forge', 'ex0', sc); await rect('m_forge', 'ex0', '#panel .wbact.open');
+    await still('m_forge', 'ex1', () => { document.querySelector('#panel [data-act="af_ex"]').click(); panel.scrollTop = 0; });
+    info('m_forge', { a0, a1, v0, v1, msg: await ev(() => window.__msg) });
   }
 
   const errs = await R.close();
