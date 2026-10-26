@@ -30,7 +30,7 @@ function enterHideout() {
   setMusic(48, false); $('bossbar').hidden = true; $('objective').textContent = '';
   setState('play'); showHud(true); hideOverlay();
   banner(_t('VERSTECK'), _t('Stufe {lv} · Geh zu einer Station und interagiere', { lv: hideTotal() }));
-  if (!SAVE.meta.hide.intro) { SAVE.meta.hide.intro = true; persist(); setState('menu'); dialog([['borin', _t('Willkommen im Versteck, {name}. Noch ist es eine Ruine.')], ['borin', _t('Die Gerüste dort? Dort bauen wir Schmiede, Labor, Schatzkammer und mehr. Geh hin und sieh, was es kostet.')], ['borin', _t('Am Lagerfeuer kannst du einmal pro Akt rasten. Und das Portal bringt dich zurück zur Weltkarte.')]], () => { hideOverlay(); setState('play'); showHud(true); }); }
+  if (!SAVE.meta.hide.intro) { SAVE.meta.hide.intro = true; persist(); setState('menu'); dialog([['borin', _t('Willkommen im Versteck, {name}. Noch ist es eine Ruine.')], ['borin', _t('Die Gerüste dort? Dort bauen wir Schmiede, Labor, Schatzkammer und mehr. Geh hin und sieh, was es kostet.')], ['borin', _t('Holz und Stein holst du dir am Rand des Verstecks: Hau auf die Bäume und Felsen ein. Und jeder Ausbau braucht seine Zeit – meine Leute sind fleißig, aber zaubern können sie nicht.')], ['borin', _t('Am Lagerfeuer kannst du einmal pro Akt rasten. Und das Portal bringt dich zurück zur Weltkarte.')]], () => { hideOverlay(); setState('play'); showHud(true); }); }
 }
 function hidePos(id) { const [fx_, fy_] = HIDE_POS[id]; return { x: Math.round(BD.x0 + 14 + fx_ * (BD.x1 - BD.x0 - 28)), y: Math.round(BD.y0 + fy_ * (BD.y1 - BD.y0)) }; }
 function layoutHideout() {

@@ -204,8 +204,9 @@ NPCTALK.voliere = [
 function gatherGive(k, n) {
   if (!MATS[k] || !(n > 0)) return;
   const L = typeof LW !== 'undefined' && LW && LW.on ? LW : null;
-  if (L) { (L.gat || (L.gat = {}))[k] = (L.gat[k] || 0) + n; if (typeof landePouchAdd === 'function') landePouchAdd(k, n); else gainMat(k, n); }
-  else gainMat(k, n);
+  if (L) (L.gat || (L.gat = {}))[k] = (L.gat[k] || 0) + n;
+  // landePouchAdd(k, n, still) liefert false außerhalb der Lande – dann direkt in den Vorrat; die „+n“-Zahl zeigt gatherGiveAll selbst
+  if (!(L && typeof landePouchAdd === 'function' && landePouchAdd(k, n, true) !== false)) gainMat(k, n);
 }
 const GFX = [];
 function gatherGiveAll(o, got) {
@@ -256,6 +257,8 @@ const GCHIP = { wood: ['#8a5a32', '#c8945a', '#5e3a1e', '#e8c890'], rock: ['#9a9
 function gatherHideLayout() {
   const H = SAVE.meta.hide, now = bNow(); if (!H.gat || typeof H.gat !== 'object') H.gat = {};
   for (const g of GHIDE) { const K = GHK[g.t], p = { x: Math.round(BD.x0 + 14 + g.p[0] * (BD.x1 - BD.x0 - 28)), y: Math.round(BD.y0 + g.p[1] * (BD.y1 - BD.y0)) }, gone = (H.gat[g.id] || 0) > now; obs.push({ k: 'gat', id: g.id, t: g.t, x: p.x, y: p.y, r: K.r, solid: !gone, gone, gh: 0, wob: 0, fall: 0, fd: 1, flash: 0 }); }
+  // einmal pro Konto (auch für alte Spielstände, die Borins Begrüßung schon kennen): wozu der Holzplatz da ist
+  if (!H.tip62 && H.intro) { H.tip62 = 1; persist(); setTimeout(() => { if (G && G.type === 'versteck') toast(_t('Neu: Am Rand des Verstecks wachsen Bäume, Felsen und Büsche – hau drauf für Holz, Stein und Fasern. Jeder Ausbau braucht jetzt Bauzeit.'), '#e8b04a'); }, 2600); }
 }
 // Treffer am Holzplatz (js/combat.js hitObs)
 function gatherHit(o, nx, ny) {
