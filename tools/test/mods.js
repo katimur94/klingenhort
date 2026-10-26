@@ -166,7 +166,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
       hideOverlay(); startRoom('kampf', 1); G.phase = 'done'; P.inv = 999;
       window.MT = {
         gear(spec) {
-          const mkI = (slot, base) => { const it = makeItem({ slot, base, tier: 3, rar: 4 }); it.sockets = 0; it.gems = []; it.aff = {}; it.suf = null; delete it.el; return it; };   // ohne Zufallswerte
+          const mkI = (slot, base) => { const it = makeItem({ slot, base, tier: 3, rar: 4 }); it.sockets = 0; it.gems = []; it.aff = {}; it.suf = null; delete it.el; delete it.mods; delete it.el0; return it; };   // ohne Zufallswerte (auch ohne Zufalls-Mod aus HOOK.itemGen)
           P.gear.weapon = mkI('weapon', 'bow'); P.gear.armor = mkI('armor', 'armor'); P.gear.helm = mkI('helm', 'helm');
           if (spec.mw) P.gear.weapon.mw = { klinge: 3, griff: 3, kern: 3 };
           for (const [s, L] of [['weapon', spec.w], ['armor', spec.a], ['helm', spec.h]]) for (const k of L || []) modPut(P.gear[s], k);

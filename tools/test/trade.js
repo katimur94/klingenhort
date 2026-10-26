@@ -43,6 +43,13 @@ const PETS_MOCK = () => {
     const code = trMake('i', trItemData(sw)), back = trParse(code), it = back.p && back.p.d;
     o.prefix = code.startsWith('KH5-'); o.round = !!it && ['slot', 'base', 'form', 'tier', 'rar', 'up', 'fz', 'name', 'el'].every(k => it[k] === sw[k]) && JSON.stringify(it.aff) === JSON.stringify(sw.aff) && JSON.stringify(it.gems) === JSON.stringify(sw.gems) && JSON.stringify(it.mw) === JSON.stringify(sw.mw) && it.uid !== sw.uid;
     o.link = trParse('Schau mal: ' + trLink(code) + ' viel Spaß!').p && trParse(code.slice(0, 40) + '\n  ' + code.slice(40)).p ? true : false;
+    // Mods reisen mit (gültige, höchstens so viele wie Plätze), veredelte Werte bleiben erhalten
+    if (typeof modFixItem === 'function') {
+      const mi = makeItem({ slot: 'weapon', base: 'sword', tier: 5, rar: 3 }); mi.mods = ['glyphe_kette:3', 'rune_kraft:2']; mi.rr = 3; const ak = Object.keys(mi.aff)[0]; if (ak) mi.aff[ak] = AFFW[ak].f(8);
+      const md = trParse(trMake('i', trItemData(mi))).p.d, got = trItem(md); const bad = trItem(Object.assign({}, md, { mods: ['glyphe_kette:3', 'unsinn:9', 'rune_kraft:2', 'rune_kraft:2', 'glyphe_frost:1', 'glyphe_frost:2'] }));
+      o.mods = JSON.stringify(got.mods) === JSON.stringify(mi.mods) && got.rr === 3 && (!ak || Math.abs(got.aff[ak] - mi.aff[ak]) < .01) && bad.mods.length <= modSlots(bad) && !bad.mods.includes('unsinn:9');
+      if (!o.mods) o.modsDbg = JSON.stringify({ got: got.mods, rr: got.rr, a: ak && [got.aff[ak], mi.aff[ak]], bad: bad.mods });
+    } else o.mods = true;
     // 2) Prüfsumme: jede Änderung, Kürzung, Müll
     const body = code.slice(4, code.indexOf('.'));
     let sumBad = 0; for (let i = 0; i < 40; i++) { const k = 4 + Math.floor(Math.random() * body.length), ch = code[k] === 'A' ? 'B' : 'A', m = code.slice(0, k) + ch + code.slice(k + 1); if (trParse(m).err) sumBad++; }
@@ -54,7 +61,7 @@ const PETS_MOCK = () => {
     o.badHead = !!enc(p => { p.v = 2; }).err && !!enc(p => { p.id = '<b>x</b>'; }).err && !!enc(p => { p.t = 'x'; }).err && !!enc(p => { p.d = null; }).err && !!enc(p => { p.d = [1, 2]; }).err;
     const fx = enc(p => { p.d.up = 999; p.d.fz = 50; p.d.sockets = 9; p.d.gems = ['rubin:9', 'xyz:1', 'saphir:1', 'smaragd:0', 'topas:0']; p.d.aff = { krit: 999, laser: 5, __proto__x: 1, tempo: 'viel' }; p.d.name = '<img src=x onerror=alert(1)>'; p.d.rar = 6; p.d.form = 'kanone'; p.d.el = 'plasma'; p.d.mw = JSON.parse('{"a":1e12,"b":{"c":{"d":{"e":{"f":1}}}},"__proto__":{"evil":1}}'); p.n = '<script>x</script>Mallory\u0000'; });
     const fi = fx.p && fx.p.d;
-    o.fixed = !!fi && fi.up === 0 && fi.fz === 0 && fi.sockets === 0 && fi.gems.length === 0 && fi.aff.krit <= AFFW.krit.f(6) && !('laser' in fi.aff) && !('tempo' in fi.aff) && fi.rar === 4 && !fi.myth && fi.name === null && fi.form === 'lang' && !fi.el && fi.mw.a === 100 && !({}).evil && !fx.p.n.includes('<');
+    o.fixed = !!fi && fi.up === 0 && fi.fz === 0 && fi.sockets === 0 && fi.gems.length === 0 && fi.aff.krit <= AFFW.krit.f(typeof AFF_MAX === 'number' ? AFF_MAX : 6) && !('laser' in fi.aff) && !('tempo' in fi.aff) && fi.rar === 4 && !fi.myth && fi.name === null && fi.form === 'lang' && !fi.el && fi.mw.a === 100 && !({}).evil && !fx.p.n.includes('<');
     o.mythSet = (() => { const m = enc(p => { p.d.myth = 'zorn'; p.d.rar = 1; p.d.set = 'lion'; }).p.d, s = enc(p => { p.d.set = 'lion'; p.d.rar = 2; delete p.d.myth; }).p.d, x = enc(p => { p.d.rar = 5; delete p.d.set; }).p.d, h = enc(p => { p.d.myth = 'zorn'; p.d.slot = 'helm'; }).p.d; return m.rar === 6 && m.myth === 'zorn' && !m.set && m.name === MYTHIC.zorn.n && s.rar === 5 && s.name === SETS.lion.pieces.weapon && x.rar === 3 && !h.myth && h.rar !== 6; })();
     const PB0 = { v: 1, id: 'bbbbbb123456', t: 'b', n: 'X', at: 1, d: { m: { erz: 5 }, g: {}, p: {} } };
     o.badBun = !!enc(p => { p.d = { m: { erz: -5, gold: 99, leder: 1e9, kristall: 1.5 }, g: { 'rubin:7': 1, 'saphir:-1': 1 }, p: { 'x:99': 1, '__proto__:1': 1 } }; }, PB0).err;
@@ -119,6 +126,7 @@ const PETS_MOCK = () => {
     return o;
   });
   ok(r.prefix && r.round, 'Tauschcode KH5-…: Gegenstand kommt mit allen Werten an (neue uid)');
+  ok(r.mods, 'Tausch: Mods und veredelte Werte reisen mit dem Gegenstand, ungültige fliegen raus' + (r.mods ? '' : ' ' + r.modsDbg));
   ok(r.link, 'Code wird aus Link, Nachricht und Zeilenumbrüchen gelesen');
   ok(r.sum && r.cut && r.junk, 'Prüfsumme erkennt jede Änderung, gekürzte Codes und Müll');
   ok(r.badTier && r.badBase && r.badHead, 'manipulierte Codes mit falscher Stufe, Basis, Version, Art werden abgelehnt');
