@@ -174,6 +174,32 @@ const SIM = () => {
   console.log(`       kürzeste Warnzeit: ${worstWarn} s (${worstK})`);
   ok(!errs.length, 'keine Fehler (Mechaniken)' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
 
+  /* ---------- Phasen, Raserei, Ursprung verschieben, Rechenzeit ---------- */
+  const pas = await page.evaluate(() => {
+    __hero('knight', 50, true); P.st.hp = P.hp = 1e9; slowmo = 0; hitStop = 0;
+    const o = {}, id = Array.from({ length: BOSS_N }, (_, i) => i).find(i => bossDef(i).mech.includes('phase') && bossDef(i).mech.includes('enrage') && bossDef(i).res.length);
+    BA = null; bossArena(id, { practice: false }); __step(120);   // nach dem Erscheinen
+    const e = enemies.find(x => x.bz), B = e.bDef; e.stun = 1e9; e.bz.gcd = 999; e.bz.m.forEach(m => m.cd = 999);
+    e.hp = e.maxHp * .2; __step(2); o.one = e.bz.ph === 1 && e.bz.inv > 0;   // tief getroffen: erst eine Phase …
+    __step(60 * 2.3); o.two = e.bz.ph === 2 && e.bz.m.some(m => m.k === B.res[0]);   // … die nächste erst danach, mit neuer Kraft
+    o.enr = e.bz.enr && e.cdMul < bLerp(1.3, .72, B.r);
+    // Ursprung der Welt verschoben: Warnflächen wandern mit
+    e.bz.inv = 0; e.bz.hold = 0; bossCast(e, 'meteor'); const z = BZ.fx.find(z => z.k === 'c'), x0 = z.x, y0 = z.y; bossShift(-500, 300); o.shift = z.x === x0 - 500 && z.y === y0 + 300; bossShift(500, -300);
+    for (const x of enemies) x.dead = true; enemies = []; BZ.fx = []; projs = [];
+    // Rechenzeit: Rang 1200 mit allen Mechaniken im Wechsel und dem Bot
+    BA = null; bossArena(BOSS_N - 1, { practice: false }); __botOn(); __step(70);
+    const b = enemies.find(x => x.bz); b.bz.m = BM_KEYS.filter(k => !BMECH[k].p).map(k => ({ k, cd: 0 }));
+    let n = 0, ms = 0, mx = 0;
+    for (let i = 0; i < 1200; i++) { P.hp = P.st.hp; const t0 = performance.now(); __step(1); const d = performance.now() - t0; ms += d; mx = Math.max(mx, BZ.fx.length); n++; }
+    __botOff(); o.ms = ms / n; o.zones = mx;
+    for (const x of enemies) x.dead = true; enemies = []; BZ.fx = []; projs = [];
+    return o;
+  });
+  ok(pas.one && pas.two, 'Phasen bei 66 % und 33 %: nie zwei auf einmal, danach eine neue Mechanik');
+  ok(pas.enr, 'Raserei unter 30 %: schneller und stärker');
+  ok(pas.shift, 'Welt verschiebt ihren Ursprung: Warnflächen wandern mit (bossShift / HOOK.shift)');
+  ok(pas.ms < 4, `Rechenzeit Rang 1200 mit allen Mechaniken: ${pas.ms.toFixed(2)} ms pro Bild (bis zu ${pas.zones} Warnflächen gleichzeitig)`);
+
   /* ---------- Sieg, Trophäe, Beute, Rückkehr der Höhle ---------- */
   const kill = await page.evaluate(() => {
     const o = {}, real = Date.now.bind(Date); let NOW = real(); Date.now = () => NOW;
