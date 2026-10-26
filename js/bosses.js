@@ -778,7 +778,7 @@ function bCleanup(e) {
   for (const x of enemies) if (!x.dead && x.bOwn === e && (x.bTotem || x.bMirror)) { x.dead = true; burst(x.x, x.y, 8, '#b892f4', 14, 60, 1); }
   e.armor = 0;
 }
-HOOK.kill.push(bSafe('kill', e => { if (e.bz && e.bossId != null) bKilled(e); }));
+HOOK.kill.push(bSafe('kill', e => { if (e.bz && e.bossId != null) bKilled(e); else if (e.bTotem) delete SAVE.meta.bestiary.btotem; }));   // Totems zählen nicht als Gegnerart
 function bKilled(e) {
   const B = e.bDef, M = bM(); bCleanup(e); e.bFirst = false;
   if (e.bPractice || !M) return;
@@ -941,6 +941,7 @@ ON.bk_title = (id, b, i) => { const M = bM(); if (!M) return; M.tt = M.tt === i 
 ON.bk_fight = (id, b, i) => { if (!P || SAVE.active < 0 || landeActive2()) return; const from = KX.from; KX.sel = i; bossArena(i, { practice: true, from }); };
 function landeActive2() { return typeof landeActive === 'function' && landeActive(); }
 function bIcon(B) { return iconURL(['sp', B.sp, B.tint]); }
+const BK_ICON = ['sp', 'demon', 'rgba(210,30,10,.38)'];   // Bild des Kodex: der Drache
 function bKState(id) { const M = bM(), r = M && M.b[id]; return !r ? 'u' : r[0] > 0 ? 'k' : 's'; }
 function bKodexHTML() {
   const M = bM(), n = bossTrophies(), seen = M ? Object.keys(M.b).length : 0, bo = bBonus(n), tier = bTiers(n);
@@ -958,7 +959,7 @@ function bKodexHTML() {
   const side = KX.sel >= 0 && bossDef(KX.sel) ? `<div class="side sheet">${bDetailHTML(bossDef(KX.sel))}</div>` : `<div class="side"><p class="sub" style="margin-top:0">${_t('Tippe einen Boss an. Unbekannte zeigen nur ihren Schatten – finde ihre Höhlen in den Endlosen Landen.')}</p></div>`;
   const tt = bTitleNow();
   return `<div class="head"><h2>${_t('BOSS-KODEX')}</h2><div class="hbtns"><button class="btn alt sm bk-hb" data-act="bk_back">${_t('Zurück')}</button></div></div>
-  <div class="bk"><div class="bk-top"><div class="bk-n"><img src="${iconURL(['pa', 'skull'])}" alt=""><b>${n}</b><span>/ ${BOSS_N} ${_t('Trophäen')}</span></div><div class="bar bk-bar"><i style="width:${(n / BOSS_N * 100).toFixed(1)}%"></i></div>
+  <div class="bk"><div class="bk-top"><div class="bk-n"><img src="${iconURL(BK_ICON)}" alt=""><b>${n}</b><span>/ ${BOSS_N} ${_t('Trophäen')}</span></div><div class="bar bk-bar"><i style="width:${(n / BOSS_N * 100).toFixed(1)}%"></i></div>
   <div class="bk-l">${_t('{n} gesehen', { n: seen })}${tt ? ' · ' + _t('Titel: „{t}“', { t: esc(tt) }) : ''}</div>${bon ? `<div class="stats" style="margin:6px 0 0">${bon}</div>` : ''}<div class="bk-l">${next}</div></div>
   <details class="bk-tt"><summary>${_t('TITEL')}</summary><div class="bk-ttls">${ttl}</div></details>
   <div class="bk-bands">${bands}</div>
@@ -985,7 +986,7 @@ function bWhere(cx, cy) {
 }
 HOOK.mapMore.push(() => `<button class="btn alt" data-act="bk_open" data-id="map">${_t('Boss-Kodex')} · ${bossTrophies()}/${BOSS_N}</button>`);
 HOOK.bestiary = HOOK.bestiary || [];
-HOOK.bestiary.push(() => `<button class="btn bk-open" data-act="bk_open" data-id="${G && G.type === 'versteck' ? 'lib' : 'best'}"><img src="${iconURL(['pa', 'skull'])}" alt="">${_t('Boss-Kodex')} · ${bossTrophies()} / ${BOSS_N}</button>`);
+HOOK.bestiary.push(() => `<button class="btn bk-open" data-act="bk_open" data-id="${G && G.type === 'versteck' ? 'lib' : 'best'}"><img src="${iconURL(BK_ICON)}" alt="">${_t('Boss-Kodex')} · ${bossTrophies()} / ${BOSS_N}</button>`);
 // Tipps beim ersten Mal (einmal pro Konto), erst nach der Ansage – auf dem Handy liegt die Meldung oben über der Bossleiste
 function bTip(k) {
   const M = bM(); if (!M) return;
@@ -998,7 +999,7 @@ document.head.insertAdjacentHTML('beforeend', '<style>'
   + '#bossSub{font-size:6px;color:var(--parch-dim);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#bossSub:empty{display:none}'
   + '#bossbar .bar.bsh{height:4px;margin-top:4px}#bossbar .bar.bsh i{background:#8ad8ff}'
   + '#bossbar.bph .bar:not(.bsh)::before,#bossbar.bph .bar:not(.bsh)::after{content:"";position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,255,.75);z-index:1}#bossbar.bph .bar:not(.bsh)::before{left:33%}#bossbar.bph .bar:not(.bsh)::after{left:66%}'
-  + '.bk-top{background:var(--stone-lo);padding:10px;margin-bottom:8px}.bk-n{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-size:10px;color:var(--parch-dim)}.bk-n b{font-weight:400;font-size:20px;color:var(--gold)}.bk-n img{width:28px;height:28px;image-rendering:pixelated}'
+  + '.bk-top{background:var(--stone-lo);padding:10px;margin-bottom:8px}.bk-n{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-size:10px;color:var(--parch-dim)}.bk-n b{font-weight:400;font-size:20px;color:var(--gold)}.bk-n img{width:30px;height:30px;object-fit:contain;image-rendering:pixelated}'
   + '.bk-bar{width:100%;height:8px;margin:8px 0 6px}.bk-bar i{background:linear-gradient(90deg,var(--gold-dk),var(--gold))}.bk-l{font-size:17px;color:var(--parch-dim);margin-top:4px}'
   + '.bk-tt{margin:0 0 8px}.bk-tt summary{cursor:pointer;font-family:var(--f-display);font-size:8px;color:var(--gold);padding:12px 0;min-height:20px}.bk-ttls{display:flex;flex-wrap:wrap;gap:5px}'
   + '.bk-ttl{border:0;background:var(--stone-lo);color:var(--parch);font:17px var(--f-body);padding:8px 10px;min-height:44px;cursor:pointer}.bk-ttl.sel{box-shadow:inset 0 0 0 2px var(--gold);background:var(--stone-hi)}.bk-ttl:disabled{color:var(--parch-dim);cursor:default;opacity:.6}'
@@ -1009,5 +1010,5 @@ document.head.insertAdjacentHTML('beforeend', '<style>'
   + '.bk-t.k{box-shadow:inset 0 0 0 2px var(--gold-dk)}.bk-t i{position:absolute;right:3px;top:1px;color:var(--gold);font-style:normal;font-size:15px;text-shadow:1px 1px 0 #000}.bk-t.s{box-shadow:inset 0 0 0 1px var(--stone-hi)}.bk-t.sel{box-shadow:inset 0 0 0 3px var(--gold)}'
   + '.bk-d{display:flex;gap:10px;align-items:center;margin-bottom:4px}.bk-d .nm{font-size:22px;line-height:1}.bk-d .st{font-size:16px;color:var(--parch-dim);margin-top:3px;line-height:1.05}'
   + '.bk-pic{width:84px;height:84px;flex:none;display:grid;place-items:center;background:radial-gradient(circle,var(--stone-hi),var(--night) 70%)}.bk-pic img{width:72px;height:72px;object-fit:contain;image-rendering:pixelated}.bk-pic.u img{filter:brightness(0);opacity:.6}'
-  + '.bk-hb,.bk .btn,.bk .tab,body.touch .btn.bk-hb,body.touch .bk .btn,body.touch .bk .tab{min-height:44px}.bk .sheetx,body.touch .bk .sheetx{min-width:44px;min-height:44px}.bk-m .st{font-size:15px}.bk-open{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:0 0 10px}.bk-open img{width:20px;height:20px;image-rendering:pixelated}'
+  + '.bk-hb,.bk .btn,.bk .tab,body.touch .btn.bk-hb,body.touch .bk .btn,body.touch .bk .tab{min-height:44px}.bk .sheetx,body.touch .bk .sheetx{min-width:44px;min-height:44px}.bk-m .st{font-size:15px}.bk-open{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:0 0 10px}.bk-open img{width:26px;height:26px;margin:-6px 0;object-fit:contain;image-rendering:pixelated}'
   + '</style>');
