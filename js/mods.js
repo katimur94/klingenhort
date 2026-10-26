@@ -119,7 +119,7 @@ function modGive(k, n, show) {
   if (!P || !modParse(k)) return false;
   const M = SAVE.meta.mods, first = !M.found; modAdd(k, n); M.found += n;
   if (show) { toast(_t('Mod gefunden: {mod}', { mod: modName(k) }) + (n > 1 ? ' ×' + n : ''), modCol(k)); sfx('loot'); }
-  if (first) setTimeout(() => toast(_t('Dein erster Mod! Setz ihn an einer Werkbank oder in der Schmiede ein: VERBESSERN → MODS.'), '#ffd24a'), show ? 2400 : 0);
+  if (first) setTimeout(() => toast(_t('Dein erster Mod! Setz ihn an einer Werkbank oder in der Schmiede ein: VERBESSERN → MODS.'), '#ffd24a'), 2400);   // erst die eigentliche Meldung (z. B. „Gekauft!“) zeigen
   return true;
 }
 function modDrop(x, y, k, n) { if (!modParse(k)) return; pickups.push({ k: 'mod', mk: k, n: n || 1, x, y, z: 8, vz: 120, vx: rnd(-30, 30), vy: rnd(-15, 15), t: 0 }); }

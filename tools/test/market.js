@@ -28,7 +28,7 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
   const r = await page.evaluate(() => {
     const o = {}, real = Date.now.bind(Date); let NOW = real(); Date.now = () => NOW;
     const c = newChar('knight', 'Hedwig', 'normal', false); c.lv = 30; c.maxAct = 5; c.act = 5; SAVE.chars.push(c); activateChar(0);
-    SAVE.meta.hide.b.lager = 2; SAVE.meta.pets.starter = true; P.gold = 1e7; P.bag = []; computeStats(); saveChar();
+    SAVE.meta.hide.b.lager = 2; SAVE.meta.pets.starter = true; SAVE.meta.pets.first = true; SAVE.meta.pets.intro = true;   /* Gunda-Intro schon gesehen (gekaufte Eier) */ P.gold = 1e7; P.bag = []; computeStats(); saveChar();
     // 1) Marktwert
     const it = (slot, tier, rar, x) => Object.assign(makeItem({ slot, base: slot === 'weapon' ? 'sword' : slot, form: 'lang', tier, rar, myth: rar === 6 ? (slot === 'weapon' ? 'klinge' : slot === 'armor' ? 'phoenix' : 'krone') : null, set: rar === 5 ? 'lion' : null }), { aff: {}, gems: [], sockets: 0, el: undefined }, x || {});
     const v = (...a) => itemValue(it(...a));
@@ -79,7 +79,7 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     M.own = [];
     // 4) Bieten: reserviert, zweites Gebot nicht nötig, überboten → Gold zurück, Zuschlag, Sofortkauf
     MARKET.tick(); const A = MARKET.listings('auc').find(x => x.t1 - NOW > 3600000);
-    A.bd = [{ n: 0, m: 2, k: 2, x: A.t1 - 30000 }];   // Kaspar bietet in der letzten Minute
+    A.bd = [{ n: 0, m: 2, k: 2, x: A.t1 - 30000 }]; A.bo = 0;   // Kaspar bietet in der letzten Minute (ohne Sofortkauf – sonst kauft er zufällig weg)
     const need = mkMinBid(A), gp = P.gold, rb1 = MARKET.bid(A.id, need);
     o.bid = rb1.ok && P.gold === gp - need && mkTop(A)[1] === -1 && MARKET.bid(A.id, need * 2).err === 'lead' && MARKET.bid(A.id + 'x', 5).err === 'over';
     NOW = A.t1 - 10000; const ev4 = MARKET.tick(), ob = ev4.find(e => e.k === 'outbid');
@@ -99,7 +99,7 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     o.back = mkNow() === clk && evb.length === 0 && MARKET.listings('shop').map(x => x.id).join() === sids && M.auc.map(x => x.t1).join() === ends && mkFrozen() > 4 * 3600000;
     NOW += 5 * 3600000 + 60000; o.resume = mkNow() === NOW && mkFrozen() === 0;
     NOW += 60 * 864e5; MARKET.tick(); NOW -= 60 * 864e5; const n0 = mkNow();
-    o.far = n0 === NOW && M.auc.every(x => x.t1 - NOW < 26 * 3600000 && x.t1 > NOW - 3600000) && M.auc.length >= 6;
+    o.far = n0 === NOW && M.auc.every(x => x.t1 - NOW < 26 * 3600000 && x.t1 > NOW - 3600000) && M.auc.length + M.spawn.length >= 6;   // neue Auktionen dürfen noch in der Warteschlange stehen
     // 7) Spielstand: Hin und zurück, Manipulation, Zufalls-Müll
     MARKET.tick(); const js = JSON.parse(JSON.stringify(M)), fx = mkFix(js);
     o.round = fx.auc.length === M.auc.length && fx.box.length === M.box.length && JSON.stringify(fx.auc.map(x => [x.id, x.t1, x.bids.length, x.start])) === JSON.stringify(M.auc.map(x => [x.id, x.t1, x.bids.length, x.start]));
@@ -166,7 +166,7 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
   for (const [name, fn] of [['ohne Basar', s => { delete s.meta.market; }], ['Basar = Text', s => { s.meta.market = 'kaputt'; }], ['Basar = Liste', s => { s.meta.market = [1, 2]; }], ['Listen kaputt', s => { s.meta.market = { auc: 'x', own: { a: 1 }, box: [null, 5, { e: null }], shop: [], hist: 'x', clk: 'morgen', init: 1 }; }]]) {
     await page.evaluate(src => { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); (new Function('s', src))(s); localStorage.setItem(SAVE_KEY, JSON.stringify(s)); }, `(${fn.toString()})(s)`);
     await page.reload(); await page.waitForTimeout(1300);
-    const st = await page.evaluate(() => { try { activateChar(0); hideOverlay(); P.map = genMap(1); openMap(); mkOpen('map'); const ok1 = panel.querySelector('h2').textContent === 'BASAR'; for (const t of ['buy', 'sell', 'bid', 'mine']) { MK.tab = t; mkShow(); } return ok1 && Array.isArray(mkM().auc) && mkM().auc.length >= 4 && mkM().auc.length + mkM().spawn.length >= 6; } catch (e) { return e.message; } });
+    const st = await page.evaluate(() => { try { activateChar(0); hideOverlay(); P.map = genMap(1); openMap(); mkOpen('map'); const ok1 = panel.querySelector('h2').textContent === 'BASAR'; for (const t of ['buy', 'sell', 'bid', 'mine']) { MK.tab = t; mkShow(); } return ok1 && Array.isArray(mkM().auc) && mkM().auc.length >= 2 && mkM().auc.length + mkM().spawn.length >= 6;   // manche der gleich laufenden Auktionen sind beim Start schon wieder vorbei } catch (e) { return e.message; } });
     ok(st === true, `Spielstand ${name}: lädt, Basar öffnet mit allen Reitern` + (st === true ? '' : ' – ' + st));
   }
   const nop = await page.evaluate(() => {
@@ -220,7 +220,8 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
   await tap('[data-act="mk_sell"]'); await tap('[data-act="mk_sell"]');   // wertvoll: einmal bestätigen
   ok(await page.evaluate(() => P.mats.mithril === 10), 'Material sofort verkauft (mit Bestätigung)');
   await tap('[data-act="mk_tab"][data-id="bid"]');
-  const aid = await page.evaluate(() => MARKET.listings('auc').find(A => A.t1 - mkNow() > 15 * 60000 && !(mkTop(A) && mkTop(A)[1] === -1)).id);
+  // gewählte Auktion ruhig stellen: keine Händler-Bieter, kein Sofortkauf – sonst bietet oder kauft zufällig jemand dazwischen
+  const aid = await page.evaluate(() => { const A = MARKET.listings('auc').find(A => A.t1 - mkNow() > 15 * 60000 && !(mkTop(A) && mkTop(A)[1] === -1)); A.bd = []; A.bo = 0; return A.id; });
   await tap(`.mk .row[data-id="${aid}"]`);
   const cd0 = await page.evaluate(() => panel.querySelector('.mk-bidbox [data-mkend]').textContent);
   await page.waitForTimeout(2200);
