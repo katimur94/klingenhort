@@ -302,13 +302,14 @@ function bTick(e, dt) {
     else if (Z.shield.t <= 0) { e.armor = 0; Z.shield = null; }
   }
   const f = e.hp / e.maxHp;
-  if (B.mech.includes('phase') && Z.ph < 2 && f < (Z.ph ? .33 : .66)) bPhase(e, Z, B);
+  if (B.mech.includes('phase') && Z.ph < 2 && Z.inv <= 0 && f < (Z.ph ? .33 : .66)) bPhase(e, Z, B);   // nie zwei Phasen auf einmal
   if (B.mech.includes('enrage') && !Z.enr && f < .3) bEnrage(e, Z);
   if (Z.gcd > 0) Z.gcd -= dt;
   for (const m of Z.m) if (m.cd > 0) m.cd -= dt;
   if (state !== 'play' || Z.gcd > 0 || Z.inv > 0 || Z.leap || Z.dash || Z.heal || Z.hold > 0 || e.under > 0) return;
   const d = Math.hypot(P.x - e.x, P.y - e.y); if (d > 300) return;
-  Z.busy = Z.busy.filter(t => t > Z.t); if (Z.busy.length >= bMaxAct(B.r)) return;
+  for (let i = Z.busy.length - 1; i >= 0; i--) if (Z.busy[i] <= Z.t) Z.busy.splice(i, 1);
+  if (Z.busy.length >= bMaxAct(B.r)) return;
   const ready = Z.m.filter(m => m.cd <= 0 && bCan(e, m.k, d)); if (!ready.length) return;
   bCast(e, ready[Math.floor(Math.random() * ready.length)]);
 }
