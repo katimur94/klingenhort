@@ -100,20 +100,20 @@ const AWO = {
 };
 // Wie der Fund daliegt (erste Zeile des Lesebildschirms), je Gelände des Fundorts
 const AFUND = {
-  kalt: [_t('Der Fund ist von Raureif überzogen, als hätte er lange auf dich gewartet.'), _t('Halb im Schnee vergraben liegt der Fund.')],
-  heiss: [_t('Der Fund ist noch warm von der glühenden Erde.'), _t('Asche bedeckt den Fund wie eine graue Decke.')],
-  gift: [_t('Giftiger Dunst liegt über dem Fund, doch er ist unversehrt.'), _t('Ringsum ist alles verdorrt – nur der Fund hat überdauert.')],
-  sumpf: [_t('Der Fund steckt im Schlamm, nur eine Ecke ragt heraus.'), _t('Moos hat den Fund fast verschluckt.')],
-  pilz: [_t('Leuchtende Sporen tanzen über dem Fund.'), _t('Zwischen weichen Pilzhüten, gut verborgen, liegt der Fund.')],
-  kristall: [_t('Kristalle sind um den Fund gewachsen wie eine Hand, die ihn festhält.'), _t('Der Fund funkelt zwischen Kristallen, als gehöre er dazu.')],
-  wueste: [_t('Der Wind hat den Fund aus dem Sand gegraben.'), _t('Halb im Sand begraben, heiß von der Sonne, liegt der Fund.')],
-  schatten: [_t('Selbst im Dunkel ist der Fund zu sehen, als leuchte er von innen.'), _t('Kalte Schatten kriechen um den Fund und weichen zurück, als du näher kommst.')],
-  wasser: [_t('Das Wasser hat den Fund ans Ufer gespült.'), _t('Algen und kleine Muscheln haften am Fund.')],
-  sturm: [_t('Der Sturm hat den Fund freigelegt.'), _t('Zwischen umgestürzten Steinen, vom Wind blank gefegt, liegt der Fund.')],
-  ruine: [_t('Zwischen zerbrochenen Säulen liegt der Fund.'), _t('Unter einer eingestürzten Mauer wartet der Fund.')],
-  wald: [_t('Zwischen Wurzeln versteckt, von Laub bedeckt, liegt der Fund.'), _t('Ein Eichhörnchen hat den Fund offenbar für eine Nuss gehalten und vergraben.')],
-  fels: [_t('In einer Felsspalte, geschützt vor Wind und Regen, liegt der Fund.'), _t('Unter einem Steinhaufen, aufgeschichtet wie ein kleines Grab, liegt der Fund.')],
-  wiese: [_t('Im hohen Gras glitzert etwas – der Fund.'), _t('Wildblumen wachsen um den Fund herum, als wollten sie ihn bewachen.')],
+  kalt: [_t('Der Fund ist von Raureif überzogen, als hätte er lange auf dich gewartet.'), _t('Halb im Schnee vergraben liegt der Fund.'), _t('Der Wind hat Schnee über den Fund geweht, doch eine Ecke schaut hervor.')],
+  heiss: [_t('Der Fund ist noch warm von der glühenden Erde.'), _t('Asche bedeckt den Fund wie eine graue Decke.'), _t('Zwischen glimmenden Steinen, kaum zu berühren, liegt der Fund.')],
+  gift: [_t('Giftiger Dunst liegt über dem Fund, doch er ist unversehrt.'), _t('Ringsum ist alles verdorrt – nur der Fund hat überdauert.'), _t('Am Rand einer grün schimmernden Pfütze liegt der Fund, seltsam unberührt.')],
+  sumpf: [_t('Der Fund steckt im Schlamm, nur eine Ecke ragt heraus.'), _t('Moos hat den Fund fast verschluckt.'), _t('Zwischen Schilf und schwarzem Wasser schimmert der Fund.')],
+  pilz: [_t('Leuchtende Sporen tanzen über dem Fund.'), _t('Zwischen weichen Pilzhüten, gut verborgen, liegt der Fund.'), _t('Ein Pilz ist halb über den Fund gewachsen, als wolle er ihn behalten.')],
+  kristall: [_t('Kristalle sind um den Fund gewachsen wie eine Hand, die ihn festhält.'), _t('Der Fund funkelt zwischen Kristallen, als gehöre er dazu.'), _t('Im Licht der Kristalle wirft der Fund tausend kleine Schatten.')],
+  wueste: [_t('Der Wind hat den Fund aus dem Sand gegraben.'), _t('Halb im Sand begraben, heiß von der Sonne, liegt der Fund.'), _t('Eine Düne hat den Fund freigegeben – für wie lange, weiß niemand.')],
+  schatten: [_t('Selbst im Dunkel ist der Fund zu sehen, als leuchte er von innen.'), _t('Kalte Schatten kriechen um den Fund und weichen zurück, als du näher kommst.'), _t('Der Fund liegt im Dunkeln, aber er flüstert, als du vorbeigehst.')],
+  wasser: [_t('Das Wasser hat den Fund ans Ufer gespült.'), _t('Algen und kleine Muscheln haften am Fund.'), _t('Zwischen nassen Steinen am Ufer glänzt der Fund.')],
+  sturm: [_t('Der Sturm hat den Fund freigelegt.'), _t('Zwischen umgestürzten Steinen, vom Wind blank gefegt, liegt der Fund.'), _t('Der Wind zerrt an dir, als wolle er dir den Fund nicht gönnen.')],
+  ruine: [_t('Zwischen zerbrochenen Säulen liegt der Fund.'), _t('Unter einer eingestürzten Mauer wartet der Fund.'), _t('Auf einem umgestürzten Altar, wie für dich bereitgelegt, liegt der Fund.')],
+  wald: [_t('Zwischen Wurzeln versteckt, von Laub bedeckt, liegt der Fund.'), _t('Ein Eichhörnchen hat den Fund offenbar für eine Nuss gehalten und vergraben.'), _t('Unter einem umgestürzten Baumstamm, trocken und sicher, liegt der Fund.')],
+  fels: [_t('In einer Felsspalte, geschützt vor Wind und Regen, liegt der Fund.'), _t('Unter einem Steinhaufen, aufgeschichtet wie ein kleines Grab, liegt der Fund.'), _t('Auf einem flachen Stein, als hätte jemand ihn für dich hingelegt, liegt der Fund.')],
+  wiese: [_t('Im hohen Gras glitzert etwas – der Fund.'), _t('Wildblumen wachsen um den Fund herum, als wollten sie ihn bewachen.'), _t('Ein Kaninchenbau hat den Fund wieder ans Licht gebracht.')],
   x: [_t('Zwischen Steinen und Wurzeln, fast übersehen, liegt der Fund.'), _t('Jemand hat den Fund sorgfältig versteckt – aber nicht sorgfältig genug.'), _t('Ein schwaches Glimmen hat dich hergeführt.'), _t('Unter einer Schicht aus Staub und Zeit wartet der Fund.')]
 };
 const ATCACHE = new Map();
@@ -622,9 +622,11 @@ function arteDef(id) {
   const c = ALAY.cOf[id], C = aChain(c), i = id - C.off, s = C.sites[i], nx = C.sites[i + 1], last = i === C.L - 1, R = mulberry(aH(4, c, i));
   const kind = C.kinds[i], K = AKIND[kind], V = C.V;
   let body = aFill(aPk(R, C.beats[i]), V); if (kind === 'tagebuch' && R() < .55) body = aFill(ADAY, { tag: C.days[i] }) + ' ' + body;
-  const T0 = aTerrain(s.cx, s.cy), T1 = aTerrain(nx.cx, nx.cy), fund = aPk(R, R() < .7 && T0.k !== 'x' ? AFUND[T0.k] : AFUND.x), frame = aFill(aPk(R, K.fr), V);
+  const T0 = aTerrain(s.cx, s.cy), T1 = aTerrain(nx.cx, nx.cy), FL = R() < .7 && T0.k !== 'x' ? AFUND[T0.k] : AFUND.x, fund = FL[(aH(12, c) + i) % FL.length], frame = aFill(aPk(R, K.fr), V);
   const dist = Math.hypot(nx.x - s.x, nx.y - s.y), dir = aDirIdx(nx.x - s.x, nx.y - s.y), steps = aSteps(dist);
-  const clue = aFill(aPk(R, last ? (K.w ? ATREASW : ATREASV) : (K.w ? ACLUEW : ACLUEV)), { richtung: ADIR[dir], schritte: aNum(steps), gelaende: aPk(R, AWO[T1.k] || AWO.x) });
+  // Hinweis und Gelände reihum statt zufällig: zwei Funde hintereinander klingen nie gleich
+  const CL = last ? (K.w ? ATREASW : ATREASV) : (K.w ? ACLUEW : ACLUEV), WO = AWO[T1.k] || AWO.x;
+  const clue = aFill(CL[(aH(13, c) + i) % CL.length], { richtung: ADIR[dir], schritte: aNum(steps), gelaende: WO[(aH(14, c) + i) % WO.length] });
   const sig = kind === 'brief' || kind === 'tagebuch' || kind === 'rolle' ? '– ' + V.ich : '';
   const d = { id, chain: c, idx: i, n: C.L, kind, kindName: K.n, name: C.names[i], icon: arteIconURL(kind, C.col[i]), last, w: !!K.w, title: C.title, steps, dir, x: s.x, y: s.y, parts: { fund, frame, body, sig, clue } };
   d.text = [fund, frame, K.w ? body : '„' + body + '“', clue, sig].filter(Boolean).join(' ');
