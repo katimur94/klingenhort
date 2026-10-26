@@ -2152,7 +2152,7 @@ body.touch .lslot .n{font-size:8px}
 .ltools div{aspect-ratio:1;background:var(--stone-lo);display:grid;place-items:center;box-shadow:inset 0 0 0 2px var(--c)}
 .ltools div.no{opacity:.35;filter:grayscale(1)}
 .ltools img{width:70%;height:70%;image-rendering:pixelated}
-.lstart .opt{text-align:left}
+.lstart .opt{text-align:left;line-height:1.5}
 .lstart .opt small{display:block}
 </style>`);
 document.body.insertAdjacentHTML('beforeend', `<div id="lhud" hidden><canvas id="lhMap" width="96" height="96" aria-label="${_t('Karte')}"></canvas><div class="lc"><div class="lp"><b id="lhD">${LDNG[0].n}</b><span id="lhT">0:00</span><b id="lhSt">6</b></div><div class="lr"><button class="lp" id="lhCp" aria-label="${_t('Leuchtfeuer setzen')}" hidden><img src="" alt=""><span id="lhCpn">0</span></button><button class="lp" id="lhPack" aria-label="${_t('Rucksack')}"><img src="" alt=""><span id="lhP">0/20</span></button></div><div class="lp" id="lhK" hidden><img src="" alt=""><span id="lhKn">0</span></div><div id="lhReg"></div><div id="lhMis"></div></div></div>`);

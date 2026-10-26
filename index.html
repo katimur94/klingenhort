@@ -65,7 +65,7 @@ img.px{image-rendering:pixelated}
 @keyframes pop{0%{transform:scale(1.5)}100%{transform:scale(1)}}
 #banner{position:fixed;left:0;right:0;top:30%;text-align:center;pointer-events:none;z-index:6;opacity:0;padding-inline:16px}
 #banner b{display:block;font-family:var(--f-display);font-weight:400;font-size:clamp(16px,4vw,30px);color:var(--gold);text-shadow:3px 3px 0 #000,-1px -1px 0 #000;text-wrap:balance;line-height:1.4}
-#banner small{display:block;margin-top:10px;font-family:var(--f-display);font-size:clamp(8px,1.6vw,11px);color:var(--parch);text-shadow:2px 2px 0 #000;text-wrap:balance}
+#banner small{display:block;margin-top:10px;font-family:var(--f-display);font-size:clamp(8px,1.6vw,11px);line-height:1.7;color:var(--parch);text-shadow:2px 2px 0 #000;text-wrap:balance;max-width:560px;margin-inline:auto}
 #banner.show{animation:ban 2.2s steps(20) forwards}
 @keyframes ban{0%{opacity:0;transform:translateY(8px)}10%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
 #toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 90px);transform:translateX(-50%);font-family:var(--f-display);font-size:9px;background:var(--stone);padding:8px 10px;box-shadow:0 0 0 2px var(--night),0 0 0 3px var(--parch-dim);opacity:0;pointer-events:none;z-index:12;width:max-content;max-width:calc(100vw - 52px);text-align:center;line-height:1.6}
