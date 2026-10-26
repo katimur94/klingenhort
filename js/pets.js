@@ -1,17 +1,26 @@
 'use strict';
 /* =========================================================
-   KLINGENHORT – Begleiter 2.0 – Eier finden, im Brutnest pflegen, schlüpfen lassen, aufziehen
-   24 Kreaturen in sieben Seltenheiten (Plunder … Mythisch), jede mit eigener Pixel-Grafik und sechs Entwicklungsstufen.
+   KLINGENHORT – Kreaturen 2.0 – Eier finden, im Brutnest pflegen, schlüpfen lassen, aufziehen, züchten, ausrüsten
+   77 Kreaturen in sieben Seltenheiten (Plunder … Mythisch): die 24 alten, Monster-Kreaturen passend zu den Gegnern,
+   Kreaturen der Gebiete und 16 Hybride aus der Zucht – jede mit eigener Pixel-Grafik und sechs Entwicklungsstufen.
+   Gene (Kraft, Tempo, Zähigkeit, Magie, Glück), sichtbare Mutationen, Ausrüstung (Halsband, Panzer, Talisman),
+   Talente (Angriff, Schutz, Sammler – Sammler gibt Beutelplätze), Zauberrunen, die der Begleiter im Kampf wirkt.
    Hängt sich über HOOK/ON (js/core.js) ins Spiel ein: Brutnest-Station im Versteck (Bild, Symbol, Bildschirm).
-   Konto: SAVE.meta.pets = { list: [{ id, sp, nm, lv, xp, col, c0, shiny, k, born, nw, bag: [Beute], hurt: Zeit }], act: id,
-     eggs: [{ id, v: 2, sp, tier, got, need, nest, w, f, z, t, born }], hatched, first, intro, fromBoss, seen: [sp], cw, starter (alt) }
-   Schnittstelle: petActive() · petSel() · petBagSize(p) · p.bag · petBagAdd/petBagTake · petHurt(p, min) · petIsHurt(p)
-     eggGive(sp, quiet, { tier, luck }) · eggRoll(tier) · eggTierRoll(luck) · PET_TIERS · petGive(sp, o)
+   Konto: SAVE.meta.pets = { list: [{ id, sp, nm, lv, xp, col, c0, shiny, k, born, nw, bag: [Beute], hurt: Zeit,
+       gn: [Kraft, Tempo, Zähigkeit, Magie, Glück 0–100], mu: Mutation, tl: '15 Ziffern' (Talentränge), eq: { h, p, t } (Ausrüstung),
+       mg: [Rune, Rune, Rune] (Zauber), zt: letzte Zucht, pa: [Art, Art] (Eltern), ge: Generation }], act: id,
+     eggs: [{ id, v: 2, sp, tier, got, need, nest, w, f, z, t, born, gn?, mu?, pa?, ge?, c0? }], hatched, first, intro, fromBoss, seen: [sp], cw, starter (alt),
+     gear: [Ausrüstung im Lager], runes: { Zauber: Anzahl }, mut: [entdeckte Mutationen], bred: Zuchten }
+   Ausrüstung: { id, s: 'h'|'p'|'t', r: 0–4 (Seltenheit), lv: Stufe 1–100, a: { Wert: Zahl } }
+   Schnittstelle: petActive() · petSel() · petBagSize(p) (mit Talent „Große Taschen“) · p.bag · petBagAdd/petBagTake · petHurt(p, min) · petIsHurt(p)
+     eggGive(sp, quiet, { tier, luck }) · eggRoll(tier) · eggTierRoll(luck, R) · PET_TIERS · petGive(sp, o)
+     eggForBiome(biome, depth, luck, R) → { egg: 1, sp, tier } (Ei für die Welt, auch für unbekannte Gebiete) · PET_BIOME · PET_HABS · PET_MON
      petExport(i, keep) · eggExport(i, keep) · petImport(data) · petLabel(d) · petIconURL(d) · openNest(back)
+     petLootFix(e) nimmt auch { t: 'mod', k, n } (Mods aus js/mods.js) · petBreedRoll(a, b, R) (Zucht, auch mit festem Zufall)
    ========================================================= */
 
 /* ---------- Daten ---------- */
-const PET_MAX = 18, EGG_MAX = 9, NEST_MAX = 3, EGG_NEED = 150;
+const PET_MAX = 60, EGG_MAX = 9, NEST_MAX = 3, EGG_NEED = 150;
 /* Seltenheiten: Stärke (mul), Beutel-Plätze, Pflegezeit bis zum Schlüpfen (Sekunden), wie lange Wärme/Futter/Zuwendung halten (Stunden),
    Futter (erste bezahlbare Wahl wird genommen, Gold nur bei einfachen Eiern), Eiername */
 const PET_TIERS = [
@@ -162,9 +171,92 @@ const PET_SP = {
     pal: { m: ['#120e30', '#2a2266', '#4a3ea8', '#8a7ae0'], a: ['#5a6ab0', '#9aaae8', '#dce4ff'], b: ['#a8a0ff', '#e0dcff', '#ffffff'], w: ['#4a2a8a', '#8a4ac8', '#d098ff'], e: '#fffbe0', g: '#e0dcff' }
   }
 };
-// nach Seltenheit sortiert (Sammlung, Tests)
-const PET_ORDER = ['schnecke', 'assel', 'taube', 'maus', 'kroete', 'huhn', 'fuchs', 'igel', 'fleder', 'irrlicht', 'katze', 'natter', 'eule', 'kaefer', 'drache', 'funke', 'golem', 'wolf', 'phoenix', 'greif', 'eisdrache', 'einhorn', 'schlange', 'wal'];
-const PET_BYT = PET_TIERS.map((_, t) => PET_ORDER.filter(sp => PET_SP[sp].t === t));
+/* --- Kreaturen 2.0: Monster-Kreaturen (mon: Gegner, deren Eier sie in den Landen fallen lassen) und Kreaturen der Gebiete (hab) ---
+   Farben kurz: pp6(Körper, Akzent, Horn/Bauch, Flügel, Auge, Glanz) – die Abstufungen werden berechnet. art: [Bauplan, Merkmale] */
+function pp6(m, a, b, w, e, g) { return { m, a, b, w, e, g: g || '#fff6c0' }; }
+Object.assign(PET_SP, {
+  /* Plunder */
+  schleimling: { n: _t('Schleimling'), t: 0, el: 'gift', fly: 0, fav: 'schleim', atk: 'spit', spec: 'cloud', pas: { regen: [.2, 1] }, st: _t('Wabbelt, blubbert und frisst alles, was klebt.'), an: _t('Schleimklecks'), pn: _t('Zäher Glibber'), sn: _t('Blubberwolke'), hab: ['wiese', 'sumpf', 'hoehle', 'kerker'], mon: ['slime', 'minislime', 'toxslime'], pal: pp6('#5ab83a', '#c8f06a', '#2e7a2a', '#8ad85a', '#1a1420', '#e8ffb0'), art: ['blob', { k: 'schleim' }] },
+  hase: { n: _t('Wiesenhase'), t: 0, el: 'licht', fly: 0, fav: 'leder', atk: 'claw', spec: 'leap', pas: { spd: [.01, .05] }, st: _t('Hoppelt schneller, als du gucken kannst.'), an: _t('Hasentritt'), pn: _t('Hasenfuß'), sn: _t('Hakenschlagen'), hab: ['wiese', 'wald'], pal: pp6('#b08a60', '#f0e0c8', '#fff6e8', '#8a6a48', '#1a1420'), art: ['quad', { bw: 3.3, bh: 2.4, leg: 1.6, hd: 2.4, sn: 1, ear: 'lang', tail: 'stummel', hop: 1 }] },
+  pilzling: { n: _t('Pilzling'), t: 0, el: 'gift', fly: 0, fav: 'schleim', atk: 'spit', spec: 'cloud', pas: { hp: [.01, .04] }, st: _t('Steht gern im Schatten und niest Sporen.'), an: _t('Sporenniesen'), pn: _t('Myzelhaut'), sn: _t('Sporenwolke'), hab: ['wald', 'pilz', 'hoehle', 'sumpf'], pal: pp6('#c8342c', '#ffffff', '#efe2bf', '#a8865a', '#1a1420'), art: ['blob', { k: 'pilz' }] },
+  grubenwurm: { n: _t('Grubenwürmchen'), t: 0, el: 'gift', fly: 0, fav: 'erz', atk: 'bite', spec: 'leap', pas: { def: [1, 5] }, st: _t('Gräbt sich durch jeden Boden – und durch jeden Keks.'), an: _t('Rundmaul'), pn: _t('Ringpanzer'), sn: _t('Tunnelsprung'), hab: ['hoehle', 'sumpf', 'wueste', 'kerker'], mon: ['wurm'], pal: pp6('#b87a6a', '#e8b0a0', '#fff0e0', '#7a4a3a', '#1a1420'), art: ['wurm', {}] },
+  lamm: { n: _t('Wolllamm'), t: 0, el: 'licht', fly: 0, fav: 'leder', atk: 'claw', spec: 'nova', pas: { regen: [.3, 1.2] }, st: _t('Flauschig, mutig und stur wie ein Bock.'), an: _t('Kopfstoß'), pn: _t('Wollpolster'), sn: _t('Wolkenwolle'), hab: ['wiese', 'berg'], pal: pp6('#3a3036', '#e8a0b0', '#f4efe6', '#d8d0c4', '#1a1420'), art: ['quad', { bw: 3.9, bh: 2.9, leg: 2, hd: 2.3, sn: 1, ear: 'haenge', back: 'wolle', coat: 'b', tail: 'stummel' }] },
+  /* Gewöhnlich */
+  goblin: { n: _t('Goblin-Welpe'), t: 1, el: 'schatten', fly: 0, fav: 'erz', atk: 'claw', spec: 'leap', pas: { gold: [.02, .08] }, st: _t('Klaut alles, was glänzt – meistens für dich.'), an: _t('Messerstich'), pn: _t('Diebesglück'), sn: _t('Hinterhalt'), hab: ['wiese', 'wald', 'hoehle', 'kerker'], mon: ['goblin', 'gobarcher', 'goldgob'], pal: pp6('#5aa83a', '#8a5a32', '#c8c8d0', '#4a8a2a', '#ffd24a'), art: ['biped', { ear: 'goblin', hold: 'messer', hd: 3.2 }] },
+  knochenhund: { n: _t('Knochenhund'), t: 1, el: 'schatten', fly: 0, fav: 'knochen', atk: 'bite', spec: 'leap', pas: { leech: [.005, .02] }, st: _t('Bringt dir jeden Knochen. Meistens seinen eigenen.'), an: _t('Knochenbiss'), pn: _t('Gruftgier'), sn: _t('Klapperjagd'), hab: ['gruft', 'ruine', 'kerker'], mon: ['skeleton', 'skelarcher', 'skelmage', 'tinyz', 'zombie'], pal: pp6('#d8d0b8', '#5ae8ff', '#6a6458', '#a8a090', '#5ae8ff', '#bfffff'), art: ['quad', { bw: 4, bh: 2.3, leg: 2.9, lw: 1.1, hd: 2.6, sn: 2, ear: 'spitz', tail: 'duenn', back: 'rippen', face: 'schaedel' }] },
+  ratte: { n: _t('Seuchenratte'), t: 1, el: 'gift', fly: 0, fav: 'schleim', atk: 'bite', spec: 'cloud', pas: { pgift: [.02, .08] }, st: _t('Kennt jeden Abfluss und jede Abkürzung.'), an: _t('Nagezahn'), pn: _t('Pestbiss'), sn: _t('Pestwolke'), hab: ['sumpf', 'hoehle', 'ruine', 'kerker'], mon: ['seuche', 'morbus'], pal: pp6('#6a6a5a', '#9ad858', '#e8a0a8', '#4a4a3e', '#ff4a4a'), art: ['quad', { bw: 3.8, bh: 2.3, leg: 1.5, hd: 2.4, sn: 2, ear: 'rund', tail: 'duenn', tk: 'b', pat: 'gift' }] },
+  biene: { n: _t('Honigbiene'), t: 1, el: 'licht', fly: 1, fav: 'zahn', atk: 'claw', spec: 'storm', pas: { regen: [.4, 1.5] }, st: _t('Summt fröhlich und heilt mit Honig.'), an: _t('Stachelstich'), pn: _t('Honigtau'), sn: _t('Schwarmsturm'), hab: ['wiese', 'wald'], pal: pp6('#f0c030', '#2a2018', '#fff4c0', '#d8f0ff', '#1a1420'), art: ['biene', {}] },
+  hoernchen: { n: _t('Eichhörnchen'), t: 1, el: 'blitz', fly: 0, fav: 'zahn', atk: 'zap', spec: 'storm', pas: { dodge: [.01, .04] }, st: _t('Knistert vor Neugier und versteckt Nüsse überall.'), an: _t('Nussfunke'), pn: _t('Kletterkünstler'), sn: _t('Funkenregen'), hab: ['wald'], pal: pp6('#c0602a', '#ffd84a', '#f0e0c8', '#a84a20', '#1a1420'), art: ['quad', { bw: 3, bh: 2.4, leg: 1.6, hd: 2.4, sn: 1, ear: 'zipfel', tail: 'busch', big: 1.5 }] },
+  kuerbisling: { n: _t('Kürbisling'), t: 1, el: 'feuer', fly: 0, fav: 'schleim', atk: 'fire', spec: 'nova', pas: { dmg: [.01, .04] }, st: _t('Grinst Tag und Nacht. Niemand weiß, warum.'), an: _t('Kernspucke'), pn: _t('Glutgrinsen'), sn: _t('Kürbisknall'), hab: ['wiese', 'sumpf', 'wald'], mon: ['kuerbis'], pal: pp6('#e8782a', '#5a8a2a', '#ffd24a', '#a8541a', '#ffd24a'), art: ['blob', { k: 'kuerbis' }] },
+  krabbe: { n: _t('Strandkrabbe'), t: 1, el: 'frost', fly: 0, fav: 'zahn', atk: 'claw', spec: 'freeze', pas: { def: [1, 6] }, st: _t('Läuft seitwärts, kneift vorwärts.'), an: _t('Scherenzwick'), pn: _t('Krabbenpanzer'), sn: _t('Brandungswelle'), hab: ['wasser', 'kueste', 'sumpf'], pal: pp6('#d8402a', '#ffb08a', '#f0e0d0', '#a82a1e', '#1a1420'), art: ['krabbe', {}] },
+  pinguin: { n: _t('Pinguinküken'), t: 1, el: 'frost', fly: 0, fav: 'schleim', atk: 'ice', spec: 'freeze', pas: { dr: [.005, .025] }, st: _t('Watschelt tapfer durch jeden Schneesturm.'), an: _t('Schneeball'), pn: _t('Daunenpolster'), sn: _t('Bauchrutscher'), hab: ['eis', 'kueste'], pal: pp6('#2a3040', '#ff9a2a', '#f4f4f8', '#3a4050', '#1a1420'), art: ['biped', { snout: 'schnabel', belly: 1, arm: 'flosse', leg: 1.2, hd: 3, bw: 3, bh: 3.2, hx: .2, pinguin: 1 }] },
+  /* Ungewöhnlich */
+  orkling: { n: _t('Orkling'), t: 2, el: 'feuer', fly: 0, fav: 'zahn', atk: 'claw', spec: 'leap', pas: { dmg: [.01, .05] }, st: _t('Klein, grün und will schon jetzt der Stärkste sein.'), an: _t('Keulenhieb'), pn: _t('Kriegsschrei'), sn: _t('Sturmangriff'), hab: ['wiese', 'berg', 'kerker'], mon: ['orc', 'berserker', 'shaman', 'ogre'], pal: pp6('#7a8a5a', '#6a4a2e', '#f0e8d0', '#5a6a40', '#ff4a3a'), art: ['biped', { ear: 'klein', tusk: 1, hold: 'keule', hd: 3.1, bw: 3, bh: 3 }] },
+  echsling: { n: _t('Echsling'), t: 2, el: 'gift', fly: 0, fav: 'leder', atk: 'bite', spec: 'cloud', pas: { spd: [.01, .05] }, st: _t('Sonnt sich gern und züngelt neugierig.'), an: _t('Schuppenbiss'), pn: _t('Echsenflinkheit'), sn: _t('Sumpfnebel'), hab: ['sumpf', 'wald', 'wueste'], mon: ['lizard', 'lizshaman'], pal: pp6('#3a9a7a', '#e8c040', '#c8c8d0', '#2a7a5a', '#ffd24a'), art: ['biped', { snout: 'echse', tail: 'echse', hold: 'speer', crest: 1 }] },
+  boemb: { n: _t('Bömbchen'), t: 2, el: 'feuer', fly: 0, fav: 'erz', atk: 'fire', spec: 'nova', pas: { critdmg: [.05, .2] }, st: _t('Hat eine sehr kurze Lunte. Bitte nicht ärgern.'), an: _t('Funkenwurf'), pn: _t('Sprengmeister'), sn: _t('Großer Knall'), hab: ['hoehle', 'berg', 'kerker'], mon: ['bomber'], pal: pp6('#3a3a48', '#ff8a2a', '#c8a878', '#5a5a6a', '#ff4a3a'), art: ['blob', { k: 'bombe' }] },
+  geistchen: { n: _t('Gruftgeistchen'), t: 2, el: 'schatten', fly: 1, fav: 'kristall', atk: 'beam', spec: 'freeze', pas: { dodge: [.01, .05] }, st: _t('Buh! Erschrickt sich meist selbst am meisten.'), an: _t('Spukstrahl'), pn: _t('Durchsichtig'), sn: _t('Gruselschrei'), hab: ['gruft', 'ruine', 'schatten'], mon: ['geist', 'mage'], pal: pp6('#d8d8f0', '#8a7ab8', '#b8b0d8', '#c8c0e8', '#1a1420', '#e0dcff'), art: ['float', { k: 'geist' }] },
+  libelle: { n: _t('Sumpflibelle'), t: 2, el: 'blitz', fly: 1, fav: 'kristall', atk: 'zap', spec: 'storm', pas: { aspd: [.01, .05] }, st: _t('Schwirrt so schnell, dass die Luft knistert.'), an: _t('Flügelfunke'), pn: _t('Schwirrflug'), sn: _t('Sirrgewitter'), hab: ['sumpf', 'wasser', 'wiese'], pal: pp6('#2ab8a8', '#2a6aa8', '#8ae8d8', '#c8f0ff', '#3a2a6a'), art: ['libelle', {}] },
+  salamander: { n: _t('Feuersalamander'), t: 2, el: 'feuer', fly: 0, fav: 'glut', atk: 'fire', spec: 'breath', pas: { crit: [.01, .04] }, st: _t('Badet in Glut wie andere in Wasser.'), an: _t('Glutzunge'), pn: _t('Feuerhaut'), sn: _t('Flammenzunge'), hab: ['feuer', 'asche', 'hoehle'], mon: ['pyro', 'glutschleim'], pal: pp6('#3e3448', '#ff9a2a', '#ffd24a', '#4a3e54', '#ffd24a'), art: ['quad', { bw: 4.8, bh: 1.8, leg: 1.1, hd: 2.3, sn: 1, ear: 0, tail: 'kurz', pat: 'flecken', pk: 'a1' }] },
+  hirschkalb: { n: _t('Hirschkalb'), t: 2, el: 'licht', fly: 0, fav: 'horn', atk: 'claw', spec: 'nova', pas: { xp: [.03, .1] }, st: _t('Staksig, sanft – und das Geweih wächst mit.'), an: _t('Geweihstoß'), pn: _t('Waldweisheit'), sn: _t('Lichtung'), hab: ['wald', 'wiese'], pal: pp6('#a86a3a', '#e8d0a0', '#fff4e0', '#8a5430', '#1a1420'), art: ['quad', { bw: 4, bh: 2.3, leg: 3.4, lw: 1.1, hd: 2.4, sn: 'pferd', ear: 'spitz', horn: 'geweih', tail: 'stummel', pat: 'flecken', neck: 1 }] },
+  baer: { n: _t('Bärenjunges'), t: 2, el: 'schatten', fly: 0, fav: 'knochen', atk: 'claw', spec: 'leap', pas: { hp: [.02, .08] }, st: _t('Brummt, kuschelt und haut kräftig zu.'), an: _t('Tatzenhieb'), pn: _t('Dickes Fell'), sn: _t('Bärensprung'), hab: ['wald', 'berg', 'hoehle'], pal: pp6('#6a4a30', '#c8a070', '#c8a070', '#4a3020', '#1a1420'), art: ['quad', { bw: 4.8, bh: 3.2, leg: 2.2, lw: 1.8, hd: 3, sn: 1, ear: 'rund', tail: 'stummel', snk: 'a' }] },
+  /* Selten */
+  golemchen: { n: _t('Golemchen'), t: 3, el: 'blitz', fly: 0, fav: 'erz', atk: 'zap', spec: 'storm', pas: { def: [3, 12] }, st: _t('Ein Kiesel mit Herz – und einer leuchtenden Rune.'), an: _t('Runenfunke'), pn: _t('Steinhaut'), sn: _t('Steinhagel'), hab: ['berg', 'hoehle', 'ruine', 'kristall'], mon: ['golem', 'zwerg'], pal: pp6('#7a7468', '#79c24e', '#8ac8ff', '#5a564e', '#8ac8ff', '#d0ecff'), art: ['golem', {}] },
+  impling: { n: _t('Impling'), t: 3, el: 'feuer', fly: 1, fav: 'horn', atk: 'fire', spec: 'breath', pas: { aspd: [.02, .08] }, st: _t('Frech, flatterhaft und immer zu heiß.'), an: _t('Teufelsfunke'), pn: _t('Höllenhast'), sn: _t('Glutatem'), hab: ['feuer', 'asche', 'schatten'], mon: ['imp', 'schattenimp'], pal: pp6('#c8342c', '#ffb03a', '#3a1a1a', '#8a1a1a', '#ffe04a'), art: ['biped', { horn: 'teufel', wing: 'leder', tail: 'teufel', ear: 'klein', belly: 1, hd: 3 }] },
+  mimik: { n: _t('Mimikchen'), t: 3, el: 'schatten', fly: 0, fav: 'kristall', atk: 'bite', spec: 'leap', pas: { loot: [.03, .12] }, st: _t('Sieht aus wie eine Truhe. Beißt wie keine.'), an: _t('Truhenbiss'), pn: _t('Schatzinstinkt'), sn: _t('Deckelschnapper'), hab: ['hoehle', 'ruine', 'kerker'], mon: ['mimic', 'goldmimik'], pal: pp6('#8a5a32', '#c83a4a', '#b8b8c4', '#6a4224', '#ffd24a'), art: ['blob', { k: 'kiste' }] },
+  eisgeist: { n: _t('Frostgeistchen'), t: 3, el: 'frost', fly: 1, fav: 'kristall', atk: 'ice', spec: 'freeze', pas: { dr: [.01, .05] }, st: _t('Haucht Eisblumen an jedes Fenster.'), an: _t('Eishauch'), pn: _t('Frostschleier'), sn: _t('Eiskrone'), hab: ['eis'], mon: ['icez', 'eisgeist', 'frostra'], pal: pp6('#8ad8ff', '#e8f8ff', '#4a8ad8', '#bfefff', '#1a2a6a', '#e8f8ff'), art: ['float', { k: 'eis' }] },
+  yeti: { n: _t('Yetijunges'), t: 3, el: 'frost', fly: 0, fav: 'mithril', atk: 'claw', spec: 'freeze', pas: { hp: [.04, .15] }, st: _t('Riesige Füße, riesiges Herz.'), an: _t('Frostpranke'), pn: _t('Wintertatze'), sn: _t('Lawine'), hab: ['eis', 'berg'], mon: ['frostoger'], pal: pp6('#e8eef8', '#6a8ab0', '#bfefff', '#c8d4e4', '#1a1420'), art: ['biped', { fur: 1, face: 'a', hd: 3.2, bw: 3.3, bh: 3.3, arm: 'gross' }] },
+  skorpion: { n: _t('Aschenskorpion'), t: 3, el: 'gift', fly: 0, fav: 'horn', atk: 'bite', spec: 'cloud', pas: { pgift: [.04, .15] }, st: _t('Glüht von innen. Sticht von hinten.'), an: _t('Giftstachel'), pn: _t('Glutgift'), sn: _t('Aschewolke'), hab: ['wueste', 'asche', 'feuer'], pal: pp6('#4a4048', '#ff8a2a', '#2a2228', '#6a5a62', '#ff4a3a'), art: ['skorpion', {}] },
+  qualle: { n: _t('Leuchtqualle'), t: 3, el: 'blitz', fly: 1, fav: 'kristall', atk: 'zap', spec: 'storm', pas: { xp: [.04, .15] }, st: _t('Schwebt sanft und leuchtet wie ein Lampion.'), an: _t('Nesselfunke'), pn: _t('Tiefseelicht'), sn: _t('Nesselsturm'), hab: ['wasser', 'kueste', 'leere'], pal: pp6('#e88ad8', '#ffd0f8', '#8ac8ff', '#c86ab8', '#3a1a4a', '#ffe8fb'), art: ['float', { k: 'qualle' }] },
+  gargyl: { n: _t('Gargylchen'), t: 3, el: 'schatten', fly: 1, fav: 'horn', atk: 'claw', spec: 'leap', pas: { critdmg: [.08, .35] }, st: _t('Hockt tagsüber still auf Dächern.'), an: _t('Steinkralle'), pn: _t('Steinerne Wacht'), sn: _t('Sturzflug'), hab: ['ruine', 'gruft', 'berg'], pal: pp6('#8a8a96', '#b8b8c8', '#5a5a66', '#4a4058', '#ff4a3a'), art: ['biped', { horn: 'teufel', wing: 'stein', tail: 'teufel', ear: 'spitz', hd: 3, crouch: 1 }] },
+  /* Episch */
+  jungdrache: { n: _t('Jungdrache'), t: 4, el: 'feuer', fly: 0, fav: 'schuppe', atk: 'fire', spec: 'breath', pas: { dmg: [.03, .12], critdmg: [.05, .2] }, st: _t('Noch zu klein zum Fliegen – nicht zu klein zum Brennen.'), an: _t('Glutkugel'), pn: _t('Drachenblut'), sn: _t('Feuersturm'), hab: ['feuer', 'berg'], mon: ['jungdrache', 'demon', 'pyraxis'], pal: pp6('#8a2a2a', '#ffb03a', '#3a2a2a', '#c8402a', '#ffd24a'), art: ['quad', { bw: 4.4, bh: 2.8, leg: 2.4, lw: 1.6, hd: 2.9, sn: 2, ear: 0, horn: 'teufel', back: 'zacken', tail: 'zacke', wing: 'stummel', belly: 'a' }] },
+  teufelchen: { n: _t('Hornteufelchen'), t: 4, el: 'feuer', fly: 0, fav: 'horn', atk: 'claw', spec: 'leap', pas: { crit: [.02, .08], aspd: [.02, .06] }, st: _t('Hufe, Hörner und ein Grinsen voller Funken.'), an: _t('Hornstoß'), pn: _t('Teufelsglück'), sn: _t('Glutsprung'), hab: ['feuer', 'asche'], mon: ['chort', 'lavadaemon'], pal: pp6('#a8241e', '#ff8a2a', '#2a1a1a', '#6a1a14', '#ffe04a'), art: ['biped', { horn: 'stier', tail: 'teufel', hold: 'dreizack', hoof: 1, hd: 3, bw: 3, bh: 3 }] },
+  nachtmahr: { n: _t('Nachtmahr'), t: 4, el: 'schatten', fly: 0, fav: 'adamant', atk: 'claw', spec: 'storm', pas: { spd: [.03, .1], critdmg: [.05, .25] }, st: _t('Galoppiert durch Albträume – auf deiner Seite.'), an: _t('Hufschlag'), pn: _t('Albtraumgalopp'), sn: _t('Schattensturm'), hab: ['schatten', 'gruft'], mon: ['todesritter', 'varkas'], pal: pp6('#2a2238', '#b84aff', '#e0c8ff', '#3a2e4e', '#ff4aff', '#e0c8ff'), art: ['quad', { bw: 4.6, bh: 2.6, leg: 3.6, lw: 1.2, hd: 2.3, sn: 'pferd', ear: 'spitz', neck: 1, mane: 'flamme', tail: 'pferd', foot: 'huf' }] },
+  mammut: { n: _t('Wollmammut'), t: 4, el: 'frost', fly: 0, fav: 'mithril', atk: 'claw', spec: 'freeze', pas: { hp: [.04, .18], def: [2, 8] }, st: _t('Uralt, zottelig und unaufhaltsam.'), an: _t('Stampfer'), pn: _t('Eiszeitfell'), sn: _t('Frostbeben'), hab: ['eis', 'berg'], pal: pp6('#7a5034', '#a87a50', '#f4ecd8', '#5a3a24', '#1a1420'), art: ['quad', { bw: 5.4, bh: 3.6, leg: 2.6, lw: 2, hd: 3, sn: 'ruessel', ear: 'rund', tusk: 1, tail: 'stummel', back: 'zottel', gz: .14 }] },
+  krake: { n: _t('Tiefenkrake'), t: 4, el: 'gift', fly: 1, fav: 'schuppe', atk: 'spit', spec: 'cloud', pas: { dodge: [.02, .06], loot: [.02, .08] }, st: _t('Acht Arme, acht Mal so viel Unfug.'), an: _t('Tintenspritzer'), pn: _t('Saugnäpfe'), sn: _t('Tintenwolke'), hab: ['wasser', 'kueste', 'hoehle'], pal: pp6('#8a3a8a', '#e888c8', '#f0d0e8', '#6a2a6a', '#ffd24a'), art: ['float', { k: 'krake' }] },
+  engelchen: { n: _t('Engelchen'), t: 4, el: 'licht', fly: 1, fav: 'stern', atk: 'beam', spec: 'nova', pas: { regen: [1, 4], xp: [.03, .1] }, st: _t('Ein gefallener Engel, der wieder fliegen lernt.'), an: _t('Himmelsstrahl'), pn: _t('Segen'), sn: _t('Himmelslicht'), hab: ['himmel', 'ruine'], mon: ['engel'], pal: pp6('#f0d8c0', '#eeeae2', '#ffd24a', '#ffffff', '#4a8ad8'), art: ['biped', { wing: 'feder', halo: 1, robe: 1, hair: 'b', hd: 3.1 }] },
+  /* Legendär */
+  hoellenhund: { n: _t('Höllenhund'), t: 5, el: 'feuer', fly: 0, fav: 'glut', atk: 'bite', spec: 'breath', pas: { dmg: [.03, .12], leech: [.01, .03] }, st: _t('Bewacht dich wie ein Tor zur Unterwelt.'), an: _t('Glutbiss'), pn: _t('Höllenhunger'), sn: _t('Höllenatem'), hab: ['feuer', 'asche', 'schatten'], mon: ['demon', 'lavadaemon'], pal: pp6('#3a2626', '#ff6a1a', '#c8c8d0', '#2a1e1e', '#ffd24a', '#ffd24a'), art: ['quad', { bw: 4.6, bh: 2.7, leg: 3, lw: 1.5, hd: 2.8, sn: 2, ear: 'spitz', back: 'flammen', tail: 'flamme', pat: 'risse', collar: 1 }] },
+  /* Mythisch */
+  leerenauge: { n: _t('Auge der Leere'), t: 6, el: 'schatten', fly: 1, fav: 'aether', atk: 'beam', spec: 'storm', pas: { crit: [.03, .1], critdmg: [.1, .4], xp: [.03, .1] }, st: _t('Es sieht alles. Wirklich alles.'), an: _t('Leerenblick'), pn: _t('Allsicht'), sn: _t('Sternenriss'), hab: ['leere', 'schatten'], pal: pp6('#2a1640', '#b84aff', '#f0e8ff', '#3a2058', '#ff4aff', '#f0d8ff'), art: ['float', { k: 'auge' }] },
+  /* --- Hybride: nur aus der Zucht (hy: Eltern) --- */
+  eulenbaer: { n: _t('Eulenbär'), t: 4, hy: ['eule', 'baer'], el: 'frost', fly: 0, fav: 'mithril', atk: 'claw', spec: 'freeze', pas: { hp: [.04, .15], critdmg: [.05, .2] }, st: _t('Halb Eule, halb Bär – ganz und gar wachsam.'), an: _t('Schnabelpranke'), pn: _t('Federfell'), sn: _t('Eulenschrei'), pal: pp6('#6a5040', '#e8d8b8', '#ffb03a', '#8a6a48', '#ffd24a'), art: ['quad', { bw: 4.7, bh: 3.2, leg: 2.2, lw: 1.8, hd: 3.1, sn: 'schnabel', ear: 'feder', tail: 'stummel', face: 'eule', pat: 'federn' }] },
+  basilisk: { n: _t('Basilisk'), t: 4, hy: ['huhn', 'natter'], el: 'gift', fly: 0, fav: 'schleim', atk: 'bite', spec: 'cloud', pas: { pgift: [.06, .2], crit: [.02, .06] }, st: _t('Ein Blick von ihm, und Gegner erstarren.'), an: _t('Hahnenbiss'), pn: _t('Starrblick'), sn: _t('Versteinernder Hauch'), pal: pp6('#3a8a3a', '#d8302a', '#ffb03a', '#c8c040', '#ffd24a'), art: ['wurm', { k: 'basilisk' }] },
+  pegasus: { n: _t('Pegasus'), t: 6, hy: ['einhorn', 'taube'], el: 'licht', fly: 1, fav: 'stern', atk: 'beam', spec: 'nova', pas: { spd: [.04, .12], xp: [.04, .15] }, st: _t('Trägt Helden über die Wolken.'), an: _t('Wolkenstrahl'), pn: _t('Himmelsritt'), sn: _t('Sternenschwinge'), pal: pp6('#e8e4f0', '#8ac8ff', '#c8b088', '#ffffff', '#4a6ad8'), art: ['quad', { bw: 4.6, bh: 2.6, leg: 3.6, lw: 1.2, hd: 2.3, sn: 'pferd', ear: 'spitz', neck: 1, mane: 'haar', tail: 'pferd', foot: 'huf', wing: 'feder' }] },
+  wolpertinger: { n: _t('Wolpertinger'), t: 3, hy: ['hase', 'hirschkalb'], el: 'blitz', fly: 0, fav: 'horn', atk: 'zap', spec: 'storm', pas: { loot: [.03, .12], dodge: [.01, .04] }, st: _t('Hase, Geweih, Flügel und Zähne. Gibt es wirklich!'), an: _t('Geweihfunke'), pn: _t('Fabelglück'), sn: _t('Wolperwetter'), pal: pp6('#9a7a5a', '#e8d8c0', '#d8c8a0', '#c8a878', '#1a1420'), art: ['quad', { bw: 3.4, bh: 2.5, leg: 1.7, hd: 2.5, sn: 1, ear: 'lang', horn: 'geweih', tail: 'stummel', wing: 'klein', fang: 1, hop: 1 }] },
+  flederkatze: { n: _t('Flederkatze'), t: 4, hy: ['katze', 'fleder'], el: 'schatten', fly: 1, fav: 'kristall', atk: 'claw', spec: 'leap', pas: { crit: [.02, .08], leech: [.01, .03] }, st: _t('Schnurrt kopfüber von der Decke.'), an: _t('Flatterkralle'), pn: _t('Nachtjäger'), sn: _t('Nachtsturz'), pal: pp6('#3a2a4a', '#c86a8a', '#8a76a0', '#5a3a6a', '#5ae8ff'), art: ['quad', { bw: 4.2, bh: 2.5, leg: 2.4, hd: 2.8, sn: 1, ear: 'spitz', tail: 'duenn', tk: 'm', wing: 'leder' }] },
+  chimaere: { n: _t('Chimäre'), t: 5, hy: ['wolf', 'drache'], el: 'feuer', fly: 0, fav: 'schuppe', atk: 'fire', spec: 'breath', pas: { dmg: [.04, .15], crit: [.02, .06] }, st: _t('Löwe, Ziege, Drache und Schlange in einem.'), an: _t('Dreifachbiss'), pn: _t('Urkraft'), sn: _t('Chimärenfeuer'), pal: pp6('#c8963a', '#8a4a1a', '#e8e0d0', '#a8302a', '#ffd24a'), art: ['quad', { bw: 4.6, bh: 2.8, leg: 2.8, lw: 1.5, hd: 2.9, sn: 1, ear: 'rund', back: 'maehne', horn: 'bock', tail: 'schlange', wing: 'leder' }] },
+  sphinx: { n: _t('Sphinx'), t: 5, hy: ['greif', 'katze'], el: 'licht', fly: 0, fav: 'stern', atk: 'beam', spec: 'nova', pas: { xp: [.05, .2], critdmg: [.05, .25] }, st: _t('Stellt Rätsel. Kennt alle Antworten.'), an: _t('Rätselstrahl'), pn: _t('Uraltes Wissen'), sn: _t('Sonnenrätsel'), pal: pp6('#d8b070', '#2a4ab0', '#ffd24a', '#e8c070', '#2a8aff'), art: ['quad', { bw: 4.4, bh: 2.5, leg: 2.4, hd: 2.8, sn: 1, ear: 0, tail: 'duenn', tk: 'm', wing: 'feder', hat: 'nemes' }] },
+  sonnendrache: { n: _t('Sonnendrache'), t: 6, hy: ['drache', 'phoenix'], el: 'licht', fly: 1, fav: 'stern', atk: 'fire', spec: 'breath', pas: { dmg: [.05, .2], regen: [1, 5] }, st: _t('Wo er fliegt, geht die Sonne nie unter.'), an: _t('Sonnenkugel'), pn: _t('Sonnenherz'), sn: _t('Sonnenatem'), pal: pp6('#e8a020', '#fff0a0', '#ffffff', '#ffd24a', '#ff6a1a', '#fff6c0'), art: ['sonne', {}] },
+  seedrache: { n: _t('Seedrache'), t: 6, hy: ['wal', 'eisdrache'], el: 'frost', fly: 1, fav: 'aether', atk: 'ice', spec: 'breath', pas: { dr: [.03, .1], xp: [.05, .2] }, st: _t('Schwimmt durch Luft wie durch Wellen.'), an: _t('Wellenkugel'), pn: _t('Gezeitenschuppen'), sn: _t('Sturmflut'), pal: pp6('#2a6a9a', '#8ae8ff', '#e8f8ff', '#3ab8c8', '#ffd24a', '#c8f8ff'), art: ['wurm', { k: 'seedrache' }] },
+  neunschwanz: { n: _t('Neunschwanz'), t: 5, hy: ['fuchs', 'irrlicht'], el: 'licht', fly: 0, fav: 'kristall', atk: 'beam', spec: 'storm', pas: { crit: [.03, .1], gold: [.1, .3] }, st: _t('Jeder Schweif trägt ein Fuchsfeuer.'), an: _t('Fuchsfeuer'), pn: _t('Neun Leben'), sn: _t('Irrlichttanz'), pal: pp6('#e8eef8', '#8ac8ff', '#ffffff', '#a8b8d0', '#ff4a8a', '#bfefff'), art: ['neun', {}] },
+  nautilus: { n: _t('Nautilus'), t: 4, hy: ['krake', 'schnecke'], el: 'frost', fly: 1, fav: 'schuppe', atk: 'ice', spec: 'freeze', pas: { def: [2, 10], dr: [.01, .04] }, st: _t('Trägt sein Zuhause als Spirale.'), an: _t('Perlschuss'), pn: _t('Spiralpanzer'), sn: _t('Tiefendruck'), pal: pp6('#f0e0c8', '#b8643a', '#e89a8a', '#c8a888', '#1a1420'), art: ['float', { k: 'nautilus' }] },
+  kristallschleim: { n: _t('Kristallschleim'), t: 4, hy: ['schleimling', 'golem'], el: 'licht', fly: 0, fav: 'kristall', atk: 'beam', spec: 'nova', pas: { hp: [.03, .12], def: [2, 8] }, st: _t('Ein Schleim, der Edelsteine verdaut hat.'), an: _t('Prismaglibber'), pn: _t('Kristallkern'), sn: _t('Funkelfontäne'), pal: pp6('#8ac8f0', '#e8f8ff', '#b892f4', '#6aa8d8', '#2a2a6a', '#f0e0ff'), art: ['blob', { k: 'schleim', crystal: 1 }] },
+  goldmimik: { n: _t('Goldmimik'), t: 5, hy: ['mimik', 'kaefer'], el: 'licht', fly: 0, fav: 'stern', atk: 'bite', spec: 'nova', pas: { gold: [.15, .5], loot: [.04, .12] }, st: _t('Eine Schatztruhe voller Zähne – und voller Gold.'), an: _t('Goldbiss'), pn: _t('Goldregen'), sn: _t('Juwelenfontäne'), pal: pp6('#e8b030', '#c83a4a', '#fff0a0', '#c88a1a', '#ff4a3a', '#fff6c0'), art: ['blob', { k: 'kiste', gold: 1 }] },
+  seelenlicht: { n: _t('Seelenlicht'), t: 4, hy: ['irrlicht', 'geistchen'], el: 'schatten', fly: 1, fav: 'kristall', atk: 'beam', spec: 'freeze', pas: { leech: [.01, .03], xp: [.04, .12] }, st: _t('Eine Seele, die beschlossen hat zu leuchten.'), an: _t('Seelenstrahl'), pn: _t('Seelenband'), sn: _t('Seelenfrost'), pal: pp6('#4a8aff', '#8ad8ff', '#e0f8ff', '#3a6ad8', '#1a1a4a', '#d0f0ff'), art: ['float', { k: 'flamme' }] },
+  donnerkroete: { n: _t('Donnerkröte'), t: 4, hy: ['kroete', 'funke'], el: 'blitz', fly: 0, fav: 'erz', atk: 'zap', spec: 'storm', pas: { aspd: [.03, .1], regen: [.5, 2] }, st: _t('Quakt, und der Himmel antwortet.'), an: _t('Donnerquaken'), pn: _t('Gewitterhaut'), sn: _t('Donnerschlag'), pal: pp6('#3a5aa8', '#ffd84a', '#e8f0ff', '#ffd84a', '#ffd84a', '#fffbe0'), art: ['donner', {}] },
+  zerberus: { n: _t('Zerberus'), t: 6, hy: ['hoellenhund', 'wolf'], el: 'feuer', fly: 0, fav: 'aether', atk: 'bite', spec: 'breath', pas: { dmg: [.05, .2], leech: [.01, .04], critdmg: [.05, .2] }, st: _t('Drei Köpfe, drei Mal so treu.'), an: _t('Dreifachbiss'), pn: _t('Wächter der Tore'), sn: _t('Dreifacher Höllenatem'), pal: pp6('#4a2020', '#ff6a1a', '#c8c8d0', '#2a1414', '#ffd24a', '#ffd24a'), art: ['quad', { bw: 4.8, bh: 2.8, leg: 3, lw: 1.6, hd: 2.6, sn: 2, ear: 'spitz', back: 'flammen', tail: 'flamme', collar: 1, heads: 3 }] }
+});
+// Lebensräume der alten Arten (für eggForBiome)
+const PET_HAB0 = { schnecke: ['wiese', 'sumpf', 'wald'], assel: ['hoehle', 'ruine', 'kerker'], taube: ['wiese', 'ruine', 'himmel'], maus: ['wiese', 'wald'], kroete: ['sumpf', 'wasser'], huhn: ['wiese'], fuchs: ['wald', 'wiese', 'feuer'], igel: ['wald', 'eis'], fleder: ['hoehle', 'gruft', 'schatten'], irrlicht: ['sumpf', 'wald', 'ruine'], katze: ['ruine', 'schatten', 'gruft'], natter: ['sumpf', 'wueste', 'wald'], eule: ['wald', 'eis', 'himmel'], kaefer: ['wueste', 'wiese', 'kristall'], drache: ['feuer', 'berg'], funke: ['himmel', 'berg'], golem: ['kristall', 'hoehle', 'berg'], wolf: ['wald', 'schatten', 'eis'], phoenix: ['feuer', 'asche', 'himmel'], greif: ['berg', 'himmel'], eisdrache: ['eis', 'berg'], einhorn: ['wiese', 'himmel', 'kristall'], schlange: ['sumpf', 'leere', 'wueste'], wal: ['himmel', 'leere', 'wasser'] };
+for (const sp in PET_HAB0) PET_SP[sp].hab = PET_HAB0[sp];
+// Abstufungen berechnen (pp6 gibt nur je eine Farbe) – dunkel ins Kühle, hell ins Warme wie bei Pixelkunst üblich
+function petShades(hex, n) {
+  const [h, s, l] = petRgbHsl(...hexRgb(hex)), L = n === 4 ? [l * .45, l * .72, l, l + (1 - l) * .5] : [l * .62, l, l + (1 - l) * .55], H = n === 4 ? [-14, -6, 0, 8] : [-9, 0, 8];
+  return L.map((v, i) => '#' + petHslRgb(h + H[i], Math.min(1, s * (i ? 1 : 1.05)), clamp(v, .04, .97)).map(x => x.toString(16).padStart(2, '0')).join(''));
+}
+for (const sp in PET_SP) { const P0 = PET_SP[sp].pal; for (const g of ['m', 'a', 'b', 'w']) if (typeof P0[g] === 'string') P0[g] = petShades(P0[g], g === 'm' ? 4 : 3); }
+// Standardtexte für Angriff und Spezialangriff, falls eine Art keine eigenen hat
+const PET_AD = { fire: _t('Spuckt Feuerkugeln, die Gegner in Brand setzen.'), ice: _t('Schießt Eis, das Gegner verlangsamt.'), beam: _t('Ein Strahl versengt Gegner aus der Ferne.'), zap: _t('Ein Blitz springt von Gegner zu Gegner.'), claw: _t('Springt Gegner an und schlägt zu.'), bite: _t('Stürzt sich auf Gegner und beißt zu.'), spit: _t('Spuckt klebrige Geschosse auf Gegner.') };
+const PET_SD = { breath: _t('Speit einen breiten Kegel, der alles davor trifft.'), leap: _t('Springt blitzschnell von Gegner zu Gegner – jeder Treffer kritisch.'), nova: _t('Heilt dich und trifft alle Gegner um dich herum.'), freeze: _t('Friert alle Gegner in der Nähe kurz ein.'), cloud: _t('Eine Giftwolke vergiftet alle Gegner darin.'), storm: _t('Lässt Blitze oder Sterne auf mehrere Gegner niederfahren.') };
+for (const sp in PET_SP) { const S = PET_SP[sp]; S.ad = S.ad || PET_AD[S.atk]; S.sd = S.sd || PET_SD[S.spec]; }
+// nach Seltenheit sortiert (Sammlung, Tests): erst die wilden Arten, dann die Hybride
+const PET_ORDER = Object.keys(PET_SP).map((sp, i) => [sp, i]).sort((a, b) => (PET_SP[a[0]].hy ? 1 : 0) - (PET_SP[b[0]].hy ? 1 : 0) || PET_SP[a[0]].t - PET_SP[b[0]].t || a[1] - b[1]).map(x => x[0]);
+// zufällige Eier: nur wilde Arten (Hybride gibt es nur aus der Zucht)
+const PET_BYT = PET_TIERS.map((_, t) => PET_ORDER.filter(sp => PET_SP[sp].t === t && !PET_SP[sp].hy));
+const PET_HY = PET_ORDER.filter(sp => PET_SP[sp].hy);
+// Gegner-Art → Kreatur (Monster-Eier in den Landen); auch für andere Systeme (Bosse, Welt)
+const PET_MON = {}; for (const sp of PET_ORDER) for (const t of PET_SP[sp].mon || []) if (!PET_MON[t]) PET_MON[t] = sp;
 // Futter: EP je Stück (seltenes Material = viel), Lieblingsfutter zählt doppelt
 const PET_FEED = {}; MATORDER.forEach((k, i) => { PET_FEED[k] = Math.round(15 * Math.pow(1.75, i)); });
 
@@ -176,7 +268,109 @@ function petPasK(lv) { return clamp((lv - 25) / 75, 0, 1); }
 function petPas(p) { const S = PET_SP[p.sp], r = {}; if (p.lv < 25) return r; const k = petPasK(p.lv); for (const s in S.pas) r[s] = S.pas[s][0] + (S.pas[s][1] - S.pas[s][0]) * k; return r; }
 function petPow(lv) { return lv >= 100 ? 2 : lv >= 75 ? 1.5 : 1; }
 function petSpecCd(lv) { return lv >= 100 ? 12 : lv >= 75 ? 16 : 20; }
-function petAtkCd(p) { return 1.2 - petStage(p.lv) * .05; }
+// Angriffstempo: Stufe, Talente/Ausrüstung (paspd) und Tempo-Gen
+function petAtkCd(p) { const m = petMods(p); return (1.2 - petStage(p.lv) * .05) / ((1 + (m.paspd || 0)) * petGeneK(p, 1, .9, .2)); }
+
+/* ---------- Kreaturen 2.0: Gene, Mutationen, Talente, Ausrüstung, Zauber ---------- */
+// Gene 0–100 (50 = Durchschnitt). Wirkung: Faktor = a + b · Gen/100
+const PET_GENES = [{ k: 'kraft', n: _t('Kraft'), c: '#ff8a5a' }, { k: 'tempo', n: _t('Tempo'), c: '#8ee6ff' }, { k: 'zaeh', n: _t('Zähigkeit'), c: '#79c24e' }, { k: 'magie', n: _t('Magie'), c: '#b892f4' }, { k: 'glueck', n: _t('Glück'), c: '#ffd24a' }];
+const PET_GRADE = [[90, 'S', '#ff4fd8'], [75, 'A', '#ff8a3a'], [60, 'B', '#e8d04a'], [40, 'C', '#79c24e'], [20, 'D', '#57a7d6'], [0, 'E', '#9a9088']];
+function petGene(p, i) { return p && Array.isArray(p.gn) && isFinite(p.gn[i]) ? p.gn[i] : 50; }
+function petGeneK(p, i, a, b) { return a + b * petGene(p, i) / 100; }
+function petGrade(v) { return PET_GRADE.find(g => v >= g[0]) || PET_GRADE[5]; }
+// Wilde Gene: meist 20–70, selten mehr (Mittel aus drei Würfen)
+function petGenesWild(R) { R = R || Math.random; const r = []; for (let i = 0; i < 5; i++) r.push(Math.round(8 + (R() + R() + R()) / 3 * 74)); return r; }
+// Alte Begleiter bekommen feste Gene aus ihrer Kennung (immer dieselben)
+function petGenesOf(id) { let h = 2166136261; for (const c of String(id)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return petGenesWild(mulberry(h)); }
+/* Mutationen: r 1 Farbe, 2 Merkmal, 3 Mutantenform (selten); b = kleine Boni; sichtbar auf dem Bild (petMutPB, petPal) */
+const PET_MUT = {
+  albino: { n: _t('Albino'), r: 1, d: _t('Schneeweiß mit roten Augen.'), b: { xp: .04 } },
+  melan: { n: _t('Nachtschwarz'), r: 1, d: _t('Fast schwarz – nur die Augen leuchten.'), b: { crit: .02 } },
+  scheck: { n: _t('Gescheckt'), r: 1, d: _t('Helle Flecken überall.'), b: { gold: .05 } },
+  dornen: { n: _t('Dornenrücken'), r: 2, d: _t('Spitze Dornen wachsen aus dem Rücken.'), b: { def: 4 } },
+  leucht: { n: _t('Leuchtpunkte'), r: 2, d: _t('Leuchtende Punkte glimmen auf der Haut.'), b: { pmag: .1, xp: .03 } },
+  glut: { n: _t('Glutmähne'), r: 2, d: _t('Kleine Flammen tanzen auf dem Kopf.'), b: { pdmg: .08 } },
+  kristall: { n: _t('Kristall-Variante'), r: 3, d: _t('Durchscheinend wie Bergkristall, mit Kristallzacken.'), b: { hp: .05, def: 6 } },
+  schatten: { n: _t('Schatten-Variante'), r: 3, d: _t('Aus lebendem Schatten, mit glühenden Augen.'), b: { critdmg: .15, pcrit: .05 } },
+  gold: { n: _t('Gold-Variante'), r: 3, d: _t('Glänzt wie pures Gold.'), b: { gold: .15, loot: .05 } },
+  sternen: { n: _t('Sternen-Variante'), r: 3, d: _t('Ein Stück Nachthimmel mit funkelnden Sternen.'), b: { xp: .1, pmag: .2 } }
+};
+const PET_MUTR = [null, _t('Farbmutation'), _t('Merkmal'), _t('Mutantenform')], PET_MUTC = [null, '#8ee6ff', '#79c24e', '#ff4fd8'];
+/* Talente: 3 Zweige × 5 Knoten; Knoten i braucht so viele Punkte im Zweig (PET_TALREQ); 1 Punkt + 1 je 2 Level */
+const PET_TAL = [
+  { n: _t('ANGRIFF'), nodes: [{ n: _t('Scharfe Zähne'), d: _t('+6 % Schaden des Begleiters'), max: 5, e: { pdmg: .06 } }, { n: _t('Flinke Pfoten'), d: _t('+5 % Angriffstempo des Begleiters'), max: 5, e: { paspd: .05 } }, { n: _t('Jagdinstinkt'), d: _t('+3 % Krit-Chance des Begleiters'), max: 5, e: { pcrit: .03 } }, { n: _t('Runenkunde'), d: _t('+12 % Zauberkraft'), max: 5, e: { pmag: .12 } }, { n: _t('Raserei'), d: _t('Spezialangriff 10 % schneller bereit'), max: 3, e: { pspec: .1 } }] },
+  { n: _t('SCHUTZ'), nodes: [{ n: _t('Wachsam'), d: _t('+3 Verteidigung für dich'), max: 5, e: { def: 3 } }, { n: _t('Lebensband'), d: _t('+2 % Lebenspunkte für dich'), max: 5, e: { hp: .02 } }, { n: _t('Dickes Fell'), d: _t('Verletzungen heilen 10 % schneller'), max: 5, e: { pwund: .1 } }, { n: _t('Schutzgeist'), d: _t('Heil- und Schildzauber 15 % stärker'), max: 5, e: { pheal: .15 } }, { n: _t('Treue bis zuletzt'), d: _t('+2 % Schadensminderung für dich'), max: 3, e: { dr: .02 } }] },
+  { n: _t('SAMMLER'), nodes: [{ n: _t('Goldnase'), d: _t('+4 % Gold'), max: 5, e: { gold: .04 } }, { n: _t('Beutemagnet'), d: _t('+15 % Reichweite des Beutemagneten'), max: 5, e: { pmagr: .15 } }, { n: _t('Große Taschen'), d: _t('+1 Platz im Beutel des Begleiters'), max: 3, e: { pbag: 1 } }, { n: _t('Schatzsucher'), d: _t('+2 % Beute'), max: 5, e: { loot: .02 } }, { n: _t('Spürnase'), d: _t('+20 % Chance auf Monster-Eier, Runen und Begleiter-Ausrüstung'), max: 3, e: { pegg: .2 } }] }
+];
+const PET_TALREQ = [0, 2, 4, 7, 10], PET_TALN = 15;
+function petTalPts(lv) { return 1 + Math.floor(clamp(lv | 0, 1, 100) / 2); }
+function petTl(p) { const s = p && typeof p.tl === 'string' ? p.tl : '', r = []; for (let i = 0; i < PET_TALN; i++) r.push(+s[i] || 0); return r; }
+function petTalUsed(p) { return petTl(p).reduce((a, b) => a + b, 0); }
+function petTalFree(p) { return petTalPts(p.lv) - petTalUsed(p); }
+function petTalState(p, bi, ni) {
+  const tl = petTl(p), N = PET_TAL[bi].nodes[ni], r = tl[bi * 5 + ni], inB = tl.slice(bi * 5, bi * 5 + 5).reduce((a, b) => a + b, 0), lock = inB < PET_TALREQ[ni];
+  return { N, r, lock, need: PET_TALREQ[ni], can: !lock && r < N.max && petTalFree(p) > 0 };
+}
+/* Ausrüstung: Halsband (Angriff), Panzer (Schutz für dich), Talisman (Magie, Beute); Legendär: ein besonderer Wert */
+const PET_SLOTS = ['h', 'p', 't'];
+const PET_SLOT = {
+  h: { n: _t('Halsband'), names: [_t('Lederhalsband'), _t('Nietenhalsband'), _t('Silberhalsband'), _t('Runenhalsband'), _t('Sternenhalsband')], aff: ['pdmg', 'pcrit', 'paspd', 'pel'], leg: 'pspec', cost: [['leder', 6], ['zahn', 4]] },
+  p: { n: _t('Panzer'), names: [_t('Stoffweste'), _t('Lederpanzer'), _t('Kettenpanzer'), _t('Schuppenpanzer'), _t('Drachenpanzer')], aff: ['def', 'hp', 'dr', 'pwund', 'regen'], leg: 'pheal', cost: [['leder', 8], ['erz', 6]] },
+  t: { n: _t('Talisman'), names: [_t('Holztalisman'), _t('Knochentalisman'), _t('Kristalltalisman'), _t('Runentalisman'), _t('Äthertalisman')], aff: ['pmag', 'pmcd', 'gold', 'loot', 'xp'], leg: 'pbag', cost: [['knochen', 6], ['kristall', 2]] }
+};
+// Werte bei Stufe 100 und Seltenheit Gewöhnlich (Seltenheit gibt mehr Werte und je +15 %)
+const PET_GAFF = { pdmg: .3, pcrit: .08, paspd: .2, pel: .4, def: 14, hp: .08, dr: .04, pwund: .3, regen: 4, pmag: .4, pmcd: .2, gold: .15, loot: .06, xp: .12, pspec: .2, pheal: .4, pbag: 1 };
+const PET_GNUM = [1, 2, 2, 3, 3], PET_GEAR_MAX = 30;
+// Werte nur für den Begleiter selbst (alle anderen gehen über HOOK.stats an den Helden)
+const PET_INK = new Set(['pdmg', 'paspd', 'pcrit', 'pel', 'pmag', 'pmcd', 'pspec', 'pheal', 'pwund', 'pmagr', 'pbag', 'pegg']);
+// Neues Ausrüstungsteil: Platz s, Seltenheit r (sonst gewürfelt), Stufe lv
+function petGearNew(s, r, lv, R) {
+  R = R || Math.random; const S = PET_SLOT[s]; if (!S) return null;
+  if (r == null) r = +wpick({ 0: 46, 1: 30, 2: 15, 3: 7, 4: 2 }, R);
+  r = clamp(r | 0, 0, 4); lv = clamp(Math.round(lv) || 1, 1, 100);
+  const keys = S.aff.slice(), a = {};
+  for (let i = 0; i < PET_GNUM[r] && keys.length; i++) { const k = keys.splice(Math.floor(R() * keys.length), 1)[0]; a[k] = petGearVal(k, lv, r, R); }
+  if (r === 4) a[S.leg] = petGearVal(S.leg, lv, r, R);
+  return { id: uid(), s, r, lv, a };
+}
+function petGearVal(k, lv, r, R) { if (k === 'pbag') return 1; const v = PET_GAFF[k] * (.25 + .75 * lv / 100) * (.75 + R() * .5) * (1 + r * .15); return k === 'def' || k === 'regen' ? Math.max(1, Math.round(v * 10) / 10) : Math.round(v * 1000) / 1000; }
+function petGearName(it) { const S = PET_SLOT[it.s]; return S ? S.names[clamp(Math.floor((it.lv - 1) / 20), 0, 4)] : '?'; }
+// Ausrüstung prüfen (Spielstand, Tausch)
+function petGearFix(o, s) {
+  if (!o || typeof o !== 'object' || !PET_SLOT[o.s] || (s && o.s !== s)) return null;
+  const S = PET_SLOT[o.s], r = clamp(Math.floor(+o.r) || 0, 0, 4), lv = clamp(Math.floor(+o.lv) || 1, 1, 100), a = {};
+  if (o.a && typeof o.a === 'object') for (const k of Object.keys(o.a)) { if (!(S.aff.includes(k) || k === S.leg) || Object.keys(a).length >= 4) continue; const v = +o.a[k]; if (isFinite(v) && v > 0) a[k] = Math.min(v, k === 'pbag' ? 1 : PET_GAFF[k] * 2); }
+  return { id: typeof o.id === 'string' && o.id ? o.id.slice(0, 24) : uid(), s: o.s, r, lv, a };
+}
+/* Zauber: Runen, die der Begleiter in Sockel setzt und im Kampf selbst wirkt; 1 Sockel, ab LV 25 zwei, ab LV 75 drei */
+const PET_SPELL = {
+  feuerball: { n: _t('Feuerball'), d: _t('Eine große Feuerkugel, die explodiert und Gegner in Brand setzt.'), el: 'feuer', cd: 7, cost: [['glut', 3], ['kristall', 2]], gold: 150 },
+  heilung: { n: _t('Heilung'), d: _t('Heilt dich, sobald du verletzt bist.'), el: 'licht', cd: 12, cost: [['schleim', 6], ['kristall', 2]], gold: 150 },
+  schild: { n: _t('Schild'), d: _t('Ein Schutzschild fängt einige Sekunden lang Schaden für dich ab.'), el: 'licht', cd: 15, cost: [['erz', 8], ['mithril', 1]], gold: 200 },
+  blitz: { n: _t('Blitz'), d: _t('Ein Kettenblitz springt durch viele Gegner.'), el: 'blitz', cd: 6, cost: [['erz', 5], ['kristall', 2]], gold: 150 },
+  frostnova: { n: _t('Frostnova'), d: _t('Friert alle Gegner um den Begleiter ein.'), el: 'frost', cd: 11, cost: [['kristall', 3], ['mithril', 1]], gold: 200 },
+  gift: { n: _t('Giftwolke'), d: _t('Eine Wolke, die alle Gegner darin vergiftet.'), el: 'gift', cd: 9, cost: [['schleim', 8], ['zahn', 3]], gold: 120 },
+  meteor: { n: _t('Meteor'), d: _t('Ein Meteor schlägt ein und trifft alles in der Nähe hart.'), el: 'feuer', cd: 16, cost: [['glut', 5], ['stern', 1]], gold: 400 },
+  ranken: { n: _t('Rankenfessel'), d: _t('Dornenranken fesseln Gegner und verletzen sie.'), el: 'gift', cd: 10, cost: [['leder', 6], ['horn', 2]], gold: 150 }
+};
+const PET_SPELLS = Object.keys(PET_SPELL);
+function petSockets(p) { return 1 + (p.lv >= 25 ? 1 : 0) + (p.lv >= 75 ? 1 : 0); }
+// Summe aller Boni aus Talenten, Ausrüstung und Mutation
+function petMods(p) {
+  const r = {}; if (!p) return r; const add = (k, v) => { r[k] = (r[k] || 0) + v; }, tl = petTl(p);
+  PET_TAL.forEach((B, bi) => B.nodes.forEach((N, ni) => { const n = tl[bi * 5 + ni]; if (n) for (const k in N.e) add(k, N.e[k] * n); }));
+  if (p.eq) for (const s of PET_SLOTS) { const it = p.eq[s]; if (it && it.a) for (const k in it.a) add(k, it.a[k]); }
+  const M = PET_MUT[p.mu]; if (M) for (const k in M.b) add(k, M.b[k]);
+  return r;
+}
+// Schaden (Talente, Ausrüstung, Kraft-Gen), Zauberkraft (Magie-Gen), Abklingzeiten
+function petDmgMul(p) { return (1 + (petMods(p).pdmg || 0)) * petGeneK(p, 0, .85, .3); }
+function petSpellPow(p) { return petDmgK(p.lv, p.sp) * 1.6 * (1 + (petMods(p).pmag || 0)) * petGeneK(p, 3, .8, .5); }
+function petSpellCdK(p) { return (1 - Math.min(.5, petMods(p).pmcd || 0)) * petGeneK(p, 3, 1.1, -.2); }
+function petHealK(p) { return (1 + (petMods(p).pheal || 0)) * petGeneK(p, 3, .8, .5); }
+function petMagRp(p) { return petMagR(p.lv) * (1 + (petMods(p).pmagr || 0)); }
+// Verletzungsdauer: Zähigkeit und „Dickes Fell“/Panzer verkürzen sie
+function petWundK(p) { return (1 - Math.min(.6, petMods(p).pwund || 0)) * petGeneK(p, 2, 1.15, -.3); }
 // Schaden je Treffer in Anteilen der Heldenwaffe; die Seltenheit der Art skaliert ihn (Selten = 1, Plunder 0,3, Mythisch 1,6)
 function petDmgK(lv, sp) { return (.15 + lv * .006) * (sp ? PET_TIERS[PET_SP[sp].t].mul : 1); }
 function petMagR(lv) { return lv < 10 ? 0 : 70 + (lv - 10) * 1.4; }
@@ -184,6 +378,7 @@ function petMagR(lv) { return lv < 10 ? 0 : 70 + (lv - 10) * 1.4; }
 function petM() {
   const M = SAVE && SAVE.meta && SAVE.meta.pets; if (!M) return M;
   if (!Array.isArray(M.list)) M.list = []; if (!Array.isArray(M.eggs)) M.eggs = []; if (!Array.isArray(M.seen)) M.seen = [];
+  if (!Array.isArray(M.gear)) M.gear = []; if (!M.runes || typeof M.runes !== 'object' || Array.isArray(M.runes)) M.runes = {}; if (!Array.isArray(M.mut)) M.mut = [];
   return M;
 }
 // Ausgewählter Begleiter (auch verletzt) bzw. der, der wirklich mitkämpft (null, wenn verletzt)
@@ -191,8 +386,8 @@ function petSel() { const M = petM(); if (!M || !M.act) return null; for (const 
 function petActive() { const p = petSel(); return p && !petIsHurt(p) ? p : null; }
 function petName(p) { return p.nm ? p.nm : PET_SP[p.sp].n; }
 function petTier(sp) { return PET_TIERS[PET_SP[sp] ? PET_SP[sp].t : 0]; }
-// Beutel: Plätze nach Seltenheit, ab Uralt (LV 75) einer mehr
-function petBagSize(p) { return p && PET_SP[p.sp] ? petTier(p.sp).bag + (petStage(p.lv) >= 4 ? 1 : 0) : 0; }
+// Beutel: Plätze nach Seltenheit, ab Uralt (LV 75) einer mehr, dazu Talent „Große Taschen“ und legendärer Talisman
+function petBagSize(p) { return p && PET_SP[p.sp] ? petTier(p.sp).bag + (petStage(p.lv) >= 4 ? 1 : 0) + Math.floor(petMods(p).pbag || 0) : 0; }
 // Verletzung nach dem Tod in den Verlorenen Landen: kämpft nicht und kommt nicht mit, bis die Zeit um ist oder er geheilt wird
 function petIsHurt(p) { return !!p && p.hurt > Date.now(); }
 function petHurtLeft(p) { return petIsHurt(p) ? p.hurt - Date.now() : 0; }
@@ -217,14 +412,48 @@ function petVarCol(hex, V, base) {
   if (V.dark) return petHslRgb(h, s * .45, l * .55);
   return petHslRgb(h + V.h - base, Math.min(1, s * 1.05), l);
 }
-const PET_CMN = { k: '#1a1420', h: '#ffffff', o: '#140f1a', y: '#ffd24a', Y: '#fff3a0', p: '#ff8aa8', r: '#e8402a' };
-function petPal(sp, col) {
-  const S = PET_SP[sp], P0 = S.pal, V = col > 0 && col < 6 ? petVariants(sp)[col].v : null, base = petRgbHsl(...hexRgb(P0.m[2]))[0], pal = {};
+const PET_CMN = { k: '#1a1420', h: '#ffffff', o: '#140f1a', y: '#ffd24a', Y: '#fff3a0', p: '#ff8aa8', r: '#e8402a',
+  // Mutationen: Flecken (x), Dornen (d), Leuchtpunkte (L), Flammen (F), Kristall (C), Schattenschleier (S)
+  x0: '#a89880', x1: '#d8ccb4', x2: '#f4ecdc', x3: '#ffffff', d1: '#8a7a64', d2: '#efe2bf', L: '#7ffff0', F0: '#ff6a1a', F1: '#ffd24a', C1: '#9ad8ff', C2: '#f0fbff', S: '#9a4aff' };
+// Mutantenformen färben Körper und Flügel ganz um (Lichtstufe bleibt erhalten)
+const PET_MUTPAL = { albino: [0, .1, .58, .42], melan: [270, .25, .06, .32], kristall: [205, .55, .42, .5], schatten: [275, .45, .05, .3], gold: [44, .85, .3, .62], sternen: [232, .6, .08, .45] };
+function petPal(sp, col, mu) {
+  const S = PET_SP[sp], P0 = S.pal, V = col > 0 && col < 6 ? petVariants(sp)[col].v : null, base = petRgbHsl(...hexRgb(P0.m[2]))[0], pal = {}, MP = PET_MUTPAL[mu];
   for (const k in PET_CMN) pal[k] = hexRgb(PET_CMN[k]);
-  for (const g of ['m', 'a', 'b', 'w']) P0[g].forEach((c, i) => { pal[g + i] = V && (g === 'm' || g === 'w') ? petVarCol(c, V, base) : hexRgb(c); });
+  for (const g of ['m', 'a', 'b', 'w']) P0[g].forEach((c, i) => {
+    if (MP && (g === 'm' || g === 'w')) { const l = (i + .6) / (P0[g].length + .2); pal[g + i] = petHslRgb(MP[0] + (mu === 'kristall' ? i * 18 : mu === 'gold' ? i * 4 : 0), MP[1], clamp(MP[2] + l * MP[3], 0, .97)); return; }
+    pal[g + i] = V && (g === 'm' || g === 'w') ? petVarCol(c, V, base) : hexRgb(c);
+  });
   pal.e = hexRgb(P0.e); pal.g = hexRgb(P0.g);
   if (col === 6) { pal.a0 = hexRgb('#b898d0'); pal.a1 = hexRgb('#f0d8f8'); pal.a2 = hexRgb('#ffffff'); pal.o = hexRgb('#2a1438'); }
+  if (mu === 'albino') { pal.e = hexRgb('#ff3a5a'); pal.k = hexRgb('#c83a4a'); }
+  else if (mu === 'melan') pal.e = hexRgb('#ffe04a');
+  else if (mu === 'schatten') { pal.e = hexRgb('#ff4aff'); pal.a0 = hexRgb('#4a2a7a'); pal.a1 = hexRgb('#8a4ad8'); pal.a2 = hexRgb('#d8a8ff'); pal.o = hexRgb('#0e0816'); }
+  else if (mu === 'sternen') { pal.e = hexRgb('#fffbe0'); pal.o = hexRgb('#06061a'); }
+  else if (mu === 'gold') { pal.o = hexRgb('#3a2408'); }
+  else if (mu === 'kristall') { pal.o = hexRgb('#1a2a4a'); }
   return pal;
+}
+// Merkmale der Mutation ins Pixelbild malen (nach der Art, vor dem Umriss): Flecken, Dornen, Leuchtpunkte, Flammen, Kristalle, Schatten, Sterne, Glanz
+function petHash(x, y, s) { let h = Math.imul(x * 73856093 ^ y * 19349663 ^ (s || 0) * 83492791, 2654435761) >>> 0; h = (h ^ h >>> 13) >>> 0; return (h % 1000) / 1000; }
+function petMutPB(b, mu, s, f) {
+  if (!PET_MUT[mu]) return;
+  let x0 = b.w, x1 = -1, y0 = b.h; const top = [];
+  for (let x = 0; x < b.w; x++) { top[x] = -1; for (let y = 0; y < b.h; y++) if (b.a[y * b.w + x]) { top[x] = y; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; break; } }
+  if (x1 < 0) return;
+  const W = x1 - x0 + 1, body = k => k && (k[0] === 'm' || k[0] === 'w') && k.length === 2;
+  const each = fn => { for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) { const k = b.a[y * b.w + x]; if (body(k)) fn(x, y, k); } };
+  const spikes = (from, to, k1, k2, h) => { for (let x = Math.round(from); x <= to; x += 3) { const t = top[x]; if (t < 2) continue; for (let i = 1; i <= h; i++) b.set(x, t - i, i === h ? k2 : k1); if (h > 2) { b.set(x - 1, t - 1, k1); b.set(x + 1, t - 1, k1); } } };
+  switch (mu) {
+    case 'scheck': each((x, y, k) => { if (petHash(x >> 2, y >> 2, 7) > .55) b.a[y * b.w + x] = 'x' + k[1]; }); break;
+    case 'dornen': spikes(x0 + 2, x0 + W * .55, 'd1', 'd2', 2 + (s >> 1)); break;
+    case 'leucht': each((x, y) => { if (petHash(x, y, 3) < .05) b.a[y * b.w + x] = 'L'; }); break;
+    case 'glut': for (let x = Math.round(x0 + W * .62); x <= x1; x++) { const t = top[x]; if (t < 3 || (x + f) % 2) continue; const h = 1 + Math.round(petHash(x, f, 5) * (2 + s * .4)); for (let i = 1; i <= h; i++) b.set(x, t - i, i > h - 1 ? 'F1' : 'F0'); } break;
+    case 'kristall': each((x, y) => { if ((x + y) % 5 === 0) b.a[y * b.w + x] = 'm3'; }); spikes(x0 + 1, x0 + W * .7, 'C1', 'C2', 2 + (s >> 1)); break;
+    case 'schatten': for (let x = x0; x <= x1; x += 2) { const t = top[x]; if (t < 2) continue; if (petHash(x, f, 9) < .4) { b.set(x, t - 1, 'S'); if (petHash(x, f, 11) < .4) b.set(x, t - 2, 'S'); } } break;
+    case 'gold': each((x, y) => { if (petHash(x, y, f + 20) < .025) b.a[y * b.w + x] = 'h'; }); break;
+    case 'sternen': each((x, y) => { const q = petHash(x, y, 4); if (q < .045) b.a[y * b.w + x] = (q * 1000 + f) % 3 < 1 ? 'Y' : 'h'; }); break;
+  }
 }
 
 /* ---------- Pixel-Werkzeug (Schlüssel statt Farben: m0..m3 Körper, a Akzent, b Horn/Bauch, w Flügel) ---------- */
@@ -763,6 +992,460 @@ Object.assign(PET_ART, {
     if (s === 5) ppCrown(b, bx + rx * .2, by - ry - 2, 7);
   }
 });
+
+/* ---------- Kreaturen 2.0: Baupläne für die neuen Arten (gleiche Regeln: nach rechts, Boden bei PET_GY, Stufe s, Bild f, mv läuft, bl blinzelt) ---------- */
+// Vierbeiner. A: bw/bh Körper, leg/lw Beine, hd Kopf, sn Schnauze (0, 1, 2, 'pferd', 'schnabel', 'ruessel'), ear, horn, tail, back, pat, wing,
+// heads (3 = Zerberus), neck, mane, hop (Hase), coat (Fellfarbe 'b' = Wolle), face ('schaedel', 'eule'), collar, tusk, fang, hat ('nemes'), belly, big
+function ppQuad(b, s, f, mv, bl, A) {
+  const bz = 1 + s * (A.gz || .17), hz = 1 + s * .1, cx = PET_CX, gy = PET_GY, fl = [0, 1, 2, 1][f], sw = [0, 1, 0, -1][f];
+  const hop = A.hop && mv ? [0, -2, -3, -1][f] : 0, legH = (A.leg || 2.8) * bz, rx = (A.bw || 4.4) * bz, ry = (A.bh || 2.6) * bz;
+  const bx = cx - 1.5 * bz, by = gy - legH - ry * .7 + hop, lg = mv && !A.hop ? [1.2, 0, -1.2, 0][f] : 0, lw = Math.max(2, Math.round((A.lw || 1.3) * bz)), ck = A.coat || 'm';
+  const hr = (A.hd || 2.7) * hz, nk = A.neck ? 1 : 0, hx = bx + rx * .95 + nk * 1.6 * hz, hy = by - ry * (nk ? 1.05 : .85) - nk * 3 * hz, hk = A.foot === 'huf' ? 'b0' : 'm0';
+  const wing = far => {
+    const wx = bx + rx * .05, wy = by - ry * .7;
+    if (A.wing === 'feder') ppFWing(b, wx, wy, rx * 1.15 + s * 1.3, fl, 'w', far, far ? null : 'w2');
+    else if (A.wing === 'leder' || (A.wing === 'stummel' && s >= 3)) ppWing(b, wx, wy, A.wing === 'leder' ? [3.5, 5, 6.5, 8, 9.5, 11][s] : 2 + s, fl, 'w', 'm0', far);
+    else if (A.wing) ppFWing(b, wx, wy, 2.4 + s * .7, fl, 'w', far);
+  };
+  if (A.wing) wing(true);
+  // Schwanz
+  const r0 = [bx - rx * .85, by - ry * .1];
+  switch (A.tail) {
+    case 'duenn': { const tp = ppQB(r0, [r0[0] - rx * .8, r0[1] + ry], [r0[0] - rx * 1.3 - s * .6, r0[1] - ry * (.5 + s * .1) + sw], 10 + s), k = A.tk || 'b'; for (const [x, y] of tp) { b.set(x, y, k + '1'); if (s >= 3) b.set(x, y + 1, k + '0'); } break; }
+    case 'busch': { const tr = 2 * bz * (A.big || 1), tp = ppQB(r0, [r0[0] - rx * .9, r0[1] + ry * .4], [r0[0] - rx * (A.big ? .6 : 1.1) - s * .4, r0[1] - ry * (A.big ? 2.3 : 1.1) - s * .3 + sw], 9 + s); ppTube(b, tp, tr * .6, tr, 'm'); const tt = tp[tp.length - 1]; ppF(b, tt[0] + .5, tt[1] - tr * .4, tr * .55, tr * .55, 'm3'); break; }
+    case 'stummel': ppF(b, r0[0] + .5, r0[1] - .5, 1.3 * bz, 1.2 * bz, 'b2'); b.set(r0[0] + .5, r0[1] + .5, 'b1'); break;
+    case 'kurz': { const tp = ppQB(r0, [r0[0] - rx * .6, r0[1] + ry * .6], [r0[0] - rx * 1.3 - s * .5, gy - 1.5 - sw * .5], 8 + s); ppTube(b, tp, ry * .45, .7, 'm'); break; }
+    case 'zacke': { const tp = ppQB(r0, [r0[0] - rx * .9, r0[1] + ry * .9], [r0[0] - rx * 1.6 - s * .6, r0[1] - ry * .3 + sw], 10 + s); ppTube(b, tp, ry * .5, .8, 'm'); for (let i = 2; i < tp.length - 1; i += 3) ppPoly(b, [[tp[i][0] - 1, tp[i][1] - ry * .25], [tp[i][0], tp[i][1] - ry * .25 - 1.5 - s * .3], [tp[i][0] + 1, tp[i][1] - ry * .25]], 'a1'); const tt = tp[tp.length - 1]; ppPoly(b, [[tt[0] + 1, tt[1]], [tt[0] - 2 - s * .3, tt[1] - 2 - s * .3], [tt[0] - 2.5 - s * .3, tt[1] + 1], [tt[0] - .5, tt[1] + 1.5]], 'a1'); break; }
+    case 'schlange': { const tp = ppQB(r0, [r0[0] - rx * .9, r0[1] + ry * .8], [r0[0] - rx * 1.1 - s * .5, r0[1] - ry * (1.4 + s * .1) + sw], 9 + s); ppTube(b, tp, 1.1 * bz, .9 * bz, 'a'); const tt = tp[tp.length - 1]; ppE(b, tt[0] + .5, tt[1] - .5, 1.6 * bz, 1.2 * bz, 'a', 3); b.set(tt[0] + 1, tt[1] - 1, 'k'); if (f % 2) { b.set(tt[0] + 2.5 * bz, tt[1], 'r'); b.set(tt[0] + 2.5 * bz + 1, tt[1] - 1, 'r'); } break; }
+    case 'flamme': { const n = 2 + (s >> 1); for (let i = 0; i < n; i++) { const tp = ppQB(r0, [r0[0] - rx * .6, r0[1] + ry * .2 * i], [r0[0] - rx * (1 + s * .08) - i, r0[1] - ry * (.8 + i * .3) + [0, 1, 0, -1][(f + i) % 4]], 8); for (const [x, y] of tp) b.set(x, y, 'm1'); const e = tp[tp.length - 1]; ppFlame(b, e[0], e[1] + 1, 2 + s * .5 + ((f + i) % 2), 1 + s * .15, 'a1', 'a2'); } break; }
+    case 'pferd': { const n = 3 + (s >> 1); for (let i = 0; i < n; i++) { const tp = ppQB(r0, [r0[0] - rx * .6 - i * .4, r0[1] + ry * .1], [r0[0] - rx * (.8 + s * .06) - i * .6 + sw * .5, r0[1] + ry * (1.5 + i * .2)], 8), k = A.mane === 'flamme' ? (i % 2 ? 'a1' : 'a2') : ['a0', 'a1', 'a2'][i % 3]; for (const [x, y] of tp) { b.set(x, y, k); b.set(x - 1, y, k); } } break; }
+  }
+  // Beine (hinten), Körper, Muster, Rücken, Beine (vorn)
+  const legs = near => {
+    if (A.hop) { if (near) { ppE(b, bx - rx * .5, by + ry * .25, rx * .42, ry * .75, ck, ck === 'm' ? 4 : 3); b.rect(Math.round(bx - rx * .95), gy - 1 + hop, Math.round(rx * .8), 1, 'm0'); ppLeg(b, bx + rx * .5, by + ry * .4, gy + hop, Math.max(1, lw - 1), 'm1', 'm0'); } else ppLeg(b, bx + rx * .3, by + ry * .4, gy + hop, Math.max(1, lw - 1), 'm0', 'm0'); return; }
+    for (const [x, o] of near ? [[bx - rx * .7, lg], [bx + rx * .35, -lg]] : [[bx - rx * .5, -lg], [bx + rx * .55, lg]]) ppLeg(b, x + o, near ? by + ry * .3 : by, gy, lw, near ? 'm1' : 'm0', hk);
+  };
+  legs(false);
+  ppE(b, bx, by, rx, ry, ck, ck === 'm' ? 4 : 3);
+  if (A.belly) ppE(b, bx + rx * .25, by + ry * .4, rx * .62, ry * .45, A.belly, 3);
+  else if (ck === 'm' && A.pat !== 'federn') ppE(b, bx + rx * .55, by + ry * .25, rx * .38, ry * .55, 'b', 3);
+  if (A.pat === 'flecken' || A.pat === 'gift') { const k = A.pk || (A.pat === 'gift' ? 'a1' : 'b2'); for (let i = 0; i < 4 + s; i++) ppF(b, bx - rx * .7 + petHash(i, 1, 3) * rx * 1.3, by - ry * .6 + petHash(i, 2, 3) * ry * .9, .6 + s * .1, .6 + s * .1, k); }
+  if (A.pat === 'risse') for (let i = 0; i < 2 + (s >> 1); i++) { let x = bx - rx * .6 + i * rx * .55, y = by - ry * .5; for (let j = 0; j < 3; j++) { const nx = x + (j % 2 ? 1.5 : -.5), ny = y + 1.4 * bz; b.line(x, y, nx, ny, (f + i + j) % 3 ? 'a1' : 'a2'); x = nx; y = ny; } }
+  if (A.pat === 'federn') { ppE(b, bx + rx * .45, by + ry * .1, rx * .45, ry * .7, 'a', 3); for (let i = 0; i < 4 + s; i++) { const x = bx + rx * (.25 + (i % 3) * .18), y = by - ry * .3 + Math.floor(i / 3) * 2 + (i % 3) * .5; b.set(x, y, 'a0'); } }
+  switch (A.back) {
+    case 'rippen': for (let i = 0; i < 3 + (s >> 1); i++) { const x = bx - rx * .45 + i * rx * .28; b.line(x, by - ry * .6, x - .5, by + ry * .35, 'm0'); b.line(x + 1, by - ry * .6, x + .5, by + ry * .3, 'm3'); } for (let i = 0; i < 5 + s; i++) b.set(bx - rx * .8 + i * rx * 1.5 / (5 + s), by - ry * .97, 'm3'); break;
+    case 'maehne': { const n = 4 + s; for (let i = 0; i < n; i++) { const x = lerp(bx + rx * .15, bx + rx * 1.05, i / (n - 1)), y = by - ry * .7 - i * .45; ppPoly(b, [[x - 1.8, y + 2.5], [x - 1 - s * .25, y - 2 - s * .5], [x + 1.6, y + 2.5]], i % 2 ? 'a1' : 'a0'); } break; }
+    case 'wolle': for (let i = 0; i < 7; i++) { const a = Math.PI * (1.05 + i / 6 * .95); ppF(b, bx + Math.cos(a) * rx * .9, by + Math.sin(a) * ry * .9, 1.2 * bz, 1.2 * bz, i % 2 ? 'b2' : 'b1'); } break;
+    case 'zottel': for (let i = 0; i < 8 + s; i++) { const x = bx - rx * .9 + i * rx * 1.7 / (8 + s), y = by + ry * (.5 + (i % 2) * .15); b.line(x, y, x - .5, y + 1.5 + s * .3, i % 2 ? 'm1' : 'm0'); } for (let i = 0; i < 5; i++) b.set(bx - rx * .6 + i * rx * .3, by - ry * .8 + (i % 2), 'm3'); break;
+    case 'zacken': for (let i = 0; i < 3 + s; i++) { const x = lerp(bx - rx * .8, bx + rx * .8, i / (2 + s)), y = by - ry * Math.sqrt(Math.max(0, 1 - Math.pow((x - bx) / rx, 2))) + 1, h = 1.2 + s * .35; ppPoly(b, [[x - 1, y + 1], [x - .3, y - h], [x + 1.2, y + 1]], 'a1'); } break;
+    case 'flammen': for (let i = 0; i < 4 + s; i++) { const x = lerp(bx - rx * .7, bx + rx * .95, i / (3 + s)), y = by - ry * Math.sqrt(Math.max(0, 1 - Math.pow((x - bx) / (rx * 1.05), 2))) + 1.5; ppFlame(b, x, y, 1.8 + s * .4 + ((i + f) % 2) * 1.2, 1 + s * .12, i % 2 ? 'a1' : 'a0', 'a2'); } break;
+  }
+  legs(true);
+  // Hals, Mähne, Köpfe
+  if (nk) ppTube(b, ppQB([bx + rx * .6, by - ry * .2], [bx + rx * .95, by - ry * .9], [hx - .5, hy + hr * .4], 5), 1.9 * bz, 1.4 * hz, 'm');
+  if (A.mane) ppQB([hx - hr * .6, hy - hr * .5], [bx + rx * .85, by - ry * 1.15], [bx + rx * .3, by - ry * .65], 5 + s).forEach(([x, y], i) => { if (A.mane === 'flamme') ppFlame(b, x, y + 1, 2 + s * .4 + ((i + f) % 2), .9 + s * .1, i % 2 ? 'a1' : 'a0', 'a2'); else ppF(b, x - .5, y, .9 + s * .12, .9 + s * .12, ['a1', 'a2', 'a0'][i % 3]); });
+  const ears = (x, y) => {
+    switch (A.ear) {
+      case 'spitz': case 'zipfel': for (const [dx, k] of [[-.55, 'm1'], [.2, 'm2']]) { const x0 = x + hr * dx, eh = 1.8 * hz + s * .3 + (A.ear === 'zipfel' ? .6 : 0); ppPoly(b, [[x0 - 1, y - hr * .4], [x0 + 1.6 * hz, y - hr * .5], [x0 + .2, y - hr - eh]], k); b.set(x0 + .2, y - hr * .7, 'p'); if (A.ear === 'zipfel') { b.set(x0 + .2, y - hr - eh - 1, 'm3'); b.set(x0 - .6, y - hr - eh, 'm3'); } } break;
+      case 'rund': for (const [dx, k] of [[-.55, 'm1'], [.25, 'm2']]) { const ex = x + hr * dx, ey = y - hr * .8, er = (1.1 + s * .06) * hz; ppF(b, ex, ey, er, er, k); ppF(b, ex + .3, ey + .2, er * .5, er * .5, A.coat === 'b' ? 'p' : 'b1'); } break;
+      case 'lang': for (const [dx, k, tl] of [[-.6, 'm1', -1.2], [.05, 'm2', -.4]]) { const L = 3.2 + s * .8, ex = x + hr * dx, ey = y - hr * .6; ppPoly(b, [[ex - 1, ey], [ex + tl - .8, ey - L * .6], [ex + tl, ey - L], [ex + tl + 1.2, ey - L * .7], [ex + 1.2, ey]], k); b.line(ex + .1, ey - 1, ex + tl + .2, ey - L * .75, 'p'); } break;
+      case 'klein': for (const [dx, k] of [[-.5, 'm1'], [.3, 'm2']]) ppPoly(b, [[x + hr * dx - 1, y - hr * .6], [x + hr * dx + 1, y - hr * .7], [x + hr * dx - .5, y - hr - .8 - s * .2]], k); break;
+      case 'feder': ppPoly(b, [[x - hr * .85, y - hr * .35], [x - hr * .3, y - hr * .78], [x - hr * .9 - 1 - s * .4, y - hr * .8 - 2 - s * .6]], 'm1'); ppPoly(b, [[x + hr * .25, y - hr * .78], [x + hr * .85, y - hr * .4], [x + hr * .75 + s * .3, y - hr * .85 - 2 - s * .5]], 'm1'); break;
+    }
+  };
+  const head = (x, y) => {
+    if (A.ear !== 'haenge') ears(x, y);
+    ppE(b, x, y, hr, hr * .9, 'm', 4);
+    if (A.ear === 'haenge') for (const dx of [-.75, .05]) ppE(b, x + hr * dx, y + hr * .1, 1 * hz, 1.9 * hz, 'm', 3);
+    if (A.hat === 'nemes') { ppPoly(b, [[x - hr * .95, y - hr * .1], [x - hr * .35, y - hr * 1.05], [x + hr * .55, y - hr * .95], [x + hr * .45, y - hr * .25], [x - hr * .25, y + hr * .25], [x - hr * 1.3, y + hr * 1.7], [x - hr * 1.7, y + hr * 1.2]], 'a1'); for (let i = 0; i < 4; i++) b.line(x - hr * (.9 + i * .22), y - hr * (.1 - i * .45), x - hr * (.3 + i * .25), y - hr * (.85 - i * .45), 'b1'); }
+    switch (A.sn) {
+      case 1: ppE(b, x + hr * .72, y + hr * .3, hr * .55, hr * .42, A.snk || 'm', A.snk ? 3 : 4); b.set(x + hr * 1.22, y + hr * .12, 'k'); b.line(x + hr * .9, y + hr * .58, x + hr * 1.15, y + hr * .52, 'm0'); break;
+      case 2: ppPoly(b, [[x + hr * .3, y - hr * .2], [x + hr + 2.6 * hz, y + hr * .2], [x + hr + 2.4 * hz, y + hr * .75], [x + hr * .2, y + hr * .85]], 'm2'); b.line(x + hr * .5, y + hr * .55, x + hr + 2.2 * hz, y + hr * .55, 'm0'); b.set(x + hr + 2.6 * hz, y + hr * .15, 'k'); break;
+      case 'pferd': ppPoly(b, [[x, y - hr * .5], [x + hr + 2 * hz, y + hr * .2], [x + hr + 1.8 * hz, y + hr * .9], [x + hr * .1, y + hr * .9]], 'm2'); b.set(x + hr + 1.6 * hz, y + hr * .35, 'm0'); break;
+      case 'schnabel': ppPoly(b, [[x + hr * .55, y - hr * .05], [x + hr + 1.6 * hz, y + hr * .25], [x + hr + 1.2 * hz, y + hr * .85], [x + hr * .5, y + hr * .55]], 'b1'); b.set(x + hr + 1.2 * hz, y + hr * .65, 'b0'); break;
+      case 'ruessel': ppTube(b, ppQB([x + hr * .7, y + hr * .2], [x + hr * 1.6, y + hr * 1.2], [x + hr * 1.2 + sw * .5, y + hr * 2.3 + s * .2], 7), 1.4 * hz, .8 * hz, 'm'); break;
+    }
+    if (A.tusk) ppTube(b, ppQB([x + hr * .6, y + hr * .75], [x + hr * 1.8, y + hr * 1.5], [x + hr * 2.3 + s * .3, y + hr * .6], 6), .9 * hz, .5, 'b');
+    if (A.fang) { b.set(x + hr * .95, y + hr * .8, 'h'); b.set(x + hr * .95, y + hr * 1, 'h'); }
+    if (A.face === 'schaedel') { b.rect(x, y - hr * .45, 2, 2, 'k'); if (!bl) b.set(x + 1, y - hr * .45 + 1, 'e'); b.line(x + hr * .9, y + hr * .62, x + hr + 2 * hz, y + hr * .62, 'h'); for (let i = 0; i < 3; i++) b.set(x + hr * .9 + i * 1.6, y + hr * .78, 'k'); }
+    else if (A.face === 'eule') { ppE(b, x + hr * .3, y + hr * .02, hr * .82, hr * .66, 'a', 3); for (const ex of [x + hr * .02, x + hr * .62]) { if (bl) { b.line(ex - 1, y, ex + 1, y, 'm1'); continue; } ppF(b, ex, y - .2, 1.2 + s * .1, 1.2 + s * .1, 'e'); b.set(ex, y, 'k'); b.set(ex - .7, y - .9, 'h'); } }
+    else { ppEye(b, x + hr * .1, y - hr * .3, 2, s <= 1 ? 2 : 1, bl, A.eyeK || (s >= 3 ? 'e' : null)); if (s <= 1) b.set(x - hr * .35, y + hr * .35, 'p'); }
+    if (A.horn === 'geweih' && s >= 1) for (const [dx, k] of [[-.35, 'b0'], [.1, 'b1']]) { const x0 = x + hr * dx, y0 = y - hr * .75, L = 1.5 + s * 1.1; b.line(x0, y0, x0 - L * .35, y0 - L, k); if (s >= 2) b.line(x0 - L * .15, y0 - L * .45, x0 + L * .35, y0 - L * .75, k); if (s >= 3) b.line(x0 - L * .3, y0 - L * .85, x0 - L * .8, y0 - L * 1.05, k); if (s >= 4) b.line(x0 - L * .25, y0 - L * .7, x0 + .2, y0 - L * 1.15, k); }
+    if (A.horn === 'bock' && s >= 1) { const c0 = x - hr * .45, c1 = y - hr * .1, R0 = 1.2 + s * .4; for (let a = -1.2; a > -5.6; a -= .22) { const q = R0 * (1 - (-1.2 - a) / 8); ppF(b, c0 + Math.cos(a) * q, c1 + Math.sin(a) * q * .9, .6 + s * .08, .6 + s * .08, a > -3.2 ? 'b1' : 'b0'); } }
+    if (A.horn === 'teufel') for (const [dx, k] of [[-.55, 'b0'], [.1, 'b1']]) { const x0 = x + hr * dx, y0 = y - hr * .7, L = 1.2 + s * .55; ppPoly(b, [[x0 - .8, y0 + .5], [x0 - .6 - L * .5, y0 - L], [x0 + .9, y0 + .3]], k); }
+  };
+  // Zerberus: Köpfe dahinter und davor, jeweils mit dunklem Rand, damit man sie auseinanderhält
+  if (A.heads === 3) head(hx - hr * 1.25, hy - hr * 1.05);
+  if (A.heads === 3) ppF(b, hx, hy, hr + 1, hr * .9 + 1, 'o');
+  head(hx, hy);
+  if (A.heads === 3) { ppF(b, hx + hr * .65, hy + hr * 1.2, hr + 1, hr * .9 + 1, 'o'); head(hx + hr * .65, hy + hr * 1.2); }
+  if (A.collar) { const x0 = hx - hr * .95, y0 = hy + hr * .25; b.line(x0, y0, x0 + hr * .55, y0 + hr * .85, 'b1'); b.line(x0 + 1, y0, x0 + 1 + hr * .55, y0 + hr * .85, 'b0'); for (let i = 0; i < 3; i++) b.set(x0 - .5 + i * hr * .2, y0 - .5 + i * hr * .3, 'b2'); }
+  if (A.wing) wing(false);
+  if (s === 5) ppCrown(b, hx - hr * .2, hy - hr - 2.5 - (A.horn && A.horn !== 'teufel' ? 3 : 0), 5);
+}
+// Zweibeiner (klein, großer Kopf). A: bw/bh Körper, leg, hd Kopf, hx, body ('a' = Kleidung), belly, ear ('goblin', 'spitz', 'klein'), horn ('teufel', 'stier'), snout ('echse', 'schnabel'),
+// tusk, hold ('messer', 'keule', 'speer', 'dreizack'), wing ('leder', 'feder', 'stein'), tail ('echse', 'teufel'), halo, robe, hair, fur, face, arm ('flosse', 'gross'), crest, crouch, hoof
+function ppBiped(b, s, f, mv, bl, A) {
+  const bz = 1 + s * .17, hz = 1 + s * .11, cx = PET_CX, gy = PET_GY, fl = [0, 1, 2, 1][f], sw = [0, 1, 0, -1][f], step = mv ? [1, 0, -1, 0][f] : 0, bob = mv ? [0, -1, 0, -1][f] : 0;
+  const legH = (A.leg || 2) * bz * (A.crouch ? .55 : 1), rx = (A.bw || 2.7) * bz, ry = (A.bh || 2.9) * bz, bx = cx - .5, by = gy - legH - ry * .8 + bob;
+  const hr = (A.hd || 3.3) * hz, hx = bx + (A.hx != null ? A.hx : .6) * bz, hy = by - ry * .7 - hr * .72, lw = Math.max(2, Math.round(1.3 * bz)), bk = A.body || (A.robe ? 'a' : 'm');
+  const wing = far => { const wx = bx - rx * .55, wy = by - ry * .7; if (A.wing === 'feder') ppFWing(b, wx, wy, rx * 1.3 + s * 1.2, fl, 'w', far, far ? null : 'w2'); else if (A.wing) ppWing(b, wx, wy, [4.5, 5.5, 7, 8.5, 10, 11.5][s], fl, 'w', A.wing === 'stein' ? 'm3' : 'b0', far); };
+  // Schwanz
+  if (A.tail === 'echse') ppTube(b, ppQB([bx - rx * .5, by + ry * .4], [bx - rx * 1.6, gy - 1], [bx - rx * 2.3 - s * .5, gy - 2 + sw * .5], 8 + s), 1.3 * bz, .5, 'm');
+  if (A.tail === 'teufel') { const tp = ppQB([bx - rx * .6, by + ry * .4], [bx - rx * 1.8, by + ry * .6], [bx - rx * 1.9 - s * .3, by - ry * .8 + sw], 9); for (const [x, y] of tp) b.set(x, y, 'm1'); const t = tp[tp.length - 1]; ppPoly(b, [[t[0], t[1] - 2 - s * .2], [t[0] + 1.6, t[1]], [t[0], t[1] + 1], [t[0] - 1.6, t[1]]], 'm1'); }
+  if (A.wing) wing(true);
+  const arm = near => {
+    const sx = bx + (near ? rx * .45 : -rx * .3), sy = by - ry * .4, ex = sx + (near ? 1.4 : -1.2) * bz + (near ? -step : step) * .8, ey = by + ry * .4;
+    if (A.arm === 'flosse') ppPoly(b, [[sx - 1, sy], [sx + 1, sy], [ex + (near ? 1.6 : -1.6), ey + 1]], near ? 'm1' : 'm0');
+    else { ppTube(b, [[sx, sy], [lerp(sx, ex, .5), lerp(sy, ey, .5)], [ex, ey]], (A.arm === 'gross' ? 1.3 : .85) * bz, (A.arm === 'gross' ? 1.4 : .8) * bz, 'm'); ppF(b, ex, ey, (A.arm === 'gross' ? 1.4 : .9) * bz, (A.arm === 'gross' ? 1.4 : .9) * bz, near ? 'm2' : 'm1'); }
+    return [ex, ey];
+  };
+  arm(false);
+  // Beine
+  for (const [o, k] of [[-rx * .45 + step, 'm0'], [rx * .2 - step, 'm1']]) { const x = Math.round(bx + o); b.rect(x, Math.round(by + ry * .5), lw, Math.max(1, Math.round(gy - by - ry * .5)), k); b.rect(x, gy - 1, lw + 1, 1, A.hoof ? 'b0' : A.pinguin ? 'a1' : 'm0'); }
+  // Körper
+  ppE(b, bx, by, rx, ry, bk, bk === 'm' ? 4 : 3);
+  if (A.belly) ppE(b, bx + rx * .25, by + ry * .15, rx * .62, ry * .72, A.pinguin ? 'b' : 'a', 3);
+  if (A.robe) { for (let i = 0; i < 3; i++) b.line(bx - rx * .5 + i * rx * .45, by - ry * .2, bx - rx * .6 + i * rx * .5, by + ry * .85, 'a0'); b.line(bx - rx * .9, by + ry * .8, bx + rx * .9, by + ry * .8, 'b1'); }
+  if (A.body === 'a') { b.line(bx - rx * .8, by + ry * .1, bx + rx * .8, by + ry * .25, 'a0'); b.set(bx + rx * .2, by + ry * .17, 'y'); }
+  if (A.fur) for (let i = 0; i < 9; i++) { const a = i / 9 * 6.283; ppF(b, bx + Math.cos(a) * rx * .95, by + Math.sin(a) * ry * .95, .9 * bz, .9 * bz, i % 2 ? 'm3' : 'm2'); }
+  if (A.crest) for (let i = 0; i < 3 + (s >> 1); i++) { const x = bx - rx * .6 + i * 1.5, y = by - ry * .85 + i * .3; ppPoly(b, [[x - 1, y + 1], [x - .5, y - 1.5 - s * .3], [x + 1, y + 1]], 'a1'); }
+  // Stangenwaffen hinter dem Kopf (die Hand kommt später davor)
+  const px0 = bx + rx * .45 + 1.4 * bz - step * .8, py0 = by + ry * .4;
+  if (A.hold === 'speer' || A.hold === 'dreizack') { b.line(px0, py0 + 3, px0 + 1, py0 - 7 - s, 'a0'); if (A.hold === 'speer') ppPoly(b, [[px0 + .2, py0 - 7 - s], [px0 + 1.2, py0 - 10 - s * 1.2], [px0 + 2, py0 - 7 - s]], 'b2'); else { b.line(px0 - .5, py0 - 7 - s, px0 + 2.5, py0 - 7 - s, 'b1'); for (const dx of [-.5, 1, 2.5]) b.line(px0 + dx, py0 - 7 - s, px0 + dx, py0 - 9.5 - s, 'b1'); } }
+  // Kopf
+  if (A.ear === 'goblin') { ppPoly(b, [[hx + hr * .3, hy - hr * .3], [hx + hr * .8, hy - hr * .6], [hx + hr * 1.5 + s * .3, hy - hr * 1.15 - s * .2]], 'm1'); }
+  if (A.horn === 'stier') for (const [p0, p1, p2, k] of [[[hx - hr * .6, hy - hr * .5], [hx - hr * 1.6, hy - hr * .8], [hx - hr * 1.3, hy - hr * 1.7 - s * .3], 'b0'], [[hx + hr * .4, hy - hr * .65], [hx + hr * 1.3, hy - hr * 1.1], [hx + hr * .95, hy - hr * 1.9 - s * .3], 'b1']]) ppTube(b, ppQB(p0, p1, p2, 6), .9 * hz, .45, k === 'b0' ? 'b' : 'b');
+  ppE(b, hx, hy, hr, hr * .92, 'm', 4);
+  if (A.hair) ppPoly(b, [[hx - hr * .95, hy - hr * .05], [hx - hr * .7, hy - hr * .8], [hx, hy - hr * 1.02], [hx + hr * .75, hy - hr * .75], [hx + hr * .5, hy - hr * .4], [hx - hr * .2, hy - hr * .55], [hx - hr * .5, hy + hr * .2]], A.hair + '1');
+  if (A.face) ppE(b, hx + hr * .35, hy + hr * .12, hr * .58, hr * .62, A.face, 3);
+  if (A.ear === 'goblin') { ppPoly(b, [[hx - hr * .5, hy - hr * .35], [hx - hr * .8, hy + hr * .15], [hx - hr * 1.9 - s * .4, hy - hr * .65 - s * .2]], 'm2'); b.line(hx - hr * .8, hy - hr * .2, hx - hr * 1.5, hy - hr * .5, 'p'); }
+  if (A.ear === 'spitz') for (const [dx, k] of [[-.55, 'm1'], [.25, 'm2']]) ppPoly(b, [[hx + hr * dx - 1, hy - hr * .5], [hx + hr * dx + 1.5, hy - hr * .6], [hx + hr * dx, hy - hr - 1.5 - s * .3]], k);
+  if (A.ear === 'klein') for (const dx of [-.95, .95]) ppF(b, hx + hr * dx, hy - hr * .1, .9 * hz, 1.1 * hz, 'm2');
+  if (A.horn === 'teufel') for (const [dx, k] of [[-.45, 'b0'], [.25, 'b1']]) { const x0 = hx + hr * dx, y0 = hy - hr * .75, L = 1.3 + s * .5; ppPoly(b, [[x0 - .9, y0 + .6], [x0 - .5 - L * .4, y0 - L], [x0 + .9, y0 + .4]], k); }
+  let ex1 = hx + hr * .05, ex2 = hx + hr * .55, ey = hy - hr * .1;
+  if (A.snout === 'echse') { ppE(b, hx + hr * .8, hy + hr * .28, hr * .75, hr * .45, 'm', 4); b.set(hx + hr * 1.4, hy + hr * .15, 'k'); b.line(hx + hr * .4, hy + hr * .55, hx + hr * 1.35, hy + hr * .5, 'm0'); ex2 = null; ex1 = hx + hr * .1; ey = hy - hr * .3; }
+  if (A.snout === 'schnabel') { ppE(b, hx + hr * .32, hy + hr * .12, hr * .55, hr * .55, 'b', 3); ppPoly(b, [[hx + hr * .75, hy + hr * .05], [hx + hr + 1.6 + s * .25, hy + hr * .3], [hx + hr * .75, hy + hr * .5]], 'a1'); }
+  if (ex2 != null) { ppEye(b, ex1, ey, 2, s <= 1 ? 3 : 2, bl, 'e'); ppEye(b, ex2, ey, 2, s <= 1 ? 3 : 2, bl, 'e'); if (A.tusk || A.horn === 'stier') b.line(ex1 - .5, ey - 1, ex2 + 2, ey - .2, 'm0'); } else ppEye(b, ex1, ey, 2, 2, bl, 'e');
+  if (!A.snout) { b.line(hx + hr * .15, hy + hr * .5, hx + hr * .55, hy + hr * .55, 'k'); if (A.ear === 'goblin') b.set(hx + hr * .4, hy + hr * .62, 'h'); }
+  if (A.tusk) { b.set(hx + hr * .1, hy + hr * .42, 'b2'); b.set(hx + hr * .65, hy + hr * .45, 'b2'); if (s >= 3) { b.set(hx + hr * .1, hy + hr * .28, 'b2'); b.set(hx + hr * .65, hy + hr * .3, 'b2'); } }
+  if (s <= 1 && !A.snout) { b.set(hx - hr * .35, hy + hr * .3, 'p'); b.set(hx + hr * .95, hy + hr * .3, 'p'); }
+  if (A.halo) ppRing(b, hx, hy - hr - 2 - s * .3, hr * .75, 1.1, f % 2 ? 'y' : 'Y');
+  // Arm vorn und was er hält
+  const [hx2, hy2] = arm(true);
+  if (A.hold === 'messer') { b.line(hx2 + .5, hy2 - 1, hx2 + 1.5 + s * .3, hy2 - 3 - s * .5, 'b2'); b.line(hx2 + 1.2, hy2 - .8, hx2 + 2.2 + s * .3, hy2 - 2.6 - s * .5, 'b1'); b.set(hx2, hy2 + 1, 'a0'); }
+  if (A.hold === 'keule') ppTube(b, ppQB([hx2, hy2 + 1], [hx2 + 1.5, hy2 - 2], [hx2 + 2.5 + s * .3, hy2 - 4.5 - s * .6], 5), .6 * bz, 1.3 * bz, 'a');
+  if (A.wing) wing(false);
+  if (s === 5) ppCrown(b, hx, hy - hr - (A.halo ? 4.5 : 2) - (A.horn === 'stier' ? 2 : 0), 5);
+}
+// Schleime und Dinge: Schleim (auch mit Kristallen), Kürbis, Pilz, Bombe, Truhe
+function ppBlob(b, s, f, mv, bl, A) {
+  const bz = 1 + s * .2, cx = PET_CX, gy = PET_GY, sq = mv ? [0, .12, 0, -.1][f] : [0, .04, .08, .04][f], sw = [0, 1, 0, -1][f];
+  switch (A.k) {
+    case 'schleim': {
+      const rx = 4.4 * bz * (1 + sq), ry = 3.5 * bz * (1 - sq), bx = cx, by = gy - ry - .5;
+      ppPoly(b, [[bx - rx * .6, by - ry * .1], [bx + rx * .05, by - ry * 1.15 - s * .3], [bx + rx * .55, by - ry * .1]], 'm1');
+      ppE(b, bx, by + ry * .2, rx, ry * .85, 'm', 4); b.rect(Math.round(bx - rx * .9), gy - 1, Math.round(rx * 1.8), 1, 'm0');
+      ppF(b, bx - rx * .5, by - ry * .2, .9 + s * .1, 1.3 + s * .15, 'a2'); b.set(bx - rx * .25, by - ry * .55, 'a1');
+      if (A.crystal) for (const [dx, dy, h] of [[-.35, .25, 1], [.3, .45, .8], [-.05, -.7, 1.4], [.45, -.35, 1.1]].slice(0, 2 + (s >> 1))) { const x = bx + rx * dx, y = by + ry * dy, hh = (1.5 + s * .4) * h; ppPoly(b, [[x - 1.2, y + 1], [x - .3, y - hh], [x + .4, y - hh * .8], [x + 1.2, y + 1]], 'b1'); b.line(x - .3, y - hh + 1, x - .5, y, 'b2'); }
+      if (s >= 2) for (const dx of [-.85, .8]) { b.set(bx + rx * dx, by + ry * .7 + f % 2, 'm1'); b.set(bx + rx * dx, by + ry * .9 + f % 2, 'm2'); }
+      if (s >= 3 && !A.crystal) { ppF(b, bx - rx * .1, by + ry * .35, .9 + s * .2, .9 + s * .2, 'g'); b.set(bx - rx * .15, by + ry * .25, 'h'); }
+      const ey = by + ry * .05; ppEye(b, bx + rx * .05, ey, 2, s <= 1 ? 3 : 2, bl, null); ppEye(b, bx + rx * .5, ey, 2, s <= 1 ? 3 : 2, bl, null);
+      b.line(bx + rx * .2, ey + 3.5, bx + rx * .4, ey + 3.5, 'k'); if (s <= 1) { b.set(bx - rx * .15, ey + 2.5, 'p'); b.set(bx + rx * .75, ey + 2.5, 'p'); }
+      if (s === 5) ppCrown(b, bx + rx * .05, by - ry * 1.15 - s * .3 - 1, 5);
+      break;
+    }
+    case 'kuerbis': {
+      const rx = 4.6 * bz * (1 + sq * .5), ry = 3.5 * bz * (1 - sq * .5), bx = cx, by = gy - ry - .5;
+      for (const dx of [-.55, .55, 0]) ppE(b, bx + rx * dx, by, rx * (dx ? .5 : .55), ry * (dx ? .92 : 1), 'm', 4);
+      for (const dx of [-.28, .28]) b.line(bx + rx * dx, by - ry * .85, bx + rx * dx, by + ry * .85, 'm0');
+      b.rect(Math.round(bx - .5), Math.round(by - ry - 1.5 - s * .4), 2, Math.round(2.5 + s * .4), 'a0'); ppE(b, bx + 2 + s * .3, by - ry - .5, 1.6 + s * .2, .8 + s * .1, 'a', 3);
+      if (s >= 2) for (let i = 0; i < 6 + s; i++) b.set(bx - 1 - i * .7, by - ry - 1 - Math.sin(i * 1.2) * 1.5, 'a1');
+      // geschnitztes Gesicht: dunkle Löcher, innen glüht es
+      const gl = bl ? 'k' : (s >= 4 && f % 2 ? 'g' : 'b1'), ey = by - ry * .2;
+      for (const ex of [bx + rx * .02, bx + rx * .55]) { ppPoly(b, [[ex - 1.5, ey + 1.2], [ex, ey - 1.4 - s * .2], [ex + 1.5, ey + 1.2]], 'k'); if (!bl) b.set(ex, ey + .3, gl); }
+      for (let x = bx - rx * .1; x < bx + rx * .82; x += 1) { b.set(x, by + ry * .35, 'k'); b.set(x, by + ry * .35 + 1, 'k'); if (Math.round(x) % 2) b.set(x, by + ry * .35 + (Math.round(x) % 4 === 1 ? 1 : 0), gl); }
+      if (s === 5) ppCrown(b, bx, by - ry - 3, 5);
+      break;
+    }
+    case 'pilz': {
+      const hop = mv && f % 2 ? -1 : 0, sx = cx, sy = gy - 2.6 * bz + hop, crx = 5 * bz * (1 + sq * .4), cry = 2.8 * bz, cy = sy - 2.4 * bz - cry * .55;
+      b.rect(Math.round(sx - 2 * bz), gy - 1, 2, 1, 'b0'); b.rect(Math.round(sx + 1 * bz), gy - 1, 2, 1, 'b0');
+      ppE(b, sx, sy, 2.5 * bz, 2.6 * bz, 'b', 3);
+      ppE(b, sx, cy, crx, cry, 'm', 4); b.line(sx - crx * .85, cy + cry * .55, sx + crx * .85, cy + cry * .55, 'b0');
+      for (const [dx, dy, r] of [[-.5, -.2, 1], [.15, -.55, .8], [.55, -.05, .9], [-.1, .1, .6], [-.75, .25, .5]].slice(0, 3 + (s >> 1))) ppF(b, sx + crx * dx, cy + cry * dy, (.7 + s * .1) * r * bz, (.6 + s * .08) * r * bz, 'a2');
+      const ey = sy - .5; ppEye(b, sx - .2, ey, 1, 2, bl, null); ppEye(b, sx + 1.8, ey, 1, 2, bl, null); b.set(sx + .8, ey + 2.5, 'k'); if (s <= 2) { b.set(sx - 1.5, ey + 1.5, 'p'); b.set(sx + 3, ey + 1.5, 'p'); }
+      if (s >= 2) { ppE(b, sx - crx - 1.5, gy - 2.5, 1, 1.4, 'b', 3); ppE(b, sx - crx - 1.5, gy - 4.2, 1.8 + s * .2, 1.1, 'm', 4); }
+      if (s >= 4) for (let i = 0; i < 3; i++) b.set(sx + (i - 1) * crx * .6, cy - cry - 1 - ((f + i) % 2) * 2, 'g');
+      if (s === 5) ppCrown(b, sx, cy - cry - 1.5, 5);
+      break;
+    }
+    case 'bombe': {
+      const r = 3.8 * bz, bx = cx - .5, st = mv ? [1, 0, -1, 0][f] : 0, by = gy - 1.6 * bz - r;
+      for (const [dx, o] of [[-.45, st], [.35, -st]]) ppE(b, bx + r * dx + o, gy - 1, 1.3 * bz, .9 * bz, 'b', 3);
+      ppE(b, bx, by, r, r, 'm', 4); ppF(b, bx - r * .45, by - r * .45, r * .22, r * .3, 'm3');
+      const cpx = bx + r * .35, cpy = by - r * .9; ppE(b, cpx, cpy, 1.4 * bz, 1 * bz, 'b', 3);
+      const fu = ppQB([cpx + .5, cpy - 1], [cpx + 2 + s * .3, cpy - 2.5 - s * .3], [cpx + 3.5 + s * .5, cpy - 1.5 - s * .5 + sw * .5], 6); for (const [x, y] of fu) b.set(x, y, 'b0');
+      const sp = fu[fu.length - 1]; b.set(sp[0], sp[1] - 1, f % 2 ? 'Y' : 'a2'); b.set(sp[0] + 1, sp[1], 'a1'); b.set(sp[0] - 1, sp[1], 'a1'); b.set(sp[0], sp[1] + 1, 'a1'); if (f % 2) { b.set(sp[0] + 1, sp[1] - 2, 'a2'); b.set(sp[0] - 1, sp[1] - 2, 'a1'); }
+      const ey = by - r * .05;
+      for (const ex of [bx + r * .05, bx + r * .55]) { if (bl) { b.line(ex - 1, ey + 1, ex + 1, ey + 1, 'k'); continue; } ppF(b, ex, ey, 1.2, 1.3, 'h'); b.set(ex + .3, ey + .3, 'k'); }
+      b.line(bx - r * .2, ey - 2, bx + r * .25, ey - 1.2, 'k'); b.line(bx + r * .4, ey - 1.2, bx + r * .85, ey - 2, 'k');
+      b.line(bx + r * .2, ey + 2.5, bx + r * .55, ey + 2.5, 'k');
+      if (s >= 3) for (let i = 0; i < s; i++) b.set(bx - r * .7 + i * 1.5, by + r * .55, 'a0');
+      if (s === 5) ppCrown(b, bx - r * .3, by - r - 1.5, 5);
+      break;
+    }
+    case 'kiste': {
+      const w = 5 * bz, h = 3.4 * bz, bx = cx, top = gy - 1 - h, a = mv ? [.2, .55, .3, .65][f] : [.12, .3, .45, .25][f], th = h * .55, Hx = bx - w, Hy = top;
+      const R = (u, v) => [Hx + u * Math.cos(a) + v * Math.sin(a), Hy - u * Math.sin(a) + v * Math.cos(a)];
+      ppPoly(b, [R(0, 0), R(2 * w, 0), [bx + w, top]], 'k');
+      ppPoly(b, [[bx - w, top], [bx + w, top], [bx + w, gy - 1], [bx - w, gy - 1]], 'm1');
+      b.line(bx - w, top, bx + w, top, 'm2'); for (const dy of [.35, .7]) b.line(bx - w, top + h * dy, bx + w, top + h * dy, 'm0');
+      for (const dx of [-.6, .6]) { b.line(bx + w * dx, top, bx + w * dx, gy - 1, 'b1'); b.set(bx + w * dx, top + 1, 'b2'); }
+      for (let x = bx - w * .75; x < bx + w * .95; x += 2) { b.set(x, top - 1, 'h'); b.set(x + .5, top - 2, 'h'); }
+      ppPoly(b, [R(0, 0), R(2 * w, 0), R(2 * w, -th), R(0, -th)], 'm2'); { const [x0, y0] = R(0, -th), [x1, y1] = R(2 * w, -th); b.line(x0, y0, x1, y1, 'm3'); }
+      for (const u of [.4, 1.6]) { const [x0, y0] = R(u * w, 0), [x1, y1] = R(u * w, -th); b.line(x0, y0, x1, y1, 'b1'); }
+      for (let u = .3 * w; u < 1.9 * w; u += 2) { const [x, y] = R(u, 1); b.set(x, y, 'h'); }
+      if (!bl) { const [ex, ey2] = R(1.35 * w, 2.2); b.set(ex, ey2, 'e'); b.set(ex + 2.5, ey2 - .5, 'e'); }
+      if (f === 2 || (mv && f % 2)) { b.line(bx + w * .55, top, bx + w * 1.05, top + 2.5, 'a1'); b.set(bx + w * 1.1, top + 3, 'a2'); }
+      const lk = [bx + w * .05, top + h * .2]; b.rect(lk[0] - 1, lk[1], 2, 2, 'y'); b.set(lk[0], lk[1] + 1, 'k');
+      if (A.gold) { for (const dx of [-.6, .6]) b.set(bx + w * dx, top + h * .55, 'a1'); if (s >= 2) for (let i = 0; i < 2 + s; i++) b.set(bx - w * .8 + i * 1.7, gy - 1 - (i % 2), i % 2 ? 'Y' : 'y'); }
+      if (s >= 3) b.line(bx - w, gy - 1, bx + w, gy - 1, 'b2');
+      if (s === 5) ppCrown(b, bx, top - h - 2, 5);
+      break;
+    }
+  }
+}
+// kleine feste Zufallszahl für Glitzer (gleich für jedes Bild einer Stufe)
+function rnd0(i, f) { return petHash(i * 7 + 3, f + 11, 5); }
+// Schwebende: Geist, Eisgeist, Seelenflamme, Qualle, Auge, Krake, Nautilus
+function ppFloat(b, s, f, mv, bl, A) {
+  const bz = 1 + s * .18, cx = PET_CX, gy = PET_GY, bobY = [0, -1, -1, 0][f];
+  const tent = (x, y, L, ph, k, w) => { let px = x, py = y; for (let i = 1; i <= L; i++) { const nx = x + Math.sin(i * .7 + ph) * (1 + i * .12) * w, ny = y + i; b.line(px, py, nx, ny, i > L * .7 ? k + '0' : k + '1'); px = nx; py = ny; } };
+  switch (A.k) {
+    case 'geist': case 'eis': {
+      const r = 3.6 * bz, bx = cx, by = gy - 4 - r - 2 * bz + bobY, sk = r * 1.4;
+      if (A.k === 'eis') for (let i = 0; i < 2 + (s >> 1); i++) { const a = f * .4 + i * 2.4, x = bx + Math.cos(a) * (r + 3), y = by + Math.sin(a) * r * .5; ppPoly(b, [[x, y - 1.5], [x + 1, y], [x, y + 1.5], [x - 1, y]], 'b1'); }
+      const hem = []; const n = 4 + (s >> 1); for (let i = 0; i <= n * 2; i++) { const t = i / (n * 2), x = bx + r - t * r * 2; hem.push([x, by + sk + ((i + f) % 2 ? 1.5 : 0) - (A.k === 'eis' ? t * 2 : 0)]); }
+      ppPoly(b, [[bx - r, by], [bx + r, by], ...hem], 'm1');
+      ppE(b, bx, by, r, r, 'm', 4); ppPoly(b, [[bx - r * .55, by], [bx + r * .85, by], [bx + r * .7, by + sk * .8], [bx - r * .3, by + sk * .8]], 'm2');
+      const wv = [0, 1, 0, -1][f]; ppE(b, bx + r * .95, by + r * .45 + wv, 1.3 * bz, .9 * bz, 'm', 4); ppE(b, bx - r * .95, by + r * .5 - wv, 1.2 * bz, .8 * bz, 'm', 3);
+      const ey = by - r * .1;
+      if (bl) { b.line(bx - .5, ey + 1, bx + 1, ey + 1, 'k'); b.line(bx + r * .5, ey + 1, bx + r * .5 + 1.5, ey + 1, 'k'); } else { b.rect(bx - .5, ey - 1, 2, 3, 'k'); b.rect(bx + r * .5, ey - 1, 2, 3, 'k'); b.set(bx - .5, ey - 1, 'h'); b.set(bx + r * .5, ey - 1, 'h'); }
+      ppF(b, bx + r * .35, by + r * .45, .8, 1 + (f % 2) * .3, 'k'); if (s <= 2) { b.set(bx - r * .45, by + r * .2, 'p'); b.set(bx + r * .95, by + r * .2, 'p'); }
+      if (A.k === 'eis') for (let i = 0; i < 3 + (s >> 1); i++) { const x = bx - r * .7 + i * r * 1.4 / (2 + (s >> 1)), h = 1.5 + s * .45 + (i % 2) * 1.2; ppPoly(b, [[x - 1, by - r * .75], [x, by - r * .85 - h], [x + 1, by - r * .75]], i % 2 ? 'a2' : 'a1'); }
+      if (A.k === 'geist' && s >= 3) for (let i = 0; i < 3; i++) b.set(bx - r - 1 - i * 1.5, by + r * .3 + ((f + i) % 2) * 2, i % 2 ? 'a1' : 'a2');
+      if (s === 5) ppCrown(b, bx, by - r - (A.k === 'eis' ? 4.5 : 1.5), 5);
+      break;
+    }
+    case 'flamme': {
+      const r = 2.9 * bz, bx = cx, by = gy - 4 - r - 2 * bz + bobY, sw = [0, 1, 0, -1][f] * (1 + s * .2), tip = r * (1.6 + s * .15);
+      for (let i = 0; i < 3 + (s >> 1); i++) { const t = i / 3; ppF(b, bx - r * (1.1 + t * 1.3) - (mv ? 1 : 0), by + r * (.4 + t * .25) + ((i + f) % 2), r * (.42 - t * .1), r * (.42 - t * .1), i % 2 ? 'w0' : 'a0'); }
+      const fl = (k, sc) => { const pts = []; for (let i = 0; i <= 8; i++) { const a = i / 8 * Math.PI; pts.push([bx + Math.cos(a) * r * 1.15 * sc, by + Math.sin(a) * r * 1.05 * sc]); } pts.push([bx - r * .85 * sc, by - r * .8 * sc], [bx - r * .25 * sc + sw * .4, by - r * 1.35 * sc], [bx + sw, by - r * .4 - tip * sc], [bx + r * .35 * sc + sw * .5, by - r * 1.2 * sc], [bx + r * .9 * sc, by - r * .6 * sc]); ppPoly(b, pts, k); };
+      fl('w0', 1.12); fl('a1', 1); fl('a2', .7);
+      ppE(b, bx + .3, by + r * .2, r * .75, r * .72, 'm', 4);
+      const ey = by + r * .05; if (bl) { b.line(bx - 1, ey, bx, ey, 'k'); b.line(bx + 2, ey, bx + 3, ey, 'k'); } else { b.rect(bx - 1.2, ey - 1, 2, 2, 'k'); b.rect(bx + 1.8, ey - 1, 2, 2, 'k'); b.set(bx - .2, ey - 1, 'b2'); b.set(bx + 2.8, ey - 1, 'b2'); }
+      for (let i = 0; i < 3; i++) b.set(bx - .5 + i * 1.3, ey + 2.5, i % 2 ? 'k' : 'b2');
+      if (s >= 3) for (let k = 0; k < 2; k++) { const a = f * 1.57 + k * 3.14, x = bx + Math.cos(a) * (r + 3.5), y = by + Math.sin(a) * (r + 2) * .7; b.rect(x, y, 2, 2, 'b2'); b.set(x, y, 'h'); }
+      if (s === 5) ppCrown(b, bx, by - r * 1.7, 5);
+      break;
+    }
+    case 'qualle': {
+      const rx = 4.2 * bz, ry = 3 * bz, L = Math.round(5 + s * 1.6), bx = cx, by = gy - 2 - L - ry * .1 + bobY, nt = 4 + (s >> 1);
+      for (let i = 0; i < nt; i++) tent(bx - rx * .75 + i * rx * 1.5 / (nt - 1), by + ry * .2, L, f * 1.57 + i, i % 2 ? 'm' : 'a', .9);
+      if (f % 2) for (let i = 0; i < 1 + (s >> 1); i++) b.set(bx - rx * .6 + rnd0(i, f) * rx * 1.2, by + ry * .2 + L * .5 + rnd0(i + 9, f) * L * .5, 'b2');
+      const pts = []; for (let i = 0; i <= 10; i++) { const a = Math.PI + i / 10 * Math.PI; pts.push([bx + Math.cos(a) * rx, by + Math.sin(a) * ry * 1.25]); }
+      ppPoly(b, pts.concat([[bx + rx, by + ry * .25], [bx - rx, by + ry * .25]]), 'm1'); ppE(b, bx - rx * .1, by - ry * .3, rx * .75, ry * .8, 'm', 4);
+      for (let i = 0; i < 6; i++) ppF(b, bx - rx + i * rx * .4, by + ry * .3, .9, .7, i % 2 ? 'm2' : 'm1');
+      for (let i = 0; i < 2 + s; i++) b.set(bx - rx * .55 + rnd0(i, 1) * rx * 1.1, by - ry * .9 + rnd0(i, 2) * ry, (i + f) % 3 ? 'a2' : 'g');
+      ppEye(b, bx + rx * .05, by - ry * .1, 1, 2, bl, null); ppEye(b, bx + rx * .5, by - ry * .1, 1, 2, bl, null); b.set(bx + rx * .3, by + ry * .2, 'k');
+      if (s === 5) ppCrown(b, bx - rx * .1, by - ry * 1.3, 5);
+      break;
+    }
+    case 'auge': {
+      const r = 3.4 * bz, L = Math.round(3 + s), bx = cx, by = gy - 3 - L - r + bobY;
+      for (let i = 0; i < 3 + (s >> 1); i++) tent(bx - r * .7 + i * r * 1.4 / (2 + (s >> 1)), by + r * .8, L, f * 1.57 + i * 2, 'm', .8);
+      if (s >= 2) for (let i = 0; i < 10 + s * 2; i++) { const a = i / (10 + s * 2) * 6.283 + f * .2, x = bx + Math.cos(a) * r * 1.9, y = by + Math.sin(a) * r * .55; if (Math.sin(a) > -.2) continue; b.set(x, y, i % 3 ? 'g' : 'a2'); }
+      ppE(b, bx, by, r * 1.25, r * 1.15, 'm', 4);
+      if (s >= 2) for (let i = 0; i < 10 + s * 2; i++) { const a = i / (10 + s * 2) * 6.283 + f * .2, x = bx + Math.cos(a) * r * 1.9, y = by + Math.sin(a) * r * .55; if (Math.sin(a) <= -.2) continue; b.set(x, y, i % 3 ? 'g' : 'a2'); }
+      ppE(b, bx + r * .2, by - r * .05, r * .85, r * .8, 'b', 3);
+      if (bl) { ppE(b, bx + r * .2, by - r * .05, r * .85, r * .8, 'm', 4); b.line(bx - r * .5, by + r * .1, bx + r * .9, by + r * .1, 'k'); }
+      else { ppF(b, bx + r * .45, by, r * .45, r * .5, 'a1'); ppF(b, bx + r * .45, by, r * .3, r * .38, 'e'); b.line(bx + r * .45, by - r * .35, bx + r * .45, by + r * .35, 'k'); b.set(bx + r * .15, by - r * .35, 'h'); }
+      if (s >= 4) for (const [dx, dy] of [[-1.5, -.9], [1.6, -1.1]]) { const x = bx + r * dx, y = by + r * dy + [0, 1, 0, -1][(f + (dx > 0 ? 2 : 0)) % 4]; ppF(b, x, y, 1.2, 1.2, 'b2'); b.set(x + .3, y, 'k'); }
+      if (s === 5) ppCrown(b, bx, by - r * 1.15 - 1.5, 5);
+      break;
+    }
+    case 'krake': {
+      const r = 3.2 * bz, L = Math.round(4 + s * 1.2), bx = cx - .5, by = gy - 2 - L * .8 - r * 1.2 + bobY;
+      for (let i = 0; i < 6; i++) { const x0 = bx - r * .85 + i * r * 1.7 / 5, dir = i < 3 ? -1 : 1, cu = [0, 1, 0, -1][(f + i) % 4]; const tp = ppQB([x0, by + r * .9], [x0 + dir * 1.5, by + r * .9 + L * .7], [x0 + dir * (3 + i % 2) + cu * .5, by + r * .9 + L * .55 - 1.5], 7); ppTube(b, tp, 1 * bz, .5, i % 2 ? 'm' : 'm'); for (let j = 2; j < tp.length; j += 2) b.set(tp[j][0], tp[j][1] + .8, 'a1'); }
+      ppE(b, bx - r * .1, by - r * .25, r * .95, r * 1.3, 'm', 4);
+      for (let i = 0; i < 3 + s; i++) ppF(b, bx - r * .5 + rnd0(i, 3) * r, by - r * .9 + rnd0(i, 4) * r * 1.1, .6, .6, 'a1');
+      ppEye(b, bx - r * .1, by + r * .45, 2, 2, bl, 'e'); ppEye(b, bx + r * .55, by + r * .45, 2, 2, bl, 'e');
+      if (s <= 1) b.set(bx + r * .3, by + r * .85, 'p');
+      if (s === 5) ppCrown(b, bx - r * .1, by - r * 1.55 - 1, 5);
+      break;
+    }
+    case 'nautilus': {
+      const r = 3.6 * bz, bx = cx - 1, by = gy - 4 - r - 1.5 * bz + bobY;
+      for (let i = 0; i < 4 + (s >> 1); i++) tent(bx + r * .9 + i * .9, by + r * .45, Math.round(3 + s * .7), f * 1.57 + i, 'b', .7);
+      ppE(b, bx, by, r * 1.2, r * 1.15, 'm', 4);
+      for (let k = 0; k < 7; k++) { const a = k / 7 * 6.283 + .4; b.line(bx + Math.cos(a) * r * .35, by + Math.sin(a) * r * .35, bx + Math.cos(a) * r * 1.12, by + Math.sin(a) * r * 1.08, 'a1'); }
+      ppSpiral(b, bx, by, r * .85, 1.5, 'a0'); ppF(b, bx - .5, by - .5, .9, .9, 'm3');
+      ppE(b, bx + r * 1.05, by + r * .3, r * .5, r * .55, 'b', 3); ppPoly(b, [[bx + r * .7, by - r * .25], [bx + r * 1.5, by - r * .05], [bx + r * 1.3, by + r * .25]], 'a1');
+      if (bl) b.line(bx + r * 1.05, by + r * .2, bx + r * 1.3, by + r * .2, 'k'); else { b.rect(bx + r * 1.05, by + r * .1, 2, 2, 'k'); b.set(bx + r * 1.05, by + r * .1, 'h'); }
+      if (s === 5) ppCrown(b, bx, by - r * 1.15 - 1.5, 5);
+      break;
+    }
+  }
+}
+// Krabbe: Panzer, Stielaugen, Scheren, Beine nach beiden Seiten
+function ppKrabbe(b, s, f, mv, bl) {
+  const bz = 1 + s * .19, cx = PET_CX, gy = PET_GY, sc = mv ? [1, 0, -1, 0][f] : 0, rx = 4.6 * bz, ry = 2.5 * bz, bx = cx - 1 + sc * .6, by = gy - 2.2 * bz - ry * .8;
+  for (let i = 0; i < 3; i++) for (const sd of [-1, 1]) { const x0 = bx + sd * rx * (.3 + i * .22), y0 = by + ry * .3, kx = x0 + sd * (2 + i * .5) * bz, ky = y0 - 1 - (mv && (i + f) % 2 ? 1 : 0), k = sd < 0 ? 'm0' : 'm1'; b.line(x0, y0, kx, ky, k); b.line(kx, ky, kx + sd * bz, gy - 1, k); }
+  const claw = (x, y, sz, near) => { const op = [0, 1, 1.5, 1][f] * (near ? 1 : .6); ppTube(b, [[bx + rx * .55, by - ry * .1], [x - sz, y + sz * .5], [x, y]], .8 * bz, .9 * bz, 'm'); ppE(b, x, y, 1.9 * sz, 1.4 * sz, 'm', 4); ppPoly(b, [[x + sz * .8, y - .5], [x + 3 * sz, y - 1.4 * sz - op], [x + 2.2 * sz, y - .2]], near ? 'm2' : 'm1'); ppPoly(b, [[x + sz * .8, y + .5], [x + 2.7 * sz, y + .8 * sz + op * .5], [x + 2 * sz, y + .3]], near ? 'm1' : 'm0'); };
+  claw(bx + rx * .7, by - ry * .85, bz * .7, false);
+  ppE(b, bx, by, rx, ry, 'm', 4); b.line(bx - rx * .85, by + ry * .45, bx + rx * .85, by + ry * .45, 'm0');
+  for (let i = 0; i < 3 + s; i++) b.set(bx - rx * .6 + rnd0(i, 7) * rx * 1.2, by - ry * .6 + rnd0(i, 8) * ry * .7, 'm3');
+  if (s >= 2) for (let i = 0; i < 4; i++) ppPoly(b, [[bx - rx + i * .6, by - .5 + i], [bx - rx - 1.2 - s * .2, by - 1 + i * 1.2], [bx - rx + .4 + i * .6, by + .5 + i]], 'a1');
+  for (const dx of [.15, .5]) { const ex = bx + rx * dx, ey = by - ry * .85; b.line(ex, ey, ex, ey - 2 - s * .3, 'm1'); const ty = ey - 2.5 - s * .3; if (bl) b.line(ex - 1, ty, ex + 1, ty, 'k'); else { ppF(b, ex, ty, 1.1, 1.1, 'h'); b.set(ex + .4, ty, 'k'); } }
+  b.line(bx + rx * .2, by + ry * .1, bx + rx * .45, by + ry * .15, 'k'); if (s <= 1) b.set(bx + rx * .65, by, 'p');
+  claw(bx + rx * 1.05, by - ry * .1, bz * (1 + s * .05), true);
+  if (s === 5) ppCrown(b, bx, by - ry - 2.5, 5);
+}
+// Skorpion: Segmente, Scheren, Schwanz mit glühendem Stachel über dem Rücken
+function ppSkorpion(b, s, f, mv, bl) {
+  const bz = 1 + s * .18, cx = PET_CX, gy = PET_GY, sw = [0, 1, 0, -1][f], rx = 4.2 * bz, ry = 1.9 * bz, bx = cx - 1, by = gy - 1.6 * bz - ry;
+  for (let i = 0; i < 4; i++) { const x = bx - rx * .65 + i * rx * .45, k = (i + f) % 2 && mv ? 1 : 0; b.line(x, by + ry * .4, x - 1.5 + k, gy - 1, 'm0'); b.line(x + 1, by + ry * .4, x + 2.5 - k, gy - 1, 'm1'); }
+  const tp = ppQB([bx - rx * .85, by - ry * .2], [bx - rx * 2, by - ry * 3.2], [bx - rx * .3 + sw * .4, by - ry * (3.6 + s * .25)], 8);
+  tp.forEach(([x, y], i) => { const r = (1.5 - i * .08) * bz; ppE(b, x, y, r, r, 'm', 4); if (i % 2) b.set(x - r * .3, y + r * .5, 'a1'); });
+  const t = tp[tp.length - 1]; ppPoly(b, [[t[0] - 1, t[1] - 1], [t[0] + 2.5 + s * .3, t[1] + .5], [t[0] + 1.5, t[1] + 3 + s * .3], [t[0], t[1] + 1]], 'a1'); b.set(t[0] + 1.5, t[1] + 2.5 + s * .3, 'a2');
+  for (let i = 0; i < 4; i++) { const x = bx - rx * .6 + i * rx * .42; ppE(b, x, by, rx * .3, ry, 'm', 4); b.line(x - rx * .28, by - ry * .7, x - rx * .28, by + ry * .6, (f + i) % 3 ? 'a0' : 'a1'); }
+  const claw = (y, near) => { const op = [0, 1, 1.5, 1][f]; ppTube(b, [[bx + rx * .7, by], [bx + rx * 1.1, y], [bx + rx * 1.45, y - 1]], .7 * bz, .8 * bz, 'm'); const x = bx + rx * 1.5, sz = bz * .75; ppE(b, x, y - 1, 1.5 * sz, 1.1 * sz, 'm', 4); ppPoly(b, [[x + sz * .6, y - 1.5], [x + 2.6 * sz, y - 2.4 * sz - op], [x + 2 * sz, y - 1]], near ? 'm2' : 'm1'); ppPoly(b, [[x + sz * .6, y - .5], [x + 2.3 * sz, y + .5 * sz + op * .5], [x + 1.8 * sz, y - .8]], 'm1'); };
+  claw(by - ry * 1.1, false);
+  if (bl) b.line(bx + rx * .75, by - ry * .4, bx + rx * .9, by - ry * .4, 'k'); else { b.set(bx + rx * .75, by - ry * .45, 'e'); b.set(bx + rx * .9, by - ry * .55, 'e'); }
+  claw(by + ry * .2, true);
+  if (s === 5) ppCrown(b, bx, by - ry - 2, 5);
+}
+// Biene: gestreifter Pelzkörper, Stachel, Fühler, flatternde Flügel
+function ppBiene(b, s, f, mv, bl) {
+  const bz = 1 + s * .2, cx = PET_CX, gy = PET_GY, fl = [0, 1, 2, 1][f], bx = cx - 1, by = gy - 4 - 3 * bz - (fl === 2 ? 1 : 0), rx = 3.6 * bz, ry = 2.8 * bz;
+  const wing = far => { const wx = bx + .5 + (far ? -1.2 : 0), wy = by - ry - [2, 1, 0][fl] * bz + (far ? -.5 : 0); ppE(b, wx, wy, 2.1 * bz, (1.5 - fl * .25) * bz, 'w', 3); b.line(wx - 1.5 * bz, wy + .5, wx + 1.5 * bz, wy - .5, 'w0'); };
+  wing(true);
+  ppPoly(b, [[bx - rx * .9, by - 1], [bx - rx - 2 - s * .3, by + .5], [bx - rx * .9, by + 1.5]], 'a0');
+  ppE(b, bx - 1, by, rx, ry, 'm', 4);
+  for (const dx of [-.55, -.1, .35]) b.line(bx - 1 + rx * dx, by - ry * .9, bx - 1 + rx * dx - .5, by + ry * .9, 'a0');
+  ppF(b, bx - 1 - rx * .3, by - ry * .5, .9, .7, 'm3');
+  for (let i = 0; i < 3; i++) { const x = bx + rx * .2 + i * 1.2; b.line(x, by + ry * .7, x - 1 + (f + i) % 2, by + ry + 1.5, 'a0'); }
+  const hx = bx + rx * .85, hy = by - ry * .35, hr = 2 * (1 + s * .12);
+  for (const [dx, k] of [[-.3, 'a0'], [.2, 'a1']]) { const x0 = hx + hr * dx, y0 = hy - hr * .8, tx = x0 + 1.5 + s * .2, ty = y0 - 2.5 - s * .4 + [0, 1, 0, -1][f] * .5; b.line(x0, y0, tx, ty, k); b.set(tx, ty, 'a0'); b.set(tx + 1, ty, 'a0'); }
+  ppE(b, hx, hy, hr, hr * .95, 'a', 3);
+  if (bl) b.line(hx, hy - .5, hx + 1.5, hy - .5, 'm2'); else { ppF(b, hx + .5, hy - .5, 1.1, 1.1, 'h'); b.set(hx + 1, hy - .3, 'k'); }
+  b.set(hx + hr * .5, hy + hr * .5, 'm2'); if (s <= 1) b.set(hx - .5, hy + 1, 'p');
+  wing(false);
+  if (s >= 4) for (let i = 0; i < 2; i++) b.set(bx - rx - 2 - i * 2, by - 2 + ((f + i) % 2) * 3, 'y');
+  if (s === 5) ppCrown(b, hx, hy - hr - 2, 5);
+}
+// Libelle: langer Hinterleib, große Augen, vier lange Flügel
+function ppLibelle(b, s, f, mv, bl) {
+  const bz = 1 + s * .18, cx = PET_CX, gy = PET_GY, fl = [0, 1, 2, 1][f], bx = cx + 2, by = gy - 6 - 2 * bz - (fl === 2 ? 1 : 0), L = 9 + s * 2.2;
+  const wings = (far, k) => { for (const [dx, up] of [[0, 1], [-1.8 * bz, .85]]) { const wx = bx + dx + (far ? -.5 : 0), wy = by - 1, tl = (6 + s * 1.3) * up, a = [-2.55, -2.85, -3.15][fl] + (far ? .2 : 0) + (dx ? .3 : 0), tx = wx + Math.cos(a) * tl, ty = wy + Math.sin(a) * tl; ppPoly(b, [[wx, wy], [lerp(wx, tx, .5) + Math.cos(a + 1.57) * 1.4 * bz, lerp(wy, ty, .5) + Math.sin(a + 1.57) * 1.4 * bz], [tx, ty], [lerp(wx, tx, .5) - Math.cos(a + 1.57) * .8, lerp(wy, ty, .5) - Math.sin(a + 1.57) * .8]], k); if (!far) b.line(wx, wy, tx, ty, 'w0'); } };
+  wings(true, 'w1');
+  const ab = []; for (let i = 0; i <= 10; i++) { const t = i / 10; ab.push([bx - 1 - t * L, by + 1 + Math.sin(t * 2.4) * 1.5 + (t > .8 ? (t - .8) * 6 : 0)]); }
+  ppTube(b, ab, 1.1 * bz, .6, 'm'); for (let i = 2; i < ab.length; i += 2) b.set(ab[i][0], ab[i][1], 'a0');
+  ppE(b, bx + .5, by + .5, 1.8 * bz, 1.5 * bz, 'm', 4);
+  const hx = bx + 2.5 * bz, hy = by - .3; ppE(b, hx, hy, 1.6 * bz, 1.5 * bz, 'a', 3);
+  if (bl) b.line(hx, hy - .5, hx + 2, hy - .5, 'k'); else { ppF(b, hx + .6, hy - .4, 1.2 * bz, 1.2 * bz, 'e'); b.set(hx + .2, hy - 1, 'h'); }
+  for (let i = 0; i < 3; i++) b.line(bx + i * .8, by + 1.5 * bz, bx + i * .8 + .5, by + 2.5 * bz + 1, 'a0');
+  wings(false, 'w2');
+  if (s >= 4 && f % 2) b.set(bx - L - 2, by - 1, 'b2');
+  if (s === 5) ppCrown(b, hx, hy - 1.5 * bz - 2, 5);
+}
+// Würmer und Schlangen: Grubenwurm (Ringe, Rundmaul), Basilisk (Hahnenkopf), Seedrache (Wellen, Flossen)
+function ppWurm(b, s, f, mv, bl, A) {
+  const bz = 1 + s * .18, hz = 1 + s * .11, cx = PET_CX, gy = PET_GY, sw = [0, 1, 0, -1][f], ph = f * Math.PI / 2;
+  if (A.k === 'seedrache') {
+    const by = gy - 7 - 3 * bz + [0, -1, -1, 0][f], L = 18 + s * 2.6, pts = [];
+    for (let i = 0; i <= 26; i++) { const t = i / 26; pts.push([cx - L * .62 + t * L, by + Math.sin(t * 7.5 - ph) * 2.1 * bz * (.4 + t * .6)]); }
+    for (let i = 3; i < pts.length - 3; i += 2) { const [x, y] = pts[i], h = .8 + s * .3 + (i % 4 ? 0 : 1); ppPoly(b, [[x - 1, y - 1], [x - .5, y - 1.5 * bz - h], [x + 1.2, y - 1]], 'w1'); }
+    ppTube(b, pts, .6, 1.8 * bz, 'm', 'a1');
+    const [hx0, hy0] = pts[pts.length - 1], hr = 2.9 * hz, hx = hx0 + 1, hy = hy0 - hr * .45;
+    ppPoly(b, [[hx - 1, hy + hr * .5], [hx - 3 - s * .3, hy + hr * 1.6 + sw * .5], [hx + 1, hy + hr * .7]], 'w1');
+    for (const [dx, k] of [[-.7, 'b0'], [-.2, 'b1']]) b.line(hx + hr * dx, hy - hr * .6, hx + hr * dx - 2 - s * .4, hy - hr * 1.5 - s * .4, k);
+    ppE(b, hx, hy, hr, hr * .85, 'm', 4); ppE(b, hx + hr * .9, hy + hr * .3, hr * .7, hr * .45, 'm', 4); b.set(hx + hr * 1.5, hy + hr * .15, 'k');
+    b.line(hx + hr * .6, hy + hr * .6, hx + hr * 1.6, hy + hr * 1.4 + sw * .4, 'b1'); b.line(hx + hr * 1.6, hy + hr * 1.4 + sw * .4, hx + hr * 2.3, hy + hr * 1.1, 'b1');
+    ppEye(b, hx + hr * .05, hy - hr * .35, 2, s <= 1 ? 2 : 1, bl, 'e');
+    if (s === 5) ppCrown(b, hx, hy - hr - 2.5, 5);
+    return;
+  }
+  if (A.k === 'basilisk') {
+    const r = 1.6 * bz, L = 11 + s * 2.4, A2 = (mv ? 1.5 : .9) * bz, hr = 2.6 * hz, hx = cx + L * .38 + 2, hy = gy - 6 * bz - 2.5, pts = [];
+    for (let i = 0; i <= 22; i++) { const t = i / 22; pts.push([cx - L * .62 + t * L * .95, gy - r - Math.sin(t * 7.5 + ph) * A2 * (.4 + t * .6) * (1 - t * .5)]); }
+    const nb = pts[pts.length - 1]; for (const q of ppQB(nb, [nb[0] + 2.5 * bz, nb[1] - .5], [hx - hr * .7, hy + hr * .5], 7).slice(1)) pts.push(q);
+    ppTube(b, pts, .7, r * 1.05, 'm', 'b1');
+    const wp = pts[Math.floor(pts.length * .6)]; ppFWing(b, wp[0] - 1, wp[1] - r * .6, 4 + s * 1.1, [0, 1, 2, 1][f], 'w', true); ppFWing(b, wp[0], wp[1] - r * .5, 4 + s * 1.1, [0, 1, 2, 1][f], 'w', false);
+    for (let i = 0; i < 3 + (s >> 1); i++) ppF(b, hx - hr * .6 + i * 1.3, hy - hr - .3 - (i % 2) * .6 - s * .2, .9 + s * .1, 1 + s * .15, 'a1');
+    ppE(b, hx, hy, hr, hr * .95, 'm', 4);
+    ppPoly(b, [[hx + hr * .7, hy - .8], [hx + hr + 1.8 + s * .2, hy + .3], [hx + hr * .7, hy + 1.2]], 'b1'); ppF(b, hx + hr * .6, hy + hr * .95, .8 + s * .12, 1.2 + s * .2, 'a1');
+    ppEye(b, hx + hr * .1, hy - hr * .35, 2, s <= 1 ? 2 : 1, bl, 'e'); if (!bl && s >= 2) b.line(hx - .5, hy - hr * .65, hx + 2, hy - hr * .5, 'm0');
+    if (s === 5) ppCrown(b, hx, hy - hr - 4, 5);
+    return;
+  }
+  // Grubenwurm: Ringe aus dem Boden, vorn das Rundmaul
+  const n = 6 + s, pts = [];
+  for (let i = 0; i < n; i++) { const t = i / (n - 1); pts.push([cx - 7 * bz + t * 12 * bz, gy - 1.2 * bz - Math.sin(t * Math.PI * .85) * 4 * bz - t * 1.5 * bz + (mv ? Math.sin(t * 6 + ph) * .9 : Math.sin(t * 3 + ph) * .3), (1.4 + t * .55) * bz]); }
+  ppE(b, pts[0][0] - 1, gy - .5, 2.8 * bz, 1.3 * bz, 'w', 3);
+  for (const [x, y, r] of pts) { ppE(b, x, y, r, r * .92, 'm', 4); b.line(x - r * .75, y - r * .6, x - r * .75, y + r * .6, 'm0'); }
+  const [hx, hy, hr] = pts[n - 1];
+  ppF(b, hx + hr * .55, hy + hr * .05, hr * .55, hr * .62, 'k');
+  for (let k = 0; k < 6; k++) { const a = k / 6 * 6.283 + f * .3; b.set(hx + hr * .55 + Math.cos(a) * hr * .5, hy + hr * .05 + Math.sin(a) * hr * .55, 'b2'); }
+  if (s <= 2 && !bl) { b.set(hx - hr * .2, hy - hr * .6, 'k'); b.set(hx + hr * .2, hy - hr * .75, 'k'); }
+  if (s >= 3) for (let i = 1; i < n - 1; i += 2) b.set(pts[i][0], pts[i][1] - pts[i][2] * .8, 'a1');
+  if (s === 5) ppCrown(b, hx, hy - hr - 2, 5);
+}
+// Golemchen: Steinbrocken mit Moos, Fäusten und leuchtender Rune
+function ppGolem(b, s, f, mv, bl) {
+  const bz = 1 + s * .17, cx = PET_CX, gy = PET_GY, st = mv ? [0, -1, 0, -1][f] : 0, bx = cx - 1, by = gy - 2.4 * bz - 3.6 * bz + st, w = 3.8 * bz, h = 3.6 * bz;
+  for (const [o, d] of [[-.5, st], [.3, -st]]) b.rect(Math.round(bx + w * o - 1), Math.round(by + h * .6), Math.round(2.2 * bz), Math.round(gy - by - h * .6) - d, 'm0');
+  ppE(b, bx - w * .95, by + h * .45, 1.8 * bz, 2 * bz, 'm', 3);
+  ppPoly(b, [[bx - w, by - h * .5], [bx - w * .6, by - h], [bx + w * .7, by - h * .95], [bx + w, by - h * .3], [bx + w * .9, by + h * .8], [bx - w * .85, by + h * .85]], 'm1');
+  ppPoly(b, [[bx - w * .85, by - h * .45], [bx - w * .5, by - h * .85], [bx + w * .3, by - h * .8], [bx, by - h * .1], [bx - w * .7, by + h * .1]], 'm2');
+  b.line(bx - w * .5, by - h * .85, bx + w * .3, by - h * .8, 'm3'); b.line(bx + w * .2, by + h * .1, bx + w * .55, by + h * .5, 'm0'); b.line(bx - w * .4, by + h * .3, bx - w * .1, by + h * .6, 'm0');
+  const rk = bl ? 'b0' : (f % 2 ? 'b2' : 'b1'); b.line(bx - .5, by - h * .1, bx - .5, by + h * .45, rk); b.line(bx - 1.5, by + h * .05, bx + .5, by + h * .05, rk); b.line(bx - 1.5, by + h * .35, bx + .5, by + h * .25, rk);
+  const hx = bx + w * .55, hy = by - h * 1.05, hr = 2.2 * (1 + s * .1);
+  ppPoly(b, [[hx - hr, hy + hr * .6], [hx - hr * .8, hy - hr * .7], [hx + hr * .9, hy - hr * .8], [hx + hr * 1.1, hy + hr * .5]], 'm2'); b.line(hx - hr * .8, hy - hr * .7, hx + hr * .9, hy - hr * .8, 'm3');
+  b.line(hx - hr * .5, hy - hr * .15, hx + hr * .9, hy - hr * .3, 'm0');
+  for (const ex of [hx - hr * .2, hx + hr * .55]) { b.rect(ex, hy, 2, 2, 'k'); if (!bl) b.set(ex + 1, hy, 'e'); }
+  for (let i = 0; i < 4 + s; i++) { const x = bx - w * .7 + i * w * 1.5 / (3 + s); b.set(x, by - h * (.85 + (i % 2) * .08) - 1, i % 2 ? 'a1' : 'a2'); }
+  for (let i = 0; i < 3; i++) b.set(hx - hr * .6 + i * hr * .6, hy - hr * .9, i % 2 ? 'a2' : 'a1');
+  ppE(b, bx + w * .95, by + h * .5 + st, 1.9 * bz, 2.1 * bz, 'm', 4);
+  if (s >= 3) for (let k = 0; k < 2; k++) { const a = f * 1.57 + k * 3.14, x = bx + Math.cos(a) * (w + 4), y = by - h * .4 + Math.sin(a) * 2; b.rect(x, y, 2, 2, 'm2'); b.set(x, y, 'm3'); }
+  if (s === 5) ppCrown(b, hx, hy - hr - 1.5, 5);
+}
+// Zuordnung Bauplan → Zeichenfunktion; Hybride aus alten Bildern bekommen eigene Zusätze
+const PET_BP = { quad: ppQuad, biped: ppBiped, blob: ppBlob, float: ppFloat, wurm: ppWurm, krabbe: ppKrabbe, skorpion: ppSkorpion, biene: ppBiene, libelle: ppLibelle, golem: ppGolem };
+Object.assign(PET_ART, {
+  // Sonnendrache: Strahlenkranz hinter dem Kopf, dann der Drache in Sonnenfarben
+  sonne(b, s, f, mv, bl) {
+    const bz = 1 + s * .2, hz = 1 + s * .11, lift = [0, 1, 2, 1][f] === 2 ? -1 : 0, rx = 4.2 * bz, ry = 3.3 * bz, bx = PET_CX - 1.2 * bz, by = PET_GY - 2.2 * bz - ry + lift, hr = 4.2 * hz, hx = bx + rx * .95, hy = by - ry * .55 - hr * .5, n = 8 + s;
+    for (let k = 0; k < n; k++) { const a = k / n * 6.283 + f * .08, L = hr * 1.5 + s * .7 + (k % 2) * 1.6; ppPoly(b, [[hx + Math.cos(a - .14) * hr * .9, hy + Math.sin(a - .14) * hr * .9], [hx + Math.cos(a) * L, hy + Math.sin(a) * L], [hx + Math.cos(a + .14) * hr * .9, hy + Math.sin(a + .14) * hr * .9]], k % 2 ? 'g' : 'a2'); }
+    PET_ART.drache(b, s, f, mv, bl);
+  },
+  // Neunschwanz: zusätzliche Schweife mit Fuchsfeuer (bei Mythisch neun), dann der Fuchs
+  neun(b, s, f, mv, bl) {
+    const bz = 1 + s * .17, sw = [0, 1, 0, -1][f], rx = 4.4 * bz, ry = 2.5 * bz, bx = PET_CX - 1.5 * bz, by = PET_GY - 2.8 * bz - ry * .7, n = [1, 2, 3, 5, 7, 8][s], tr = 2.1 * bz;
+    for (let i = 0; i < n; i++) { const q = n === 1 ? .5 : i / (n - 1), tp = ppQB([bx - rx * .8, by - ry * .1], [bx - rx * (1.1 + q * .5), by - ry * (1.4 + q * .4)], [bx - rx * (.8 + q * 1.3) - s * .4, by - ry * (2.6 - q * 1.6) + sw * (i % 2 ? 1 : -1)], 8 + s); ppTube(b, tp, tr * .5, tr * .85, 'm'); const tt = tp[tp.length - 1]; ppF(b, tt[0], tt[1], tr * .7, tr * .7, 'b2'); ppFlame(b, tt[0], tt[1] - tr * .5, 2 + s * .5 + (f + i) % 2, 1 + s * .15, 'a1', 'a2'); }
+    PET_ART.fuchs(b, s, f, mv, bl);
+  },
+  // Donnerkröte: Blitzhörner und Zickzack auf dem Rücken
+  donner(b, s, f, mv, bl) {
+    PET_ART.kroete(b, s, f, mv, bl);
+    const bz = 1 + s * .2, rx = 4.8 * bz, ry = 3 * bz, bx = PET_CX - .5, by = PET_GY - .6 * bz - ry, hop = mv && f % 2 ? -1 : 0;
+    for (const dx of [.25, .7]) { const x = bx + rx * dx, y = by - ry * .95 + hop - 1.5 * bz, L = 2 + s * .6; b.line(x, y, x - 1, y - L * .5, 'a1'); b.line(x - 1, y - L * .5, x + 1, y - L * .8, 'a1'); b.line(x + 1, y - L * .8, x, y - L * 1.3, 'a2'); }
+    for (let i = 0; i < 4 + s; i++) b.set(bx - rx * .6 + i * 1.6, by - ry * .35 + (i % 2 ? 1 : -1) + hop, 'a1');
+    if (s >= 3 && f % 2) for (let i = 0; i < 2; i++) b.set(bx - rx - 1 + i * rx * 2.1, by - ry - 2 - i, 'a2');
+  }
+});
+for (const sp in PET_SP) { const S = PET_SP[sp]; if (!S.art) continue; const [k, A] = S.art; PET_ART[sp] = PET_BP[k] ? ((b, s, f, mv, bl) => PET_BP[k](b, s, f, mv, bl, A)) : PET_ART[k]; }
 /* ---------- Eier: jede Seltenheit sieht anders aus (Größe, Schale, Muster), Risse und Licht mit dem Fortschritt (cr 0–3) ---------- */
 const EGG_PAL = [
   { m: ['#3e362e', '#625848', '#8a7e6a', '#aca28c'], a: ['#2e261e', '#4e4234', '#9a9078'], g: '#fff0c0' },
@@ -838,28 +1521,30 @@ function petPaint(g, b, pal, ox, oy, x0, y0, w, h, fi, shiny) {
   if (shiny) for (let i = 0; i < 3; i++) { const x = Math.floor(R() * w), y = Math.floor(R() * h), o = (y * w + x) * 4; if (p[o + 3]) { p[o] = p[o + 1] = p[o + 2] = 255; } }
   g.putImageData(d, ox, oy);
 }
-function petStrip(sp, s, col, shiny) {
-  col = shiny && col === 6 ? 6 : clamp(col | 0, 0, 5); const key = sp + s + ':' + col; if (PET_STRIP[key]) return PET_STRIP[key];
-  const fr = [];
-  for (let i = 0; i < 9; i++) { const b = PB(64, 64); PET_ART[sp](b, s, i % 4, i >= 4 && i < 8, i === 8); if (s === 5) pbOutline(b, 'y'); pbOutline(b, 'o'); fr.push(b); }
+// one = nur das erste Bild (Sammlung, Symbole: viel schneller)
+function petStrip(sp, s, col, shiny, mu, one) {
+  col = shiny && col === 6 ? 6 : clamp(col | 0, 0, 5); mu = PET_MUT[mu] ? mu : ''; const key = sp + s + ':' + col + mu + (one ? '1' : ''); if (PET_STRIP[key]) return PET_STRIP[key];
+  const fr = [], n = one ? 1 : 9;
+  for (let i = 0; i < n; i++) { const b = PB(64, 64); PET_ART[sp](b, s, i % 4, i >= 4 && i < 8, i === 8); if (mu) petMutPB(b, mu, s, i % 4); if (s === 5) pbOutline(b, 'y'); pbOutline(b, 'o'); fr.push(b); }
   let x0 = 64, y0 = 64, x1 = 0, y1 = 0;
   for (const b of fr) for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) if (b.a[y * 64 + x]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
-  const W = x1 - x0 + 1, H = y1 - y0 + 1, pal = petPal(sp, col), shine = col === 6;
-  const c = mk(W * 9, H); const g = c.getContext('2d');
+  const W = x1 - x0 + 1, H = y1 - y0 + 1, pal = petPal(sp, col, mu), shine = col === 6;
+  const c = mk(W * n, H); const g = c.getContext('2d');
   fr.forEach((b, i) => petPaint(g, b, pal, i * W, 0, x0, y0, W, H, i, shine));
   return PET_STRIP[key] = { c, W, H, ax: PET_CX - x0, ay: PET_GY - y0, sil: null };
 }
-function petStripOf(p) { return petStrip(p.sp, petStage(p.lv), p.col, p.shiny); }
+function petStripOf(p) { return petStrip(p.sp, petStage(p.lv), p.col, p.shiny, p.mu); }
 // Bild-URLs für Menüs: einzelnes Bild bzw. 4 Bilder Ruhe-Animation
-function petImgURL(sp, s, col, shiny, anim) {
-  const S = petStrip(sp, s, col, shiny), key = sp + s + ':' + (shiny && col === 6 ? 6 : col) + (anim ? 'a' : 'i'); if (PET_URLS[key]) return PET_URLS[key];
+function petImgURL(sp, s, col, shiny, anim, mu) {
+  mu = PET_MUT[mu] ? mu : ''; const key = sp + s + ':' + (shiny && col === 6 ? 6 : col) + mu + (anim ? 'a' : 'i'); if (PET_URLS[key]) return PET_URLS[key];
+  const S = petStrip(sp, s, col, shiny, mu, !anim);
   const c = mk(S.W * (anim ? 4 : 1), S.H, g => g.drawImage(S.c, 0, 0, S.W * (anim ? 4 : 1), S.H, 0, 0, S.W * (anim ? 4 : 1), S.H));
   return PET_URLS[key] = { url: c.toDataURL(), W: S.W, H: S.H };
 }
-function petURL(p, anim) { return petImgURL(p.sp, petStage(p.lv), p.col, p.shiny, anim); }
+function petURL(p, anim) { return petImgURL(p.sp, petStage(p.lv), p.col, p.shiny, anim, p.mu); }
 function eggURL(t, cr, el) { const key = 'egg' + t + ':' + cr + ':' + (el || ''); return PET_URLS[key] || (PET_URLS[key] = eggCanvas(t, cr, el).toDataURL()); }
 // Schwarze Umrisse für noch nicht entdeckte Arten (Sammlung)
-function petSilURL(sp) { const key = 'sil' + sp; if (PET_URLS[key]) return PET_URLS[key]; const S = petStrip(sp, 0, 0, false); return PET_URLS[key] = mk(S.W, S.H, g => g.drawImage(silhouette(S.c, '#463c56'), 0, 0, S.W, S.H, 0, 0, S.W, S.H)).toDataURL(); }
+function petSilURL(sp) { const key = 'sil' + sp; if (PET_URLS[key]) return PET_URLS[key]; const S = petStrip(sp, 0, 0, false, '', true); return PET_URLS[key] = mk(S.W, S.H, g => g.drawImage(silhouette(S.c, '#463c56'), 0, 0, S.W, S.H, 0, 0, S.W, S.H)).toDataURL(); }
 
 /* ---------- Spielstand: Begleiter und Eier prüfen (alte und getauschte Daten) ---------- */
 function petCols(p) { const r = []; for (let i = 0; i <= petStage(p.lv); i++) r.push((p.c0 + i) % 6); if (p.shiny) r.push(6); return r; }
@@ -872,7 +1557,23 @@ function petFix(o, newId) {
   if (o.nw) p.nw = 1;
   p.bag = (Array.isArray(o.bag) ? o.bag : []).map(petLootFix).filter(Boolean).slice(0, 12);
   const h = n(o.hurt); p.hurt = h > Date.now() ? Math.min(h, Date.now() + 48 * 3600e3) : 0; // Uhr verstellt: höchstens 2 Tage
+  // Kreaturen 2.0: Gene (alte Begleiter: fest aus der Kennung), Mutation, Talente, Ausrüstung, Zauber, Zucht
+  p.gn = petGenesFix(o.gn) || petGenesOf(p.id);
+  if (PET_MUT[o.mu]) p.mu = o.mu;
+  p.tl = petTlFix(o.tl, p.lv);
+  p.eq = {}; if (o.eq && typeof o.eq === 'object') for (const s of PET_SLOTS) { const it = petGearFix(o.eq[s], s); if (it) p.eq[s] = it; }
+  p.mg = (Array.isArray(o.mg) ? o.mg : []).slice(0, 3).map(k => PET_SPELL[k] ? k : null); while (p.mg.length < 3) p.mg.push(null);
+  const zt = n(o.zt); if (zt > 0) p.zt = Math.min(zt, Date.now());
+  if (Array.isArray(o.pa) && o.pa.length === 2 && o.pa.every(sp => PET_SP[sp])) p.pa = o.pa.slice();
+  const ge = Math.floor(n(o.ge)); if (ge > 0) p.ge = Math.min(ge, 999);
   return p;
+}
+function petGenesFix(a) { return Array.isArray(a) && a.length === 5 && a.every(v => isFinite(+v)) ? a.map(v => clamp(Math.round(+v), 0, 100)) : null; }
+// Talentränge prüfen: Ziffern, Höchstrang je Knoten, nicht mehr Punkte als das Level gibt (sonst von hinten kürzen)
+function petTlFix(s, lv) {
+  const r = []; s = typeof s === 'string' ? s : ''; for (let i = 0; i < PET_TALN; i++) r.push(clamp(+s[i] || 0, 0, PET_TAL[Math.floor(i / 5)].nodes[i % 5].max));
+  let over = r.reduce((a, b) => a + b, 0) - petTalPts(lv); for (let i = PET_TALN - 1; i >= 0 && over > 0; i--) { const d = Math.min(r[i], over); r[i] -= d; over -= d; }
+  return r.join('');
 }
 // Beute-Eintrag (gemeinsames Format aller Systeme) prüfen
 function petLootFix(e) {
@@ -883,8 +1584,10 @@ function petLootFix(e) {
     case 'mat': return MATS[e.k] ? { t: 'mat', k: e.k, n: n(e.n) } : null;
     case 'gem': { const a = String(e.k).split(':'); return GEMS[a[0]] && +a[1] >= 0 && +a[1] <= 4 ? { t: 'gem', k: a[0] + ':' + (+a[1]), n: n(e.n) } : null; }
     case 'part': return typeof e.k === 'string' && e.k.length < 40 && /^[a-z]+(:[a-z]+)?:\d+$/.test(e.k) ? { t: 'part', k: e.k, n: n(e.n) } : null;
-    case 'egg': return e.d && PET_SP[e.d.sp] ? { t: 'egg', d: { egg: 1, sp: e.d.sp, tier: PET_SP[e.d.sp].t } } : null;
+    case 'egg': { if (!e.d || !PET_SP[e.d.sp]) return null; const d = { egg: 1, sp: e.d.sp, tier: PET_SP[e.d.sp].t }, gn = petGenesFix(e.d.gn); if (gn) d.gn = gn; if (PET_MUT[e.d.mu]) d.mu = e.d.mu; return { t: 'egg', d }; }
     case 'gold': return { t: 'gold', n: n(e.n) };
+    // Mods aus js/mods.js (Teil M): Schlüssel wie 'glyphe_kette:3' – gültig laut modValid (ohne mods.js: nur das Format)
+    case 'mod': { if (typeof e.k !== 'string' || !/^[a-z0-9_][a-z0-9_:.-]{0,39}$/i.test(e.k) || /^(__proto__|constructor|prototype)$/.test(e.k)) return null; if (typeof modValid === 'function') { try { if (!modValid(e.k)) return null; } catch (_) { return null; } } return { t: 'mod', k: e.k, n: n(e.n) }; }
   }
   return null;
 }
@@ -894,11 +1597,18 @@ function eggFix(o) {
   if (!o || typeof o !== 'object' || !PET_SP[o.sp]) return null;
   const tier = PET_SP[o.sp].t, need = PET_TIERS[tier].care, now = Date.now(), n = v => (isFinite(+v) ? +v : 0);
   if (o.v !== 2) { const q = clamp(n(o.got) / Math.max(1, n(o.need) || EGG_NEED), 0, 1); return { id: uid(), v: 2, sp: o.sp, tier, got: Math.round(q * need), need, nest: 1, w: 0, f: 0, z: 0, t: now, born: now }; } // ins Nest, solange Platz ist (siehe meta)
-  return { id: typeof o.id === 'string' && o.id ? o.id.slice(0, 24) : uid(), v: 2, sp: o.sp, tier, got: clamp(n(o.got), 0, need), need, nest: o.nest ? 1 : 0, w: clamp(n(o.w), 0, 1), f: clamp(n(o.f), 0, 1), z: clamp(n(o.z), 0, 1), t: Math.min(now, n(o.t) || now), born: n(o.born) || now };
+  return eggExtra({ id: typeof o.id === 'string' && o.id ? o.id.slice(0, 24) : uid(), v: 2, sp: o.sp, tier, got: clamp(n(o.got), 0, need), need, nest: o.nest ? 1 : 0, w: clamp(n(o.w), 0, 1), f: clamp(n(o.f), 0, 1), z: clamp(n(o.z), 0, 1), t: Math.min(now, n(o.t) || now), born: n(o.born) || now }, o);
+}
+// Zucht-Ei: vererbte Gene, Mutation, Eltern, Generation, Farbe übernehmen (geprüft)
+function eggExtra(g, o) {
+  if (!o) return g; const gn = petGenesFix(o.gn); if (gn) g.gn = gn; if (PET_MUT[o.mu]) g.mu = o.mu;
+  if (Array.isArray(o.pa) && o.pa.length === 2 && o.pa.every(sp => PET_SP[sp])) g.pa = o.pa.slice();
+  const ge = Math.floor(+o.ge || 0); if (ge > 0) g.ge = Math.min(ge, 999); if (o.c0 != null && isFinite(+o.c0)) g.c0 = clamp(Math.floor(+o.c0), 0, 5);
+  return g;
 }
 // intro: false = Gunda erklärt das Brutnest beim nächsten Blick auf die Weltkarte (nur nach dem ersten Ei vom Boss; alte Stände bekommen Hinweise beim Start)
 // Sammel-Belohnungen: bei so vielen entdeckten Arten gibt es Glücksmünzen
-const PET_CW = [[4, 2], [8, 3], [12, 5], [16, 8], [20, 12], [24, 25]];
+const PET_CW = [[4, 2], [8, 3], [12, 5], [16, 8], [20, 12], [24, 25], [32, 15], [40, 20], [50, 30], [60, 40], [70, 60], [77, 100]];
 function petCwLevel(n) { let l = 0; for (const [k] of PET_CW) if (n >= k) l++; return l; }
 // Wirft hier etwas, würde loadAll einen leeren Spielstand anlegen – deshalb nie werfen, Rohdaten notfalls aufheben
 HOOK.meta.push(m => {
@@ -912,17 +1622,50 @@ HOOK.meta.push(m => {
     const hatched = Math.max(0, Math.floor(+d.hatched) || 0);
     // Wer schon Begleiter, Eier oder Geschlüpfte hat, bekommt das garantierte erste Ei nicht noch einmal
     m.pets = { list, eggs, act: list.some(p => p.id === d.act) ? d.act : null, starter: !!d.starter, hatched, first: d.first != null ? !!d.first : (list.length > 0 || eggs.length > 0 || hatched > 0), intro: d.intro != null ? !!d.intro : true, fromBoss: !!d.fromBoss, seen: [...seen], cw: d.cw != null ? clamp(Math.floor(+d.cw) || 0, 0, PET_CW.length) : petCwLevel(seen.size) };
+    // Kreaturen 2.0: Ausrüstungslager, Runen, entdeckte Mutationen, Zahl der Zuchten
+    const M2 = m.pets, gi = new Set();
+    M2.gear = (Array.isArray(d.gear) ? d.gear : []).map(o => petGearFix(o)).filter(it => it && !gi.has(it.id) && gi.add(it.id)).slice(0, PET_GEAR_MAX);
+    M2.runes = {}; if (d.runes && typeof d.runes === 'object') for (const k of PET_SPELLS) { const v = Math.floor(+d.runes[k]) || 0; if (v > 0) M2.runes[k] = Math.min(v, 99); }
+    const mut = new Set((Array.isArray(d.mut) ? d.mut : []).filter(k => PET_MUT[k])); for (const p of list) if (p.mu) mut.add(p.mu); M2.mut = [...mut];
+    M2.bred = Math.max(0, Math.floor(+d.bred) || 0);
     if (d.bad) m.pets.bad = d.bad;
-  } catch (e) { console.error('Begleiter (meta):', e); m.pets = { list: [], eggs: [], act: null, starter: !!d.starter, hatched: 0, first: true, intro: true, seen: [], cw: 0, bad: d }; }
+  } catch (e) { console.error('Begleiter (meta):', e); m.pets = { list: [], eggs: [], act: null, starter: !!d.starter, hatched: 0, first: true, intro: true, seen: [], cw: 0, gear: [], runes: {}, mut: [], bred: 0, bad: d }; }
 });
 
 /* ---------- Schnittstelle (Tausch, Basar, Verlorene Lande) ---------- */
 // Echter, aktiver Held (auf dem Titel steht sonst nur ein Platzhalter)
 function petHero() { return !!(P && SAVE && SAVE.active >= 0 && SAVE.chars[SAVE.active] && SAVE.chars[SAVE.active].id === P.id && P.mats); }
 // Seltenheit eines neuen Eis: Glück 0 = Kampagne, 1–4 = Stufen der Verlorenen Lande (Kommazahlen gehen auch)
-function eggTierRoll(luck) { const f = 1 + .35 * clamp(+luck || 0, 0, 10), W = {}; EGG_W.forEach((w, t) => { W[t] = w * Math.pow(f, t); }); return +wpick(W); }
-// Zufällige Art einer Seltenheit
-function eggRoll(tier) { const L = PET_BYT[clamp(Math.floor(+tier) || 0, 0, PET_TIERS.length - 1)]; return L.length ? pick(L) : pick(PET_ORDER); }
+function eggTierRoll(luck, R) { const f = 1 + .35 * clamp(+luck || 0, 0, 10), W = {}; EGG_W.forEach((w, t) => { W[t] = w * Math.pow(f, t); }); return +wpick(W, R); }
+// Zufällige Art einer Seltenheit (nur wilde Arten; R = fester Zufall, sonst Math.random)
+function eggRoll(tier, R) { const L = PET_BYT[clamp(Math.floor(+tier) || 0, 0, PET_TIERS.length - 1)], r = R || Math.random; return L.length ? L[Math.floor(r() * L.length)] : PET_BYT[0][0]; }
+
+/* ---------- Eier aus der Welt: Gebiet → Lebensräume → Art ----------
+   PET_HABS: alle Lebensraum-Marken; jede Art hat S.hab. PET_BIOME[Gebiet] = [Marken] dürfen andere Systeme ergänzen (Welt W, Zusammenführung).
+   Unbekannte Gebiete: Wortteile des Schlüssels (oder Namens) werden erkannt, sonst entscheidet die Tiefe. */
+const PET_HABS = ['wiese', 'wald', 'pilz', 'sumpf', 'wasser', 'kueste', 'berg', 'hoehle', 'kerker', 'eis', 'wueste', 'feuer', 'asche', 'gruft', 'ruine', 'schatten', 'himmel', 'leere', 'kristall'];
+const PET_BIOME = { wiese: ['wiese'], wald: ['wald', 'pilz'], fels: ['berg', 'hoehle'], ruine: ['ruine', 'gruft'], sumpf: ['sumpf', 'wasser'], schnee: ['eis'], asche: ['asche', 'feuer'], lava: ['feuer'], kerker: ['kerker', 'hoehle'], moss: ['sumpf', 'wald'], gruft: ['gruft', 'ruine'], glut: ['feuer', 'asche'], frost: ['eis'], schatten: ['schatten'], hort: ['feuer', 'berg', 'kristall'] };
+const PET_BIOME_RX = [[/eis|frost|schnee|gletscher|tundra|polar|kalt|firn|reif/, 'eis'], [/wald|hain|forst|dschungel|urwald|baum|dickicht/, 'wald'], [/pilz|myzel|spor/, 'pilz'], [/sumpf|moor|morast|bruch|marsch|moos/, 'sumpf'], [/meer|see|fluss|ozean|wasser|lagune|tiefsee|korall/, 'wasser'], [/kuest|küst|strand|riff|bucht|watt/, 'kueste'], [/wueste|wüste|sand|duene|düne|oede|öde|steppe|savanne/, 'wueste'], [/vulkan|lava|glut|magma|feuer|brand|flamm/, 'feuer'], [/asche|russ|ruß|kohle|schlacke/, 'asche'], [/gruft|friedhof|grab|knochen|toten|gebein|nekro/, 'gruft'], [/ruine|tempel|stadt|burg|feste|kloster/, 'ruine'], [/hoehle|höhle|grotte|mine|stollen|tunnel|tiefen/, 'hoehle'], [/kerker|verlies|gefängnis/, 'kerker'], [/berg|fels|klipp|gebirg|hochland|gipfel|schlucht|canyon|stein/, 'berg'], [/kristall|edelstein|juwel|prism|glas/, 'kristall'], [/himmel|wolke|sturm|wind|luft|schwebe/, 'himmel'], [/leere|nichts|void|stern|astral|kosm|abgrund|riss|aether|äther/, 'leere'], [/schatten|nacht|dunkel|finster|zwielicht|nebel/, 'schatten'], [/wiese|feld|aue|tal|garten|blumen|heide|grasland|weide/, 'wiese']];
+const PET_DEPTH_HAB = [[.12, ['wiese', 'wald']], [.3, ['wald', 'sumpf', 'berg', 'hoehle', 'wasser']], [.5, ['berg', 'eis', 'wueste', 'ruine', 'gruft', 'kueste']], [.72, ['feuer', 'asche', 'eis', 'schatten', 'kristall']], [1.01, ['leere', 'himmel', 'schatten', 'kristall']]];
+function petBiomeTags(biome, depth) {
+  const k = String(biome == null ? '' : biome).toLowerCase(), t = new Set(PET_BIOME[k] || []);
+  const LB = typeof LANDE_BIOMES !== 'undefined' && LANDE_BIOMES && typeof LANDE_BIOMES === 'object' ? LANDE_BIOMES[biome] : null;
+  if (LB && typeof LB === 'object') { for (const h of [].concat(LB.hab || LB.tags || [])) if (PET_HABS.includes(h)) t.add(h); }
+  if (!t.size) { const txt = k + ' ' + (LB && typeof LB.n === 'string' ? LB.n.toLowerCase() : ''); for (const [rx, h] of PET_BIOME_RX) if (rx.test(txt)) t.add(h); }
+  if (!t.size) { const d = clamp(+depth || 0, 0, 1); for (const [lim, hs] of PET_DEPTH_HAB) if (d < lim) { hs.forEach(h => t.add(h)); break; } }
+  return [...t];
+}
+// Ei für die Endlosen Lande: Seltenheit nach Glück und Tiefe, Art meist aus dem Lebensraum des Gebiets → { egg: 1, sp, tier } (passt als d in { t: 'egg', d })
+function eggForBiome(biome, depth, luck, R) {
+  R = R || Math.random; depth = clamp(+depth || 0, 0, 1);
+  const tier = eggTierRoll((+luck || 0) + depth * 3, R), tags = petBiomeTags(biome, depth);
+  const fit = sp => (PET_SP[sp].hab || []).some(h => tags.includes(h));
+  let pool = PET_BYT[tier].filter(fit);
+  // keine passende Art dieser Seltenheit: eine Stufe darunter oder darüber suchen
+  for (let d = 1; d <= 6 && !pool.length; d++) for (const t of [tier - d, tier + d]) if (!pool.length && t >= 0 && t < PET_TIERS.length) pool = PET_BYT[t].filter(fit);
+  const sp = pool.length && R() < .8 ? pool[Math.floor(R() * pool.length)] : eggRoll(tier, R);
+  return { egg: 1, sp, tier: PET_SP[sp].t };
+}
 // Sammlung: neue Art eintragen, Belohnungen auszahlen (nur mit echtem Helden, sonst später)
 function petSeen(sp) { const M = petM(); if (!M || !PET_SP[sp]) return; if (!M.seen.includes(sp)) M.seen.push(sp); petCwPay(); }
 function petCwPay() {
@@ -930,19 +1673,19 @@ function petCwPay() {
   const l = petCwLevel(M.seen.length);
   while ((M.cw || 0) < l) { const [n, c] = PET_CW[M.cw || 0]; M.cw = (M.cw || 0) + 1; gainFate(c); toast(_t('Sammlung: {n} Arten entdeckt! +{c} Glücksmünzen', { n, c }), '#ffd24a'); }
 }
-// Neuer Begleiter: o = { lv, xp, col, shiny, nm, nw } → Begleiter oder null (kein Platz)
+// Neuer Begleiter: o = { lv, xp, col, shiny, nm, nw, gn, mu, pa, ge } → Begleiter oder null (kein Platz). Ohne Gene: wilde Gene
 function petGive(sp, o) {
   const M = petM(); o = o || {}; if (!M || !PET_SP[sp] || M.list.length >= PET_MAX) return null;
-  const c0 = clamp((o.col | 0), 0, 5), p = petFix({ sp, nm: o.nm || '', lv: o.lv || 1, xp: o.xp || 0, c0, col: o.shiny ? 6 : c0, shiny: !!o.shiny, nw: o.nw }, true);
-  M.list.push(p); if (!M.act) M.act = p.id; petSeen(sp); persist(); if (P && P.st) computeStats(); return p;
+  const c0 = clamp((o.col | 0), 0, 5), p = petFix({ sp, nm: o.nm || '', lv: o.lv || 1, xp: o.xp || 0, c0, col: o.shiny ? 6 : c0, shiny: !!o.shiny, nw: o.nw, gn: o.gn || petGenesWild(), mu: o.mu, pa: o.pa, ge: o.ge }, true);
+  M.list.push(p); if (!M.act) M.act = p.id; petSeen(sp); if (p.mu && !M.mut.includes(p.mu)) M.mut.push(p.mu); persist(); if (P && P.st) computeStats(); return p;
 }
-function eggNew(sp) { const t = PET_SP[sp].t, now = Date.now(); return { id: uid(), v: 2, sp, tier: t, got: 0, need: PET_TIERS[t].care, nest: nestEggs().length < NEST_MAX ? 1 : 0, w: 0, f: 0, z: 0, t: now, born: now }; }
+function eggNew(sp, o) { const t = PET_SP[sp].t, now = Date.now(); return eggExtra({ id: uid(), v: 2, sp, tier: t, got: 0, need: PET_TIERS[t].care, nest: nestEggs().length < NEST_MAX ? 1 : 0, w: 0, f: 0, z: 0, t: now, born: now }, o); }
 // Neues Ei → das Ei (wahr) oder false (Korb voll). Ohne gültige Art: Seltenheit o.tier oder ausgewürfelt mit Glück o.luck
 function eggGive(sp, quiet, o) {
   const M = petM(); if (!M) return false; o = o || {};
   if (!PET_SP[sp]) sp = eggRoll(o.tier != null ? o.tier : eggTierRoll(o.luck || 0));
   if (M.eggs.length >= EGG_MAX) { if (!quiet) toast(_t('Dein Brutnest ist voll – mehr als {n} Eier passen nicht hinein.', { n: EGG_MAX }), '#ff6a5a'); return false; }
-  const g = eggNew(sp); M.eggs.push(g);
+  const g = eggNew(sp, o); M.eggs.push(g);
   // das allererste Ei, egal woher (Champion, Verlorene Lande, Tausch …): Gunda erklärt das Brutnest
   if (!M.first) { M.first = true; M.intro = false; }
   persist();
@@ -955,22 +1698,25 @@ function petExport(i, keep) {
   const M = petM(), p = M && M.list[i]; if (!p) return null;
   if (!keep && p.bag && p.bag.length) { if (!petHero()) return null; petBagEmpty(p); }
   const d = { sp: p.sp, nm: p.nm, lv: p.lv, xp: p.xp, col: p.col, c0: p.c0, shiny: !!p.shiny, k: p.k || 0, born: p.born };
+  // Kreaturen 2.0: Gene, Mutation, Talente, Ausrüstung und Zauber reisen mit (einfache Daten, passen in trPlain)
+  d.gn = (p.gn || petGenesOf(p.id)).slice(); if (p.mu) d.mu = p.mu; d.tl = petTlFix(p.tl, p.lv); d.mg = (p.mg || []).slice(0, 3); if (p.zt) d.zt = p.zt; if (p.pa) d.pa = p.pa.slice(); if (p.ge) d.ge = p.ge;
+  d.eq = {}; for (const s of PET_SLOTS) if (p.eq && p.eq[s]) d.eq[s] = JSON.parse(JSON.stringify(p.eq[s]));
   if (!keep) { M.list.splice(i, 1); if (M.act === p.id) M.act = M.list.length ? M.list[0].id : null; if (petView === p.id) petView = null; persist(); if (P && P.st) computeStats(); }
   return d;
 }
-function eggExport(i, keep) { const M = petM(), g = M && M.eggs[i]; if (!g) return null; const d = { egg: 1, sp: g.sp, tier: g.tier, need: g.need, got: Math.floor(g.got) }; if (!keep) { M.eggs.splice(i, 1); persist(); } return d; }
+function eggExport(i, keep) { const M = petM(), g = M && M.eggs[i]; if (!g) return null; const d = eggExtra({ egg: 1, sp: g.sp, tier: g.tier, need: g.need, got: Math.floor(g.got) }, g); if (!keep) { M.eggs.splice(i, 1); persist(); } return d; }
 // Empfangen: Begleiter oder Ei ({ egg: 1, … }; die Pflege beginnt von vorn) → true/false (ungültig oder kein Platz)
 function petImport(d) {
   const M = petM(); if (!M || !d || typeof d !== 'object') return false;
-  if (d.egg) { if (!PET_SP[d.sp] || M.eggs.length >= EGG_MAX) return false; M.eggs.push(eggNew(d.sp)); persist(); return true; }
+  if (d.egg) { if (!PET_SP[d.sp] || M.eggs.length >= EGG_MAX) return false; M.eggs.push(eggNew(d.sp, d)); persist(); return true; }
   const p = petFix(Object.assign({}, d, { nw: 1, bag: [], hurt: 0 }), true); if (!p || M.list.length >= PET_MAX) return false;
-  M.list.push(p); if (!M.act) M.act = p.id; petSeen(p.sp); persist(); if (P && P.st) computeStats(); return true;
+  M.list.push(p); if (!M.act) M.act = p.id; petSeen(p.sp); if (p.mu && !M.mut.includes(p.mu)) M.mut.push(p.mu); persist(); if (P && P.st) computeStats(); return true;
 }
 function petFree() { const M = petM(); return M ? PET_MAX - M.list.length : 0; }
 function eggFree() { const M = petM(); return M ? EGG_MAX - M.eggs.length : 0; }
 // Vorschau für Tausch, Basar und Beute: Text und Bild zu exportierten Daten (Eier verraten nur die Seltenheit)
-function petLabel(d) { if (!d || !PET_SP[d.sp]) return ''; if (d.egg) return PET_TIERS[PET_SP[d.sp].t].egg; const lv = clamp(d.lv | 0 || 1, 1, 100); return _t('{name} · LV {lv} · {stage}', { name: d.nm ? String(d.nm).slice(0, 16) : PET_SP[d.sp].n, lv, stage: PET_STN[petStage(lv)] }) + (d.shiny ? ' ✦' : ''); }
-function petIconURL(d) { if (!d || !PET_SP[d.sp]) return ''; if (d.egg) return eggURL(PET_SP[d.sp].t, 0); return petImgURL(d.sp, petStage(clamp(d.lv | 0 || 1, 1, 100)), d.col | 0, !!d.shiny, false).url; }
+function petLabel(d) { if (!d || !PET_SP[d.sp]) return ''; if (d.egg) return PET_TIERS[PET_SP[d.sp].t].egg + (d.pa ? ' · ' + _t('aus der Zucht') : ''); const lv = clamp(d.lv | 0 || 1, 1, 100); return _t('{name} · LV {lv} · {stage}', { name: d.nm ? String(d.nm).slice(0, 16) : PET_SP[d.sp].n, lv, stage: PET_STN[petStage(lv)] }) + (d.shiny ? ' ✦' : '') + (PET_MUT[d.mu] ? ' · ' + PET_MUT[d.mu].n : ''); }
+function petIconURL(d) { if (!d || !PET_SP[d.sp]) return ''; if (d.egg) return eggURL(PET_SP[d.sp].t, 0); return petImgURL(d.sp, petStage(clamp(d.lv | 0 || 1, 1, 100)), d.col | 0, !!d.shiny, false, d.mu).url; }
 
 /* ---------- Beutel des Begleiters (rettet Beute beim Tod in den Verlorenen Landen) ---------- */
 function petBagAdd(p, e) { e = petLootFix(e); if (!p || !e || !Array.isArray(p.bag) || p.bag.length >= petBagSize(p)) return false; p.bag.push(e); persist(); return true; }
@@ -985,6 +1731,7 @@ function petLootGive(e) {
     case 'part': if (!P.parts) P.parts = {}; P.parts[e.k] = (P.parts[e.k] || 0) + e.n; break;
     case 'egg': if (!e.d || !petImport(Object.assign({}, e.d, { egg: 1 }))) gainFate(1); break;
     case 'gold': P.gold += e.n; break;
+    case 'mod': try { if (typeof modGive === 'function') { modGive(e.k, e.n); break; } } catch (_) { } if (!P.mods || typeof P.mods !== 'object') P.mods = {}; P.mods[e.k] = (P.mods[e.k] || 0) + e.n; break;
   }
 }
 function petBagEmpty(p) { const L = petBagTake(p); for (const e of L) petLootGive(e); if (L.length) saveChar(); return L.length; }
@@ -997,6 +1744,7 @@ function petLootName(e) {
     case 'part': return (e.n > 1 ? e.n + '× ' : '') + (typeof pparse === 'function' ? (p => pname(p.t, p.g, p.el))(pparse(e.k)) : e.k);
     case 'egg': return PET_TIERS[PET_SP[e.d.sp].t].egg;
     case 'gold': return _t('{n} Gold', { n: fmt(e.n) });
+    case 'mod': { let nm = e.k; try { if (typeof modName === 'function') nm = modName(e.k) || e.k; } catch (_) { } return (e.n > 1 ? e.n + '× ' : '') + nm; }
   }
   return '?';
 }
@@ -1008,13 +1756,14 @@ function petLootIcon(e) {
     case 'part': { if (typeof pparse === 'function') { const p = pparse(e.k); return partIconURL(p.t, p.g, p.el); } return iconURL(['pa', 'truhe']); }
     case 'egg': return eggURL(PET_SP[e.d.sp].t, 0);
     case 'gold': return iconURL(['pa', 'muenze']);
+    case 'mod': { try { if (typeof modIconURL === 'function') { const u = modIconURL(e.k); if (u) return u; } } catch (_) { } return iconURL(['pa', 'juwel']); }
   }
   return '';
 }
 /* ---------- Verletzung ---------- */
 function petHurt(p, min) {
   if (!p || !PET_SP[p.sp]) return;
-  p.hurt = Math.max(p.hurt || 0, Date.now() + clamp(+min || 60, 1, 24 * 60) * 60000);
+  p.hurt = Math.max(p.hurt || 0, Date.now() + clamp(+min || 60, 1, 24 * 60) * 60000 * petWundK(p));
   if (PET_RT.id === p.id) { PET_RT.id = null; PET_BOLTS = []; PET_FX = []; }
   persist(); if (P && P.st) computeStats();
 }
@@ -1087,14 +1836,70 @@ function eggHatch(i, quiet) {
   const M = petM(), g = M && M.eggs[i]; if (!g) return null; eggSim(g);
   if (g.got < g.need || M.list.length >= PET_MAX) return null;
   M.eggs.splice(i, 1);
-  const shiny = Math.random() < .01, c0 = ri(0, 5), p = petGive(g.sp, { col: c0, shiny, nw: 1 }); M.hatched++;
+  // Zucht-Eier bringen Gene, Mutation und Farbe mit; wilde Eier: wilde Gene, 1 % Mutation
+  const shiny = Math.random() < .01, c0 = g.c0 != null ? g.c0 : ri(0, 5), mu = g.mu || (!g.pa && Math.random() < .01 ? petMutRoll(Math.random) : null);
+  const p = petGive(g.sp, { col: c0, shiny, nw: 1, gn: g.gn, mu, pa: g.pa, ge: g.ge }); M.hatched++;
   if (!quiet) toast(_t('Geschlüpft: {what}', { what: shiny ? _t('Ein schillernder {name}! (1 zu 100)', { name: PET_SP[p.sp].n }) : PET_SP[p.sp].n }), '#ffd24a');
   persist(); if (petHero()) saveChar();
   return p;
 }
+
+/* ---------- Zucht: zwei Begleiter ab LV 25 → ein Ei mit vererbten Genen; Hybride nach Rezept, Mutationen mit etwas Glück ---------- */
+const PET_BREED_LV = 25, PET_HYB_CH = .35;
+// Rezepte (beide Reihenfolgen): 'a|b' → Hybrid
+const PET_HYB = {}; for (const sp of PET_HY) { const [a, b] = PET_SP[sp].hy; PET_HYB[a + '|' + b] = PET_HYB[b + '|' + a] = sp; }
+function petHybOf(a, b) { return PET_HYB[a + '|' + b] || null; }
+// Abklingzeit je Elternteil: 8 h + 2 h je Seltenheitsstufe
+function petBreedCd(p) { return (8 + 2 * PET_SP[p.sp].t) * 3600e3; }
+function petBreedLeft(p) { return p.zt ? Math.max(0, p.zt + petBreedCd(p) - Date.now()) : 0; }
+function petBreedCost(a, b) { const t = Math.max(PET_SP[a.sp].t, PET_SP[b.sp].t); return 100 * (t + 1) * (t + 1); }
+// Warum ein Begleiter gerade nicht züchten kann (oder '')
+function petBreedWhy(p) { if (!p) return _t('Wähle zwei Begleiter.'); if (p.lv < PET_BREED_LV) return _t('Erst ab LV {lv} zuchtreif.', { lv: PET_BREED_LV }); if (petIsHurt(p)) return _t('Verletzt.'); const l = petBreedLeft(p); if (l > 0) return _t('Ruht sich noch {t} aus.', { t: petDur(l) }); return ''; }
+function petMutRoll(R) { const r = R(), pool = Object.keys(PET_MUT).filter(k => PET_MUT[k].r === (r < .6 ? 1 : r < .88 ? 2 : 3)); return pool[Math.floor(R() * pool.length)]; }
+// Ergebnis einer Paarung (reine Rechnung, fester Zufall R möglich): { sp, hy, gn, mu, c0, pa, ge }
+function petBreedRoll(a, b, R) {
+  R = R || Math.random;
+  const hyb = petHybOf(a.sp, b.sp), luck = (petGene(a, 4) + petGene(b, 4)) / 200, hyOk = hyb && R() < PET_HYB_CH + luck * .15;
+  const sp = hyOk ? hyb : a.sp === b.sp ? a.sp : (R() < .5 ? a.sp : b.sp);
+  // Gene: Mittel der Eltern ± 10, manchmal ein Sprung (eher nach oben), Hybride +5
+  const gn = []; for (let i = 0; i < 5; i++) { let v = (petGene(a, i) + petGene(b, i)) / 2 + (R() * 2 - 1) * 10; if (R() < .12) v += R() * 23 - 5; if (hyOk) v += 5; gn.push(clamp(Math.round(v), 0, 100)); }
+  // Mutation: 3 % + Glück der Eltern, mehr bei mutierten Eltern und Hybriden; Eltern-Mutation wird manchmal vererbt
+  const ch = .03 + luck * .04 + (a.mu || b.mu ? .03 : 0) + (hyOk ? .02 : 0);
+  let mu = null; const par = [a.mu, b.mu].filter(k => PET_MUT[k]);
+  if (par.length && R() < .25) mu = par[Math.floor(R() * par.length)]; else if (R() < ch) mu = petMutRoll(R);
+  const from = sp === a.sp ? a : sp === b.sp ? b : null, c0 = from ? clamp(from.c0 | 0, 0, 5) : Math.floor(R() * 6);
+  return { sp, hy: !!hyOk, gn, mu, c0, pa: [a.sp, b.sp], ge: Math.max(a.ge || 0, b.ge || 0) + 1 };
+}
+// Paaren: prüft alles, zieht Gold ab, legt das Ei in Nest oder Korb → Ei oder Fehlertext
+function petBreed(a, b, R) {
+  const M = petM(); if (!M || !a || !b || a === b) return _t('Wähle zwei verschiedene Begleiter.');
+  const why = petBreedWhy(a) || petBreedWhy(b); if (why) return why;
+  if (M.eggs.length >= EGG_MAX) return _t('Dein Brutnest ist voll – mehr als {n} Eier passen nicht hinein.', { n: EGG_MAX });
+  const cost = petBreedCost(a, b); if (!petHero() || P.gold < cost) return _t('Dir fehlt Gold: {n} nötig.', { n: fmt(cost) });
+  P.gold -= cost; const r = petBreedRoll(a, b, R), g = eggNew(r.sp, r); M.eggs.push(g);
+  a.zt = b.zt = Date.now(); M.bred = (M.bred || 0) + 1; persist(); saveChar();
+  return g;
+}
+// In den Landen: Monster legen manchmal ein Ei ihrer Kreatur (die Welt macht daraus Beute am Boden, siehe lande.js)
+function petLandeOn() { try { return typeof landeActive === 'function' && !!landeActive(); } catch (_) { return false; } }
+function petMonEgg(e, p) {
+  const sp = e && PET_MON[e.t]; if (!sp) return false;
+  const ch = (e.boss ? .25 : e.champ ? .08 : e.elite ? .03 : .008) * (1 + (p ? petMods(p).pegg || 0 : 0));
+  if (Math.random() >= ch || petM().eggs.length >= EGG_MAX) return false;
+  const g = eggGive(sp, true); if (g) txt(e.x, e.y - 30, _t('MONSTER-EI!'), PET_TIERS[g.tier].c, true);
+  return !!g;
+}
+// Außerhalb der Lande: Zauberrunen und Begleiter-Ausrüstung (nur mit aktivem Begleiter)
+function petDrops(e, p) {
+  if (!p || !e || e.ai === 'dummy') return;
+  const M = petM(), k = 1 + (petMods(p).pegg || 0), b = e.boss ? 1 : e.champ ? .4 : e.elite ? .14 : .02;
+  if (Math.random() < .2 * b * k) { const r = PET_SPELLS[Math.floor(Math.random() * PET_SPELLS.length)]; M.runes[r] = Math.min(99, (M.runes[r] || 0) + 1); txt(e.x, e.y - 26, _t('RUNE: {n}', { n: PET_SPELL[r].n }).toLocaleUpperCase(LOCALE), PET_EL[PET_SPELL[r].el].c, true); toast(_t('Zauberrune für deinen Begleiter: {n}', { n: PET_SPELL[r].n }), PET_EL[PET_SPELL[r].el].c); }
+  if (Math.random() < .25 * b * k) { const s = PET_SLOTS[Math.floor(Math.random() * 3)], lv = clamp((P.lv || 1) + ri(-3, 3), 1, 100), it = petGearNew(s, e.boss ? +wpick({ 1: 40, 2: 35, 3: 18, 4: 7 }) : null, lv); if (M.gear.length < PET_GEAR_MAX) { M.gear.push(it); txt(e.x, e.y - 34, petGearName(it).toLocaleUpperCase(LOCALE), RAR[it.r].c, true); toast(_t('Begleiter-Ausrüstung: {n} ({r})', { n: petGearName(it), r: RAR[it.r].n }), RAR[it.r].c); } else P.gold += 20 * (it.r + 1); }
+}
 function petKill(e) {
   const M = petM(); if (!M) return;
   const p = petActive(); if (p) petXP(p, Math.max(1, Math.round((e.xp || 0) * .5)));
+  if (petLandeOn()) petMonEgg(e, p); else petDrops(e, p);
   // Champions: 5 % Ei mit etwas Glück
   if (e.champ && !e.boss) { if (Math.random() < .05 && M.eggs.length < EGG_MAX) { txt(e.x, e.y - 30, _t('BEGLEITER-EI!'), '#ffd24a', true); eggGive(null, false, { luck: .4 }); } return; }
   if (!e.boss) return;
@@ -1135,7 +1940,7 @@ function petSnd(k) {
 }
 
 /* ---------- Im Spiel: folgen, kämpfen, Beute anziehen ---------- */
-const PET_RT = { id: null, x: 0, y: 0, z: 0, vx: 0, vy: 0, face: 1, ph: 0, cd: 1, spc: 8, mv: false, dash: null, seq: null, storm: null, idle: 0, sleep: false, bl: 3, blk: 0, fl: 0, g: 0, lt: 0, wan: null, wanT: 0, atk: 0 };
+const PET_RT = { id: null, x: 0, y: 0, z: 0, vx: 0, vy: 0, face: 1, ph: 0, cd: 1, spc: 8, mv: false, dash: null, seq: null, storm: null, idle: 0, sleep: false, bl: 3, blk: 0, fl: 0, g: 0, lt: 0, wan: null, wanT: 0, atk: 0, mcd: [2, 3.5, 5], gcd: 0, shield: 0, shT: 0, casts: 0 };
 let PET_BOLTS = [], PET_FX = [];
 function petAlive(e) { return !!e && !e.dead && e.st !== 'spawn' && !(e.under > 0) && !(e.fade > .6) && e.ai !== 'dummy'; }
 function petPlace(puff) {
@@ -1143,15 +1948,15 @@ function petPlace(puff) {
   if (!p || !P) return;
   const bd = typeof BD !== 'undefined' ? BD : { x0: 0, x1: 9999, y0: 0, y1: 9999 };
   PET_RT.x = clamp(P.x - (P.face || 1) * 16, bd.x0 + 6, bd.x1 - 6); PET_RT.y = clamp(P.y + 3, bd.y0, bd.y1); PET_RT.vx = PET_RT.vy = 0; PET_RT.face = P.face || 1;
-  PET_RT.z = PET_SP[p.sp].fly ? 12 : 0; PET_RT.cd = 1; PET_RT.spc = 6; PET_RT.lt = T;
+  PET_RT.z = PET_SP[p.sp].fly ? 12 : 0; PET_RT.cd = 1; PET_RT.spc = 6; PET_RT.lt = T; PET_RT.mcd = [2, 3.5, 5]; PET_RT.gcd = 0; PET_RT.shield = 0; PET_RT.shT = 0;
   if (puff && state === 'play') { burst(PET_RT.x, PET_RT.y, 6, PET_EL[PET_SP[p.sp].el].c, 14, 45, 1); petSnd('puff'); }
 }
 // Werte eines Angriffs: wie die Waffe des Helden, aber schwächer, mit dem Element der Art
 function petW(p) {
-  const w = playerW(), S = PET_SP[p.sp];
-  w.dmg *= petDmgK(p.lv, p.sp); w.crit = Math.min(.6, w.crit * .5 + (S.crit || .05)); w.leech = 0; w.kb *= .4; w.chained = true;
-  // Element bestimmt die Nebenwirkung: Feuer brennt, Frost verlangsamt, Gift vergiftet
-  w.burn = S.el === 'feuer' ? .3 : 0; w.frost = S.el === 'frost' ? .45 : 0; w.poison = S.el === 'gift';
+  const w = playerW(), S = PET_SP[p.sp], m = petMods(p), ek = 1 + (m.pel || 0);
+  w.dmg *= petDmgK(p.lv, p.sp) * petDmgMul(p); w.crit = Math.min(.75, w.crit * .5 + (S.crit || .05) + (m.pcrit || 0)); w.leech = 0; w.kb *= .4; w.chained = true;
+  // Element bestimmt die Nebenwirkung: Feuer brennt, Frost verlangsamt, Gift vergiftet (Halsband „Element-Wirkung“ verstärkt)
+  w.burn = S.el === 'feuer' ? Math.min(.9, .3 * ek) : 0; w.frost = S.el === 'frost' ? Math.min(.9, .45 * ek) : 0; w.poison = S.el === 'gift';
   w.el = S.el; w.col = PET_EL[S.el].c; w.pet = 1;
   return w;
 }
@@ -1212,6 +2017,54 @@ function petSpecial(p, t) {
     case 'storm': PET_RT.storm = { n: pw >= 2 ? 7 : pw > 1 ? 5 : 3, t: 0, w, pw, el: S.el }; break;
   }
 }
+/* ---------- Zauber im Kampf: jeder Sockel hat seine eigene Abklingzeit ---------- */
+// Waffe für Zauber: Schaden = Heldenwaffe × Zauberkraft (Stufe, Seltenheit, Magie-Gen, Talente, Talisman)
+function petSpellW(p, el) { const w = petW(p); w.dmg = playerW().dmg * petSpellPow(p); if (el) { w.el = el; w.col = PET_EL[el].c; w.burn = el === 'feuer' ? .6 : 0; w.frost = el === 'frost' ? .8 : 0; w.poison = el === 'gift'; } return w; }
+function petBoom(x, y, r, w, mul, burn) {
+  for (const e of enemies) { if (!petAlive(e)) continue; const d = Math.hypot(e.x - x, e.y - y); if (d < r + e.r * e.sc) { petHit(e, w, mul * (1 - d / (r * 2.4)), (e.x - x) / (d || 1), (e.y - y) / (d || 1)); if (burn && !e.dead) { e.burn = 3; e.burnDmg = Math.max(1, Math.round(w.dmg * .2)); } } }
+}
+function petNear(x, y, r) { return enemies.filter(e => petAlive(e) && Math.hypot(e.x - x, e.y - y) < r); }
+// Zauber wirken → true, wenn er gewirkt wurde (sonst später nochmal versuchen)
+function petCast(p, k) {
+  const Z = PET_SPELL[k]; if (!Z || !P || !P.st) return false;
+  const E = PET_EL[Z.el], st = petStage(p.lv), t = nearestEnemy(170, P);
+  const say = () => { txt(PET_RT.x, PET_RT.y - 22 - PET_RT.z, Z.n.toLocaleUpperCase(LOCALE), E.c2, false); PET_RT.fl = Math.max(PET_RT.fl, .25); PET_RT.casts = (PET_RT.casts || 0) + 1; };
+  switch (k) {
+    case 'feuerball': { if (!t || !petAlive(t)) return false; const w = petSpellW(p, 'feuer'); petBolt('fire', w, 1.6, Math.atan2(t.y - PET_RT.y, t.x - PET_RT.x), t, { sp: 170, boom: 30, big: 1, t: 1.4 }); say(); petSnd('fire'); return true; }
+    case 'heilung': { if (P.hp >= P.st.hp * .75) return false; const h = Math.round(P.st.hp * (.06 + .012 * st) * petHealK(p)); P.hp = Math.min(P.st.hp, P.hp + h); txt(P.x, P.y - 28, '+' + h, '#79c24e', true); fx.push({ k: 'pillar', x: P.x, y: P.y, life: .8, max: .8 }); for (let i = 0; i < 14; i++) part(P.x + rnd(-8, 8), P.y, rnd(0, 12), 0, 0, rnd(20, 45), Math.random() < .5 ? '#79c24e' : '#c8f06a', rnd(.5, .9), 1, -10, 1); say(); sfx('heal'); return true; }
+    case 'schild': { if (PET_RT.shT > T || !petNear(P.x, P.y, 130).length) return false; PET_RT.shield = Math.round(P.st.hp * (.1 + .015 * st) * petHealK(p)); PET_RT.shT = T + 6; rings.push({ x: P.x, y: P.y, r: 4, max: 26, life: .35, max2: .35, col: '#ffe08a' }); say(); petSnd('beam'); return true; }
+    case 'blitz': {
+      if (!t || !petAlive(t)) return false; const w = petSpellW(p, 'blitz'), pts = [[PET_RT.x, PET_RT.y - PET_RT.z - 4]], hit = new Set(); let cur = t, mul = 1.3;
+      for (let j = 0; j < 4 + (st >= 3 ? 2 : 0) && cur; j++) { hit.add(cur); pts.push([cur.x, cur.y - 8 * cur.sc]); petHit(cur, w, mul, 0, 0); mul *= .85; let nt = null, bd = 80; for (const e of enemies) { if (hit.has(e) || !petAlive(e)) continue; const d = Math.hypot(e.x - cur.x, e.y - cur.y); if (d < bd) { bd = d; nt = e; } } cur = nt; }
+      fx.push({ k: 'zap', pts, life: .25, max: .25, sk: null }); say(); sfx('zap'); return true;
+    }
+    case 'frostnova': {
+      const near = petNear(PET_RT.x, PET_RT.y, 80); if (!near.length) return false; const w = petSpellW(p, 'frost');
+      fxAnim('ring', PET_RT.x, PET_RT.y - 4, { sc: 80 / 22, dur: .5, add: true }); for (let j = 0; j < 12; j++) fx.push({ k: 'shard', x: PET_RT.x, y: PET_RT.y, ang: j / 12 * 6.283, life: .4, max: .4 });
+      for (const e of near) { petHit(e, w, .9, 0, 0); if (!e.dead) { if (e.boss) e.chill = 2.5; else e.freeze = Math.max(e.freeze || 0, 1.4); } }
+      say(); sfx('frost'); return true;
+    }
+    case 'gift': { if (!t || !petAlive(t)) return false; const w = petSpellW(p, 'gift'); PET_FX.push({ k: 'cloud', x: t.x, y: t.y, r: 34 + st * 2, t: 4.5, max: 4.5, tick: 0, pw: 1.5, w, draw: petFxDraw }); say(); sfx('poison'); return true; }
+    case 'meteor': {
+      if (!t || !petAlive(t)) return false; let best = t, bn = 0; for (const e of petNear(P.x, P.y, 170)) { const n = petNear(e.x, e.y, 40).length; if (n > bn) { bn = n; best = e; } }
+      PET_FX.push({ k: 'meteor', x: best.x, y: best.y, t: .75, max: .75, w: petSpellW(p, 'feuer'), draw: petFxDraw }); say(); petSnd('fire'); return true;
+    }
+    case 'ranken': {
+      if (!t || !petAlive(t)) return false; const w = petSpellW(p, 'gift'), list = petNear(t.x, t.y, 46);
+      for (const e of list) { petHit(e, w, .7, 0, 0); if (!e.dead) { e.chill = Math.max(e.chill || 0, 3); if (!e.boss) e.stun = Math.max(e.stun || 0, .8); } }
+      PET_FX.push({ k: 'vine', x: t.x, y: t.y, r: 46, t: .9, max: .9, draw: petFxDraw }); say(); sfx('poison'); return true;
+    }
+  }
+  return false;
+}
+// Schild des Begleiters fängt Schaden am Helden ab
+HOOK.hurt.push((d, src) => {
+  try {
+    if (!(PET_RT.shield > 0) || !(PET_RT.shT > T) || !(d > 0)) return d;
+    const a = Math.min(d, PET_RT.shield); PET_RT.shield -= a; if (P) txt(P.x, P.y - 30, _t('SCHILD'), '#ffe08a'); if (PET_RT.shield <= 0) PET_RT.shT = 0;
+    return d - a;
+  } catch (e) { if (!PET_ERR.hurt) { PET_ERR.hurt = 1; console.error('Begleiter (hurt):', e); } return d; }
+});
 function petTick(dt) {
   const p = petActive(); if (!p || !P) { PET_RT.id = null; return; }
   PET_RT.lt = T;
@@ -1283,11 +2136,21 @@ function petTick(dt) {
   if (fight) {
     PET_RT.cd -= dt; PET_RT.spc -= dt;
     if (PET_RT.cd <= 0 && !PET_RT.dash && !PET_RT.seq) { const t = nearestEnemy(S.fly ? 150 : 125, P); if (t && petAlive(t) && Math.hypot(t.x - PET_RT.x, t.y - PET_RT.y) < 200) { petAttack(p, t); PET_RT.cd = petAtkCd(p); } else PET_RT.cd = .25; }
-    if (p.lv >= 50 && PET_RT.spc <= 0 && !PET_RT.seq) { const t = nearestEnemy(160, P); if (t && petAlive(t)) { petSpecial(p, t); PET_RT.spc = petSpecCd(p.lv); } else PET_RT.spc = .6; }
+    if (p.lv >= 50 && PET_RT.spc <= 0 && !PET_RT.seq) { const t = nearestEnemy(160, P); if (t && petAlive(t)) { petSpecial(p, t); PET_RT.spc = petSpecCd(p.lv) * (1 - Math.min(.5, petMods(p).pspec || 0)); } else PET_RT.spc = .6; }
+    // Zauber aus den Sockeln (jeder für sich, mit kurzer Pause zwischen zwei Zaubern)
+    const mg = Array.isArray(p.mg) ? p.mg : [], ns = petSockets(p);
+    PET_RT.gcd = Math.max(0, (PET_RT.gcd || 0) - dt);
+    for (let i = 0; i < ns; i++) {
+      const k = mg[i]; if (!PET_SPELL[k]) continue; PET_RT.mcd[i] -= dt;
+      if (PET_RT.mcd[i] <= 0 && PET_RT.gcd <= 0 && !PET_RT.seq) { if (petCast(p, k)) { PET_RT.mcd[i] = PET_SPELL[k].cd * petSpellCdK(p); PET_RT.gcd = .8; } else PET_RT.mcd[i] = .4; }
+    }
   }
+  if (PET_RT.shT > 0 && PET_RT.shT <= T) { PET_RT.shield = 0; PET_RT.shT = 0; }
   // Beutemagnet ab LV 10
   if (play && p.lv >= 10) {
-    const R = petMagR(p.lv), R2 = R * R;
+    // Reichweite (Talente) nur einmal pro Sekunde neu rechnen – keine Arbeit in jedem Bild
+    if (!(Math.abs(T - PET_RT.mrT) < 1) || PET_RT.mrId !== p.id) { PET_RT.mr = petMagRp(p); PET_RT.mrT = T; PET_RT.mrId = p.id; }
+    const R = PET_RT.mr, R2 = R * R;
     for (const c of pickups) { if (c.mag || c.k === 'loot' || c.t < .25) continue; const dx = c.x - P.x, dy = c.y - P.y; if (dx * dx + dy * dy < R2) { c.mag = 1; part(c.x, c.y, 5, 0, 0, 30, PET_EL[S.el].c, .35, 1, 0, 1); } }
   }
   // Aura ab Uralt, Glitzern bei schillernden
@@ -1305,7 +2168,8 @@ function petTick(dt) {
       if (!petAlive(e) || (b.hit && b.hit.has(e))) continue;
       if (Math.hypot(e.x - b.x, e.y - b.y) < e.r * e.sc + 4) {
         petHit(e, b.w, b.mul, b.vx / b.sp, b.vy / b.sp);
-        if (b.kind === 'fire') fxAnim('boom', b.x, b.y - b.h, { sc: .28, dur: .3 }); else burst(b.x, b.y, b.h, col, b.kind === 'flame' ? 3 : 8, 45, 1);
+        if (b.boom) { petBoom(b.x, b.y, b.boom, b.w, b.mul * .6, true); fxAnim('boom', b.x, b.y - b.h, { sc: .7, dur: .45 }); rings.push({ x: b.x, y: b.y, r: 4, max: b.boom, life: .3, max2: .3, col: '#ffb03a' }); shake(2); sfx('boom'); }
+        else if (b.kind === 'fire') fxAnim('boom', b.x, b.y - b.h, { sc: .28, dur: .3 }); else burst(b.x, b.y, b.h, col, b.kind === 'flame' ? 3 : 8, 45, 1);
         if (b.pierce) (b.hit = b.hit || new Set()).add(e); else { b.t = 0; break; }
       }
     }
@@ -1315,6 +2179,8 @@ function petTick(dt) {
   for (const f of PET_FX) {
     f.t -= dt;
     if (f.k === 'beam' && petAlive(f.tg)) { f.tx = f.tg.x; f.ty = f.y = f.tg.y; }
+    // Meteor schlägt ein
+    if (f.k === 'meteor' && !f.done && f.t <= .02) { f.done = true; f.t = .02; petBoom(f.x, f.y, 46, f.w, 2.4, true); fxAnim('boom', f.x, f.y - 6, { sc: 1.1, dur: .55 }); rings.push({ x: f.x, y: f.y, r: 6, max: 56, life: .4, max2: .4, col: '#ff8a3a' }); for (let i = 0; i < 16; i++) part(f.x + rnd(-14, 14), f.y + rnd(-6, 6), rnd(2, 10), rnd(-50, 50), rnd(-25, 25), rnd(30, 90), Math.random() < .5 ? '#ffb03a' : '#ff6a2a', rnd(.4, .8), 1, 160, 1); shake(4); sfx('boom'); }
     if (f.k === 'cloud') {
       f.tick -= dt; if (Math.random() < .5) part(f.x + rnd(-f.r, f.r) * .8, f.y + rnd(-f.r, f.r) * .35, 1, 0, 0, rnd(8, 18), Math.random() < .5 ? '#79c24e' : '#c8f06a', .6, 1, -6, 1);
       if (f.tick <= 0) { f.tick = .5; for (const e of enemies) if (petAlive(e) && Math.hypot(e.x - f.x, (e.y - f.y) * 1.6) < f.r + e.r * e.sc) { e.poison = Math.max(e.poison || 0, 2.5); e.poisonDmg = Math.max(e.poisonDmg || 0, Math.max(1, Math.round(f.w.dmg * .35 * f.pw))); } }
@@ -1330,7 +2196,7 @@ function petBoltDraw() {
   if (this.delay > 0) return;
   const x = this.x - CX, y = this.y - CY - this.h, a = Math.atan2(this.vy, this.vx); let rgb = '255,140,60', gr = 10;
   ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(Math.round(this.x - CX) - 1, Math.round(this.y - CY), 3, 1);
-  if (this.kind === 'fire') petFxFrame('fireball', Math.floor(T * 14 + this.x * .1), x, y, .55, a);
+  if (this.kind === 'fire') petFxFrame('fireball', Math.floor(T * 14 + this.x * .1), x, y, this.big ? .95 : .55, a);
   else if (this.kind === 'ice') {
     if (!PET_ICE) PET_ICE = mk(9, 5, g => { px(g, 0, 2, 1, 1, '#57a7d6'); px(g, 1, 2, 7, 1, '#8ee6ff'); px(g, 2, 1, 5, 3, '#bfefff'); px(g, 3, 2, 4, 1, '#ffffff'); px(g, 8, 2, 1, 1, '#ffffff'); px(g, 4, 0, 1, 1, '#8ee6ff'); px(g, 4, 4, 1, 1, '#8ee6ff'); });
     ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(a); ctx.drawImage(PET_ICE, -5, -2); ctx.restore(); rgb = '150,220,255';
@@ -1364,6 +2230,16 @@ function petFxDraw() {
     ctx.globalAlpha = a * .6; ctx.fillStyle = '#79c24e'; ctx.beginPath(); ctx.ellipse(x - 2, y - 2, f.r * .72, f.r * .32, 0, 0, 6.283); ctx.fill();
     ctx.globalAlpha = a; ctx.fillStyle = '#c8f06a'; for (let i = 0; i < 5; i++) { const b = Math.floor(T * 5 + i * 1.7) % 4; ctx.fillRect(Math.round(x + Math.cos(i * 2.4) * f.r * .55), Math.round(y + Math.sin(i * 2.4) * f.r * .22 - b), b ? 2 : 1, b ? 2 : 1); }
     ctx.globalAlpha = 1; addLight(x, y, f.r, .3 * a);
+  } else if (f.k === 'meteor') {
+    // Schatten am Boden, der Brocken fällt schräg von oben
+    const k = clamp(f.t / f.max, 0, 1), x1 = f.x - CX, y1 = f.y - CY, x = x1 + k * 40, y = y1 - 6 - k * 110;
+    ctx.globalAlpha = .35 * (1 - k * .6); ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(x1, y1, 16 - k * 8, 6 - k * 3, 0, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = '#ff8a3a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x + 14, y - 34); ctx.lineTo(x, y); ctx.stroke(); glow(x, y, 14, '255,140,60', .8); ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = '#5a3a2a'; ctx.fillRect(Math.round(x) - 3, Math.round(y) - 3, 6, 6); ctx.fillStyle = '#ffb03a'; ctx.fillRect(Math.round(x) - 2, Math.round(y) - 2, 3, 3); addLight(x, y, 26, 1);
+  } else if (f.k === 'vine') {
+    const a = Math.min(1, f.t * 2.5), x = Math.round(f.x - CX), y = Math.round(f.y - CY);
+    ctx.globalAlpha = a; for (let i = 0; i < 9; i++) { const an = i / 9 * 6.283 + .3, L = f.r * (.5 + (i % 3) * .2) * (1 - f.t / f.max * .5); ctx.strokeStyle = i % 2 ? '#4e9c32' : '#2e6a1e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + Math.cos(an + .6) * L * .5, y + Math.sin(an + .6) * L * .25 - 4, x + Math.cos(an) * L, y + Math.sin(an) * L * .45); ctx.stroke(); ctx.fillStyle = '#c8f06a'; ctx.fillRect(x + Math.round(Math.cos(an) * L) - 1, y + Math.round(Math.sin(an) * L * .45) - 1, 2, 2); }
+    ctx.globalAlpha = 1;
   } else if (f.k === 'heart') {
     const x = Math.round(f.x - CX), y = Math.round(f.y - CY - f.z - (1 - q) * 10);
     ctx.globalAlpha = Math.min(1, q * 2); ctx.fillStyle = '#ff6a8a'; ctx.fillRect(x - 2, y, 2, 1); ctx.fillRect(x + 1, y, 2, 1); ctx.fillRect(x - 2, y + 1, 5, 1); ctx.fillRect(x - 1, y + 2, 3, 1); ctx.fillRect(x, y + 3, 1, 1); ctx.fillStyle = '#ffd0dc'; ctx.fillRect(x - 2, y, 1, 1); ctx.globalAlpha = 1;
@@ -1380,16 +2256,20 @@ function drawPet() {
   ctx.globalAlpha = 1;
   const fi = PET_RT.sleep || (PET_RT.blk > 0 && !PET_RT.mv) ? 8 : (PET_RT.mv ? 4 : 0) + ((Math.floor(PET_RT.ph) % 4) + 4) % 4, sq = PET_RT.atk > 0 ? Math.sin(PET_RT.atk / .22 * Math.PI) * .12 : 0;
   ctx.save(); ctx.translate(x, y - z); ctx.scale(PET_RT.face * (1 + sq), 1 - sq);
-  if (p.sp === 'katze') ctx.globalAlpha = .9 + .08 * Math.sin(T * 3);
+  if (p.sp === 'katze' || p.mu === 'schatten' || PET_SP[p.sp].art && PET_SP[p.sp].art[1].k === 'geist') ctx.globalAlpha = .88 + .08 * Math.sin(T * 3);
   ctx.drawImage(S.c, fi * S.W, 0, S.W, S.H, -S.ax, -S.ay, S.W, S.H);
   if (PET_RT.fl > 0) { if (!S.sil) S.sil = silhouette(S.c, '#ffffff'); ctx.globalAlpha = Math.min(1, PET_RT.fl * 1.6) * .85; ctx.drawImage(S.sil, fi * S.W, 0, S.W, S.H, -S.ax, -S.ay, S.W, S.H); }
   ctx.restore(); ctx.globalAlpha = 1;
   // Goldkäfer leuchtet wie eine Laterne, Feuer und Blitz glühen
   if (Sp.el === 'licht') addLight(x, y - z - S.H * .4, 40 + st * 6, .8 + .1 * Math.sin(T * 3));
   else if (Sp.el === 'feuer' || Sp.el === 'blitz' || st >= 4 || (G && G.dark)) addLight(x, y - z - S.H * .4, 18 + st * 4, Sp.el === 'schatten' || Sp.el === 'gift' ? .35 : .55);
+  // Mutationen leuchten: Leuchtpunkte, Glutmähne, Kristall, Gold, Sterne
+  if (p.mu === 'leucht' || p.mu === 'glut' || PET_MUT[p.mu] && PET_MUT[p.mu].r === 3 && p.mu !== 'schatten') addLight(x, y - z - S.H * .4, 22 + st * 3, .5);
   if (PET_RT.sleep) { ctx.fillStyle = '#e8f0ff'; for (let i = 0; i < 3; i++) { const t = (T * .5 + i / 3) % 1, zx = x + PET_RT.face * Math.round(S.W * .2) + Math.round(t * 6), zy = y - z - S.ay + 4 - Math.round(t * 14); ctx.globalAlpha = Math.sin(t * Math.PI); ctx.fillRect(zx, zy, 3, 1); ctx.fillRect(zx + 1, zy + 1, 1, 1); ctx.fillRect(zx, zy + 2, 3, 1); } ctx.globalAlpha = 1; }
 }
 const PET_DRAW = { y: 0, draw: drawPet };
+// Schild-Zauber: goldene Blase um den Helden
+const PET_SHD = { y: 0, draw() { if (!P || !(PET_RT.shT > T)) return; const x = Math.round(P.x - CX), y = Math.round(P.y - CY) - 10, a = Math.min(1, (PET_RT.shT - T) * 2) * (.5 + .15 * Math.sin(T * 8)); ctx.globalAlpha = a * .35; ctx.fillStyle = '#ffe08a'; ctx.beginPath(); ctx.ellipse(x, y, 13, 16, 0, 0, 6.283); ctx.fill(); ctx.globalAlpha = a; ctx.strokeStyle = '#fff3a0'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(x, y, 13, 16, 0, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1; addLight(x, y, 24, .4); } };
 // Verletzter Begleiter liegt im Versteck neben dem Brutnest: schläft, Verband um den Bauch
 const PET_HURT = { y: 0, x: 0, draw() {
   const p = petSel(); if (!p || !petIsHurt(p)) return;
@@ -1457,7 +2337,12 @@ function petSafe(k, fn, def) { return (...a) => { try { return fn(...a); } catch
 HOOK.update.push(petSafe('update', dt => petTick(dt)));
 HOOK.room.push(petSafe('room', () => petPlace(false)));
 HOOK.kill.push(petSafe('kill', petKill));
-HOOK.stats.push(petSafe('stats', add => { const p = petActive(); if (!p) return; const v = petPas(p); for (const k in v) add(k, v[k]); }));
+// Passivkraft, dazu Talente/Ausrüstung/Mutation für den Helden und zwei Gene (Zähigkeit → LP, Glück → Beute)
+HOOK.stats.push(petSafe('stats', add => {
+  const p = petActive(); if (!p) return; const v = petPas(p); for (const k in v) add(k, v[k]);
+  const m = petMods(p); for (const k in m) if (!PET_INK.has(k)) add(k, m[k]);
+  add('hp', petGene(p, 2) / 100 * .05); add('loot', petGene(p, 4) / 100 * .05);
+}));
 // Giftzahn der Natter: Treffer des Helden vergiften manchmal
 HOOK.afterHit.push(petSafe('afterHit', (e, w, dmg) => { if (!e || e.dead || (w && w.pet)) return; const c = mod('pgift'); if (c && Math.random() < c) { e.poison = Math.max(e.poison || 0, 3); e.poisonDmg = Math.max(e.poisonDmg || 0, Math.max(1, Math.round(dmg * .2))); } }));
 HOOK.draw.push(petSafe('draw', list => {
@@ -1469,7 +2354,7 @@ HOOK.draw.push(petSafe('draw', list => {
   const p = petActive(); if (!p) return;
   if ((state === 'title' || state === 'map' || state === 'menu') && T > PET_RT.lt) petTick(Math.min(.05, T - PET_RT.lt));
   if (PET_RT.id !== p.id) return;
-  PET_DRAW.y = PET_RT.y; list.push(PET_DRAW);
+  PET_DRAW.y = PET_RT.y; list.push(PET_DRAW); if (PET_RT.shT > T && P) { PET_SHD.y = P.y + .5; list.push(PET_SHD); }
   for (const b of PET_BOLTS) list.push(b);
   for (const f of PET_FX) list.push(f);
 }));
@@ -1546,6 +2431,23 @@ document.head.insertAdjacentHTML('beforeend', '<style>' +
   '.hres{min-height:150px}.hres h2{margin:6px 0 2px;font-size:20px}.hres .kv{margin:8px 0 4px}' +
   '@media (max-height:520px) and (min-width:560px){.hatch{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:4px 16px;align-items:center}.hatch>h2{grid-column:1/-1;margin:0}.hatch canvas{width:100%;height:auto;max-height:calc(100dvh - 110px);object-fit:contain;margin:0}.hres{min-height:0}}' +
   '@media (prefers-reduced-motion:reduce){.petprev .spr,.pcard .spr,.ic.wob img,.negg .e{animation-duration:1.6s!important}}' +
+  /* Kreaturen 2.0: Unterbereiche, Begleiter-Raster, Gene, Ausrüstung, Magie, Zucht */
+  '.psub{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:10px 0 8px}@media (min-width:700px){.psub{grid-template-columns:repeat(6,minmax(0,1fr))}}' +
+  '.psub .opt{min-height:44px;min-width:0;padding:6px 2px;font-size:8px;margin:0;position:relative}.psub .opt em{position:absolute;right:3px;top:3px;font-style:normal;color:var(--gold);font-size:7px}' +
+  '.pnav{display:flex;gap:6px;align-items:center}.pnav .btn{min-width:44px;min-height:44px;padding-left:6px;padding-right:6px}' +
+  '.pmini{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;margin-bottom:8px}.pmini .pmi{width:88px;height:66px;display:flex;align-items:flex-end;justify-content:center;background:radial-gradient(ellipse at 50% 80%,var(--stone-hi) 0,var(--stone-lo) 72%)}.pmini .spr{margin:0 0 4px;animation:petan .8s steps(4) infinite}' +
+  '.psub{margin-top:0}' +
+  '.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:5px}.pgrid button{position:relative;height:58px;border:0;padding:0;background:var(--night);box-shadow:inset 0 -3px 0 var(--tc);cursor:pointer;display:grid;place-items:center;color:inherit}' +
+  '.pgrid button.sel{box-shadow:inset 0 0 0 3px var(--gold)}.pgrid button.selb{box-shadow:inset 0 0 0 3px #ff8aa8}.pgrid button.off img{opacity:.4}.pgrid img{max-width:46px;max-height:46px;image-rendering:pixelated}' +
+  '.pgrid b{position:absolute;right:3px;bottom:4px;font-family:var(--f-display);font-weight:400;font-size:6px;color:var(--parch);text-shadow:1px 1px 0 #000}.pgrid i{position:absolute;left:4px;top:4px;width:7px;height:7px;background:var(--moss)}.pgrid i.cd{background:#ff8a7a}.pgrid u{position:absolute;right:3px;top:2px;text-decoration:none;color:#ff9af0;font-size:13px}' +
+  '.pgene{display:grid;grid-template-columns:92px minmax(0,1fr) 30px 24px;gap:2px 6px;align-items:center;font-size:17px;margin:5px 0}.pgene .pbar{margin:0}.pgene b{font-family:var(--f-display);font-weight:400;font-size:9px;text-align:center}.pgene small{grid-column:2/-1;font-size:15px;color:var(--parch-dim);line-height:1.05}' +
+  '.pcards{display:grid;gap:6px}@media (min-width:640px){.pcards{grid-template-columns:repeat(3,minmax(0,1fr))}}' +
+  '.pslot{background:var(--stone-lo);padding:8px;box-shadow:inset 3px 0 0 var(--rc,var(--stone-hi));display:grid;grid-template-columns:40px minmax(0,1fr);gap:4px 8px;align-items:start;min-width:0}.pslot>img{width:40px;height:40px;image-rendering:pixelated}.pslot .nm{font-size:18px;line-height:1.05;overflow-wrap:anywhere}.pslot .st{font-size:15px;color:var(--parch-dim);line-height:1.1}.pslot .acts{grid-column:1/-1;justify-content:flex-start;margin:2px 0 0;flex-wrap:wrap}.pslot.lock{opacity:.5}' +
+  '.plines{margin:3px 0 0;padding:0;list-style:none;font-size:16px;line-height:1.15}.plines li{color:#9ad8ff}.plines li.up{color:var(--moss)}.plines li.dn{color:#ff8a7a}' +
+  '.pmut{display:flex;flex-wrap:wrap;gap:5px}.pmut span{font-size:15px;padding:4px 7px;background:var(--night);box-shadow:inset 0 0 0 2px var(--mc);color:var(--parch)}.pmut span.no{opacity:.45;box-shadow:inset 0 0 0 2px var(--stone-hi)}' +
+  '.pbr{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px;align-items:center;text-align:center;margin:6px 0}.pbr>div{background:var(--night);padding:6px 4px;min-height:84px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:15px;line-height:1.05;min-width:0;overflow-wrap:anywhere}.pbr img{max-width:52px;max-height:48px;image-rendering:pixelated}.pbr>b{font-family:var(--f-display);font-weight:400;font-size:12px;color:#ff8aa8}' +
+  '.pout{display:grid;gap:3px;margin:4px 0}.pout div{display:flex;justify-content:space-between;gap:8px;font-size:16px;background:var(--stone-lo);padding:4px 8px}.pout b{font-weight:400;color:var(--gold)}' +
+  '.ptree .tal small{font-size:15px}.ptree .tal .req{display:block;color:#ff8a7a;font-size:14px;margin-top:2px}' +
   '</style>');
 let petView = null, petAmt = 1, petRen = false, petRel = false;
 function petViewed() { const M = petM(); return (M && (M.list.find(x => x.id === petView) || petSel() || M.list[0])) || null; }
@@ -1574,7 +2476,7 @@ function petBagHTML(p) {
   const n = petBagSize(p), bag = p.bag || [];
   let cells = bag.map(e => `<span title="${esc(petLootName(e))}"><img src="${petLootIcon(e)}" alt="">${e.n > 1 ? `<b>${fmt(e.n)}</b>` : ''}</span>`).join('');
   for (let i = bag.length; i < n; i++) cells += '<span class="free"></span>';
-  return `<h3>${_t('BEUTEL {n}/{max}', { n: bag.length, max: n })}</h3><p class="sub" style="margin-top:0">${_t('Fällst du in den Verlorenen Landen, rettet dein Begleiter, was in seinem Beutel liegt. Seltenere Arten tragen mehr.')}</p><div class="pbag">${cells}</div>${bag.length ? `<div class="acts" style="justify-content:flex-start;margin-top:6px"><button class="btn alt sm" data-act="petbag" data-id="${p.id}">${_t('Alles herausnehmen')}</button></div>` : ''}`;
+  return `<h3>${_t('BEUTEL {n}/{max}', { n: bag.length, max: n })}</h3><p class="sub" style="margin-top:0">${_t('Fällst du in den Verlorenen Landen, rettet dein Begleiter, was in seinem Beutel liegt. Seltenere Arten tragen mehr, das Talent „Große Taschen“ gibt weitere Plätze.')}</p><div class="pbag">${cells}</div>${bag.length ? `<div class="acts" style="justify-content:flex-start;margin-top:6px"><button class="btn alt sm" data-act="petbag" data-id="${p.id}">${_t('Alles herausnehmen')}</button></div>` : ''}`;
 }
 function petHurtHTML(p) {
   if (!petIsHurt(p)) return '';
@@ -1588,20 +2490,69 @@ function petNestHTML(M) {
   return `<h3>${_t('EIER {n}/{max}', { n: eggs.length, max: EGG_MAX })}</h3>${rows || `<p class="sub" style="margin-top:0">${_t('Noch keine Eier. Das erste gibt es vom ersten Boss der Geschichte, weitere von Bossen, der Drachentruhe, aus den Verlorenen Landen und vom Basar.')}</p>`}${petHero() ? `<div class="menu" style="margin-top:6px"><button class="btn${nestAlert().ready || nestAlert().need ? '' : ' alt'}" data-act="nestopen" data-id="char">${_t('Zum Brutnest')}</button></div>` : ''}`;
 }
 function petColHTML() {
-  const M = petM(), n = M.seen.length, nx = PET_CW.find(([k]) => k > n);
-  const cells = PET_ORDER.map(sp => { const S = PET_SP[sp], seen = M.seen.includes(sp); return `<span class="${seen ? '' : 'no'}" style="--tc:${PET_TIERS[S.t].c}" title="${seen ? esc(S.n) : '???'}" aria-label="${seen ? esc(S.n) : '???'}"><img src="${seen ? petImgURL(sp, 0, 0, false, false).url : petSilURL(sp)}" alt=""></span>`; }).join('');
-  return `<h3>${_t('SAMMLUNG {n}/{max}', { n, max: PET_ORDER.length })}</h3>${nx ? `<div class="pbar thin" style="--c:var(--gold);margin-top:0"><i style="width:${(n / nx[0] * 100).toFixed(1)}%"></i></div><p class="sub" style="margin:2px 0 6px">${_t('Nächste Belohnung: {n} Arten entdeckt → +{c} Glücksmünzen', { n: nx[0], c: nx[1] })}</p>` : `<p class="sub" style="margin:0 0 6px">${_t('Alle Arten entdeckt!')}</p>`}<div class="ncol">${cells}</div>`;
+  const M = petM(), wild = PET_ORDER.filter(sp => !PET_SP[sp].hy), n = M.seen.length, nx = PET_CW.find(([k]) => k > n), nh = PET_HY.filter(sp => M.seen.includes(sp)).length;
+  const cell = sp => { const S = PET_SP[sp], seen = M.seen.includes(sp); return `<span class="${seen ? '' : 'no'}" style="--tc:${PET_TIERS[S.t].c}" title="${seen ? esc(S.n) : '???'}" aria-label="${seen ? esc(S.n) : '???'}"><img src="${seen ? petImgURL(sp, 0, 0, false, false).url : petSilURL(sp)}" alt=""></span>`; };
+  return `<h3>${_t('SAMMLUNG {n}/{max}', { n, max: PET_ORDER.length })}</h3>${nx ? `<div class="pbar thin" style="--c:var(--gold);margin-top:0"><i style="width:${(n / nx[0] * 100).toFixed(1)}%"></i></div><p class="sub" style="margin:2px 0 6px">${_t('Nächste Belohnung: {n} Arten entdeckt → +{c} Glücksmünzen', { n: nx[0], c: nx[1] })}</p>` : `<p class="sub" style="margin:0 0 6px">${_t('Alle Arten entdeckt!')}</p>`}<div class="ncol">${wild.map(cell).join('')}</div>
+  <h3>${_t('HYBRIDE {n}/{max}', { n: nh, max: PET_HY.length })}</h3><p class="sub" style="margin:0 0 6px">${_t('Gibt es nur aus der Zucht – das Zuchtbuch verrät, wer zusammenpasst.')}</p><div class="ncol">${PET_HY.map(cell).join('')}</div>`;
 }
-function petTabHTML() {
-  const M = petM(); if (!M) return '';
-  const p = petViewed();
-  if (!p) return `<div class="split"><div><div class="box"><p class="sub" style="margin-top:0">${_t('Gerade begleitet dich niemand. Begleiter schlüpfen aus Eiern, die du im Brutnest im Versteck pflegst: Wärme, Futter und Zuwendung.')}</p></div>${petNestHTML(M)}</div><div>${petColHTML()}</div></div>`;
-  if (p.nw) { p.nw = 0; persist(); }
-  petView = p.id;
+/* ---------- Kreaturen 2.0: Symbole für Ausrüstung und Runen ---------- */
+const PET_GCOL = [['#6a4224', '#8a5a32', '#b07a48'], ['#4a505c', '#7a828e', '#a8b0bc'], ['#8a8a96', '#c8c8d4', '#ffffff'], ['#2a4a8a', '#4a8ad8', '#9ad0ff'], ['#9c6a24', '#e8b04a', '#fff0a0']];
+function petGearIconURL(it) {
+  const g = clamp(Math.floor((it.lv - 1) / 20), 0, 4), key = 'pg' + it.s + g + it.r; if (PET_URLS[key]) return PET_URLS[key];
+  const b = PB(16, 16), [c0, c1, c2] = PET_GCOL[g], rc = RAR[it.r].c;
+  if (it.s === 'h') { for (let a = 0; a < 6.283; a += .2) { b.set(8 + Math.cos(a) * 6, 6 + Math.sin(a) * 3.5, a > 3.3 && a < 6 ? c2 : c1); b.set(8 + Math.cos(a) * 5, 6 + Math.sin(a) * 2.6, c0); } for (const x of [3, 6, 10, 13]) b.set(x, 8, c2); b.rect(7, 10, 3, 2, c1); b.disc(8.5, 13, 2, rc); b.set(8, 12, '#ffffff'); }
+  else if (it.s === 'p') { b.rect(3, 3, 10, 11, c1); b.rect(3, 3, 10, 2, c2); b.rect(1, 4, 3, 4, c1); b.rect(12, 4, 3, 4, c1); b.rect(6, 2, 4, 2, '#1a1420'); for (let y = 6; y < 14; y += 3) b.rect(4, y, 8, 1, c0); b.rect(7, 6, 2, 6, rc); b.set(7, 6, '#ffffff'); }
+  else { b.line(4, 1, 8, 7, c1); b.line(12, 1, 8, 7, c1); [1, 3, 5, 7, 7, 5, 3, 1].forEach((w, r) => b.rect(8 - Math.ceil(w / 2), 7 + r, w, 1, r < 3 ? c2 : rc)); b.set(7, 9, '#ffffff'); b.set(8, 8, c0); }
+  return PET_URLS[key] = pbCanvas(pbOutline(b, '#140f1a')).toDataURL();
+}
+const PET_GLYPH = { feuerball: [[8, 4], [6, 7], [10, 7], [7, 10], [9, 10], [8, 8]], heilung: [[8, 4], [8, 5], [8, 6], [8, 7], [8, 8], [8, 9], [8, 10], [5, 7], [6, 7], [7, 7], [9, 7], [10, 7], [11, 7]], schild: [[5, 4], [11, 4], [5, 5], [11, 5], [5, 6], [11, 6], [6, 8], [10, 8], [7, 9], [9, 9], [8, 10], [6, 4], [7, 4], [8, 4], [9, 4], [10, 4]], blitz: [[9, 3], [8, 4], [7, 5], [6, 6], [7, 7], [8, 7], [9, 7], [10, 8], [9, 9], [8, 10], [7, 11]], frostnova: [[8, 3], [8, 4], [8, 5], [8, 6], [8, 7], [8, 8], [8, 9], [8, 10], [8, 11], [5, 5], [6, 6], [10, 8], [11, 9], [11, 5], [10, 6], [6, 8], [5, 9]], gift: [[7, 4], [8, 4], [9, 4], [6, 5], [10, 5], [6, 6], [10, 6], [7, 7], [9, 7], [8, 9], [8, 10]], meteor: [[10, 4], [9, 5], [8, 6], [6, 8], [7, 8], [5, 9], [6, 9], [7, 9], [6, 10], [4, 3], [5, 4], [3, 5]], ranken: [[5, 11], [6, 10], [7, 9], [8, 8], [8, 7], [9, 6], [10, 5], [10, 4], [6, 7], [7, 7], [10, 8], [11, 8]] };
+function petRuneIconURL(k) {
+  const key = 'rn' + k; if (PET_URLS[key]) return PET_URLS[key];
+  const b = PB(16, 16), Z = PET_SPELL[k], E = PET_EL[Z ? Z.el : 'licht'];
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) { const dx = (x + .5 - 8) / 6.3, dy = (y + .5 - 7.6) / 6.6, d = dx * dx + dy * dy; if (d <= 1) b.set(x, y, dx + dy * .8 > .35 ? '#4a4458' : dx + dy < -.6 ? '#9a94aa' : '#6e6880'); }
+  for (const [x, y] of PET_GLYPH[k] || []) b.set(x, y, E.c2); for (const [x, y] of (PET_GLYPH[k] || []).slice(0, 3)) b.set(x, y, '#ffffff');
+  return PET_URLS[key] = pbCanvas(pbOutline(b, '#140f1a')).toDataURL();
+}
+/* ---------- Texte für Werte, Gene, Ausrüstung ---------- */
+const PET_GTXT = {
+  pdmg: v => _t('+{v} Schaden des Begleiters', { v: pct(v) }), pcrit: v => _t('+{v} Krit-Chance des Begleiters', { v: pct(v) }), paspd: v => _t('+{v} Angriffstempo des Begleiters', { v: pct(v) }),
+  pel: v => _t('+{v} Element-Wirkung (Brand, Frost)', { v: pct(v) }), pmag: v => _t('+{v} Zauberkraft', { v: pct(v) }), pmcd: v => _t('Zauber {v} schneller bereit', { v: pct(v) }), pspec: v => _t('Spezialangriff {v} schneller bereit', { v: pct(v) }),
+  pheal: v => _t('Heil- und Schildzauber +{v}', { v: pct(v) }), pwund: v => _t('Verletzungen {v} kürzer', { v: pct(v) }), pmagr: v => _t('+{v} Reichweite des Beutemagneten', { v: pct(v) }),
+  pbag: v => _t('+{v} Beutelplatz', { v: Math.round(v) }), pegg: v => _t('+{v} Chance auf Monster-Eier, Runen und Ausrüstung', { v: pct(v) })
+};
+function petStatTxt(k, v) { return (PET_GTXT[k] || PET_PASTXT[k] || (x => k + ' ' + x))(v); }
+function petNum(v) { return v.toLocaleString(LOCALE, { maximumFractionDigits: 2 }); }
+function petGeneTxt(p, i) {
+  switch (i) {
+    case 0: return _t('Schaden ×{k}', { k: petNum(petGeneK(p, 0, .85, .3)) });
+    case 1: return _t('Angriffstempo ×{k}', { k: petNum(petGeneK(p, 1, .9, .2)) });
+    case 2: return _t('Verletzungen ×{k} · +{v} LP für dich', { k: petNum(petGeneK(p, 2, 1.15, -.3)), v: pct(petGene(p, 2) / 100 * .05) });
+    case 3: return _t('Zauberkraft ×{k} · Abklingzeit ×{c}', { k: petNum(petGeneK(p, 3, .8, .5)), c: petNum(petGeneK(p, 3, 1.1, -.2)) });
+    default: return _t('+{v} Beute für dich · mehr Mutationen bei der Zucht', { v: pct(petGene(p, 4) / 100 * .05) });
+  }
+}
+function petGearLines(it, cmp) {
+  const L = []; for (const k in it.a) { const d = cmp ? it.a[k] - ((cmp.a || {})[k] || 0) : 0; L.push(`<li class="${cmp ? d > 0 ? 'up' : d < 0 ? 'dn' : '' : ''}">${esc(petStatTxt(k, it.a[k]))}</li>`); }
+  if (cmp) for (const k in cmp.a) if (!(k in it.a)) L.push(`<li class="dn">− ${esc(petStatTxt(k, cmp.a[k]))}</li>`);
+  return `<ul class="plines">${L.join('')}</ul>`;
+}
+function petGearCost(s, lv) { const c = PET_SLOT[s].cost.map(([k, n]) => [k, n + Math.floor(lv / 10)]); if (lv >= 40) c.push(['mithril', 1 + Math.floor((lv - 40) / 20)]); if (lv >= 70) c.push(['schuppe', 1]); return { m: c, gold: 50 + lv * 10 }; }
+function petCostOk(C) { if (!petHero()) return false; for (const [k, n] of C.m) if ((P.mats[k] || 0) < n) return false; return P.gold >= (C.gold || 0); }
+function petCostHTML(C) { return C.m.map(([k, n]) => `<span class="${petHero() && (P.mats[k] || 0) >= n ? '' : 'bad'}" style="display:inline-flex;align-items:center;gap:2px;margin-right:6px"><img src="${iconURL(['mat', k])}" alt="" style="width:16px;height:16px;image-rendering:pixelated">${n}</span>`).join('') + (C.gold ? `<span class="${petHero() && P.gold >= C.gold ? '' : 'bad'}"><i class="coin"></i>${fmt(C.gold)}</span>` : ''); }
+function petCostPay(C) { for (const [k, n] of C.m) P.mats[k] -= n; P.gold -= C.gold || 0; }
+function petSalvage(it) { return { gold: Math.round(25 * (it.r + 1) * (it.r + 1) * (1 + it.lv / 50)), mat: [PET_SLOT[it.s].cost[0][0], 1 + it.r] }; }
+
+/* ---------- Charakter-Reiter BEGLEITER: Kopf (immer), Unterbereiche ---------- */
+let petSub = 'ov';
+const PET_BR = { a: null, b: null };
+const PET_SUBS = [['ov', _t('ÜBERSICHT')], ['gen', _t('GENE')], ['eq', _t('AUSRÜSTUNG')], ['tal', _t('TALENTE')], ['mag', _t('MAGIE')], ['zu', _t('ZUCHT')]];
+function petSubBadge(p, k) { if (k === 'tal') { const f = petTalFree(p); return f > 0 ? f : ''; } if (k === 'mag') { const M = petM(), free = petSockets(p) - (p.mg || []).slice(0, petSockets(p)).filter(Boolean).length; return free > 0 && PET_SPELLS.some(r => M.runes[r] > 0) ? '!' : ''; } if (k === 'zu') return !petBreedWhy(p) ? '♥' : ''; if (k === 'eq') { const M = petM(); return M.gear.length && PET_SLOTS.some(s => !(p.eq && p.eq[s]) && M.gear.some(it => it.s === s)) ? '!' : ''; } return ''; }
+function petHeadHTML(p, M) {
   const S = PET_SP[p.sp], st = petStage(p.lv), E = PET_EL[S.el], act = M.act === p.id, hurt = petIsHurt(p), sc = 4, U = petURL(p, true), need = petNeed(p.lv), nx = PET_STAGE.find(l => l > p.lv), q = p.lv >= 100 ? 1 : p.xp / need;
   const prev = `<div class="petprev${hurt ? ' hurt' : Date.now() - PET_UI.fed < 700 ? ' yum' : ''}" style="width:${Math.max(132, U.W * sc + 24)}px;height:${Math.max(120, U.H * sc + (S.fly ? 46 : 30))}px;--pg:${st >= 4 ? `rgba(${E.rgb},.45)` : 'var(--stone-hi)'}">${petSprHTML(U, sc, S.fly && !hurt)}</div>`;
+  const mu = PET_MUT[p.mu] ? `<span class="pill" style="background:${PET_MUTC[PET_MUT[p.mu].r]}">${PET_MUT[p.mu].n}</span>` : '';
   const info = `<div class="petinfo"><div class="petnm">${esc(petName(p))}${p.shiny ? ' <span style="color:#ff9af0">✦</span>' : ''}</div>
-    <div class="st" style="font-size:17px;margin-top:5px">${p.nm ? S.n + ' · ' : ''}${PET_STN[st]} · ${tierPill(S.t)} <span class="pel" style="background:${E.c}">${E.n}</span></div>
+    <div class="st" style="font-size:17px;margin-top:5px">${p.nm ? S.n + ' · ' : ''}${PET_STN[st]} · ${tierPill(S.t)} <span class="pel" style="background:${E.c}">${E.n}</span> ${mu}</div>
     <div class="stats" style="margin:8px 0 0"><span>${_t('LV {lv}', { lv: p.lv })}</span><span>${_t('SIEGE {n}', { n: fmt(p.k || 0) })}</span>${act && !hurt ? `<span style="color:var(--moss)">${_t('BEGLEITET DICH')}</span>` : ''}${hurt ? `<span style="color:#ff8a7a">${_t('VERLETZT')}</span>` : ''}</div>
     ${petHurtHTML(p)}
     <div class="pbar" style="--c:${E.c}"><i style="width:${(q * 100).toFixed(1)}%"></i></div>
@@ -1609,13 +2560,27 @@ function petTabHTML() {
     ${nx ? `<div class="pbar thin" style="--c:var(--gold)"><i style="width:${((p.lv - PET_STAGE[st]) / (nx - PET_STAGE[st]) * 100).toFixed(1)}%"></i></div><div class="st">${_t('Nächste Entwicklung: {stage} ab LV {lv}', { stage: PET_STN[petStage(nx)], lv: nx })}</div>` : ''}
     <div class="acts" style="justify-content:flex-start;margin-top:8px">${act ? `<button class="btn alt sm" data-act="petact" data-id="${p.id}">${_t('Zurücklassen')}</button>` : `<button class="btn sm" data-act="petact" data-id="${p.id}">${_t('Mitnehmen')}</button>`}<button class="btn alt sm" data-act="petren">${_t('Umbenennen')}</button>${petRel ? `<button class="btn red sm" data-act="petrelok">${_t('Wirklich freilassen?')}</button><button class="btn alt sm" data-act="petrelno">${_t('Nein')}</button>` : `<button class="btn alt sm" data-act="petrel" ${M.list.length > 1 ? '' : 'disabled'}>${_t('Freilassen')}</button>`}</div></div>`;
   const ren = petRen ? `<div class="acts" style="justify-content:flex-start;flex-wrap:nowrap;margin-top:10px"><input type="text" id="petnm" maxlength="14" value="${esc(p.nm)}" placeholder="${esc(S.n)}" style="flex:1;min-width:0"><button class="btn sm" data-act="petrenok">${_t('OK')}</button></div>` : '';
-  const cols = petCols(p), V = petVariants(p.sp);
+  const nav = M.list.length > 1 ? `<div class="pnav" style="margin-top:8px"><button class="btn alt sm" data-act="petnav" data-i="-1" aria-label="${_t('Voriger Begleiter')}">‹</button><span class="sub" style="flex:1;text-align:center;margin:0">${_t('{n} von {max}', { n: M.list.indexOf(p) + 1, max: M.list.length })}</span><button class="btn alt sm" data-act="petnav" data-i="1" aria-label="${_t('Nächster Begleiter')}">›</button></div>` : '';
+  const subs = `<div class="psub" role="tablist">${PET_SUBS.map(([k, n]) => { const bd = petSubBadge(p, k); return `<button class="opt${petSub === k ? ' sel' : ''}" role="tab" aria-selected="${petSub === k}" data-act="petsub" data-id="${k}">${n}${bd !== '' ? `<em>${bd}</em>` : ''}</button>`; }).join('')}</div>`;
+  // Übersicht: große Karte; sonst eine knappe Zeile, damit der Inhalt auf dem Handy gleich zu sehen ist
+  if (petSub !== 'ov') {
+    const U1 = petURL(p, true), s1 = Math.max(1, Math.min(2, Math.floor(Math.min(84 / U1.W, 60 / U1.H) * 2) / 2)), nv = M.list.length > 1;
+    return `${subs}<div class="box pmini"><div class="pmi">${petSprHTML(U1, s1, false)}</div><div style="min-width:0"><div class="petnm" style="font-size:22px">${esc(petName(p))}${p.shiny ? ' <span style="color:#ff9af0">✦</span>' : ''}</div><div class="st" style="font-size:16px;margin-top:3px">${_t('LV {lv}', { lv: p.lv })} · ${tierPill(S.t)} ${mu}${hurt ? ` <span style="color:#ff8a7a">${_t('verletzt')}</span>` : ''}</div></div>${nv ? `<div class="pnav"><button class="btn alt sm" data-act="petnav" data-i="-1" aria-label="${_t('Voriger Begleiter')}">‹</button><button class="btn alt sm" data-act="petnav" data-i="1" aria-label="${_t('Nächster Begleiter')}">›</button></div>` : ''}</div>`;
+  }
+  return `${subs}<div class="box"><div class="petcard">${prev}${info}</div>${ren}${nav}</div>`;
+}
+function petListHTML(M, p) {
+  return `<h3>${_t('DEINE BEGLEITER {n}/{max}', { n: M.list.length, max: PET_MAX })}</h3><div class="pgrid">${M.list.map(o => `<button class="${o.id === p.id ? 'sel' : ''}" style="--tc:${PET_TIERS[PET_SP[o.sp].t].c}" data-act="petsel" data-id="${o.id}" title="${esc(petName(o))}" aria-label="${esc(petName(o))}">${o.id === M.act ? '<i></i>' : petIsHurt(o) ? '<i class="cd"></i>' : ''}${o.nw ? '<u>●</u>' : ''}<img src="${petURL(o).url}" alt=""><b>${o.lv}</b></button>`).join('')}</div>`;
+}
+// Übersicht: Farbe, Beutel, Fähigkeiten | Füttern, Liste, Eier, Sammlung
+function petOvHTML(p, M) {
+  const S = PET_SP[p.sp], cols = petCols(p), V = petVariants(p.sp);
   const sws = [0, 1, 2, 3, 4, 5].map(c => { const j = (c - p.c0 + 6) % 6, ok = cols.includes(c), pl = petPal(p.sp, c); return `<button class="sw${p.col === c ? ' sel' : ''}" data-act="petcol" data-i="${c}" ${ok ? '' : 'disabled'} title="${ok ? V[c].n : _t('{n} – ab LV {lv}', { n: V[c].n, lv: PET_STAGE[j] })}" aria-label="${V[c].n}" style="background:linear-gradient(135deg,rgb(${pl.m2}) 55%,rgb(${pl.m0}) 55%)"></button>`; }).join('')
     + (p.shiny ? `<button class="sw${p.col === 6 ? ' sel' : ''}" data-act="petcol" data-i="6" title="${_t('Schillernd')}" aria-label="${_t('Schillernd')}" style="background:linear-gradient(135deg,#ff9af0,#9ad0ff 40%,#c8f06a 70%,#ffe08a)"></button>` : '');
-  const wd = playerW().dmg, pv = petPas(p), pmax = petPas({ sp: p.sp, lv: 100 }), pmin = petPas({ sp: p.sp, lv: 25 });
+  const wd = playerW().dmg, pv = petPas(p), pmax = petPas({ sp: p.sp, lv: 100 }), pmin = petPas({ sp: p.sp, lv: 25 }), k = petDmgK(p.lv, p.sp) * petDmgMul(p);
   const rows = [
-    [1, S.an, S.ad + ' ' + _t('Schaden {d} ({p} deiner Waffe), alle {s} s.', { d: Math.round(wd * petDmgK(p.lv, p.sp)), p: pct(petDmgK(p.lv, p.sp)), s: petAtkCd(p).toLocaleString(LOCALE, { maximumFractionDigits: 2 }) })],
-    [10, _t('Beutemagnet'), _t('Zieht Münzen, Material und Edelsteine aus {r} Schritt Entfernung zu dir.', { r: Math.round(petMagR(Math.max(10, p.lv))) })],
+    [1, S.an, S.ad + ' ' + _t('Schaden {d} ({p} deiner Waffe), alle {s} s.', { d: Math.round(wd * k), p: pct(k), s: petAtkCd(p).toLocaleString(LOCALE, { maximumFractionDigits: 2 }) })],
+    [10, _t('Beutemagnet'), _t('Zieht Münzen, Material und Edelsteine aus {r} Schritt Entfernung zu dir.', { r: Math.round(petMagRp(Object.assign({}, p, { lv: Math.max(10, p.lv) }))) })],
     [25, S.pn, p.lv >= 25 ? _t('Jetzt: {now}. Bei LV 100: {max}.', { now: petPasText(pv), max: petPasText(pmax) }) : _t('{min}, wächst bis LV 100 auf {max}.', { min: petPasText(pmin), max: petPasText(pmax) })],
     [50, S.sn, S.sd + ' ' + _t('Alle {s} s.', { s: petSpecCd(Math.max(50, p.lv)) })],
     [75, _t('Uralte Kraft'), _t('Spezialangriff ×1,5 und alle 16 s, leuchtende Aura, ein Beutelplatz mehr.')],
@@ -1624,8 +2589,80 @@ function petTabHTML() {
   const feed = `<h3>${_t('FÜTTERN')}</h3><p class="sub" style="margin-top:0">${p.lv >= 100 ? _t('Satt und mythisch – mehr geht nicht.') : _t('Übriges Material wird zu Erfahrung. Leibspeise: {mat} (doppelte EP).', { mat: MATS[S.fav].n })}</p>
     <div class="opts">${[1, 10, 100].map(n => `<button class="opt${petAmt === n ? ' sel' : ''}" data-act="petamt" data-i="${n}">×${n}</button>`).join('')}</div>
     <div class="grid">${MATORDER.map(k => { const n = P.mats[k] || 0, fav = k === S.fav; return `<button class="slot${fav ? ' fav' : ''}" data-act="petfeed" data-id="${k}" ${n && p.lv < 100 ? '' : 'disabled'} title="${MATS[k].n}" aria-label="${MATS[k].n}"><img src="${iconURL(['mat', k])}" alt=""><span class="u">+${fmt(PET_FEED[k] * (fav ? 2 : 1))}</span><span class="n">${n}</span></button>`; }).join('')}</div>`;
-  const list = `<h3>${_t('DEINE BEGLEITER {n}/{max}', { n: M.list.length, max: PET_MAX })}</h3>` + M.list.map(o => `<button class="row${o.id === p.id ? ' sel' : ''}${o.id === M.act ? ' eq' : ''}" data-act="petsel" data-id="${o.id}"><div class="ic" style="box-shadow:inset 0 -3px 0 ${PET_TIERS[PET_SP[o.sp].t].c}"><img src="${petURL(o).url}" alt=""></div><div><div class="nm">${esc(petName(o))}${o.shiny ? ' ✦' : ''}${o.nw ? `<span class="badge">${_t('NEU')}</span>` : ''}</div><div class="st">${o.nm ? PET_SP[o.sp].n + ' · ' : ''}${_t('LV {lv}', { lv: o.lv })} · ${PET_STN[petStage(o.lv)]} · <span style="color:${PET_TIERS[PET_SP[o.sp].t].c}">${PET_TIERS[PET_SP[o.sp].t].n}</span>${petIsHurt(o) ? ` · <span style="color:#ff8a7a">${_t('verletzt')}</span>` : ''}</div></div>${o.id === M.act ? `<span class="pill">${_t('AKTIV')}</span>` : '<span></span>'}</button>`).join('');
-  return `<div class="split"><div><div class="box"><div class="petcard">${prev}${info}</div>${ren}<h3>${_t('FARBE')} · ${petColName(p.sp, p.col)}</h3><div class="sws">${sws}</div><p class="sub" style="margin:4px 0 0">${_t('Jede Entwicklungsstufe schaltet eine neue Farbe frei.')}</p></div>${petBagHTML(p)}<h3>${_t('FÄHIGKEITEN')}</h3>${rows}</div><div>${feed}${petNestHTML(M)}${list}${petColHTML()}</div></div>`;
+  return `<div class="split"><div><div class="box"><h3 style="margin-top:0">${_t('FARBE')} · ${petColName(p.sp, p.col)}</h3><div class="sws">${sws}</div><p class="sub" style="margin:4px 0 0">${_t('Jede Entwicklungsstufe schaltet eine neue Farbe frei.')}</p></div>${petBagHTML(p)}<h3>${_t('FÄHIGKEITEN')}</h3>${rows}</div><div>${feed}${petListHTML(M, p)}${petNestHTML(M)}${petColHTML()}</div></div>`;
+}
+// Gene: fünf Leisten mit Note und Wirkung, Mutation, Herkunft, Mutationen-Sammlung
+function petGenHTML(p, M) {
+  const genes = PET_GENES.map((G, i) => { const v = petGene(p, i), gr = petGrade(v); return `<div class="pgene"><span>${G.n}</span><div class="pbar" style="--c:${G.c}"><i style="width:${v}%"></i></div><span style="text-align:right">${v}</span><b style="color:${gr[2]}">${gr[1]}</b><small>${petGeneTxt(p, i)}</small></div>`; }).join('');
+  const sum = (p.gn || petGenesOf(p.id)).reduce((a, b) => a + b, 0), MU = PET_MUT[p.mu];
+  const mut = MU ? `<div class="pslot" style="--rc:${PET_MUTC[MU.r]}"><img src="${petURL(p).url}" alt=""><div><div class="nm" style="color:${PET_MUTC[MU.r]}">${MU.n}</div><div class="st">${PET_MUTR[MU.r]} · ${MU.d}</div><ul class="plines">${Object.keys(MU.b).map(k => `<li>${esc(petStatTxt(k, MU.b[k]))}</li>`).join('')}</ul></div></div>`
+    : `<p class="sub" style="margin-top:0">${_t('Keine Mutation. Mutationen entstehen selten beim Schlüpfen und öfter bei der Zucht – Glück der Eltern und mutierte Eltern helfen.')}</p>`;
+  const from = p.pa ? `<div class="pbr" style="margin-top:0"><div><img src="${petImgURL(p.pa[0], 2, 0, false, false).url}" alt="">${PET_SP[p.pa[0]].n}</div><b>×</b><div><img src="${petImgURL(p.pa[1], 2, 0, false, false).url}" alt="">${PET_SP[p.pa[1]].n}</div></div><p class="sub" style="margin:0">${_t('Aus der Zucht · Generation {n}', { n: p.ge || 1 })}</p>` : `<p class="sub" style="margin-top:0">${_t('Wild geschlüpft – die Gene sind ein Zufallsgeschenk.')}</p>`;
+  const coll = Object.keys(PET_MUT).map(k => { const seen = M.mut.includes(k), X = PET_MUT[k]; return `<span class="${seen ? '' : 'no'}" style="--mc:${PET_MUTC[X.r]}">${seen ? X.n : '???'}</span>`; }).join('');
+  return `<div class="split"><div><div class="box"><h3 style="margin-top:0">${_t('GENE · SUMME {n}/500', { n: sum })}</h3>${genes}<p class="sub" style="margin:6px 0 0">${_t('Gene erben sich bei der Zucht: Mittel der Eltern, dazu etwas Zufall. Gute Paare machen bessere Kinder.')}</p></div></div>
+    <div><h3 style="margin-top:0">${_t('MUTATION')}</h3>${mut}<h3>${_t('HERKUNFT')}</h3>${from}<h3>${_t('ENTDECKTE MUTATIONEN {n}/{max}', { n: M.mut.length, max: Object.keys(PET_MUT).length })}</h3><div class="pmut">${coll}</div></div></div>`;
+}
+// Ausrüstung: drei Plätze, Lager (antippen → vergleichen, anlegen, zerlegen), Fertigen
+function petEqHTML(p, M) {
+  const eq = p.eq || {}, sel = M.gear.find(it => it.id === PET_UI.gsel) || null;
+  const slots = PET_SLOTS.map(s => { const it = eq[s]; return it ? `<div class="pslot" style="--rc:${RAR[it.r].c}"><img src="${petGearIconURL(it)}" alt=""><div><div class="nm" style="color:${RAR[it.r].c}">${petGearName(it)}</div><div class="st">${PET_SLOT[s].n} · ${RAR[it.r].n} · ${_t('Stufe {n}', { n: it.lv })}</div>${petGearLines(it)}</div><div class="acts"><button class="btn alt sm" data-act="petguneq" data-id="${s}">${_t('Ablegen')}</button></div></div>`
+    : `<div class="pslot"><img src="${petGearIconURL({ s, lv: 1, r: 0 })}" alt="" style="opacity:.3"><div><div class="nm">${PET_SLOT[s].n}</div><div class="st">${_t('Leer')}</div></div></div>`; }).join('');
+  const m = petMods(p), tot = Object.keys(m).filter(k => m[k]).map(k => `<li>${esc(petStatTxt(k, m[k]))}</li>`).join('');
+  const grid = M.gear.length ? `<div class="pgrid">${M.gear.map(it => `<button class="${sel === it ? 'sel' : ''}" style="--tc:${RAR[it.r].c}" data-act="petgsel" data-id="${it.id}" title="${esc(petGearName(it))}" aria-label="${esc(petGearName(it))}"><img src="${petGearIconURL(it)}" alt=""><b>${it.lv}</b></button>`).join('')}</div>` : `<p class="sub" style="margin-top:0">${_t('Noch leer. Begleiter-Ausrüstung fällt manchmal von Gegnern, wenn dein Begleiter dabei ist – oder Gunda fertigt sie dir an.')}</p>`;
+  const det = sel ? `<div class="pslot" style="--rc:${RAR[sel.r].c};margin-top:6px"><img src="${petGearIconURL(sel)}" alt=""><div><div class="nm" style="color:${RAR[sel.r].c}">${petGearName(sel)}</div><div class="st">${PET_SLOT[sel.s].n} · ${RAR[sel.r].n} · ${_t('Stufe {n}', { n: sel.lv })}</div>${petGearLines(sel, eq[sel.s] || { a: {} })}</div><div class="acts"><button class="btn sm" data-act="petgeq" data-id="${sel.id}">${eq[sel.s] ? _t('Tauschen') : _t('Anlegen')}</button><button class="btn alt sm" data-act="petgdel" data-id="${sel.id}">${_t('Zerlegen (+{g} Gold)', { g: petSalvage(sel).gold })}</button></div></div>` : '';
+  const lv = clamp(petHero() ? P.lv : 1, 1, 100), make = PET_SLOTS.map(s => { const C = petGearCost(s, lv); return `<div class="row" style="cursor:default"><div class="ic"><img src="${petGearIconURL({ s, lv, r: 2 })}" alt=""></div><div><div class="nm">${PET_SLOT[s].names[clamp(Math.floor((lv - 1) / 20), 0, 4)]}</div><div class="st">${petCostHTML(C)}</div></div><button class="btn sm" data-act="petgmake" data-id="${s}" ${petCostOk(C) && M.gear.length < PET_GEAR_MAX ? '' : 'disabled'}>${_t('Fertigen')}</button></div>`; }).join('');
+  return `<h3 style="margin-top:0">${_t('ANGELEGT')}</h3><div class="pcards">${slots}</div>${tot ? `<div class="box" style="margin-top:6px"><b style="font-family:var(--f-display);font-weight:400;font-size:8px">${_t('ALLE BONI (TALENTE, AUSRÜSTUNG, MUTATION)')}</b><ul class="plines">${tot}</ul></div>` : ''}
+    <div class="split"><div><h3>${_t('LAGER {n}/{max}', { n: M.gear.length, max: PET_GEAR_MAX })}</h3>${grid}${det}</div><div><h3>${_t('GUNDA FERTIGT')}</h3><p class="sub" style="margin-top:0">${_t('Stufe {lv} wie dein Held, Seltenheit ist Glückssache. Halsband: Angriff · Panzer: Schutz für dich · Talisman: Magie und Beute.', { lv })}</p>${make}</div></div>`;
+}
+// Talente: drei Zweige, Punkte je Level, Zurücksetzen gegen Gold
+function petTalHTML(p) {
+  const free = petTalFree(p), cost = 50 + p.lv * 15;
+  const tree = PET_TAL.map((B, bi) => `<div class="branch"><h4>${B.n}</h4>${B.nodes.map((N, ni) => { const t = petTalState(p, bi, ni); return `<button class="tal${t.lock ? ' lock' : ''}${t.can ? ' can' : ''}${t.r >= N.max ? ' max' : ''}" data-act="pettal" data-i="${bi * 5 + ni}"><span class="r">${t.r}/${N.max}</span><b>${N.n}</b><small>${N.d}${N.max > 1 ? ' ' + _t('je Rang') : ''}</small>${t.lock ? `<span class="req">${_t('Braucht {n} Punkte in {b}', { n: t.need, b: B.n })}</span>` : ''}</button>`; }).join('')}</div>`).join('');
+  return `<div class="head" style="margin-bottom:6px"><p class="sub" style="margin:0">${_t('Freie Punkte: {n} · 1 Punkt, dazu einer je 2 Level', { n: `<b style="color:var(--gold)">${free}</b>` })}</p><button class="btn alt sm" data-act="pettalreset" ${petTalUsed(p) && petHero() && P.gold >= cost ? '' : 'disabled'}>${_t('Zurücksetzen ({gold} Gold)', { gold: fmt(cost) })}</button></div><div class="tree ptree">${tree}</div><p class="sub">${_t('Sammler: „Große Taschen“ gibt deinem Begleiter mehr Beutelplätze – was im Beutel liegt, überlebt den Tod in den Landen.')}</p>`;
+}
+// Magie: Sockel (1, ab LV 25 zwei, ab LV 75 drei), Runen einsetzen, Runen binden
+function petMagHTML(p, M) {
+  const ns = petSockets(p), mg = p.mg || [], pw = petSpellPow(p), wd = playerW().dmg;
+  const sock = [0, 1, 2].map(i => { const lock = i >= ns, k = mg[i], Z = PET_SPELL[k]; if (lock) return `<div class="pslot lock"><div style="width:40px;height:40px;background:var(--night)"></div><div><div class="nm">${_t('Sockel {n}', { n: i + 1 })}</div><div class="st">${_t('Frei ab LV {lv}', { lv: i === 1 ? 25 : 75 })}</div></div></div>`;
+    if (!Z) return `<div class="pslot"><div style="width:40px;height:40px;background:var(--night);box-shadow:inset 0 0 0 2px var(--stone-hi)"></div><div><div class="nm">${_t('Sockel {n}', { n: i + 1 })}</div><div class="st">${_t('Leer – setz unten eine Rune ein.')}</div></div></div>`;
+    const E = PET_EL[Z.el]; return `<div class="pslot" style="--rc:${E.c}"><img src="${petRuneIconURL(k)}" alt=""><div><div class="nm" style="color:${E.c}">${Z.n}</div><div class="st">${Z.d} ${_t('Alle {s} s.', { s: petNum(Z.cd * petSpellCdK(p)) })}</div></div><div class="acts"><button class="btn alt sm" data-act="petmgout" data-i="${i}">${_t('Herausnehmen')}</button></div></div>`; }).join('');
+  const runes = PET_SPELLS.map(k => { const Z = PET_SPELL[k], n = M.runes[k] || 0, C = { m: Z.cost, gold: Z.gold }, E = PET_EL[Z.el]; return `<div class="row" style="cursor:default"><div class="ic" style="box-shadow:inset 0 -3px 0 ${E.c}"><img src="${petRuneIconURL(k)}" alt=""></div><div><div class="nm" style="color:${E.c}">${Z.n} <span class="sub" style="font-size:15px">×${n}</span></div><div class="st">${Z.d}</div><div class="st">${petCostHTML(C)}</div></div><div class="acts" style="flex-direction:column;align-items:stretch;gap:4px"><button class="btn sm" data-act="petmgin" data-id="${k}" ${n > 0 ? '' : 'disabled'}>${_t('Einsetzen')}</button><button class="btn alt sm" data-act="petmgmake" data-id="${k}" ${petCostOk(C) ? '' : 'disabled'}>${_t('Binden')}</button></div></div>`; }).join('');
+  return `<div class="box"><p class="sub" style="margin:0">${_t('Dein Begleiter wirkt eingesetzte Zauber im Kampf ganz von selbst. Zauberkraft: {p} deiner Waffe (etwa {d} Schaden). Mehr Kraft durch Magie-Gen, Talente und Talisman.', { p: pct(pw), d: Math.round(wd * pw) })}</p></div>
+    <h3>${_t('SOCKEL {n}/3', { n: ns })}</h3><div class="pcards">${sock}</div><h3>${_t('ZAUBERRUNEN')}</h3><p class="sub" style="margin-top:0">${_t('Runen fallen manchmal von Gegnern, wenn dein Begleiter mitkämpft, oder du bindest sie aus Material. Herausnehmen gibt die Rune zurück.')}</p>${runes}`;
+}
+// Zucht: im Reiter ist der angesehene Begleiter Elternteil A; im Brutnest wählt man beide
+function petBreedHTML(where, p) {
+  const M = petM(); if (!M) return '';
+  if (where === 'tab') PET_BR.a = p.id;
+  const A = M.list.find(o => o.id === PET_BR.a) || null, B = M.list.find(o => o.id === PET_BR.b && o.id !== PET_BR.a) || null;
+  const card = (o, lab) => o ? `<div><img src="${petURL(o).url}" alt=""><span>${esc(petName(o))}</span><span style="color:${petBreedWhy(o) ? '#ff8a7a' : 'var(--moss)'}">${petBreedWhy(o) || _t('zuchtreif')}</span></div>` : `<div><span class="sub" style="margin:0">${lab}</span></div>`;
+  let out = '';
+  if (A && B) {
+    const hyb = petHybOf(A.sp, B.sp), luck = (petGene(A, 4) + petGene(B, 4)) / 200, hc = hyb ? PET_HYB_CH + luck * .15 : 0, rest = 1 - hc, known = hyb && M.seen.includes(hyb), L = [];
+    if (hyb) L.push([known ? PET_SP[hyb].n : _t('??? (ein Hybrid!)'), hc]);
+    if (A.sp === B.sp) L.push([PET_SP[A.sp].n, rest]); else { L.push([PET_SP[A.sp].n, rest / 2]); L.push([PET_SP[B.sp].n, rest / 2]); }
+    const mc = Math.min(1, .03 + luck * .04 + (A.mu || B.mu ? .03 : 0)), gl = PET_GENES.map((G, i) => { const v = Math.round((petGene(A, i) + petGene(B, i)) / 2); return `${G.n} ${clamp(v - 10, 0, 100)}–${clamp(v + 10, 0, 100)}`; }).join(' · ');
+    const cost = petBreedCost(A, B), why = petBreedWhy(A) || petBreedWhy(B) || (M.eggs.length >= EGG_MAX ? _t('Brutnest voll') : '') || (!petHero() || P.gold < cost ? _t('Zu wenig Gold') : '');
+    out = `<div class="pout">${L.map(([n, c]) => `<div><span>${n}</span><b>${Math.round(c * 100)} %</b></div>`).join('')}<div><span>${_t('Mutation')}</span><b>${Math.round(mc * 100)} %${A.mu || B.mu ? ' · ' + _t('Erbe möglich') : ''}</b></div></div><p class="sub" style="margin:2px 0 6px">${_t('Gene etwa: {g}', { g: gl })}</p>
+      <div class="menu"><button class="btn" data-act="petbrgo" ${why ? 'disabled' : ''}>${_t('Paaren ({g} Gold)', { g: fmt(cost) })}</button></div>${why ? `<p class="sub" style="margin:4px 0 0;color:#ff8a7a">${why}</p>` : `<p class="sub" style="margin:4px 0 0">${_t('Danach ruhen beide Eltern ein paar Stunden. Das Ei kommt ins Brutnest.')}</p>`}`;
+  }
+  const cand = M.list.filter(o => where === 'nest' || o.id !== PET_BR.a);
+  const grid = `<div class="pgrid">${cand.map(o => { const why = petBreedWhy(o); return `<button class="${o.id === PET_BR.a && where === 'nest' ? 'sel' : o.id === PET_BR.b ? 'selb' : ''}${why ? ' off' : ''}" style="--tc:${PET_TIERS[PET_SP[o.sp].t].c}" data-act="petbrsel" data-id="${o.id}" data-i="${where === 'nest' ? 1 : 0}" title="${esc(petName(o) + (why ? ' – ' + why : ''))}" aria-label="${esc(petName(o))}">${why ? '<i class="cd"></i>' : '<i></i>'}<img src="${petURL(o).url}" alt=""><b>${o.lv}</b></button>`; }).join('')}</div>`;
+  // Zuchtbuch: entdeckte Hybride mit Rezept, Hinweise, wenn ein Elternteil bekannt ist, der Rest nur gezählt
+  let hidden = 0; const book = PET_HY.map(sp => { const [a, b] = PET_SP[sp].hy, seen = M.seen.includes(sp), ka = M.seen.includes(a), kb = M.seen.includes(b); if (!seen && !ka && !kb) { hidden++; return ''; } return `<div${seen ? '' : ' style="opacity:.75"'}><span>${ka || seen ? PET_SP[a].n : '???'} × ${kb || seen ? PET_SP[b].n : '???'}</span><b>${seen ? PET_SP[sp].n : '???'}</b></div>`; }).join('') + (hidden ? `<div><span class="sub" style="margin:0">${_t('{n} weitere Rezepte – entdecke mehr Arten für Hinweise.', { n: hidden })}</span><b></b></div>` : '');
+  return `${where === 'tab' ? '' : `<h3>${_t('ZUCHT')}</h3>`}<p class="sub" style="margin-top:0">${_t('Zwei Begleiter ab LV {lv} legen zusammen ein Ei. Es erbt Gene, manchmal Mutationen – und passende Paare ergeben Hybride.', { lv: PET_BREED_LV })}</p>
+    <div class="pbr">${card(A, _t('Elternteil 1'))}<b>×</b>${card(B, _t('Partner wählen'))}</div>${out}
+    <h3>${where === 'tab' ? _t('PARTNER') : _t('BEGLEITER WÄHLEN')}</h3>${grid}
+    <h3>${_t('ZUCHTBUCH · HYBRIDE {n}/{max}', { n: PET_HY.filter(sp => M.seen.includes(sp)).length, max: PET_HY.length })}</h3><div class="pout">${book}</div>`;
+}
+function petTabHTML() {
+  const M = petM(); if (!M) return '';
+  const p = petViewed();
+  if (!p) return `<div class="split"><div><div class="box"><p class="sub" style="margin-top:0">${_t('Gerade begleitet dich niemand. Begleiter schlüpfen aus Eiern, die du im Brutnest im Versteck pflegst: Wärme, Futter und Zuwendung.')}</p></div>${petNestHTML(M)}</div><div>${petColHTML()}</div></div>`;
+  if (p.nw) { p.nw = 0; persist(); }
+  petView = p.id;
+  const body = petSub === 'gen' ? petGenHTML(p, M) : petSub === 'eq' ? petEqHTML(p, M) : petSub === 'tal' ? petTalHTML(p) : petSub === 'mag' ? petMagHTML(p, M) : petSub === 'zu' ? petBreedHTML('tab', p) : petOvHTML(p, M);
+  return petHeadHTML(p, M) + body;
 }
 HOOK.charTabs.push({ k: 'pet', label: petSafe('label', () => _t('BEGLEITER') + (petNews() ? ' (!)' : ''), 'BEGLEITER'), body: petSafe('tab', petTabHTML, '') });
 
@@ -1651,7 +2688,7 @@ function nestCardHTML(g) {
   <button class="negg${V.ready ? ' wob' : pet ? ' tap' : ' idle'}" data-act="nestpet" data-id="${g.id}" aria-label="${_t('Streicheln')}"><img class="e" src="${eggURL(g.tier, eggCr(V), hint)}" alt="">${pet ? `<img class="hrt" src="${nestIcon('z')}" alt="">` : ''}</button>
   <div><div class="pbar" style="--c:${T0.c};margin-top:2px"><i style="width:${(V.q * 100).toFixed(1)}%"></i></div><div class="nq">${V.ready ? _t('100 % – fertig gebrütet') : _t('{p} % · noch {t} Pflege', { p: Math.floor(V.q * 100), t: petDur(V.rest * 1000 / (V.cozy ? EGG_BONUS : 1)) })}</div><div class="nst ${sc}">${stx}</div></div>
   <div>${nestMeter('w', V.v[0], V.left[0])}${nestMeter('f', V.v[1], V.left[1])}${nestMeter('z', V.v[2], V.left[2])}</div>
-  <div class="sub" style="grid-column:2;margin:2px 0 0;font-size:15px">${hint ? _t('Du spürst darin: {el}', { el: `<span style="color:${PET_EL[hint].c}">${PET_EL[hint].n}</span>` }) : _t('Ab 50 % spürst du, was darin steckt.')}</div>
+  <div class="sub" style="grid-column:2;margin:2px 0 0;font-size:15px">${g.pa ? _t('Aus der Zucht: {a} × {b}', { a: PET_SP[g.pa[0]].n, b: PET_SP[g.pa[1]].n }) + ' · ' : ''}${hint ? _t('Du spürst darin: {el}', { el: `<span style="color:${PET_EL[hint].c}">${PET_EL[hint].n}</span>` }) : _t('Ab 50 % spürst du, was darin steckt.')}${g.mu && V.q >= .8 ? ' · ' + _t('Die Schale schimmert seltsam …') : ''}</div>
   <div class="nacts">${V.ready ? `<button class="btn hatch" data-act="nesthatch" data-id="${g.id}">${_t('Schlüpfen lassen!')}</button>` : `<button class="btn sm${V.v[0] < .5 ? '' : ' alt'}" data-act="nestwarm" data-id="${g.id}" ${V.v[0] >= .98 ? 'disabled' : ''}>${_t('Wärmen')}<small><img src="${nestIcon('w')}" alt="">${_t('gratis')}</small></button><button class="btn sm${V.v[1] < .5 && F.ok ? '' : ' alt'}" data-act="nestfeed" data-id="${g.id}" ${F.ok && V.v[1] < .9 ? '' : 'disabled'}>${_t('Füttern')}<small class="${F.ok ? '' : 'bad'}">${food}</small></button><button class="btn sm${V.v[2] < .5 ? '' : ' alt'}" data-act="nestpet" data-id="${g.id}" ${V.v[2] >= .98 ? 'disabled' : ''}>${_t('Streicheln')}<small><img src="${nestIcon('z')}" alt="">+34 %</small></button>`}</div></div>`;
 }
 function nestSummaryHTML(eggs, A) {
@@ -1682,6 +2719,7 @@ function openNest(back) {
   <div class="nestscr">${NEST_BACK === 'hide' ? npcLine('brutnest') : ''}${nestSummaryHTML(eggs, A)}${hurt}
   <div class="nests">${cards}</div>
   <h3>${_t('EIERKORB {n}/{max}', { n: basket.length, max: EGG_MAX - NEST_MAX })}</h3>${brows || `<p class="sub" style="margin-top:0">${_t('Leer. Neue Eier kommen ins Nest, solange dort Platz ist.')}</p>`}
+  ${petBreedHTML('nest')}
   ${petColHTML()}
   <h3>${_t('SELTENHEITEN')}</h3><p class="sub" style="margin-top:0">${_t('Seltenere Eier brauchen länger und feineres Futter – dafür schlüpfen stärkere Begleiter mit größerem Beutel.')}</p><div class="ntier">${tiers}</div></div>`, true);
   clearInterval(NEST_TM); NEST_TM = setInterval(nestTick, 1000);
@@ -1750,8 +2788,9 @@ function hatchRun() {
 function hatchReveal(H) {
   const p = H.p, S = PET_SP[p.sp], E = PET_EL[S.el], el = $('hres'); if (!el) return;
   const M = petM(), act = M.act === p.id, newSp = H.newSp;
-  el.innerHTML = `<div class="kv">${tierPill(S.t)}<span class="pel" style="background:${E.c}">${E.n}</span>${p.shiny ? `<span class="pill" style="background:#ff9af0">${_t('SCHILLERND!')}</span>` : ''}${newSp ? `<span class="pill" style="background:var(--gold)">${_t('NEU IN DER SAMMLUNG')}</span>` : ''}</div>
+  el.innerHTML = `<div class="kv">${tierPill(S.t)}<span class="pel" style="background:${E.c}">${E.n}</span>${p.shiny ? `<span class="pill" style="background:#ff9af0">${_t('SCHILLERND!')}</span>` : ''}${newSp ? `<span class="pill" style="background:var(--gold)">${_t('NEU IN DER SAMMLUNG')}</span>` : ''}${PET_MUT[p.mu] ? `<span class="pill" style="background:${PET_MUTC[PET_MUT[p.mu].r]}">${_t('MUTATION: {n}', { n: PET_MUT[p.mu].n })}</span>` : ''}${S.hy ? `<span class="pill" style="background:#ff8aa8">${_t('HYBRID')}</span>` : ''}</div>
   <h2 class="center" style="color:${PET_TIERS[S.t].c}">${esc(S.n).toLocaleUpperCase(LOCALE)}</h2><p class="sub center" style="margin:2px 0 8px">${S.st} ${_t('Angriff: {a}. Beutel: {n}.', { a: S.an, n: petBagSize(p) })}</p>
+  <p class="sub center" style="margin:0 0 8px">${PET_GENES.map((G, i) => `${G.n} <b style="color:${petGrade(petGene(p, i))[2]};font-weight:400">${petGrade(petGene(p, i))[1]}</b>`).join(' · ')}</p>
   <div class="menu two">${act ? '' : `<button class="btn" data-act="hatchtake">${_t('Mitnehmen')}</button>`}<button class="btn${act ? '' : ' alt'}" data-act="hatchok">${_t('Weiter')}</button></div>`;
   if (act) toast(_t('{name} begleitet dich ab jetzt!', { name: S.n }), E.c);
 }
@@ -1808,3 +2847,45 @@ ON.nesthatch = id => hatchStart(id);
 ON.hatchskip = () => { const H = HATCH; if (H && performance.now() - H.t0 < (HATCH_T + .5) / H.sp * 1000) H.t0 = performance.now() - (HATCH_T + .05) / H.sp * 1000; };
 ON.hatchtake = () => { const H = HATCH, M = petM(); if (H && M.list.includes(H.p)) { M.act = H.p.id; persist(); computeStats(); petPlace(false); toast(_t('{name} begleitet dich ab jetzt!', { name: PET_SP[H.p.sp].n }), PET_EL[PET_SP[H.p.sp].el].c); } HATCH = null; openNest(); };
 ON.hatchok = () => { HATCH = null; openNest(); };
+/* ---------- Knöpfe: Kreaturen 2.0 ---------- */
+function petRe() { if (panel.querySelector('.nestscr')) openNest(); else openChar('pet'); }
+ON.petsub = id => { if (PET_SUBS.some(([k]) => k === id)) petSub = id; PET_UI.gsel = null; petRen = petRel = false; sfx('click'); openChar('pet'); };
+ON.petnav = (id, b, i) => { const M = petM(), p = petViewed(); if (!p || M.list.length < 2) return; const j = (M.list.indexOf(p) + (i < 0 ? -1 : 1) + M.list.length) % M.list.length; petView = M.list[j].id; PET_BR.b = null; petRen = petRel = false; sfx('click'); openChar('pet'); };
+// Ausrüstung
+ON.petgsel = id => { PET_UI.gsel = PET_UI.gsel === id ? null : id; sfx('click'); openChar('pet'); };
+ON.petgeq = id => {
+  const M = petM(), p = petViewed(), i = M.gear.findIndex(it => it.id === id); if (!p || i < 0) return;
+  const it = M.gear[i]; p.eq = p.eq || {}; const old = p.eq[it.s]; M.gear.splice(i, 1); if (old) M.gear.push(old); p.eq[it.s] = it; PET_UI.gsel = null;
+  persist(); computeStats(); sfx('click'); toast(_t('{name} trägt jetzt: {item}', { name: petName(p), item: petGearName(it) }), RAR[it.r].c); openChar('pet');
+};
+ON.petguneq = s => { const M = petM(), p = petViewed(); if (!p || !p.eq || !p.eq[s]) return; if (M.gear.length >= PET_GEAR_MAX) { toast(_t('Das Lager ist voll.'), '#ff6a5a'); sfx('deny'); return; } M.gear.push(p.eq[s]); delete p.eq[s]; persist(); computeStats(); sfx('click'); openChar('pet'); };
+ON.petgdel = id => { const M = petM(), i = M.gear.findIndex(it => it.id === id); if (i < 0 || !petHero()) return; const it = M.gear[i], R = petSalvage(it); M.gear.splice(i, 1); P.gold += R.gold; gainMat(R.mat[0], R.mat[1]); PET_UI.gsel = null; saveChar(); sfx('coin'); toast(_t('Zerlegt: +{g} Gold, +{n}× {m}', { g: R.gold, n: R.mat[1], m: MATS[R.mat[0]].n }), '#ffd24a'); openChar('pet'); };
+ON.petgmake = s => {
+  const M = petM(); if (!PET_SLOT[s] || !petHero()) return; const lv = clamp(P.lv, 1, 100), C = petGearCost(s, lv);
+  if (!petCostOk(C) || M.gear.length >= PET_GEAR_MAX) { sfx('deny'); return; }
+  petCostPay(C); const it = petGearNew(s, null, lv); M.gear.push(it); PET_UI.gsel = it.id; saveChar(); sfx(it.r >= 3 ? 'myth' : 'buy');
+  toast(_t('Gunda hat gefertigt: {n} ({r})', { n: petGearName(it), r: RAR[it.r].n }), RAR[it.r].c); openChar('pet');
+};
+// Talente
+ON.pettal = (id, b, i) => { const p = petViewed(); if (!p) return; const bi = Math.floor(i / 5), ni = i % 5; if (!PET_TAL[bi]) return; const t = petTalState(p, bi, ni); if (!t.can) { sfx('deny'); return; } const tl = petTl(p); tl[i]++; p.tl = tl.join(''); persist(); computeStats(); sfx('click'); openChar('pet'); };
+ON.pettalreset = () => { const p = petViewed(), cost = p ? 50 + p.lv * 15 : 0; if (!p || !petHero() || P.gold < cost || !petTalUsed(p)) { sfx('deny'); return; } P.gold -= cost; p.tl = petTlFix('', p.lv); saveChar(); computeStats(); sfx('page'); openChar('pet'); };
+// Magie
+ON.petmgin = k => {
+  const M = petM(), p = petViewed(); if (!p || !PET_SPELL[k] || !(M.runes[k] > 0)) return; p.mg = p.mg || [null, null, null];
+  const i = p.mg.slice(0, petSockets(p)).findIndex(x => !PET_SPELL[x]); if (i < 0) { toast(_t('Alle Sockel sind belegt – nimm erst eine Rune heraus.'), '#ff8a7a'); sfx('deny'); return; }
+  p.mg[i] = k; M.runes[k]--; if (!M.runes[k]) delete M.runes[k]; persist(); sfx('click'); openChar('pet');
+};
+ON.petmgout = (id, b, i) => { const M = petM(), p = petViewed(); if (!p || !p.mg || !PET_SPELL[p.mg[i]]) return; const k = p.mg[i]; p.mg[i] = null; M.runes[k] = Math.min(99, (M.runes[k] || 0) + 1); persist(); sfx('click'); openChar('pet'); };
+ON.petmgmake = k => { const M = petM(), Z = PET_SPELL[k]; if (!Z || !petHero()) return; const C = { m: Z.cost, gold: Z.gold }; if (!petCostOk(C)) { sfx('deny'); return; } petCostPay(C); M.runes[k] = Math.min(99, (M.runes[k] || 0) + 1); saveChar(); sfx('buy'); toast(_t('Rune gebunden: {n}', { n: Z.n }), PET_EL[Z.el].c); openChar('pet'); };
+// Zucht (im Reiter: Partner wählen; im Brutnest: beide Eltern)
+ON.petbrsel = (id, b, i) => {
+  if (i === 1) { if (!PET_BR.a) PET_BR.a = id; else if (PET_BR.a === id) { PET_BR.a = PET_BR.b; PET_BR.b = null; } else PET_BR.b = PET_BR.b === id ? null : id; }
+  else PET_BR.b = PET_BR.b === id ? null : id;
+  sfx('click'); petRe();
+};
+ON.petbrgo = () => {
+  const M = petM(), a = M.list.find(o => o.id === PET_BR.a), b = M.list.find(o => o.id === PET_BR.b), r = petBreed(a, b);
+  if (typeof r === 'string') { toast(r, '#ff6a5a'); sfx('deny'); petRe(); return; }
+  PET_BR.b = null; sfx('ach'); petSnd('chirp');
+  toast(_t('Ein Ei aus der Zucht! {egg} – es liegt im Brutnest.', { egg: PET_TIERS[r.tier].egg }), PET_TIERS[r.tier].c); petRe();
+};
