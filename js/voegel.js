@@ -126,13 +126,13 @@ function vgScreen() {
   const where = _t('Gegenstände fliegen ins Lager (ist es voll: in den Beutel, dann in die Fundkiste am Weltentor), Eier ins Brutnest, alles andere direkt zu dir.');
   const go = !B ? _t('Kein Vogel dabei') : fight ? _t('Nicht mitten im Kampf!') : used ? _t('{bird} losschicken ({n}/{m})', { bird: B.n, n: used, m: cap }) : _t('Wähle aus, was heim soll');
   showOverlay(`${lHead(_t('VOGEL SCHICKEN'), 'v_back')}
-  <div class="vtiles">${tiles}</div>
-  ${B ? `<div class="vstat"><div class="vmeter"><i style="width:${Math.round(used / cap * 100)}%"></i></div><span>${_t('{n} von {m} Plätzen · Wert {g} G', { n: used, m: cap, g: fmt(sv) })}</span></div>` : `<p class="sub">${_t('Du hast keine Vögel dabei. Die Voliere im Versteck züchtet sie.')}</p>`}
+  <div class="vsplit"><div><div class="vtiles">${tiles}</div>
+  ${B ? `<div class="vstat"><div class="vmeter"><i style="width:${Math.round(used / cap * 100)}%"></i></div><span><b style="color:${B.c};font-weight:400">${B.n}</b> · ${_t('{n} von {m} Plätzen · Wert {g} G', { n: used, m: cap, g: fmt(sv) })}</span></div>` : `<p class="sub">${_t('Du hast keine Vögel dabei. Die Voliere im Versteck züchtet sie.')}</p>`}
   ${pouch.length ? `<button class="vpouch${VG.pouch ? ' on' : ''}" data-act="v_pouch" aria-pressed="${VG.pouch}" ${!VG.pouch && full ? 'aria-disabled="true"' : ''}><img src="${iconURL(['pa', 'l_beutel'])}" alt=""><i class="cb"></i><span><b>${_t('Sammelbeutel mitschicken')}</b><small>${_t('{n} Sorten · {g} Gold wert · zählt als 1 Platz', { n: pouch.length, g: fmt(pv) })}</small></span></button>` : ''}
-  <div class="vsec"><h3>${_t('RUCKSACK')}</h3>${pack.length > 1 && B ? `<button class="btn alt sm" data-act="v_best">${_t('Wertvollstes wählen')}</button>` : ''}</div>
+  </div><div><div class="vsec"><h3>${_t('RUCKSACK')}</h3>${pack.length > 1 && B ? `<button class="btn alt sm" data-act="v_best">${_t('Wertvollstes wählen')}</button>` : ''}</div>
   ${pack.length ? `<div class="grid vgrid">${pack.map(([id, e]) => vgSlot(id, e, VG.sel.has(id), full)).join('')}</div>` : `<p class="sub">${_t('Der Rucksack ist leer.')}</p>`}
   ${bag.length ? `<div class="vsec"><h3>${_t('BEGLEITER-TASCHE')}</h3></div><p class="sub" style="margin-top:0">${_t('Schick Taschen-Inhalt heim, um dort Platz für Neues zu machen.')}</p><div class="grid vgrid">${bag.map(([id, e]) => vgSlot(id, e, VG.sel.has(id), full)).join('')}</div>` : ''}
-  <p class="sub">${where}</p>
+  <p class="sub">${where}</p></div></div>
   <div class="foot vfoot"><button class="btn" data-act="v_go" style="width:100%;min-height:48px" ${B && used && !fight ? '' : 'disabled'}>${B ? `<img src="${birdIconURL(VG.kind)}" alt="">` : ''}${go}</button></div>`, true);
 }
 ON.v_open = () => { if (!LW || !LW.on) return; if (lDanger()) { toast(birdErr('fight'), '#ff6a5a'); sfx('deny'); return; } VG.sel = new Set(); VG.pouch = false; VG.kind = null; sfx('click'); vgScreen(); };
@@ -259,7 +259,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .vpouch{display:flex;gap:10px;align-items:center;width:100%;border:0;background:var(--stone-lo);color:var(--parch);padding:8px 10px;cursor:pointer;text-align:left;font-family:var(--f-body);min-height:52px;margin-bottom:6px}
 .vpouch img{width:28px;height:28px;image-rendering:pixelated}.vpouch b{display:block;font-family:var(--f-display);font-weight:400;font-size:8px;line-height:1.5}.vpouch small{display:block;font-size:15px;color:var(--parch-dim)}
 .vpouch.on{background:var(--stone-hi);box-shadow:inset 0 0 0 3px #57c7e6}.vpouch[aria-disabled="true"],.vpick[aria-disabled="true"]{opacity:.45}
-.vsec{display:flex;align-items:center;justify-content:space-between;gap:8px}.vsec h3{margin:8px 0 6px}
+.vsec{display:flex;align-items:center;justify-content:space-between;gap:8px}.vsec h3{margin:8px 0 6px}.vgrid{margin-bottom:8px}
 .vpick{position:relative}.vpick.on{background:#203848}.vchk{position:absolute;left:3px;top:1px;font-family:var(--f-body);font-weight:400;font-size:20px;line-height:1;color:#9ae8ff;text-shadow:1px 1px 0 #000}
 .vfoot .btn img{width:24px;height:24px;image-rendering:pixelated;vertical-align:-7px;margin-right:6px}
 .vhero{display:flex;gap:12px;align-items:center;background:var(--stone-lo);padding:8px 10px;margin-bottom:8px;box-shadow:inset 3px 0 0 #57c7e6}
@@ -270,4 +270,6 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .vown{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px}.vown .pill{display:inline-flex;align-items:center;gap:3px}.vown img{width:18px;height:18px;image-rendering:pixelated}
 .vrow.lock{opacity:.6}.vrow .ic img{width:32px;height:32px;image-rendering:pixelated}.vslots{font-family:var(--f-body);font-size:16px;color:var(--parch-dim)}.vhave{font-family:var(--f-body);font-size:17px;color:var(--gold)}
 @media (prefers-reduced-motion:reduce){.vfly{animation:none}}
+@media (min-width:600px){.vsplit{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:12px;align-items:start}.vsplit .vsec h3{margin-top:0}.vtile img{width:36px;height:36px}}
+@media (max-height:520px){.vtile{grid-template-columns:30px minmax(0,1fr);justify-items:start;align-items:center;column-gap:4px;row-gap:0;padding:4px 6px;min-height:48px}.vtile img{grid-row:span 2;width:28px;height:28px}.vtile b{display:none}.vtile small{grid-column:2;grid-row:span 2}.vtile em{top:1px}.vpouch{min-height:44px;padding:5px 10px}}
 </style>`);
