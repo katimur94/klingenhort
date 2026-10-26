@@ -358,7 +358,7 @@ I18N.en = {
   "Büsche, Pilze und Kakteen, Kräutergarten, Acker (Flachs)": "Bushes, mushrooms and cacti, Herb Garden, Farm (Flax)",
   "Samen": "Seeds",
   "Büsche, Kräuterbeete, Kräutergarten, Ernte im Acker": "Bushes, herb patches, Herb Garden, Farm harvests",
-  "Feder": "Quill",
+  "Feder": "Feather",
   "Vogelnester in Bäumen, Holzplatz im Versteck, Kräutergarten": "Bird nests in trees, Lumber Yard in the Hideout, Herb Garden",
   "Eisenholz": "Ironwood",
   "Bäume tiefer in den Landen (alte und dunkle Wälder), Acker": "Trees deeper in the Lands (old and dark forests), Farm",
