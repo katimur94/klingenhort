@@ -225,7 +225,7 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
       keys.KeyJ = true; for (let i = 0; i < 40 && !t.gone; i++) await new Promise(r => setTimeout(r, 100)); keys.KeyJ = false; CALM();
       const tr = gatherInfo().trip || {};
       o.tree = t.gone && !t.solid && LW.ts.get(key) === 1 && (tr.holz || 0) >= 2;
-      o.pouch = pouch ? JSON.stringify(P.mats) === m0 : (P.mats.holz || 0) === tr.holz;
+      o.pouch = pouch ? JSON.stringify(P.mats) === m0 && (LW.pouch || {}).holz === tr.holz : (P.mats.holz || 0) === tr.holz;
       // zurück und wieder hin (Chunks neu geladen): im selben Ausflug bleibt er gefällt
       const tx = t.x, ty = t.y; lTeleport(tx + 30 * LCK, ty); CALM(); lTeleport(tx + 14, ty); CALM();
       const t2 = lNear(tx, ty, 30).find(x => x.k === 'prop' && gKey(x) === key); o.stay = !!t2 && t2.gone && !t2.solid;
@@ -287,6 +287,8 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
       let t = null, bd = 1e9; for (const x of lNear(P.x, P.y, 900)) if (x.k === 'prop' && GPROP[x.t] === 'baum' && x.r > 0) { const d = Math.hypot(x.x - P.x, x.y - P.y); if (d < bd) { bd = d; t = x; } }
       if (t) { P.x = t.x + t.r + 6; P.y = t.y; lStream(true); for (let i = 0; i < gNeed(t); i++) gatherProj(t, { vx: -100, vy: 0 }); }
     }, 350);
+    // Rucksack in den Landen: Gesammeltes im Sammelbeutel (Taschen & Vögel)
+    if (await p.evaluate(() => typeof lInv === 'function')) await shot('lande-beutel', () => { setState('menu'); if (typeof LG !== 'undefined') { LG.sel = null; LG.arm = null; } lInv(); panel.scrollTop = 9999; }, 500);
     await c2.close();
   }
 
