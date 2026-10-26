@@ -433,7 +433,7 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     ok((await pg.evaluate(() => state)) === 'play' && (await pg.evaluate(() => G && G.type)) === 'versteck', 'Zurück ins Versteck');
     // Kämpfe: Bilder einiger Arten
     for (const [s2, lv, room] of [['wal', 80, 'kampf'], ['fuchs', 55, 'elite'], ['schnecke', 30, 'kampf'], ['einhorn', 100, 'boss']]) {
-      await pg.evaluate(([sp, lv, room]) => { hideOverlay(); setState('play'); const M = SAVE.meta.pets; const p = M.list.find(x => x.sp === sp); p.lv = lv; p.hurt = 0; M.act = p.id; P.lv = 40; computeStats(); P.hp = P.st.hp; startRoom(room, room === 'boss' ? 6 : 3); P.inv = 999; }, [s2, lv, room]);
+      await pg.evaluate(([sp, lv, room]) => { hideOverlay(); setState('play'); const M = SAVE.meta.pets; const p = M.list.find(x => x.sp === sp); p.lv = lv; p.hurt = 0; M.act = p.id; if (sp === 'wal') p.mg = ['meteor', 'blitz', 'schild']; P.lv = 40; computeStats(); P.hp = P.st.hp; startRoom(room, room === 'boss' ? 6 : 3); P.inv = 999; }, [s2, lv, room]);
       await pg.waitForTimeout(room === 'boss' ? 4200 : 3400); await shot(`15_kampf_${s2}_${lv}`);
     }
     await pg.evaluate(() => { hideOverlay(); titleScene(); showTitle(); }); await pg.waitForTimeout(300);
