@@ -903,8 +903,6 @@ const mBack = it => { const n = modTakeBack(it); if (n) toast(n === 1 ? _t('1 Mo
 ON.sell = id => { const f = findItem(id); if (f && f.bi != null) { mBack(f.it); P.gold += itemPrice(f.it); P.bag.splice(f.bi, 1); sfx('coin'); saveChar(); } selItem = null; openChar(); };
 ON.msell = id => { const f = findItem(id); if (f && f.bi != null) { mBack(f.it); P.gold += itemPrice(f.it); P.bag.splice(f.bi, 1); sfx('coin'); saveChar(); } openMerchant(); };
 ON.sellall = () => { let g = 0; P.bag = P.bag.filter(it => { if (it.rar <= 1 && !it.gems.length && !it.up && !it.fz && !it.mw && !it.skin && !modsOf(it).length) { g += itemPrice(it); return false; } return true; }); P.gold += g; if (g) sfx('coin'); toast(_t('+{n} Gold', { n: g })); saveChar(); openMerchant(); };
-// Verschenken (js/trade.js überträgt keine Mods): die Mods bleiben beim Absender
-if (ON.tr_send) { const trSend0 = ON.tr_send; ON.tr_send = (...a) => { try { const s = typeof TRD !== 'undefined' && TRD.ask; if (s && s.t === 'i') { const it = P.bag.find(x => x.uid === s.uid); if (it) mBack(it); } } catch (_) { } return trSend0(...a); }; }
 
 document.head.insertAdjacentHTML('beforeend', `<style>
 .mslots{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}

@@ -104,7 +104,7 @@ function trItem(d) {
   if (it.myth) it.rar = 6; else if (it.rar === 6) it.rar = 4;
   if (it.set) it.rar = 5; else if (it.rar === 5) it.rar = 3;
   const pool = isW ? AFFW : AFFA;
-  if (trObj(d.aff)) for (const k of Object.keys(d.aff)) { const v = d.aff[k]; if (trHas(pool, k) && typeof v === 'number' && Number.isFinite(v) && Object.keys(it.aff).length < RAR[it.rar].aff + 1) it.aff[k] = +clamp(v, 0, pool[k].f(6)).toFixed(3); }
+  if (trObj(d.aff)) for (const k of Object.keys(d.aff)) { const v = d.aff[k]; if (trHas(pool, k) && typeof v === 'number' && Number.isFinite(v) && Object.keys(it.aff).length < RAR[it.rar].aff + 1) it.aff[k] = +clamp(v, 0, pool[k].f(typeof AFF_MAX === 'number' ? AFF_MAX : 6)).toFixed(3); }   // veredelte Werte bis AFF_MAX
   if (Array.isArray(d.gems)) for (const g of d.gems) if (it.gems.length < it.sockets && trGemOk(g)) it.gems.push(g);
   if (it.myth) it.name = MYTHIC[it.myth].n;
   else if (it.set) it.name = SETS[it.set].pieces[slot];
@@ -113,6 +113,10 @@ function trItem(d) {
   // Felder der Schmiede (js/forge.js): Element und Meisterwerk-Grade als einfache Daten
   if (typeof d.el === 'string' && TR_ELS.includes(d.el)) it.el = d.el;
   if (d.mw != null) { const mw = trPlain(d.mw, 2, 100); if (mw != null) it.mw = mw; }
+  // Mods (js/mods.js) reisen mit dem Gegenstand: nur gültige, nicht mehr als Plätze; Element vor der Essenz
+  if (typeof d.el0 === 'string' && TR_ELS.includes(d.el0)) it.el0 = d.el0; else if (d.el0 === null) it.el0 = null;
+  if (trInt(d.rr, 1, 999)) it.rr = d.rr;
+  if (Array.isArray(d.mods) && typeof modFixItem === 'function') { it.mods = d.mods.filter(k => typeof k === 'string').slice(0, 12); modFixItem(it); }
   return it;
 }
 // beliebige Daten auf einfache, begrenzte JSON-Werte reduzieren (Begleiter, Meisterwerk)
@@ -137,7 +141,7 @@ function trBundle(d) {
 }
 
 /* ---------- Senden ---------- */
-function trItemData(it) { const o = {}; for (const k of ['slot', 'base', 'tier', 'rar', 'up', 'aff', 'sockets', 'gems', 'set', 'name', 'suf', 'fz', 'form', 'myth', 'el', 'mw']) if (it[k] != null) o[k] = it[k]; return JSON.parse(JSON.stringify(o)); }
+function trItemData(it) { const o = {}; for (const k of ['slot', 'base', 'tier', 'rar', 'up', 'aff', 'sockets', 'gems', 'set', 'name', 'suf', 'fz', 'form', 'myth', 'el', 'el0', 'mw', 'mods', 'rr']) if (it[k] != null) o[k] = it[k]; return JSON.parse(JSON.stringify(o)); }
 // Code bauen und nur behalten, wenn er sich selbst wieder lesen lässt
 function trMake(t, d) {
   const p = { v: 1, id: trId(), t, d, n: P && P.name ? String(P.name).slice(0, 20) : '?', at: Math.floor(Date.now() / 1000) };
