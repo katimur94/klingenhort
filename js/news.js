@@ -7,6 +7,14 @@
 
 const CHANGELOG = [
   {
+    v: '6.1.2', d: '2026-10-26', t: 'Besser spielen am PC', items: [
+      ['neu', 'Steuerung am PC: Linke Maustaste greift an, rechte rollt, 1 2 3 für die Fähigkeiten, 4 für die Ultimative, 5 für den Trank, WASD zum Laufen. Angriffe und Fähigkeiten zielen auf den Mauszeiger.'],
+      ['neu', 'HD-Grafik: Am PC werden Schrift, Licht und Effekte in voller Bildschirmauflösung gezeichnet – die Pixel bleiben gestochen scharf, auch bei 125 % oder 150 % Windows-Skalierung und in 4K. Umschalten: Einstellungen → Grafik.'],
+      ['besser', 'Auf großen Bildschirmen sind Spielwelt, Anzeigen und Menüs jetzt deutlich größer. Neuer Knopf „Vollbild“.'],
+      ['fix', 'Laptops mit Touchscreen: Die Maus funktioniert jetzt immer – die Handy-Knöpfe erscheinen nur, wenn du wirklich tippst.']
+    ]
+  },
+  {
     v: '6.1.1', d: '2026-10-26', t: 'Bis zum Rand der Welt', items: [
       ['neu', 'Die Endlosen Lande sind jetzt bis zum Rand voller Neuem: 20 Grenzen statt 11 und 26 neue Biome – von der Kristallwüste über Uhrwerk-Ruinen und Titanengräber bis zum Ufer des Nichts. 74 Biome insgesamt.'],
       ['neu', 'Meisterwerkzeuge: Hinter der 11. Grenze brauchst du die zweite Stufe deiner Werkzeuge – Seil II, Eishaken II, Feuermantel II und mehr. Sie schützen auch vor den Gefahren der tiefen Biome.'],

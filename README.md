@@ -88,6 +88,8 @@ Klingenhort wird jede Woche erweitert. Im Spiel zeigt **Neuigkeiten** (Titelmen�
 
 **Neu in 6.1 – Die Endlosen Lande**
 
+**6.1.2 – Besser spielen am PC:** Linke Maustaste angreifen, rechte rollen, 1–3 Fähigkeiten, 4 Ultimative, 5 Trank, WASD; Zielen auf den Mauszeiger; HD-Grafik und scharfe Skalierung bei jeder Windows-Skalierung; größere Anzeigen auf großen Bildschirmen; Vollbild-Knopf; Maus auch auf Touch-Laptops.
+
 **6.1.1 – Bis zum Rand der Welt:** 20 Grenzen bis zum Weltrand (alle 1,5–2 Stunden Fußweg eine neue), 26 neue Biome (74 insgesamt), 9 Meisterwerkzeuge der Stufe II für die tiefen Grenzen, Monumente am „Ende der Welt“ mit Wächter und einmaliger Belohnung.
 
 | System | Was es kann | Langzeit-Ziel |
@@ -434,16 +436,18 @@ Bezahlt wird mit **Glücksmünzen** – von Bossen, Champions, seltenen Truhen, 
 | Aktion | Handy | PC |
 |---|---|---|
 | Laufen | linke Seite ziehen (Joystick) | WASD / Pfeiltasten |
-| Angreifen (halten = Kombo) | roter Knopf – darüber wischen zielt von Hand | J · Leertaste · Linksklick |
-| Ausweichrolle | ROLLE | K · Shift · Rechtsklick |
-| Fähigkeiten | drei Fähigkeitsknöpfe | 1 · 2 · 3 |
-| Ultimative (Wut voll) | goldener Knopf | F · Mittelklick |
-| Heiltrank | Trank-Knopf links oben | H |
+| Angreifen (halten = Kombo) | roter Knopf – darüber wischen zielt von Hand | **Linke Maustaste** (zielt auf den Mauszeiger) · J · Leertaste |
+| Ausweichrolle | ROLLE | **Rechte Maustaste** · K · Shift |
+| Fähigkeiten | drei Fähigkeitsknöpfe | **1 · 2 · 3** (zielen auf den Mauszeiger) |
+| Ultimative (Wut voll) | goldener Knopf | **4** · F · Mittelklick |
+| Heiltrank | Trank-Knopf links oben | **5** · H |
 | Interagieren (Versteck) | goldener Knopf unten in der Mitte | E · Enter |
 | Charakter | Pause → Charakter | C |
 | Pause | II oben rechts | Esc |
 
 Angriffe zielen automatisch auf den nächsten Gegner – die goldene Markierung zeigt, auf welchen.
+
+**Am PC (seit 6.1.2):** Die Maus funktioniert auch auf Laptops mit Touchscreen – das Spiel richtet sich nach der zuletzt benutzten Eingabe (Finger → Handy-Knöpfe, Maus/Tastatur → PC-Leiste). Die Pixel werden in ganzen Gerätepixeln vergrößert und bleiben bei jeder Windows-Skalierung und Auflösung scharf; der **HD-Modus** zeichnet Schrift, Licht und Effekte in voller Bildschirmauflösung (Einstellungen → Grafik, wird bei zu langsamen Geräten automatisch auf „Pixel“ gestellt). Anzeigen und Menüs wachsen mit der Bildschirmgröße, Knopf **Vollbild** im Titel, in der Pause und in den Einstellungen.
 
 **Anpassen** (Einstellungen → Steuerung, oder im Spiel: Pause → Knöpfe anpassen):
 - Knöpfe ziehen zum Verschieben, antippen zum Auswählen, Größe pro Knopf und gesamt, Deckkraft, Spiegeln, Standard – Hoch- und Querformat haben jeweils ihre eigene Anordnung
