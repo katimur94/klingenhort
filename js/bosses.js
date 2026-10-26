@@ -286,7 +286,7 @@ function bSetup(e, o) {
   if (e.affixes.includes('schnell')) { e.spd *= 1.35; e.cdMul *= .8; }
   e.hp = e.maxHp = W.hp; e.atk = W.atk; e.xp = e.bPractice ? 0 : W.xp; e.gold = e.bPractice ? 0 : W.gold;
   e.armor = e.armorMax = 0; if (e.affixes.includes('gepanzert')) e.armor = e.armorMax = Math.round(W.hp * .35);
-  e.bz = { m: B.mech.filter(k => !BMECH[k].p).map(k => ({ k, cd: BMECH[k].cd * (.15 + Math.random() * .35) })), gcd: 2.4 - B.r * 1.2, hold: 0, inv: 0, ph: 0, enr: false, cdm: 1, t: 0, busy: [], shield: null, heal: null, leap: null, dash: null };
+  e.bz = { m: B.mech.filter(k => !BMECH[k].p).map(k => ({ k, cd: BMECH[k].cd * (.15 + Math.random() * .35) })), gcd: 2.6, hold: 0, inv: 0, ph: 0, enr: false, cdm: 1, t: 0, busy: [], shield: null, heal: null, leap: null, dash: null };
 }
 HOOK.enemyUpd.push(bSafe('tick', (e, dt) => { if (e.bz) bTick(e, dt); else if (e.bOwn) bOwnTick(e, dt); }));
 function bTick(e, dt) {
@@ -458,7 +458,7 @@ const BCAST = {
     return 1.2;
   },
   beam(e, Z, B) { const tw = bTw(B, 1.1), life = 2.4 + B.r; Z.hold = tw + life; bzAdd({ k: 'b', o: e, a: Math.atan2(P.y - e.y, P.x - e.x), va: (.55 + B.r * .5) * (Math.random() < .5 ? -1 : 1), len: 250, w: 8 + B.r * 4, warm: tw, W: tw, life, tick: 0, dmg: e.atk * .55, c: 'licht' }); return tw + life; },
-  dark(e, Z, B) { BZ.dark = { t: 5 + B.r * 2, prev: G.dark || 0, o: e }; banner(_t('FINSTERNIS'), _t('Die Lichter erlöschen …')); return 1.5; }
+  dark(e, Z, B) { BZ.dark = { t: 5 + B.r * 2, prev: G.dark || 0, o: e }; return 1.5; }
 };
 function bMirror(o, x, y) {
   const B = o.bDef, c = spawnEnemy(B.t, { x, y, instant: true, sc: B.sc * .92, name: o.name, tint: o.tint });
@@ -714,6 +714,7 @@ HOOK.drawEnemy.push(bSafe('drawE', e => {
   if (e.bTotem) { bDrawTotem(e); return; }
   const Z = e.bz; if (!Z || e.st === 'spawn') return;
   const sx = Math.round(e.x - CX), sy = Math.round(e.y - CY - (e.z || 0)), R = e.r * e.sc;
+  addLight(sx, sy - R, R * 2.6, BZ.dark ? .25 : .6);   // der Boss bleibt auch in dunklen Gebieten sichtbar
   if (Z.shield && e.armor > 0) { ctx.globalAlpha = .4 + .1 * Math.sin(T * 6); drawFxFrame('shield', Math.floor(T * 10) % 6, sx, sy - R * 1.1, R * 2.8 / 48); ctx.globalAlpha = 1; addLight(sx, sy - R, R * 2, .5); }
   if (Z.enr) { if (Math.random() < .5) part(e.x + rnd(-R, R), e.y + rnd(-2, 2), rnd(2, R * 2), 0, 0, rnd(15, 35), pick(['#ff4a3a', '#ff8a3a']), rnd(.3, .6), 1, -10, 1); addLight(sx, sy - R, R * 1.6, .45); }
   if (Z.heal) {
@@ -731,9 +732,23 @@ function bDrawTotem(e) {
   addLight(x, y - 18, 22, .7);
 }
 
+// Boss außerhalb des Bildes: roter Pfeil am Rand zeigt hin
+function bArrow() {
+  const e = enemies.find(x => x.bz && !x.dead && x.st !== 'spawn'); if (!e) return;
+  const sx = e.x - CX, sy = e.y - CY - 10 * e.sc, top = BBAR.y + 12;
+  if (sx > 0 && sx < VW && sy > top && sy < VH) return;
+  const cx = VW / 2, cy = (top + VH) / 2, a = Math.atan2(sy - cy, sx - cx), x = clamp(sx, 16, VW - 16), y = clamp(sy, top + 4, VH - 16), q = .7 + .3 * Math.sin(T * 8);
+  ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(a); ctx.globalAlpha = q;
+  ctx.fillStyle = '#000'; ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-7, -9); ctx.lineTo(-7, 9); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#ff6a4a'; ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-5, -6); ctx.lineTo(-5, 6); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#ffd0b0'; ctx.fillRect(-3, -1, 5, 2);
+  ctx.restore(); ctx.globalAlpha = 1;
+}
 HOOK.postRender.push(bSafe('call', () => {
-  const C = BZ.call; if (!C || state !== 'play') return;
+  if (state !== 'play' || !G) return;
+  const C = BZ.call; if (!C && !enemies.some(x => x.bz)) return;
   if (T > BBAR.yt) { BBAR.yt = T + .5; const el = $('bossbar'), r = el && !el.hidden ? el.getBoundingClientRect() : null; BBAR.y = r && r.height ? Math.round(r.bottom / SCALE) + 9 : Math.round(VH * .16); }
+  bArrow(); if (!C) return;
   ctx.font = '8px "Press Start 2P", monospace'; const w = Math.ceil(ctx.measureText(C.s).width) + 12, a = clamp(C.t / .3, 0, 1), y = BBAR.y;
   ctx.globalAlpha = a; ctx.fillStyle = 'rgba(12,8,16,.72)'; ctx.fillRect(Math.round(VW / 2 - w / 2), y - 8, w, 16); ctx.fillStyle = C.col; ctx.fillRect(Math.round(VW / 2 - w / 2), y + 7, w, 1);
   ptext(C.s, VW / 2, y, C.col, 8); ctx.globalAlpha = 1;
@@ -858,7 +873,7 @@ function bossArena(id, o) {
   hideOverlay(); startRoom('bossarena', 0, { bossId: B.id });
   prepArena(B.el === 'feuer' && B.r > .5 ? 8 : BARENA[B.el] || 1, bHash('arena', B.id) % 99991);
   G.row = stage - 1 - (P.act - 1) * 7; G.stage = stage; G.phase = 'fight';
-  P.x = AW / 2; P.y = BD.y1 - 46; P.vx = P.vy = 0; P.hp = P.st.hp; P.res = P.st.resMax; P.inv = 1;
+  P.x = AW / 2; P.y = (BD.y0 + BD.y1) / 2 + 20; P.vx = P.vy = 0; P.hp = P.st.hp; P.res = P.st.resMax; P.inv = 1;
   cam.x = clamp(P.x - VW / 2, 0, Math.max(0, AW - VW)); cam.y = clamp(P.y - VH / 2, 0, Math.max(0, AH - VH));
   banner(B.name.toLocaleUpperCase(LOCALE), BA.practice ? _t('Übungskampf – ohne Beute, ohne Risiko') : B.title);
   setMusic(bg.b.root + 5, true); BZ.fx = []; BZ.g = G;
@@ -867,7 +882,7 @@ function bossArena(id, o) {
 HOOK.roomUpd.push(bSafe('room', (h, dt) => {
   if (h || !G || G.type !== 'bossarena' || !BA) return h;
   BA.t += dt;
-  if (!BA.e && BA.t > 1) { BA.e = bossSpawn(BA.id, AW / 2, BD.y0 + 44, { stage: BA.stage, practice: BA.practice }); BA.e.cd = 1; }
+  if (!BA.e && BA.t > 1) { BA.e = bossSpawn(BA.id, AW / 2, Math.max(BD.y0 + 34, P.y - 120), { stage: BA.stage, practice: BA.practice }); BA.e.cd = 1; }
   if (BA.e && BA.e.dead && !BA.end && state === 'play') { BA.end = 2.6; banner(BA.practice ? _t('ÜBUNG GESCHAFFT') : _t('BOSS BESIEGT'), BA.e.name); }
   if (BA.end > 0) { for (const c of pickups) c.mag = 1; BA.end -= dt; if (BA.end <= 0) bArenaExit(); }
   return true;

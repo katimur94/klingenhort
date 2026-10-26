@@ -47,12 +47,13 @@ const SIM = () => {
     for (const h of hazards) if (Math.hypot(x - h.x, (y - h.y) * 1.6) < h.r + 12) return true;
     return false;
   };
-  window.__botOn = () => {
+  window.__botOn = show => {
     stick.id = 77; let skT = 0;
     window.__bot = dt => {
       if (state !== 'play') { stick.x = stick.y = 0; touchAtk = false; return; }
       const b = enemies.find(e => e.bz && !e.dead), ranged = WT[P.gear.weapon.base].ranged;
-      const tgt = b || nearestEnemy(999); touchAtk = !!tgt;
+      const tgt = b || nearestEnemy(999); touchAtk = !!tgt && !show;
+      if (show) { P.hp = P.st.hp; P.potCd = 9; }
       let gx = P.x, gy = P.y;
       if (tgt) { const want = ranged ? 95 : tgt.r * tgt.sc + 14, d = Math.hypot(tgt.x - P.x, tgt.y - P.y) || 1; gx = tgt.x - (tgt.x - P.x) / d * want; gy = tgt.y - (tgt.y - P.y) / d * want; }
       let mx = gx - P.x, my = gy - P.y;
@@ -64,7 +65,7 @@ const SIM = () => {
       } else if (__danger(P.x + mx * .3, P.y + my * .3, 1.1)) { mx = 0; my = 0; }
       const l = Math.hypot(mx, my); stick.x = l > 3 ? mx / l : 0; stick.y = l > 3 ? my / l : 0;
       if (P.hp < P.st.hp * .45) drinkPotion();
-      skT -= dt; if (skT <= 0 && tgt && Math.hypot(tgt.x - P.x, tgt.y - P.y) < 70) { skT = 1; const C = CLASSES[P.cls]; for (let i = 1; i < 3; i++) if (P.cds[i] <= 0 && P.res >= skillCost(i) && !__danger(P.x, P.y, 1)) { useSkill(i); break; } if (P.rage >= 100) doUlt(); }
+      skT -= dt; if (!show && skT <= 0 && tgt && Math.hypot(tgt.x - P.x, tgt.y - P.y) < 70) { skT = 1; const C = CLASSES[P.cls]; for (let i = 1; i < 3; i++) if (P.cds[i] <= 0 && P.res >= skillCost(i) && !__danger(P.x, P.y, 1)) { useSkill(i); break; } if (P.rage >= 100) doUlt(); }
     };
   };
   window.__botOff = () => { window.__bot = null; stick.id = null; stick.x = stick.y = 0; touchAtk = false; };
@@ -272,6 +273,25 @@ const SIM = () => {
   ok(fx.dead || fx.f > .9, `Rang 1200 gegen maximalen Helden (LP ${fx.mhp}, Schaden ${fx.dmg}): ${fx.dead ? 'gefallen' : 'nicht geschafft'} nach ${fx.t} s, Boss bei ${Math.round(fx.f * 100)} %`);
   ok(!errs.length, 'keine Fehler (Kämpfe)' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
   await page.close();
+
+  /* ---------- Bilder mitten im Kampf: Rang 1, 301, 601, 901, 1200 – hoch und quer ---------- */
+  if (OUT) for (const [W, H] of [[390, 844], [844, 390]]) {
+    const ctx = await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'de-DE' });
+    const p = await ctx.newPage(); watch(p);
+    await p.goto(BASE + 'index.html'); await p.evaluate(() => localStorage.clear()); await p.reload(); await p.waitForTimeout(1500);
+    await p.evaluate(SIM);
+    for (const [rank, cls, lv, max] of [[0, 'knight', 5, false], [300, 'rogue', 40, false], [600, 'mage', 50, true], [900, 'ranger', 50, true], [1199, 'knight', 50, true]]) {
+      await p.evaluate(([rank, cls, lv, max]) => { __botOff(); hideOverlay(); slowmo = 0; hitStop = 0; __hero(cls, lv, max); SAVE.meta.bosses.h = 2147483647; BA = null; bossArena(rank, { practice: false }); __botOn(true); }, [rank, cls, lv, max]);
+      let n = 0, last = -99;
+      for (let i = 0; i < 200 && n < 2; i++) {
+        const z = await p.evaluate(() => { __step(12); return BZ.fx.filter(z => z.k !== 'z').length; });
+        if (z >= 1 && i > 12 && i - last > 15) { last = i; await p.evaluate(() => render()); await p.screenshot({ path: `${OUT}/kampf_${W}x${H}_rang${rank + 1}_${n}.png` }); n++; }
+      }
+      ok(n === 2, `${W}x${H}: Rang ${rank + 1}: Bilder mitten im Kampf mit Warnflächen`);
+    }
+    await p.evaluate(() => __botOff());
+    await ctx.close();
+  }
 
   /* ---------- Boss-Kodex und Kampf auf dem Handy ---------- */
   for (const [W, H] of [[390, 844], [844, 390]]) {
