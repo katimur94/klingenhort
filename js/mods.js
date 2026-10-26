@@ -288,6 +288,8 @@ function modTakeBack(it) {
   for (const k of ms) modAdd(k, 1);
   delete it.mods; modElSet(it); return ms.length;
 }
+// Wert der Mods für Vergleiche (itemScore): je Stufe 2 %, höchstens +100 %
+function modScore(it) { let v = 0; for (const p of mParsed(it)) v += .02 * p.t; return Math.min(1, v); }
 function modPreview(it, k) { const x = JSON.parse(JSON.stringify(it)); modPut(x, k); return x; }
 // Mods im Vorrat, die in diesen Gegenstand passen (beste zuerst)
 function modStock(f) { return Object.keys((P && P.mods) || {}).filter(k => P.mods[k] > 0 && modParse(k) && (!f || modParse(k).f === f)).sort((a, b) => { const x = modParse(a), y = modParse(b); return MOD_FAMS.concat(['aff']).indexOf(x.f) - MOD_FAMS.concat(['aff']).indexOf(y.f) || MOD_KINDS.indexOf(x.k) - MOD_KINDS.indexOf(y.k) || y.t - x.t; }); }
@@ -831,7 +833,8 @@ HOOK.itemLines.push((it, L) => {
   const B = SAVE && SAVE.meta.mods ? SAVE.meta.mods.book : {};
   for (const R of RESO) { if (R.on !== 'item') continue; const q = resItemQ(R, it, Lp); if (q) L.push('✦ ' + (B[R.id] ? _t('Resonanz {name}: {fx}', { name: R.n, fx: R.d(q) }) : _t('Unbekannte Resonanz – leg den Gegenstand an und entdecke sie.'))); }
   if (P && P.gear && P.gear[it.slot] === it) for (const id in MODS.act.res) { const R = RESOI[id]; if (R.on === 'set' && (MODS.act.who[id] || []).includes(it.uid)) L.push('✦ ' + _t('Ausrüstungs-Resonanz {name}: {fx}', { name: R.n, fx: R.d(MODS.act.res[id]) })); }
-  if (free > 0) L.push('❖ ' + (free === 1 ? _t('1 freier Mod-Platz') : _t('{n} freie Mod-Plätze', { n: free })));
+  // freie Plätze nur bei Gegenständen, die schon Mods tragen (sonst zeigt es die Werkbank) – hält Beschreibungen kurz
+  if (ms.length && free > 0) L.push('❖ ' + (free === 1 ? _t('1 freier Mod-Platz') : _t('{n} freie Mod-Plätze', { n: free })));
 });
 
 /* ---------- Spielstand ---------- */

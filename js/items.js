@@ -99,9 +99,9 @@ function itemLines(it) {
 }
 function itemPrice(it) { return Math.max(8, Math.round(PRICE[it.tier] * .22 * (1 + Math.min(it.rar, 5) * .6 + (it.rar === 6 ? 3 : 0)) * (1 + it.up * .3) * (1 + (it.fz || 0) * .2))); }
 function itemScore(it) {
-  const gr = it.mw ? it.mw.griff || 0 : 0;
-  if (it.slot === 'weapon') return weaponDmg(it) / (wform(it).sp || 1) * (1 + (it.aff.wucht || 0)) * (1 + (it.aff.krit || 0) + (wform(it).crit || 0) + gr * .006) * (1 + (it.aff.tempo || 0) + gr * .015) * (1 + it.gems.length * .05) * (it.myth ? 1.3 : 1) * (it.el ? 1.06 : 1);
-  return armorDef(it) * 2 + armorHp(it) * .5 + (it.aff.leben || 0) * 120 + (it.aff.panzer || 0) * 2 + (it.aff.schutz || 0) * 200 + it.gems.length * 6 + (it.myth ? 40 : 0) + (it.el ? 8 : 0) + (it.mw ? (it.mw.rune || 0) * 4 : 0);
+  const gr = it.mw ? it.mw.griff || 0 : 0, ms = typeof modScore === 'function' ? 1 + modScore(it) : 1;   // Mods zählen mit (js/mods.js)
+  if (it.slot === 'weapon') return ms * weaponDmg(it) / (wform(it).sp || 1) * (1 + (it.aff.wucht || 0)) * (1 + (it.aff.krit || 0) + (wform(it).crit || 0) + gr * .006) * (1 + (it.aff.tempo || 0) + gr * .015) * (1 + it.gems.length * .05) * (it.myth ? 1.3 : 1) * (it.el ? 1.06 : 1);
+  return ms * (armorDef(it) * 2 + armorHp(it) * .5 + (it.aff.leben || 0) * 120 + (it.aff.panzer || 0) * 2 + (it.aff.schutz || 0) * 200 + it.gems.length * 6 + (it.myth ? 40 : 0) + (it.el ? 8 : 0) + (it.mw ? (it.mw.rune || 0) * 4 : 0));
 }
 function randomItem(stage, minRar, o) {
   o = o || {};

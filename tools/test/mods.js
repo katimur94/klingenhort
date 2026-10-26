@@ -103,6 +103,8 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
       modPut(P.gear.helm, 'praeg_smaragd:10'); computeStats(); o.praeg = P.st.hp > h0 && MODS.act.pr.length === 1;
       // Kerne: Fähigkeiten der Klasse, sonst „wirkt nicht“
       o.kernTxt = kernDesc('sprung', 5).includes('wirkt nicht') && kernDesc('salve', 5).includes('Fächerschuss');
+      // Vergleich und Auto-Anlegen zählen Mods mit: ein Fund ersetzt kein stark gemoddetes Teil, das kaum schwächer ist
+      { const a = makeItem({ slot: 'armor', base: 'armor', tier: 3, rar: 2 }), b2 = JSON.parse(JSON.stringify(a)); b2.uid = 'x'; const s0 = itemScore(a); modPut(a, 'rune_leben:8'); modPut(a, 'glyphe_frost:8'); o.score = itemScore(a) > s0 * 1.3 && itemScore(b2) === s0; }
       // alte und kaputte Spielstände
       const old = JSON.parse(JSON.stringify(SAVE.chars[0])); delete old.mods; for (const s of MOD_GEAR) delete old.gear[s].mods;
       old.bag = [Object.assign(makeItem({ slot: 'weapon', base: 'bow', tier: 1, rar: 1 }), { mods: ['rune_kraft:3', 'glyphe_kette:2', 'rune_kraft:5', 'quatsch', 'essenz_feuer:2'] }), Object.assign(makeItem({ slot: 'armor', base: 'armor', tier: 1, rar: 3 }), { mods: 'kaputt', rr: -4 }), Object.assign(makeItem({ slot: 'helm', base: 'helm', tier: 1, rar: 2 }), { mods: ['essenz_frost:3', 'essenz_licht:3'], el: 'frost' })];
@@ -146,6 +148,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     ok(r.preMod > .02 && r.preMod < .08 && r.preMenu === 0, `seltene Funde haben manchmal schon einen Mod (${(r.preMod * 100).toFixed(1)} %), Geschmiedetes/Gekauftes nie`);
     ok(r.runeStack && r.kern && r.praeg, 'Runen zählen zusammen, vom gleichen Kern nur der stärkste, Prägung gibt Wert und Leuchten');
     ok(r.kernTxt, 'Kerne zeigen, was sie bei deiner Klasse tun (oder dass sie nicht wirken)');
+    ok(r.score, 'Vergleich (itemScore) zählt Mods mit – Auto-Anlegen tauscht kein gemoddetes Teil gegen ein kaum besseres');
     ok(r.oldClean && r.oldBack, 'kaputte Mods an Gegenständen werden repariert, überzählige kommen in den Vorrat');
     ok(r.oldHero && r.oldMeta && r.badMeta, 'alte Helden ohne Mods und alte/kaputte Konten laden');
     ok(r.saveKB < 30 && r.bagModKB < 8 && r.metaKB < 1500, `Speicher: voller Vorrat ${r.saveKB} KB, 30 Gegenstände mit je 5 Mods ${r.bagModKB} KB, Konto ${r.metaKB} B`);
