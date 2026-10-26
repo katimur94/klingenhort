@@ -2432,7 +2432,9 @@ document.head.insertAdjacentHTML('beforeend', '<style>' +
   /* Kreaturen 2.0: Unterbereiche, Begleiter-Raster, Gene, Ausrüstung, Magie, Zucht */
   '.psub{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:10px 0 8px}@media (min-width:700px){.psub{grid-template-columns:repeat(6,minmax(0,1fr))}}' +
   '.psub .opt{min-height:44px;min-width:0;padding:6px 2px;font-size:8px;margin:0;position:relative}.psub .opt em{position:absolute;right:3px;top:3px;font-style:normal;color:var(--gold);font-size:7px}' +
-  '.pnav{display:flex;gap:6px;align-items:center}.pnav .btn{min-width:44px;padding-left:6px;padding-right:6px}' +
+  '.pnav{display:flex;gap:6px;align-items:center}.pnav .btn{min-width:44px;min-height:44px;padding-left:6px;padding-right:6px}' +
+  '.pmini{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;margin-bottom:8px}.pmini .pmi{width:88px;height:66px;display:flex;align-items:flex-end;justify-content:center;background:radial-gradient(ellipse at 50% 80%,var(--stone-hi) 0,var(--stone-lo) 72%)}.pmini .spr{margin:0 0 4px;animation:petan .8s steps(4) infinite}' +
+  '.psub{margin-top:0}' +
   '.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:5px}.pgrid button{position:relative;height:58px;border:0;padding:0;background:var(--night);box-shadow:inset 0 -3px 0 var(--tc);cursor:pointer;display:grid;place-items:center;color:inherit}' +
   '.pgrid button.sel{box-shadow:inset 0 0 0 3px var(--gold)}.pgrid button.selb{box-shadow:inset 0 0 0 3px #ff8aa8}.pgrid button.off img{opacity:.4}.pgrid img{max-width:46px;max-height:46px;image-rendering:pixelated}' +
   '.pgrid b{position:absolute;right:3px;bottom:4px;font-family:var(--f-display);font-weight:400;font-size:6px;color:var(--parch);text-shadow:1px 1px 0 #000}.pgrid i{position:absolute;left:4px;top:4px;width:7px;height:7px;background:var(--moss)}.pgrid i.cd{background:#ff8a7a}.pgrid u{position:absolute;right:3px;top:2px;text-decoration:none;color:#ff9af0;font-size:13px}' +
@@ -2558,7 +2560,12 @@ function petHeadHTML(p, M) {
   const ren = petRen ? `<div class="acts" style="justify-content:flex-start;flex-wrap:nowrap;margin-top:10px"><input type="text" id="petnm" maxlength="14" value="${esc(p.nm)}" placeholder="${esc(S.n)}" style="flex:1;min-width:0"><button class="btn sm" data-act="petrenok">${_t('OK')}</button></div>` : '';
   const nav = M.list.length > 1 ? `<div class="pnav" style="margin-top:8px"><button class="btn alt sm" data-act="petnav" data-i="-1" aria-label="${_t('Voriger Begleiter')}">‹</button><span class="sub" style="flex:1;text-align:center;margin:0">${_t('{n} von {max}', { n: M.list.indexOf(p) + 1, max: M.list.length })}</span><button class="btn alt sm" data-act="petnav" data-i="1" aria-label="${_t('Nächster Begleiter')}">›</button></div>` : '';
   const subs = `<div class="psub" role="tablist">${PET_SUBS.map(([k, n]) => { const bd = petSubBadge(p, k); return `<button class="opt${petSub === k ? ' sel' : ''}" role="tab" aria-selected="${petSub === k}" data-act="petsub" data-id="${k}">${n}${bd !== '' ? `<em>${bd}</em>` : ''}</button>`; }).join('')}</div>`;
-  return `<div class="box"><div class="petcard">${prev}${info}</div>${ren}${nav}</div>${subs}`;
+  // Übersicht: große Karte; sonst eine knappe Zeile, damit der Inhalt auf dem Handy gleich zu sehen ist
+  if (petSub !== 'ov') {
+    const U1 = petURL(p, true), s1 = Math.max(1, Math.min(2, Math.floor(Math.min(84 / U1.W, 60 / U1.H) * 2) / 2)), nv = M.list.length > 1;
+    return `${subs}<div class="box pmini"><div class="pmi">${petSprHTML(U1, s1, false)}</div><div style="min-width:0"><div class="petnm" style="font-size:22px">${esc(petName(p))}${p.shiny ? ' <span style="color:#ff9af0">✦</span>' : ''}</div><div class="st" style="font-size:16px;margin-top:3px">${_t('LV {lv}', { lv: p.lv })} · ${tierPill(S.t)} <span class="pel" style="background:${E.c}">${E.n}</span> ${mu}${hurt ? ` <span style="color:#ff8a7a">${_t('verletzt')}</span>` : ''}</div></div>${nv ? `<div class="pnav"><button class="btn alt sm" data-act="petnav" data-i="-1" aria-label="${_t('Voriger Begleiter')}">‹</button><button class="btn alt sm" data-act="petnav" data-i="1" aria-label="${_t('Nächster Begleiter')}">›</button></div>` : ''}</div>`;
+  }
+  return `${subs}<div class="box"><div class="petcard">${prev}${info}</div>${ren}${nav}</div>`;
 }
 function petListHTML(M, p) {
   return `<h3>${_t('DEINE BEGLEITER {n}/{max}', { n: M.list.length, max: PET_MAX })}</h3><div class="pgrid">${M.list.map(o => `<button class="${o.id === p.id ? 'sel' : ''}" style="--tc:${PET_TIERS[PET_SP[o.sp].t].c}" data-act="petsel" data-id="${o.id}" title="${esc(petName(o))}" aria-label="${esc(petName(o))}">${o.id === M.act ? '<i></i>' : petIsHurt(o) ? '<i class="cd"></i>' : ''}${o.nw ? '<u>●</u>' : ''}<img src="${petURL(o).url}" alt=""><b>${o.lv}</b></button>`).join('')}</div>`;
