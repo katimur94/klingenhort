@@ -527,10 +527,13 @@ function lBgDraw() {
   const L = LW; if (!L) return;
   const cx0 = Math.floor(CX / LCK) - LOC, cx1 = Math.floor((CX + VW) / LCK) - LOC, cy0 = Math.floor(CY / LCK) - LOC, cy1 = Math.floor((CY + VH) / LCK) - LOC;
   for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) {
-    const r = lEnsure(cx, cy); if (!r.pd) lPaintStep(r, Infinity);
+    // nach dem Ausflug (Entkommen-/Tod-Bildschirm): nur noch zeigen, was schon gemalt ist
+    const r = L.on ? lEnsure(cx, cy) : L.cm.get(lCK(cx, cy)); if (!r) continue; if (!r.pd) { if (!L.on && !r.cv) continue; lPaintStep(r, Infinity); }
     ctx.drawImage(r.cv, r.X0 - CX, r.Y0 - CY);
   }
 }
+// Nach dem Ausflug: Leinwände in den Vorrat, Chunks vergessen (die Welt-Daten bleiben im kleinen Zwischenspeicher)
+function lRelease() { if (!LW || LW.on) return; for (const r of LW.cm.values()) lFree(r); LW.cm.clear(); LW = null; LRL = null; }
 // Blut und Brandflecken (decal/scorch in js/combat.js) landen auf der Leinwand des passenden Chunks
 const LDEC = {
   globalAlpha: 1, fillStyle: '#000', e: null,
@@ -1202,7 +1205,7 @@ function lAbandon(why) {
   const M = lMeta(), cur = M.cur, lost = LW ? LW.pack.slice() : [], pet = LW && LW.pet;
   M.aband++; if (cur) lRestoreGear(cur);
   const r = lDeliver(lPetBagTake(pet)); M.cur = null;
-  lEnd(); LW = null; saveChar(); persist();
+  lEnd(); if (LW) for (const r of LW.cm.values()) lFree(r); LW = null; saveChar(); persist();
   return { lost, r, why };
 }
 // Beim Laden eines Helden: Ausflug war noch offen (Neu laden, Absturz) → wie Abbruch; mitten im Kampf → wie Tod
@@ -1255,7 +1258,7 @@ function lDeathScreen() {
   M.deaths++; M.cur = null; L.fog = new Map(); L.regs = new Set();   // Erkundetes seit dem letzten Leuchtfeuer ist vergessen
   let hurt = '';
   if (pet && typeof petHurt === 'function') { const min = lHurtMin(d); try { petHurt(pet, min); hurt = _t('{name} ist verletzt und braucht etwa {n} Minuten Ruhe.', { name: esc(lPetName(pet)), n: min }); } catch (_) { } }
-  lEnd(); LW = null;
+  lEnd();   // LW bleibt bis „Im Versteck erwachen“: die Welt bleibt hinter dem Bildschirm sichtbar
   let r = null, body, foot;
   if (P.hc) {
     for (const e of saved) if (e.t === 'item' && SAVE.meta.hide.stash.length < (typeof stashCap === 'function' ? stashCap() : 0)) { delete e.it.lw; SAVE.meta.hide.stash.push(e.it); } else if (e.t !== 'item' && M.box.length < LBOX) M.box.push(e);
@@ -2250,10 +2253,10 @@ ON.l_quit = () => {
   setState('menu'); showOverlay(`<div class="center"><h2>${_t('AUSFLUG ABBRECHEN?')}</h2><p class="sub">${_t('Der Rucksack bleibt in den Landen, und was du seit dem letzten Leuchtfeuer erkundet hast, ist vergessen. Du behältst die Ausrüstung, mit der du aufgebrochen bist, und alles in der Begleiter-Tasche.')}</p><div class="menu"><button class="btn red" data-act="l_quitok">${_t('Ja, abbrechen')}</button><button class="btn alt" data-act="l_resume">${_t('Weiter erkunden')}</button></div></div>`);
 };
 ON.l_quitok = () => { const r = lAbandon('quit'); toast(r.lost.length ? _t('Ausflug abgebrochen – {n} Dinge sind verloren.', { n: r.lost.length }) : _t('Ausflug abgebrochen.'), '#ff8a5a'); enterHideout(); };
-ON.l_wake = () => { enterHideout(); };
-ON.l_home = () => { enterHideout(); };
-ON.l_tomap = () => { G = null; openMap(); };
-ON.l_again = () => { enterHideout(); openStation('weltentor'); };
+ON.l_wake = () => { lRelease(); enterHideout(); };
+ON.l_home = () => { lRelease(); enterHideout(); };
+ON.l_tomap = () => { lRelease(); G = null; openMap(); };
+ON.l_again = () => { lRelease(); enterHideout(); openStation('weltentor'); };
 
 /* ---------- Leuchtfeuer setzen: Karte sichern, neuer Start, Ausgang ---------- */
 function lCpBlock() {
