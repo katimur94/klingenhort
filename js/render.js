@@ -253,7 +253,7 @@ function render() {
   LIGHTS = [];
   const camX = cam.x + shk.x, camY = cam.y + shk.y;
   CX = Math.floor(camX); CY = Math.floor(camY); SUBX = camX - CX; SUBY = camY - CY;
-  ctx.drawImage(bg.c, -CX, -CY);
+  if (bg.draw) bg.draw(); else ctx.drawImage(bg.c, -CX, -CY);   // bg.draw: Boden aus Chunks (Endlose Lande, js/lande.js)
   const ff = Math.floor(T * 7) % 3;
   for (const f of bg.fountains) { const x = f.x - CX; if (x < -16 || x > VW) continue; const oy = f.red ? 16 : 48, by = f.red ? 32 : 64; ctx.drawImage(SHEET, 64 + ff * 16, oy, 16, 16, x, 16 - CY, 16, 16); ctx.drawImage(SHEET, 64 + ff * 16, by, 16, 16, x, 32 - CY, 16, 16); if (f.red) addLight(x + 8, 30 - CY, 34, .8); else addLight(x + 8, 30 - CY, 24, .4); }
   for (const tx of bg.torches) { const x = tx - CX; if (x < -30 || x > VW + 30) continue; const y = 22 - CY; ctx.fillStyle = '#4a3a2a'; ctx.fillRect(x - 1, y, 3, 6); ctx.fillStyle = '#5a4a3a'; ctx.fillRect(x - 2, y - 1, 5, 2); const fl = Math.floor(T * 12 + tx) % 3; ctx.fillStyle = '#ff6a2a'; ctx.fillRect(x - 1, y - 4 - fl % 2, 3, 3 + fl % 2); ctx.fillStyle = '#ffd24a'; ctx.fillRect(x, y - 3, 1, 2); addLight(x, y - 2, 52, .9); }
