@@ -31,6 +31,7 @@ run node tools/test/trade.js 390 844 /tmp/klingenhort-test/trade
 run node tools/test/auras.js /tmp/klingenhort-test/auras
 run node tools/test/market.js 390 844 /tmp/klingenhort-test/market
 run node tools/test/lande.js /tmp/klingenhort-test/lande
+run node tools/test/artefakte.js /tmp/klingenhort-test/artefakte
 run node tools/i18n/check.js
 # jede Sprache im Hochformat (gleichzeitig): nichts fehlt, kein Deutsch, nichts abgeschnitten
 echo; echo "== Sprachen"
