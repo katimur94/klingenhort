@@ -89,7 +89,7 @@ function buildHTML(id) {
   if (q) return `<h3>${_t('IM BAU: STUFE {lv}', { lv: q.lv })}</h3><p class="sub" style="margin:0 0 4px">${esc(buildDesc(id, q.lv - 1))}</p>${buildProgHTML(q)}`;
   if (!c) return `<h3>${_t('AUSBAU')}</h3><p class="sub">${_t('{name} ist vollständig ausgebaut (Stufe {lv}).', { name: B.n, lv })}</p>`;
   const busy = !buildFree(), ok = canAfford(c.mats, c.gold) && !busy;
-  return `<h3>${_t('AUSBAU AUF STUFE {lv}', { lv: lv + 1 })}</h3><p class="sub" style="margin:0 0 4px">${esc(buildDesc(id, lv))}</p>${costHTML(c.mats, c.gold)}
+  return `<h3>${_t('AUSBAU AUF STUFE {lv}', { lv: lv + 1 })}</h3><p class="sub" style="margin:0 0 4px">${esc(buildDesc(id, lv))}</p>${costHTML(c.mats, c.gold)}${missLine(c.mats, c.gold)}
   <p class="sub bwhen">${_t('Bauzeit: {t}', { t: `<b>${buildTimeText(buildDur(lv + 1))}</b>` })}${busy ? ' · <span class="bbusy">' + buildBusyText() + '</span>' : ''}</p><button class="btn" data-act="build" data-id="${id}" ${ok ? '' : 'disabled'}>${lv ? _t('Ausbauen') : _t('Errichten')}</button>`;
 }
 // Ausbau beginnen: bezahlen, die Stufe zählt erst, wenn die Bauzeit um ist (hideLv) – sofort fertig nur mit Bauzeit 0

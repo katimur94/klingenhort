@@ -390,6 +390,7 @@ const MAT_SPECIAL = { schuppe: _t('Bosse'), aether: _t('Gegner in der Qual') };
 function matWhere(k) {
   const o = [], en = Object.keys(EN).filter(e => EN[e].drop && EN[e].drop[k] && !EN[e].hidden).sort((a, b) => EN[b].drop[k] - EN[a].drop[k]).slice(0, 2).map(e => EN[e].name);
   if (MAT_SPECIAL[k]) o.push(MAT_SPECIAL[k]);
+  if (MATS[k].w) o.push(MATS[k].w);   // Rohstoffe (js/bauen.js): wo man sie sammelt
   if (en.length) o.push(en.join(', '));
   const bi = BIOMES.filter(b => b.vein === k).map(b => b.name); if (bi.length) o.push(_t('Erzadern: {list}', { list: bi.join(', ') }));
   const tr = TRANSMUTE.find(t => t[1] === k); if (tr) o.push(_t('Juwelier: aus {n} {m}', { n: tr[2], m: MATS[tr[0]].n }));

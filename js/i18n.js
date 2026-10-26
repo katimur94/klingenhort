@@ -58,7 +58,7 @@ function translateData() {
   for (const k in SETS) tr(SETS[k], 'n', 'd2', 'd3');
   for (const k in MYTHIC) tr(MYTHIC[k], 'd');
   for (const k in COSM) tr(COSM[k], 'n');
-  for (const k in MATS) tr(MATS[k], 'n');
+  for (const k in MATS) tr(MATS[k], 'n', 'w');
   for (const k in GEMS) tr(GEMS[k], 'n');
   arr(GEMGRADE);
   RECIPES.forEach(r => tr(r, 'n', 'd'));

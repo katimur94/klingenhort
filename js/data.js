@@ -355,15 +355,15 @@ const MATS = {
   stern:{n:'Sternenstaub',c:'#b0b8ff',c2:'#4a4ad0'},
   aether:{n:'Ätherkristall',c:'#ffe8a0',c2:'#c8a04a'},
   // Rohstoffe (6.2, res): sammeln in den Landen und im Versteck, bauen damit (js/bauen.js) – keine Gegner-Beute
-  holz:{n:'Holz',c:'#b07a48',c2:'#6a4424',res:1},
-  stein:{n:'Stein',c:'#a8a296',c2:'#5e5a54',res:1},
-  faser:{n:'Pflanzenfaser',c:'#c8d070',c2:'#5a7a26',res:1},
-  samen:{n:'Samen',c:'#d8b060',c2:'#6a4a1e',res:1},
-  feder:{n:'Feder',c:'#f2ead2',c2:'#7a90c0',res:1},
-  eisenholz:{n:'Eisenholz',c:'#7a8494',c2:'#2e343e',res:1},
-  marmor:{n:'Marmor',c:'#eee8dc',c2:'#a8a090',res:1},
-  obsidian:{n:'Obsidian',c:'#5a4878',c2:'#140e1e',res:1},
-  sternholz:{n:'Sternholz',c:'#a8b8ff',c2:'#3a3a8a',res:1}
+  holz:{n:'Holz',c:'#b07a48',c2:'#6a4424',res:1,w:'Bäume (Holzplatz im Versteck, Endlose Lande), Kisten, Acker'},
+  stein:{n:'Stein',c:'#a8a296',c2:'#5e5a54',res:1,w:'Felsen (Holzplatz im Versteck, Endlose Lande), Erzmine'},
+  faser:{n:'Pflanzenfaser',c:'#c8d070',c2:'#5a7a26',res:1,w:'Büsche, Pilze und Kakteen, Kräutergarten, Acker (Flachs)'},
+  samen:{n:'Samen',c:'#d8b060',c2:'#6a4a1e',res:1,w:'Büsche, Kräuterbeete, Kräutergarten, Ernte im Acker'},
+  feder:{n:'Feder',c:'#f2ead2',c2:'#7a90c0',res:1,w:'Vogelnester in Bäumen, Holzplatz im Versteck, Kräutergarten'},
+  eisenholz:{n:'Eisenholz',c:'#7a8494',c2:'#2e343e',res:1,w:'Bäume tiefer in den Landen (alte und dunkle Wälder), Acker'},
+  marmor:{n:'Marmor',c:'#eee8dc',c2:'#a8a090',res:1,w:'helle Felsen und Säulen in den Landen, Erzmine ab Stufe 6'},
+  obsidian:{n:'Obsidian',c:'#5a4878',c2:'#140e1e',res:1,w:'dunkle Felsen und Obsidian in Glut-Gebieten, Erzmine ab Stufe 8'},
+  sternholz:{n:'Sternholz',c:'#a8b8ff',c2:'#3a3a8a',res:1,w:'Sternenbäume weit draußen in den Landen, Acker (Sternblume)'}
 };
 const MATORDER = ['erz','leder','knochen','schleim','zahn','kristall','horn','glut','mithril','adamant','schuppe','stern','aether','holz','stein','faser','samen','feder','eisenholz','marmor','obsidian','sternholz'];
 // Gegner-Materialien in Stufen-Reihenfolge (Beute, Truhen, Händler wählen „bis Stufe n“ daraus) – ohne die Rohstoffe
