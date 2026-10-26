@@ -172,7 +172,8 @@ function showTitle() {
     chars += `<div class="cardrow">${heroHTML(c, 1.4)}<div><div style="font-size:21px">${esc(c.name)} ${c.hc ? '<span class="pill hc">HC</span>' : ''}</div><div style="font-size:16px;color:var(--parch-dim)">${C.name} · ${_t('LV {lv}', { lv: c.lv })}${c.paragon ? ' · P' + c.paragon : ''} · ${_t('Akt {act}', { act: c.act })}${qualOf(c.act) ? ' (' + _t('Qual {q}', { q: qualOf(c.act) }) + ')' : ''} · ${DIFFS[c.diff].n}${c.rebirths ? ' · ★' + c.rebirths : ''}</div></div><div class="acts">${confirmDel === i ? `<button class="btn red sm" data-act="delok" data-i="${i}">${_t('Löschen!')}</button><button class="btn alt sm" data-act="delno">${_t('Nein')}</button>` : `<button class="btn sm" data-act="play" data-i="${i}">${_t('Spielen')}</button><button class="btn alt sm" data-act="delchar" data-i="${i}" aria-label="${_t('Löschen')}"><span class="x">×</span></button>`}</div></div>`;
   });
   const N = CHANGELOG[0], fresh = newsUnseen();
-  showOverlay(`<div class="tgrid"><div><button class="btn alt sm langbtn" data-act="langs" data-id="title" aria-label="${_t('SPRACHE')}">🌐 ${LANG.toUpperCase()}</button><h1 class="logo">KLINGEN<br>HORT</h1>
+  // oben rechts: „?“ öffnet das Handbuch (js/handbuch.js), daneben die Sprachwahl
+  showOverlay(`<div class="tgrid"><div>${typeof hbTitleBtn === 'function' ? hbTitleBtn() : ''}<button class="btn alt sm langbtn" data-act="langs" data-id="title" aria-label="${_t('SPRACHE')}">🌐 ${LANG.toUpperCase()}</button><h1 class="logo">KLINGEN<br>HORT</h1>
   <p class="tag">${_t('Der Uralte Drache hat das Weltenfeuer gestohlen. Bau dein Versteck wieder auf, schmiede Klingen aus Mithril, Adamant und Drachenschuppen – und hol dir zurück, was dem Orden gehört.')}</p>
   ${inAppHTML()}<button class="newsteaser" data-act="news"><b>${_t('NEU IN {v}', { v: N.v })}${fresh ? `<span class="badge">${_t('NEU')}</span>` : ''}</b>${esc(N.t)}: ${esc(N.items[0][1])} <span style="color:var(--gold)">${_t('Alle Neuigkeiten ›')}</span></button>${weekHTML()}</div>
   <div>${chars ? '<h3 style="margin-top:0">' + _t('DEINE HELDEN') + '</h3>' + chars : ''}
@@ -184,7 +185,7 @@ function showTitle() {
     <button class="btn alt" data-act="best">${_t('Bestiarium')}</button>
     <button class="btn alt" data-act="hall">${_t('Ruhmeshalle')}</button>
     <button class="btn alt" data-act="code">${_t('Spielstand übertragen')}</button>
-    <button class="btn alt" data-act="settings">${_t('Einstellungen')}</button>
+    <button class="btn alt" data-act="settings" data-id="title">${_t('Einstellungen')}</button>
     ${hookHTML('titleBtns')}${fsBtn()}${installBtn()}
   </div></div></div>
   <div class="help" data-help>${helpHTML()}</div>${CREDIT}<p class="credit">${_t('Version {v}', { v: VERSION })}</p>`, true);
@@ -454,7 +455,7 @@ function doEvent(a) {
 function showPause() {
   if (state !== 'play') return; setState('pause');
   const hide = G && G.type === 'versteck';
-  showOverlay(`<h2 class="center">${_t('PAUSE')}</h2><p class="sub center">${esc(P.name)} · ${_t('LV {lv}', { lv: P.lv })} · ${hide ? _t('Versteck') : _t('Akt {act}', { act: P.act })}</p><div class="menu"><button class="btn" data-act="resume">${_t('Weiterspielen')}</button><button class="btn alt" data-act="pchar">${_t('Charakter')}</button>${isTouch ? `<button class="btn alt" data-act="ctledit" data-id="pause">${_t('Knöpfe anpassen')}</button>` : ''}<button class="btn alt" data-act="music">${SAVE.meta.settings.music !== false ? _t('Musik aus') : _t('Musik an')}</button><button class="btn alt" data-act="sfx">${SAVE.meta.settings.sfx !== false ? _t('Ton aus') : _t('Ton an')}</button>${isTouch ? '' : gfxBtn() + fsBtn()}${hide ? `<button class="btn alt" data-act="hleave">${_t('Zur Weltkarte')}</button>` : ''}<button class="btn alt" data-act="title">${_t('Speichern & Hauptmenü')}</button></div><div class="help" data-help>${helpHTML()}</div>`);
+  showOverlay(`<h2 class="center">${_t('PAUSE')}</h2><p class="sub center">${esc(P.name)} · ${_t('LV {lv}', { lv: P.lv })} · ${hide ? _t('Versteck') : _t('Akt {act}', { act: P.act })}</p><div class="menu"><button class="btn" data-act="resume">${_t('Weiterspielen')}</button><button class="btn alt" data-act="pchar">${_t('Charakter')}</button>${isTouch ? `<button class="btn alt" data-act="ctledit" data-id="pause">${_t('Knöpfe anpassen')}</button>` : ''}<button class="btn alt" data-act="music">${SAVE.meta.settings.music !== false ? _t('Musik aus') : _t('Musik an')}</button><button class="btn alt" data-act="sfx">${SAVE.meta.settings.sfx !== false ? _t('Ton aus') : _t('Ton an')}</button>${isTouch ? '' : gfxBtn() + fsBtn()}<button class="btn alt" data-act="settings" data-id="pause">${_t('Einstellungen')}</button>${typeof hbMenuBtn === 'function' ? hbMenuBtn('pause') : ''}${hide ? `<button class="btn alt" data-act="hleave">${_t('Zur Weltkarte')}</button>` : ''}<button class="btn alt" data-act="title">${_t('Speichern & Hauptmenü')}</button></div><div class="help" data-help>${helpHTML()}</div>`);
 }
 function showDeath() {
   setState('over'); showHud(false);
@@ -501,9 +502,14 @@ function showCode(msg) {
   ${msg ? `<p class="sub" style="color:var(--gold)">${msg}</p>` : ''}
   <div class="menu" style="margin-top:8px"><button class="btn" data-act="loadcode">${_t('Code laden')}</button><button class="btn alt" data-act="backtitle">${_t('Zurück')}</button></div>`);
 }
-function showSettings() {
-  const s = SAVE.meta.settings;
-  showOverlay(`<h2>${_t('EINSTELLUNGEN')}</h2><div class="menu" style="margin-top:12px"><button class="btn alt" data-act="music">${_t('Musik: {v}', { v: s.music !== false ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="sfx">${_t('Soundeffekte: {v}', { v: s.sfx !== false ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="bigui">${_t('Schrift: {v}', { v: s.bigui ? _t('GROSS') : _t('NORMAL') })}</button><button class="btn alt" data-act="calm">${_t('Wackeln & Blitzen: {v}', { v: s.calm ? _t('AUS') : _t('AN') })}</button>${gfxBtn()}${fsBtn()}<button class="btn alt" data-act="controls">${_t('Steuerung')}</button><button class="btn alt" data-act="news" data-id="settings">${_t('Neuigkeiten')}</button><button class="btn alt" data-act="langs" data-id="settings">🌐 ${LANGS[LANG]}</button>${UPD.on ? `<button class="btn alt" data-act="checkupd">${_t('Nach Update suchen')}</button>` : ''}<button class="btn" data-act="backtitle">${_t('Zurück')}</button></div><p class="sub" id="updmsg">${_t('Version {v}', { v: VERSION })}</p>`);
+// Einstellungen aus dem Hauptmenü ('title') oder aus der Pause ('pause'): im Spiel ohne Sprachwahl und Update-Suche (beide laden die Seite neu),
+// „Zurück“ führt dann wieder in die Pause – die Welt wird nie verlassen. Ohne Angabe bleibt die letzte Herkunft.
+let setFrom = 'title';
+function setInGame() { return setFrom === 'pause' && !!(G && G.type); }
+function showSettings(from) {
+  if (from) setFrom = from;
+  const s = SAVE.meta.settings, ig = setInGame();
+  showOverlay(`<h2>${_t('EINSTELLUNGEN')}</h2><div class="menu" style="margin-top:12px"><button class="btn alt" data-act="music">${_t('Musik: {v}', { v: s.music !== false ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="sfx">${_t('Soundeffekte: {v}', { v: s.sfx !== false ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="bigui">${_t('Schrift: {v}', { v: s.bigui ? _t('GROSS') : _t('NORMAL') })}</button><button class="btn alt" data-act="calm">${_t('Wackeln & Blitzen: {v}', { v: s.calm ? _t('AUS') : _t('AN') })}</button>${gfxBtn()}${fsBtn()}<button class="btn alt" data-act="controls">${_t('Steuerung')}</button>${typeof hbMenuBtn === 'function' ? hbMenuBtn('settings') : ''}<button class="btn alt" data-act="news" data-id="settings">${_t('Neuigkeiten')}</button>${ig ? '' : `<button class="btn alt" data-act="langs" data-id="settings">🌐 ${LANGS[LANG]}</button>`}${UPD.on && !ig ? `<button class="btn alt" data-act="checkupd">${_t('Nach Update suchen')}</button>` : ''}<button class="btn" data-act="setback">${_t('Zurück')}</button></div><p class="sub" id="updmsg">${_t('Version {v}', { v: VERSION })}</p>`);
 }
 // Sprache: jede in ihrer eigenen Schreibweise, der Wechsel lädt die Seite neu
 let langBack = 'title';
@@ -528,7 +534,7 @@ function showControls() {
   <div class="opts"><button class="opt" data-act="ctl_ss-">${_t('Joystick kleiner')}</button><button class="opt sel" style="cursor:default">${Math.round(c.stickSize * 100)} %</button><button class="opt" data-act="ctl_ss+">${_t('Joystick größer')}</button></div>
   <h3>${_t('HEILTRANK')}</h3><div class="opts">${opt('ctl_pot_tap', c.pot === 'tap', _t('TIPPEN'), _t('Sofort trinken (gesperrt kurz nach einer Rolle)'))}${opt('ctl_pot_hold', c.pot === 'hold', _t('HALTEN'), _t('Knopf kurz gedrückt halten – nie mehr aus Versehen'))}${opt('ctl_pot_auto', c.pot === 'auto', _t('AUTO'), _t('Trinkt automatisch unter 30 % LP'))}</div>
   <h3>${_t('ZIELEN & GEFÜHL')}</h3><div class="opts">${opt('ctl_aim', c.aim, _t('ZIELMARKIERUNG {v}', { v: c.aim ? _t('AN') : _t('AUS') }), _t('Zeigt, welchen Gegner du gerade angreifst'))}${opt('ctl_drag', c.aimDrag, _t('WISCH-ZIELEN {v}', { v: c.aimDrag ? _t('AN') : _t('AUS') }), _t('Über den Angriffsknopf wischen zielt von Hand'))}${opt('ctl_hap', c.haptics, _t('VIBRATION {v}', { v: c.haptics ? _t('AN') : _t('AUS') }), _t('Kurzes Rütteln bei Treffern'))}</div>
-  <div class="menu"><button class="btn" data-act="ctledit" data-id="settings">${_t('Knöpfe verschieben & skalieren')}</button><button class="btn alt" data-act="settings">${_t('Zurück')}</button></div>`);
+  <div class="menu"><button class="btn" data-act="ctledit" data-id="${setInGame() ? 'pause' : 'settings'}">${_t('Knöpfe verschieben & skalieren')}</button><button class="btn alt" data-act="settings">${_t('Zurück')}</button></div>`);
 }
 
 /* ---------- Klicks ---------- */
@@ -557,7 +563,8 @@ panel.addEventListener('click', ev => {
     case 'best': showBestiary(); break;
     case 'hall': showHall(); break;
     case 'code': showCode(); break;
-    case 'settings': showSettings(); break;
+    case 'settings': if (id === 'pause') setState('menu'); showSettings(id); break;   // aus der Pause: angehalten bleiben (Zurück → Pause)
+    case 'setback': if (setInGame()) { setState('play'); showPause(); } else showTitle(); break;
     case 'bigui': SAVE.meta.settings.bigui = !SAVE.meta.settings.bigui; persist(); applyUiPrefs(); showSettings(); break;
     case 'langs': showLang(id); break;
     case 'langback': if (langBack === 'settings') showSettings(); else showTitle(); break;
