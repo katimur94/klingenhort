@@ -310,7 +310,7 @@ const SIM = () => {
       await p.evaluate(([rank, cls, lv, max]) => { __botOff(); hideOverlay(); slowmo = 0; hitStop = 0; __hero(cls, lv, max); SAVE.meta.bosses.h = 2147483647; BA = null; bossArena(rank, { practice: false }); __botOn(true); }, [rank, cls, lv, max]);
       let n = 0, last = -99;
       for (let i = 0; i < 200 && n < 2; i++) {
-        const z = await p.evaluate(() => { __step(12); return BZ.fx.filter(z => z.k !== 'z').length; });
+        const z = await p.evaluate(() => { P.inv = 999; P.hp = P.st.hp; __step(12); return BZ.fx.filter(z => z.k !== 'z').length; });   // nur Bilder: der Held hält durch
         if (z >= 1 && i > 12 && i - last > 15) { last = i; await p.evaluate(() => render()); await p.screenshot({ path: `${OUT}/kampf_${W}x${H}_rang${rank + 1}_${n}.png` }); n++; }
       }
       ok(n === 2, `${W}x${H}: Rang ${rank + 1}: Bilder mitten im Kampf mit Warnflächen`);

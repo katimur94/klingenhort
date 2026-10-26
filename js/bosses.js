@@ -204,8 +204,10 @@ function bossStage(r) {
 }
 function bossPower(B, stage) {
   const S = scaleOf(stage), q = Math.pow(1.3, qualOf(P.act));
-  // feste Stärke je Rang und Stufe: die Qual-Verstärkung der Kampagne gilt nicht
-  return { hp: Math.max(1, Math.round(650 * B.hpK * S.hm / q)), atk: 22 * B.atkK * S.am / Math.pow(q, .8), xp: Math.round(70 * S.rm * (1 + B.r * 3)), gold: Math.round(45 * S.rm * (1 + B.r * 2)) };
+  // feste Stärke je Rang und Stufe: die Qual-Verstärkung der Kampagne gilt nicht; außerhalb der Lande (Übungskampf)
+  // zählt die Tiefen-Qual der Welt wie dort (in den Landen rechnet js/lande.js sie selbst ein)
+  const wq = typeof worldQual === 'function' && !(typeof landeActive === 'function' && landeActive()) ? worldQual(stage) : 0;
+  return { hp: Math.max(1, Math.round(650 * B.hpK * S.hm / q * Math.pow(1.3, wq))), atk: 22 * B.atkK * S.am / Math.pow(q, .8) * Math.pow(1.3, wq * .8), xp: Math.round(70 * S.rm * (1 + B.r * 3)), gold: Math.round(45 * S.rm * (1 + B.r * 2)) };
 }
 const bTw = (B, k) => bLerp(1.25, .62, Math.pow(B.r, .8)) * (k || 1);   // Warnzeit vor dem Schaden
 const bMaxAct = r => r < .25 ? 1 : r < .6 ? 2 : 3;                     // Mechaniken gleichzeitig
