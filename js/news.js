@@ -7,6 +7,14 @@
 
 const CHANGELOG = [
   {
+    v: '6.2.1', d: '2026-10-26', t: 'Das Handbuch', items: [
+      ['neu', 'Handbuch: Tippe im Hauptmenü auf „?“ – über 300 Einträge zu jeder Funktion, jedem Gegenstand, jedem Material, jedem Gebäude, Biom, Gegner und Begleiter, mit Inhaltsverzeichnis und Suche.'],
+      ['neu', 'Zu jedem Material steht, wo du es findest und wofür du es brauchst – zum Beispiel: Wie bekomme ich Eisenholz?'],
+      ['neu', 'Das Handbuch öffnest du auch aus der Pause und den Einstellungen, ohne die Welt zu verlassen – auch mitten in den Endlosen Landen. Am PC: F1.'],
+      ['besser', 'Fehlt dir an der Werkbank oder beim Ausbauen ein Material, zeigt dir ein „?“ daneben, wo es herkommt.']
+    ]
+  },
+  {
     v: '6.2.0', d: '2026-10-26', t: 'Sammeln & Bauen', items: [
       ['neu', 'Holz, Stein, Fasern, Federn und seltene Rohstoffe wie Eisenholz, Sternholz, Marmor und Obsidian: Fälle Bäume, schlag Steine ab und ernte Pflanzen in den Endlosen Landen – und am Holzplatz und Steinbruch deines Verstecks.'],
       ['neu', 'Felder im Kräutergarten: Pflanze Samen von Flachs bis Sternblume, sie wachsen in echter Zeit – auch während das Spiel zu ist.'],

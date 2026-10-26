@@ -86,6 +86,8 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Vers
 
 Klingenhort wird jede Woche erweitert. Im Spiel zeigt **Neuigkeiten** (Titelmenü, Einstellungen oder Weltkarte → Mehr) alle Updates und was als Nächstes kommt; nach einem Update öffnet sich die Seite einmal von selbst.
 
+**6.2.1 – Das Handbuch:** „?“ im Hauptmenü (auch in Pause und Einstellungen, ohne die Welt zu verlassen; am PC F1): über 300 Einträge in 13 Kapiteln mit Inhaltsverzeichnis und Suche (ohne Groß-/Kleinschreibung und Umlaute, auch in der eigenen Sprache). Materialien mit „Wo finden“ und „Wofür“ – aus den Spieldaten berechnet, damit das Handbuch nach jedem Update stimmt.
+
 **Neu in 6.2 – Sammeln & Bauen**
 
 | System | Was es kann |
@@ -503,6 +505,7 @@ js/artefakte.js        Artefakte, Geschichten, Spuren, Schätze, Chronik, mystis
 js/mods.js             Mods, Resonanzen, Umschmieden, Veredeln, Extrahieren
 js/voegel.js           Magische Vögel, Vogelhaus, Sammelbeutel-Versand
 js/bauen.js            Rohstoffe sammeln, Felder, Bauzeiten und Beschleunigen
+js/handbuch.js         Handbuch: Inhaltsverzeichnis, Suche, Einträge aus den Spieldaten
 js/lande.js            Die Endlosen Lande: feste Chunk-Welt, Biome, Barrieren, Leuchtfeuer, Rucksack, NPCs, Tod
 js/market.js           Basar: Angebote, Verkauf, Auktionen, Marktwert (Schnittstelle MARKET)
 js/lang/               Übersetzungen (en, tr, es, it, fr) – Schlüssel ist der deutsche Text
