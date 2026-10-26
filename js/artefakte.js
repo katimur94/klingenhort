@@ -114,7 +114,7 @@ const AFUND = {
   wald: [_t('Zwischen Wurzeln versteckt, von Laub bedeckt, liegt der Fund.'), _t('Ein Eichhörnchen hat den Fund offenbar für eine Nuss gehalten und vergraben.'), _t('Unter einem umgestürzten Baumstamm, trocken und sicher, liegt der Fund.')],
   fels: [_t('In einer Felsspalte, geschützt vor Wind und Regen, liegt der Fund.'), _t('Unter einem Steinhaufen, aufgeschichtet wie ein kleines Grab, liegt der Fund.'), _t('Auf einem flachen Stein, als hätte jemand ihn für dich hingelegt, liegt der Fund.')],
   wiese: [_t('Im hohen Gras glitzert etwas – der Fund.'), _t('Wildblumen wachsen um den Fund herum, als wollten sie ihn bewachen.'), _t('Ein Kaninchenbau hat den Fund wieder ans Licht gebracht.')],
-  x: [_t('Zwischen Steinen und Wurzeln, fast übersehen, liegt der Fund.'), _t('Jemand hat den Fund sorgfältig versteckt – aber nicht sorgfältig genug.'), _t('Ein schwaches Glimmen hat dich hergeführt.'), _t('Unter einer Schicht aus Staub und Zeit wartet der Fund.')]
+  x: [_t('Zwischen Steinen und Wurzeln, fast übersehen, liegt der Fund.'), _t('Jemand hat den Fund sorgfältig versteckt – aber nicht sorgfältig genug.'), _t('Ein schwaches Glimmen hat dich hergeführt.'), _t('Unter einer Schicht aus Staub und Zeit wartet der Fund.'), _t('Fast wärst du daran vorbeigelaufen.'), _t('Ein Lichtstrahl fällt genau auf den Fund, als hätte jemand gewollt, dass du ihn siehst.')]
 };
 const ATCACHE = new Map();
 // Gelände eines Chunks: { k: Art, b: Gebietsname, r: Regionsname, l: Wahrzeichen } – ohne Welt: Art 'x'
@@ -622,7 +622,7 @@ function arteDef(id) {
   const c = ALAY.cOf[id], C = aChain(c), i = id - C.off, s = C.sites[i], nx = C.sites[i + 1], last = i === C.L - 1, R = mulberry(aH(4, c, i));
   const kind = C.kinds[i], K = AKIND[kind], V = C.V;
   let body = aFill(aPk(R, C.beats[i]), V); if (kind === 'tagebuch' && R() < .55) body = aFill(ADAY, { tag: C.days[i] }) + ' ' + body;
-  const T0 = aTerrain(s.cx, s.cy), T1 = aTerrain(nx.cx, nx.cy), FL = R() < .7 && T0.k !== 'x' ? AFUND[T0.k] : AFUND.x, fund = FL[(aH(12, c) + i) % FL.length], frame = aFill(aPk(R, K.fr), V);
+  const T0 = aTerrain(s.cx, s.cy), T1 = aTerrain(nx.cx, nx.cy), FL = R() < .8 && T0.k !== 'x' ? AFUND[T0.k] : AFUND.x, fund = FL[(aH(12, c) + i) % FL.length], frame = aFill(aPk(R, K.fr), V);
   const dist = Math.hypot(nx.x - s.x, nx.y - s.y), dir = aDirIdx(nx.x - s.x, nx.y - s.y), steps = aSteps(dist);
   // Hinweis und Gelände reihum statt zufällig: zwei Funde hintereinander klingen nie gleich
   const CL = last ? (K.w ? ATREASW : ATREASV) : (K.w ? ACLUEW : ACLUEV), WO = AWO[T1.k] || AWO.x;
