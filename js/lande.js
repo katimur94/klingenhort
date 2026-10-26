@@ -391,7 +391,7 @@ function* lGenIt(cx, cy) {
   for (const o of d.objs) d.grid[clamp(Math.floor((o.y - Y0) / LGC), 0, LGN - 1) * LGN + clamp(Math.floor((o.x - X0) / LGC), 0, LGN - 1)].push(o);
   lap(); d.ms = tw; d.wall = performance.now() - t0;
   // Bodenbilder der Biome hier schon vorbereiten (nicht erst beim Malen)
-  for (const R_ of regs) if (!LTILE['m:' + R_.biome]) { yield; lMacro(R_.biome); }
+  for (const R_ of regs) if (!LTILE['m:' + R_.biome]) { yield; lTiles(R_.biome); while (!lMacroStep(R_.biome)) yield; }
   return d;
 }
 function lMini(d) { return d.mc || (d.mc = lMiniChunk(d)); }
@@ -636,11 +636,13 @@ function lPaintStep(rec, until) {
   }
 }
 // Großkacheln (4 × 4 Kacheln) je Biom: weniger Zeichenaufrufe beim Malen eines Chunks
-function lMacro(key) {
-  const k = 'm:' + key; if (LTILE[k]) return LTILE[k];
-  const T_ = lTiles(key), R = mulberry(hashStr(k)), out = [];
-  for (let v = 0; v < 6; v++) out.push(mk(64, 64, g => { for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) g.drawImage(T_[Math.floor(R() * 6)], i * 16, j * 16); }));
-  return LTILE[k] = out;
+function lMacro(key) { const k = 'm:' + key; if (LTILE[k]) return LTILE[k]; while (!lMacroStep(key)); return LTILE[k]; }
+// eine Großkachel mehr bauen (true, wenn alle sechs fertig sind) – so verteilt sich die Arbeit beim Vorladen
+function lMacroStep(key) {
+  const k = 'm:' + key; if (LTILE[k]) return true;
+  const p = LTILE['mp:' + key] || (LTILE['mp:' + key] = { R: mulberry(hashStr(k)), out: [] }), T_ = lTiles(key);
+  p.out.push(mk(64, 64, g => { for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) g.drawImage(T_[Math.floor(p.R() * 6)], i * 16, j * 16); }));
+  if (p.out.length < 6) return false; LTILE[k] = p.out; delete LTILE['mp:' + key]; return true;
 }
 // Kanten einer Kachelreihe: zwischen Biomen eine unregelmäßige Pixelkante (von beiden Seiten gleich berechnet), Barrieren mit Rand, Wege mit Saum
 function lPaintEdges(rec, ty) {
@@ -2287,8 +2289,8 @@ const LMCOL = {}; function lMC(h) { return LMCOL[h] || (LMCOL[h] = hexRgb(h)); }
 function lMapCol(wx, wy) { const c = lClassC(wx / LCK, wy / LCK); if (c.bar >= 0) { const B = LBAR[LBARK[c.bar]]; return lMC(c.cross ? (LCROSSC[B.x] || '#c8c0aa') : B.c[0] === '#050208' || B.c[0] === '#0a0612' || B.c[0] === '#120e18' ? '#2a2236' : B.c[0]); } if (c.road) return lMC('#a8865a'); return lMC(LANDE_BIOMES[c.R.biome].map); }
 function lMapScreen(from) {
   LMV.from = from || (LW && LW.on ? 'trip' : 'gate');
-  if (LMV.from === 'trip') { if (!LW || !LW.on) return; setState('menu'); showHud(false); LMV.cx = P.x - LOFF; LMV.cy = P.y - LOFF; if (LMV.z > 4096) LMV.z = 24; }
-  else { const st = lStarts().find(s => s.id === lMeta().start) || lStarts()[0]; LMV.cx = st.x; LMV.cy = st.y; LMV.z = Math.max(LMV.z, 48); }
+  if (LMV.from === 'trip') { if (!LW || !LW.on) return; setState('menu'); showHud(false); LMV.cx = P.x - LOFF; LMV.cy = P.y - LOFF; LMV.z = 16; }
+  else lMapFit();
   const L = LW && LW.on ? LW : null, I = L ? lInfoW(P.x - LOFF, P.y - LOFF) : null, M = lMeta();
   const leg = [['#ffd24a', _t('Leuchtfeuer / Ausgang')], ['#57e6c8', _t('Tor der Alten')], ['#57c7e6', _t('Außenposten')], ['#ff6a5a', _t('Hort')], ['#c890ff', _t('Übergang')], ['#e8dcc0', _t('Werkzeug-Hort')]];
   const info = L ? `<p class="sub" style="margin-top:0"><b style="color:${lRate(I.stage).c}">${esc(lRegName(I.R))}</b><br>${esc(I.B.n)} · ${_t('Stufe {n}', { n: I.stage })} · ${_t('für dich {r}', { r: lRate(I.stage).n })}<br>${_t('{d} vom Weltentor · Tiefe {p} %', { d: lKm(Math.hypot(P.x - LOFF, P.y - LOFF)), p: (I.depth * 100).toLocaleString(LOCALE, { maximumFractionDigits: 2 }) })}</p>` : `<p class="sub" style="margin-top:0">${_t('Regionen entdeckt: {n} · weiteste Reise: {d}', { n: M.regs.length, d: lKm(M.far / 10000 * LWR * LCK) })}</p>`;
@@ -2299,7 +2301,13 @@ function lMapScreen(from) {
   <div>${info}${tools}<div class="lleg">${leg.map(([c, n]) => `<span><i style="background:${c}"></i>${n}</span>`).join('')}${L ? `<span><i style="background:repeating-linear-gradient(45deg,#555 0 2px,#222 2px 4px)"></i>${_t('noch nicht gesichert')}</span>` : ''}</div>${L ? lMisList(false) : ''}</div></div>`, true);
   lMapBind(); lMapRender();
 }
-ON.l_mz = id => { if (id === 'in') LMV.z = Math.max(6, LMV.z / 2); else if (id === 'out') LMV.z = Math.min(65536, LMV.z * 2); else { if (LMV.from === 'trip' && LW && LW.on) { LMV.cx = P.x - LOFF; LMV.cy = P.y - LOFF; } else { LMV.cx = 384; LMV.cy = 384; } } sfx('click'); lMapRender(); };
+// Karte auf die ganze bekannte Welt einstellen (vom Weltentor aus)
+function lMapFit() {
+  let x0 = 0, y0 = 0, x1 = 768, y1 = 768; for (const k of lMap().keys()) { const [sx, sy] = k.split(',').map(Number); x0 = Math.min(x0, sx * 16 * LFLD); y0 = Math.min(y0, sy * 16 * LFLD); x1 = Math.max(x1, (sx + 1) * 16 * LFLD); y1 = Math.max(y1, (sy + 1) * 16 * LFLD); }
+  for (const c of lMeta().cps) { x0 = Math.min(x0, c.x - 2000); y0 = Math.min(y0, c.y - 2000); x1 = Math.max(x1, c.x + 2000); y1 = Math.max(y1, c.y + 2000); }
+  LMV.cx = (x0 + x1) / 2; LMV.cy = (y0 + y1) / 2; LMV.z = clamp(Math.max(x1 - x0, y1 - y0) / 220, 16, 65536);
+}
+ON.l_mz = id => { if (id === 'in') LMV.z = Math.max(6, LMV.z / 2); else if (id === 'out') LMV.z = Math.min(65536, LMV.z * 2); else { if (LMV.from === 'trip' && LW && LW.on) { LMV.cx = P.x - LOFF; LMV.cy = P.y - LOFF; } else lMapFit(); } sfx('click'); lMapRender(); };
 ON.l_mapg = () => lMapScreen('gate');
 ON.l_gate = () => lGate();
 function lMapBind() {
@@ -2352,6 +2360,7 @@ function lMapRender(lo) {
     const tg = lMisTarget(); if (tg) I(tg.x - LOFF, tg.y - LOFF, 'STAR', '#57c7e6');
     const hx = X(P.x - LOFF), hy = Y(P.y - LOFF); if (hx > -4 && hy > -4 && hx < S + 4 && hy < S + 4) lHeroArrow(g, hx, hy, 1.2); else { const a = Math.atan2(hy - S / 2, hx - S / 2); g.fillStyle = '#fff'; g.fillRect(Math.round(S / 2 + Math.cos(a) * (S / 2 - 6)) - 2, Math.round(S / 2 + Math.sin(a) * (S / 2 - 6)) - 2, 4, 4); }
   }
+  if (!map.size && !(trip && trip.size)) { g.font = '7px "Press Start 2P", monospace'; g.textAlign = 'center'; g.fillStyle = '#8a8496'; g.fillText(_t('NOCH UNERFORSCHT'), S / 2, S / 2 + 20); }
   const n = $('lmapN'); if (n) n.textContent = _t('{d} breit', { d: lKm(S * z) });
 }
 function lMisList(claim) {
