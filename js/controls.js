@@ -86,6 +86,8 @@ function stickVec(cx, cy) {
   const kl = Math.min(l, R); knob.style.transform = `translate(${l ? dx / l * kl : 0}px,${l ? dy / l * kl : 0}px)`;
 }
 function stickStart(e) {
+  // Maus/Stift auf dem Joystick-Feld (Touch-Laptop, die Touch-Knöpfe liegen noch): ist ein Klick aufs Spielfeld, kein Joystick
+  if (!fingerPtr(e) && !document.body.classList.contains('edit')) { gameMouseDown(e); return; }
   if (stick.id !== null || document.body.classList.contains('edit')) return;
   audioOn(); stick.id = e.pointerId; try { e.target.setPointerCapture(e.pointerId); } catch (_) { }
   if (ctlSet().stick === 'fixed') { const p = ctlCenter(layoutOf('stick')); stick.ox = p.x; stick.oy = p.y; } else { stick.ox = e.clientX; stick.oy = e.clientY; }

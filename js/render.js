@@ -8,10 +8,12 @@ const SCR = mk(64, 64), SG = SCR.getContext('2d'); SG.imageSmoothingEnabled = fa
 const SCR2 = mk(64, 64), SG2 = SCR2.getContext('2d'); SG2.imageSmoothingEnabled = false;
 function addLight(x, y, r, a) { LIGHTS.push([x, y, r, a == null ? 1 : a]); }
 function glow(x, y, r, col, a) { const gr = ctx.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(${col},${a})`); gr.addColorStop(1, `rgba(${col},0)`); ctx.fillStyle = gr; ctx.fillRect(x - r, y - r, r * 2, r * 2); }
-function ptext(s, x, y, col, size) { ctx.font = (size || 8) + 'px "Press Start 2P", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#000'; ctx.fillText(s, Math.round(x) + 1, Math.round(y) + 1); ctx.fillStyle = col; ctx.fillText(s, Math.round(x), Math.round(y)); }
+// Bildschirm-Lage runden: Pixel-Modus auf ganze Spielpixel, HD auf ganze Gerätepixel (weiche Bewegung, Bilder bleiben scharf)
+function rpx(v) { return HD ? Math.round(v * PXS) / PXS : Math.round(v); }
+function ptext(s, x, y, col, size) { ctx.font = (size || 8) + 'px "Press Start 2P", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; x = rpx(x); y = rpx(y); ctx.fillStyle = '#000'; ctx.fillText(s, x + 1, y + 1); ctx.fillStyle = col; ctx.fillText(s, x, y); }
 // Mythisch: wandernde Farben (spr.fr), Legendär/Set/Mythisch: Glanz, der alle paar Sekunden über die Waffe läuft
 function drawWeapon(spr, x, y, ang, sc) {
-  ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(spr.bow ? ang : ang + Math.PI / 2); const s = sc || 1; if (Math.cos(ang) < 0) ctx.scale(spr.bow ? s : -s, spr.bow ? -s : s); else ctx.scale(s, s);
+  ctx.save(); ctx.translate(rpx(x), rpx(y)); ctx.rotate(spr.bow ? ang : ang + Math.PI / 2); const s = sc || 1; if (Math.cos(ang) < 0) ctx.scale(spr.bow ? s : -s, spr.bow ? -s : s); else ctx.scale(s, s);
   ctx.drawImage(spr.fr ? spr.fr[Math.floor(T * 7) % spr.fr.length] : spr.c, -spr.ox, -spr.oy);
   if (spr.glint) { const gi = glintImg(spr); if (gi) ctx.drawImage(gi, -spr.ox, -spr.oy); }
   ctx.restore();
@@ -28,7 +30,7 @@ function glintImg(spr) {
 function depthScale(y) { return .95 + .08 * clamp((y - BD.y0) / (BD.y1 - BD.y0), 0, 1); }
 function drawFxFrame(name, f, x, y, sc, rot, flipY, img) {
   const [sx, sy, w, h] = fxRect(name, f);
-  ctx.save(); ctx.translate(Math.round(x), Math.round(y)); if (rot) ctx.rotate(rot); ctx.scale(sc || 1, (sc || 1) * (flipY ? -1 : 1));
+  ctx.save(); ctx.translate(rpx(x), rpx(y)); if (rot) ctx.rotate(rot); ctx.scale(sc || 1, (sc || 1) * (flipY ? -1 : 1));
   if (img) ctx.drawImage(img, (f % FX[name][4]) * w, 0, w, h, -w / 2, -h / 2, w, h); else ctx.drawImage(FXIMG, sx, sy, w, h, -w / 2, -h / 2, w, h);
   ctx.restore();
 }
@@ -38,7 +40,7 @@ function heroStrip() { const hm = visItem(P.gear.helm), am = visItem(P.gear.armo
 /* ---------- Figuren ---------- */
 const HAND = { knight: [4, -9], knightf: [4, -9], wizard: [4, -9], wizf: [4, -9], elf: [4, -9], elff: [4, -9], dwarf: [4, -8], dwarff: [4, -8], lizard: [4, -9], lizardf: [4, -9], doc: [4, -7] };
 function drawActor(e, isP) {
-  const sx = Math.round(e.x - CX), sy = Math.round(e.y - CY), zz = e.z || 0, ds = depthScale(e.y), sc = (e.sc || 1) * ds;
+  const sx = rpx(e.x - CX), sy = rpx(e.y - CY), zz = e.z || 0, ds = depthScale(e.y), sc = (e.sc || 1) * ds;
   const sr = (e.r + 2) * sc * Math.max(.5, 1 - zz / 60);
   ctx.globalAlpha = e.alpha != null ? e.alpha * .35 : .35; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(sx, sy, sr, sr * .42, 0, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1;
   SG.clearRect(0, 0, 64, 64);
@@ -156,7 +158,7 @@ function drawLoot(c, x, y, z) {
 }
 function drawEnemy(e) {
   if (e.ai === 'dummy') { drawDummy(e); return; }
-  const sx = Math.round(e.x - CX), sy = Math.round(e.y - CY);
+  const sx = rpx(e.x - CX), sy = rpx(e.y - CY);
   if (e.under > 0) { ctx.fillStyle = '#4a3a2e'; ctx.beginPath(); ctx.ellipse(sx, sy, 7, 3, 0, 0, 6.283); ctx.fill(); ctx.fillStyle = '#6a5642'; ctx.fillRect(sx - 3 + Math.round(Math.sin(T * 20) * 2), sy - 3, 2, 2); ctx.fillRect(sx + 2, sy - 2 + Math.round(Math.cos(T * 18)), 2, 2); return; }
   const h = drawActor(e, false);
   if (e.def.wpn && e.st !== 'spawn') {
@@ -211,7 +213,7 @@ function drawObs(o) {
 }
 function drawCorpse(c) {
   const [fx0, fy0, fw, fh] = c.fr, a = clamp(c.life / c.max, 0, 1);
-  ctx.save(); ctx.translate(Math.round(c.x - CX), Math.round(c.y - CY - c.z)); ctx.globalAlpha = Math.min(1, a * 1.6);
+  ctx.save(); ctx.translate(rpx(c.x - CX), rpx(c.y - CY - c.z)); ctx.globalAlpha = Math.min(1, a * 1.6);
   ctx.translate(0, -fh * c.sc / 2); ctx.rotate(c.rot * .3); ctx.scale(c.turn * c.sc, c.sc * (1 - (1 - a) * .3));
   SG.clearRect(0, 0, 64, 64); SG.drawImage(SHEET, fx0, fy0, fw, fh, 32 - fw / 2, 60 - fh, fw, fh);
   if (c.life > c.max - .08 || c.tint) { SG.globalCompositeOperation = 'source-atop'; SG.fillStyle = c.life > c.max - .08 ? '#fff' : c.tint; SG.fillRect(0, 0, 64, 64); SG.globalCompositeOperation = 'source-over'; }
@@ -219,10 +221,10 @@ function drawCorpse(c) {
 }
 function drawGhost(g) {
   const strip = heroStrip().strip, sil = silCache(strip, g.col || '#8ee6ff');
-  const a = g.life / g.max; ctx.save(); ctx.globalAlpha = a * .45; ctx.translate(Math.round(g.x - CX), Math.round(g.y - CY - g.z)); ctx.scale(g.turn, 1); ctx.drawImage(sil, g.fr * strip.w, 0, strip.w, strip.h, -strip.w / 2, -strip.h, strip.w, strip.h); ctx.restore();
+  const a = g.life / g.max; ctx.save(); ctx.globalAlpha = a * .45; ctx.translate(rpx(g.x - CX), rpx(g.y - CY - g.z)); ctx.scale(g.turn, 1); ctx.drawImage(sil, g.fr * strip.w, 0, strip.w, strip.h, -strip.w / 2, -strip.h, strip.w, strip.h); ctx.restore();
 }
 function drawAlly(a) {
-  const x = Math.round(a.x - CX), y = Math.round(a.y - CY);
+  const x = rpx(a.x - CX), y = rpx(a.y - CY);
   if (a.k === 'spirit') { const r = frameRect('angel', 'run', Math.floor(T * 10 + a.seed)); ctx.globalAlpha = .9; if (a.sk) ctx.drawImage(skSheet(r[0], r[1], 16, 16, a.sk, 20, true), x - 8, y - 16 - a.z); else ctx.drawImage(SHEET, r[0], r[1], 16, 16, x - 8, y - 16 - a.z, 16, 16); ctx.globalAlpha = 1; addLight(x, y - a.z - 8, 24, .7); return; }
   const strip = charStrip({ body: 'doc', at: 4, ht: 0, dye: 'schatten', hair: -1, skin: -1, accent: -1 }), sil = silCache(strip, a.sk ? a.sk.col : '#7a5ab8');
   ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y, 6, 2.5, 0, 0, 6.283); ctx.fill();
@@ -239,7 +241,8 @@ function drawPoolFx() {
   }
 }
 function drawTargetHints() {
-  if (state !== 'play' || !G || G.type === 'versteck' || ctlSet().aim === false) return;
+  // mit der Maus zeigt der Zeiger (Fadenkreuz) das Ziel – keine Markierung am nächsten Gegner
+  if (state !== 'play' || !G || G.type === 'versteck' || ctlSet().aim === false || mouseAimAng() != null) return;
   if (P.manAim != null) { const a = P.manAim; ctx.fillStyle = 'rgba(255,240,190,.75)'; for (let k = 2; k < 8; k++) { const d = k * 5; ctx.fillRect(Math.round(P.x - CX + Math.cos(a) * d), Math.round(P.y - CY - 4 + Math.sin(a) * d * .7), k === 7 ? 3 : 2, k === 7 ? 3 : 2); } return; }
   const W = WT[P.gear.weapon.base], t = nearestEnemy(W.ranged ? 210 : P.st.range + 42); if (!t) return;
   const x = Math.round(t.x - CX), y = Math.round(t.y - CY), r = Math.round(t.r * t.sc) + 4 + Math.round(Math.sin(T * 8)), c = 'rgba(255,210,74,.85)';
@@ -248,11 +251,16 @@ function drawTargetHints() {
 
 /* ---------- Szene ---------- */
 function render() {
-  ctx.fillStyle = '#0c0a10'; ctx.fillRect(0, 0, VW, VH);
+  // ganze Leinwand löschen (Gerätepixel), dann Kamera: CX/CY ganze Spielpixel, der Rest (SUBX/SUBY) verschiebt das Bild weich –
+  // im Pixel-Modus per CSS (js/ui.js loop), in HD hier im Maßstab, beides auf ganze Gerätepixel gerundet (VIEW.sx/sy)
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false; ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = '#0c0a10'; ctx.fillRect(0, 0, cv.width, cv.height);
   if (!bg) return;
   LIGHTS = [];
   const camX = cam.x + shk.x, camY = cam.y + shk.y;
   CX = Math.floor(camX); CY = Math.floor(camY); SUBX = camX - CX; SUBY = camY - CY;
+  VIEW.sx = Math.round(SUBX * PXS); VIEW.sy = Math.round(SUBY * PXS);
+  if (HD) ctx.setTransform(PXS, 0, 0, PXS, -VIEW.sx, -VIEW.sy);
   if (bg.draw) bg.draw(); else ctx.drawImage(bg.c, -CX, -CY);   // bg.draw: Boden aus Chunks (Endlose Lande, js/lande.js)
   const ff = Math.floor(T * 7) % 3;
   for (const f of bg.fountains) { const x = f.x - CX; if (x < -16 || x > VW) continue; const oy = f.red ? 16 : 48, by = f.red ? 32 : 64; ctx.drawImage(SHEET, 64 + ff * 16, oy, 16, 16, x, 16 - CY, 16, 16); ctx.drawImage(SHEET, 64 + ff * 16, by, 16, 16, x, 32 - CY, 16, 16); if (f.red) addLight(x + 8, 30 - CY, 34, .8); else addLight(x + 8, 30 - CY, 24, .4); }
@@ -279,7 +287,7 @@ function render() {
   for (const c of corpses) if (c.z <= 0) drawCorpse(c);
   drawTargetHints();
   for (const c of pickups) {
-    const x = Math.round(c.x - CX), y = Math.round(c.y - CY); ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x - 2, y, 4, 1); const z = Math.round(c.z + Math.sin(c.t * 5) + 2);
+    const x = rpx(c.x - CX), y = rpx(c.y - CY); ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x - 2, y, 4, 1); const z = rpx(c.z + Math.sin(c.t * 5) + 2);
     if (c.k === 'coin') ctx.drawImage(SHEET, 289 + (Math.floor(c.t * 10) % 4) * 8, 385, 6, 7, x - 3, y - z - 6, 6, 7);
     else if (c.k === 'heart') ctx.drawImage(SHEET, 289, 370, 13, 12, x - 6, y - z - 11, 13, 12);
     else if (c.k === 'flask') ctx.drawImage(SHEET, 288, 352, 16, 16, x - 8, y - z - 14, 16, 16);
@@ -300,16 +308,16 @@ function render() {
     const x = p.x - CX, y = p.y - CY - p.h;
     ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(Math.round(p.x - CX) - 1, Math.round(p.y - CY), 3, 1);
     const ang = Math.atan2(p.vy, p.vx), fr = Math.floor(T * 14 + p.x * .1), sk = p.w && p.w.sk;
-    if (p.k === 'arrow') { ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(ang + Math.PI / 2); if (sk) { ctx.scale(sk.sc, sk.sc); ctx.drawImage(skSheet(324, 202, 7, 21, sk, 0), -3, -12); } else ctx.drawImage(SHEET, 324, 202, 7, 21, -3, -12, 7, 21); if (p.from === 'e') { ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = 'rgba(255,80,60,.35)'; ctx.fillRect(-3, -12, 7, 21); ctx.globalCompositeOperation = 'source-over'; } ctx.restore(); }
-    else if (p.k === 'knife') { ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(T * 20); if (sk) { ctx.scale(sk.sc, sk.sc); ctx.drawImage(skSheet(293, 10, 6, 13, sk, 180), -3, -6); } else ctx.drawImage(SHEET, 293, 10, 6, 13, -3, -6, 6, 13); ctx.restore(); }
-    else if (p.k === 'flask') { ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(T * 12); ctx.drawImage(SHEET, 320, 336, 16, 16, -8, -8, 16, 16); ctx.restore(); }
+    if (p.k === 'arrow') { ctx.save(); ctx.translate(rpx(x), rpx(y)); ctx.rotate(ang + Math.PI / 2); if (sk) { ctx.scale(sk.sc, sk.sc); ctx.drawImage(skSheet(324, 202, 7, 21, sk, 0), -3, -12); } else ctx.drawImage(SHEET, 324, 202, 7, 21, -3, -12, 7, 21); if (p.from === 'e') { ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = 'rgba(255,80,60,.35)'; ctx.fillRect(-3, -12, 7, 21); ctx.globalCompositeOperation = 'source-over'; } ctx.restore(); }
+    else if (p.k === 'knife') { ctx.save(); ctx.translate(rpx(x), rpx(y)); ctx.rotate(T * 20); if (sk) { ctx.scale(sk.sc, sk.sc); ctx.drawImage(skSheet(293, 10, 6, 13, sk, 180), -3, -6); } else ctx.drawImage(SHEET, 293, 10, 6, 13, -3, -6, 6, 13); ctx.restore(); }
+    else if (p.k === 'flask') { ctx.save(); ctx.translate(rpx(x), rpx(y)); ctx.rotate(T * 12); ctx.drawImage(SHEET, 320, 336, 16, 16, -8, -8, 16, 16); ctx.restore(); }
     else if (p.fxn) { drawFxFrame(p.fxn, fr, x, y, (p.k === 'fireball' ? 1 : p.k === 'meteor' ? 1.5 : .85) * (sk ? sk.sc : 1), p.k === 'meteor' ? Math.PI / 2 : (p.fxn.endsWith('orb') ? 0 : ang), false, sk && skFx(p.fxn, sk)); addLight(x, y, p.k === 'fireball' || p.k === 'meteor' ? 28 : 18, .7); }
     else if (p.k === 'rock') { ctx.fillStyle = '#6a5e52'; ctx.fillRect(Math.round(x) - 2, Math.round(y) - 2, 4, 4); ctx.fillStyle = '#8a7e70'; ctx.fillRect(Math.round(x) - 2, Math.round(y) - 2, 2, 1); }
     else if (p.k === 'bomb') { const f = p.t < p.dur ? 0 : (p.fuse < .25 ? 2 : 1); ctx.drawImage(SHEET, 288 + f * 16, 320, 16, 16, Math.round(x) - 8, Math.round(y) - 12, 16, 16); if (p.t >= p.dur && Math.floor(T * 12) % 2) { ctx.fillStyle = 'rgba(255,60,40,.4)'; ctx.fillRect(Math.round(x) - 5, Math.round(y) - 8, 10, 9); } addLight(x, y - 8, 14, .5); }
     else { const f = p.life / p.max, s = Math.round(lerp(7, 2, f)); ctx.fillStyle = f > .6 ? '#fff0a0' : f > .3 ? '#ffb03a' : '#d8402a'; ctx.fillRect(Math.round(x - s / 2), Math.round(y - s / 2), s, s); addLight(x, y, 18, .6); }
   }
   for (const r of rings) { ctx.strokeStyle = r.col; ctx.globalAlpha = clamp(r.life / r.max2, 0, 1); ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(r.x - CX, r.y - CY, r.r, r.r * .5, 0, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1; }
-  for (const p of parts) { if (p.glow) continue; const a = clamp(p.life / (p.max * .4), 0, 1); ctx.globalAlpha = a; ctx.fillStyle = p.col; ctx.fillRect(Math.round(p.x - CX), Math.round(p.y - CY - p.z), p.s, p.s); }
+  for (const p of parts) { if (p.glow) continue; const a = clamp(p.life / (p.max * .4), 0, 1); ctx.globalAlpha = a; ctx.fillStyle = p.col; ctx.fillRect(rpx(p.x - CX), rpx(p.y - CY - p.z), p.s, p.s); }
   ctx.globalAlpha = 1;
   for (const f of fx) {
     if (f.k === 'slash') { const m = FX.slash, p = 1 - f.life / f.max, fr = Math.min(m[4] - 1, Math.floor(p * m[4])); const img = tintedFx('slash', f.col); ctx.globalAlpha = .9; drawFxFrame('slash', fr, f.x - CX + Math.cos(f.ang) * 10, f.y - CY + Math.sin(f.ang) * 6, f.sc, f.ang, f.flip, img); ctx.globalAlpha = 1; }
@@ -318,10 +326,13 @@ function render() {
   addLight(P.x - CX, P.y - CY - 12, (P.leap ? 90 : 84) * (G && G.dark ? .55 : 1), 1);
   for (const f of fx) { if (f.k === 'boom') addLight(f.x - CX, f.y - CY, f.r * 2.2 * (f.life / f.max) + 20, 1); if (f.k === 'pillar') addLight(f.x - CX, f.y - CY - 20, 60, f.life); if (f.k === 'zap') for (const [zx, zy] of f.pts) addLight(zx - CX, zy - CY, 30, f.life / f.max); if (f.k === 'anim' && f.add) addLight(f.x - CX, f.y - CY, 30 * f.sc, f.life / f.max); }
   const dk = Math.max(bg.b.dark, (G && G.dark) || 0) * (state === 'title' ? .8 : 1);
+  // HD: die Vignette liegt mit in der Licht-Ebene – ein Durchgang über den ganzen Bildschirm statt zwei (Pixel-Modus: wie bisher getrennt)
+  const vigIn = HD && dk > 0 && !!vig;
   if (dk > 0) {
     const g = dark.getContext('2d'); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, VW, VH); g.fillStyle = `rgba(6,4,12,${dk})`; g.fillRect(0, 0, VW, VH); g.globalCompositeOperation = 'destination-out';
     for (const [x, y, r, a] of LIGHTS) { if (x < -r || x > VW + r || y < -r || y > VH + r) continue; const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(0,0,0,${a})`); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
-    ctx.drawImage(dark, 0, 0);
+    if (vigIn) { g.globalCompositeOperation = 'source-over'; g.drawImage(vig, 0, 0, VW, VH); }
+    screenLayer(dark, true);
   }
   ctx.globalCompositeOperation = 'lighter';
   for (const tx of bg.torches) { const x = tx - CX; if (x < -40 || x > VW + 40) continue; glow(x, 20 - CY, 26 * (1 + Math.sin(T * 9 + tx) * .08), '255,150,60', .22); }
@@ -334,16 +345,19 @@ function render() {
     else if (f.k === 'zap') { const a = f.life / f.max; ctx.strokeStyle = `rgba(${f.sk ? f.sk.glow : '170,230,255'},${a})`; ctx.lineWidth = f.sk && f.sk.r >= 3 ? 3 : 2; ctx.beginPath(); for (let i = 0; i < f.pts.length - 1; i++) { const [x1, y1] = f.pts[i], [x2, y2] = f.pts[i + 1]; ctx.moveTo(x1 - CX, y1 - CY); for (let k = 1; k < 5; k++) { const t = k / 5; ctx.lineTo(lerp(x1, x2, t) - CX + rnd(-4, 4), lerp(y1, y2, t) - CY + rnd(-4, 4)); } ctx.lineTo(x2 - CX, y2 - CY); } ctx.stroke(); ctx.strokeStyle = `rgba(255,255,255,${a})`; ctx.lineWidth = 1; ctx.stroke(); }
     else if (f.k === 'shard') { const p = 1 - f.life / f.max, D = f.d || 70, x = f.x - CX + Math.cos(f.ang) * D * p, y = f.y - CY + Math.sin(f.ang) * D * .5 * p - 6; ctx.globalAlpha = 1 - p; drawFxFrame('icelance', 1, x, y, .8 * (f.sk ? f.sk.sc : 1), f.ang, false, f.sk && skFx('icelance', f.sk)); ctx.globalAlpha = 1; }
   }
-  for (const p of parts) { if (!p.glow) continue; let a = clamp(p.life / (p.max * .4), 0, 1); if (p.blink) a *= .5 + .5 * Math.sin(T * 8 + p.x); ctx.globalAlpha = a; ctx.fillStyle = p.col; ctx.fillRect(Math.round(p.x - CX), Math.round(p.y - CY - p.z), p.s, p.s); }
+  for (const p of parts) { if (!p.glow) continue; let a = clamp(p.life / (p.max * .4), 0, 1); if (p.blink) a *= .5 + .5 * Math.sin(T * 8 + p.x); ctx.globalAlpha = a; ctx.fillStyle = p.col; ctx.fillRect(rpx(p.x - CX), rpx(p.y - CY - p.z), p.s, p.s); }
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   for (const f of fx) if (f.k === 'spark') { const a = f.life / f.max, x = f.x - CX, y = f.y - CY, l = (1 - a) * 10 + 3; ctx.strokeStyle = f.col; ctx.globalAlpha = a; ctx.lineWidth = 1; ctx.beginPath(); for (let i = 0; i < 4; i++) { const an = f.ang + i * Math.PI / 2 + .4; ctx.moveTo(x + Math.cos(an) * 2, y + Math.sin(an) * 2); ctx.lineTo(x + Math.cos(an) * l, y + Math.sin(an) * l); } ctx.stroke(); ctx.globalAlpha = 1; }
   for (const t of texts) { const age = T - t.born, s = t.big && age < .12 ? (VW < 260 ? 12 : 16) : 8; ctx.globalAlpha = clamp(t.life / .3, 0, 1); ptext(t.s, t.x - CX, t.y - CY, t.col, s); }
   ctx.globalAlpha = 1;
   if (G && G.type === 'versteck' && G.near && state === 'play') { const o = G.near, lbl = o.label || ''; ptext(lbl, o.x - CX, o.y - CY - (o.k === 'npc' ? 34 : 44), '#ffd24a', 6); if (!isTouch) ptext('[E]', o.x - CX, o.y - CY - (o.k === 'npc' ? 26 : 36), '#efe2bf', 6); }
   hook('postRender'); // Bildschirm-Überlagerungen eigener Systeme (z. B. Nebel der Freiwelt), unter Vignette und Blitz
-  if (vig) ctx.drawImage(vig, 0, 0);
+  if (vig && !vigIn) screenLayer(vig, false);
   if (flash.a > 0 && !SAVE.meta.settings.calm) { ctx.fillStyle = `rgba(${flash.c},${flash.a * .45})`; ctx.fillRect(0, 0, VW, VH); }
 }
+/* Bildschirm-Ebenen (Licht, Vignette): Pixel-Modus 1:1. HD: doppelte Auflösung (js/world.js makeVig), gestreckt – das Licht weich
+   (keine Treppen am Lichtrand), die Vignette allein ohne Glätten (so flach, dass man keinen Unterschied sieht, aber halb so teuer) */
+function screenLayer(c, smooth) { if (!HD) { ctx.drawImage(c, 0, 0); return; } ctx.imageSmoothingEnabled = !!smooth; ctx.drawImage(c, 0, 0, VW, VH); ctx.imageSmoothingEnabled = false; }
 const MATC = {}, GEMC = {};
 function matCanvas(k) { return MATC[k] || (MATC[k] = matIcon(k)); }
 function gemCanvas(id, gr) { const k = id + gr; return GEMC[k] || (GEMC[k] = gemIcon(id, gr)); }

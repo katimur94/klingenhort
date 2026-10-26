@@ -23,8 +23,17 @@ function hookVal(n, v, ...a) { for (const f of HOOK[n]) v = f(v, ...a); return v
 function hookHTML(n, ...a) { return HOOK[n].map(f => f(...a) || '').join(''); }
 const $ = id => document.getElementById(id);
 const cv = $('game'), ctx = cv.getContext('2d');
-let VW = 320, VH = 200, SCALE = 3;
-const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+/* Bildschirm (js/ui.js resize): VW×VH Spielpixel. PXS = Gerätepixel je Spielpixel, immer ganzzahlig → gleich große, scharfe Pixel
+   bei jeder Windows-Skalierung; SCALE = CSS-Pixel je Spielpixel (PXS / devicePixelRatio, darf krumm sein).
+   HD: Leinwand in Gerätepixeln, gezeichnet wird weiter in Spielpixeln (ctx-Maßstab PXS) – Schrift, Kreise, Licht und Bewegung werden fein.
+   VIEW: ox/w = Lage und Breite des sichtbaren Spielfelds in CSS-Pixeln (Ultrabreit: Ränder), sx/sy = Kamera-Rest unter einem Spielpixel in Gerätepixeln */
+let VW = 320, VH = 200, SCALE = 3, PXS = 3, DPR = 1, HD = false, UI = 1;
+const VIEW = { ox: 0, w: 0, sx: 0, sy: 0 };
+/* Eingabe: canTouch = das Gerät hat einen Touchscreen (Fähigkeit). isTouch = gerade wird mit dem Finger gespielt – wechselt mit der
+   letzten echten Eingabe (Finger ↔ Maus/Stift/Tastatur, js/ui.js), damit Touch-Laptops die Maus nicht verlieren. body.touch zeigt die Touch-Knöpfe. */
+const canTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+const coarseOnly = canTouch && !matchMedia('(any-pointer: fine)').matches;   // Handy/Tablet ohne Maus
+let isTouch = coarseOnly;
 if (isTouch) document.body.classList.add('touch');
 function portrait() { return innerHeight > innerWidth; }
 

@@ -2426,7 +2426,7 @@ function lMisTarget() {
 
 /* ---------- HUD (oben rechts): Karte, Tageszeit, Stufe, Rucksack, Leuchtfeuer ---------- */
 document.head.insertAdjacentHTML('beforeend', `<style>
-#lhud{position:fixed;top:calc(var(--sat) + 8px);right:calc(max(16px,var(--sar)) + 46px);z-index:5;display:flex;flex-direction:row-reverse;gap:6px;align-items:flex-start;pointer-events:none;font-family:var(--f-display);font-size:8px}
+#lhud{zoom:var(--ui);position:fixed;top:calc(var(--sat) + 8px);right:calc(max(16px,var(--sar)) + 46px);z-index:5;display:flex;flex-direction:row-reverse;gap:6px;align-items:flex-start;pointer-events:none;font-family:var(--f-display);font-size:8px}
 #lhMap{width:88px;height:88px;image-rendering:pixelated;background:#0c0a10;box-shadow:0 0 0 2px var(--night),0 0 0 3px var(--parch-dim);pointer-events:auto;cursor:pointer;touch-action:none}
 #lhud .lc{display:grid;gap:4px;justify-items:end}
 #lhud .lr{display:flex;gap:4px}
@@ -2442,8 +2442,8 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 body.lande .hud-r .info{display:none}
 body.lande #combo{top:calc(var(--sat) + 170px)}
 body.lande #objective{top:calc(var(--sat) + 104px);left:calc(50% - 40px)}
-body.lande #bossbar{top:calc(var(--sat) + 56px);left:max(16px,var(--sal));transform:none;width:calc(100vw - 172px)}
-@media (orientation:landscape){body.lande #objective{top:calc(var(--sat) + 52px)}body.lande #bossbar{top:calc(var(--sat) + 60px);left:max(90px,calc(var(--sal) + 74px));width:min(420px,calc(100vw - 380px))}}
+body.lande #bossbar{top:calc(var(--sat) + 56px);left:max(16px,var(--sal));transform:none;width:calc(100vw / var(--ui) - 172px)}
+@media (orientation:landscape){body.lande #objective{top:calc(var(--sat) + 52px)}body.lande #bossbar{top:calc(var(--sat) + 60px);left:max(90px,calc(var(--sal) + 74px));width:min(420px,calc(100vw / var(--ui) - 380px))}}
 .lgot>div{animation:lgot .35s steps(4) both}
 @keyframes lgot{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:none}}
 .lslot.gone{cursor:default}.lslot.gone img{filter:grayscale(.6) brightness(.8)}
@@ -2458,7 +2458,7 @@ body.lande #bossbar{top:calc(var(--sat) + 56px);left:max(16px,var(--sal));transf
 .lmapz{position:absolute;right:6px;top:6px;display:grid;gap:6px}
 .lmapz .btn{min-width:44px;min-height:44px;padding:0;font-size:18px}
 .lmapn{position:absolute;left:6px;bottom:6px;font-family:var(--f-body);font-size:15px;color:var(--parch);text-shadow:1px 1px 0 #000;pointer-events:none}
-@media (orientation:landscape){.lmapw{grid-template-columns:auto minmax(0,1fr)}.lmapc{width:min(460px,calc(100vh - 96px),calc(100dvh - 96px));margin:0}.lleg{justify-content:flex-start}}
+@media (orientation:landscape){.lmapw{grid-template-columns:auto minmax(0,1fr)}.lmapc{width:min(460px,calc(100vh / var(--ui) - 96px),calc(100dvh / var(--ui) - 96px));margin:0}.lleg{justify-content:flex-start}}
 .lleg{display:flex;flex-wrap:wrap;gap:8px;font-size:16px;color:var(--parch-dim);justify-content:center;margin-bottom:6px}
 .lleg i{display:inline-block;width:9px;height:9px;margin-right:4px;box-shadow:0 0 0 1px #000;vertical-align:0}
 .lleg img{width:14px;height:14px;image-rendering:pixelated;vertical-align:-2px;margin-right:3px}

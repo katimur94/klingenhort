@@ -61,7 +61,12 @@ function addPool(k, x, y, rx, ry) {
   return p;
 }
 function inPool(x, y, pad) { for (const p of pools) { const dx = (x - p.x) / (p.rx + (pad || 0)), dy = (y - p.y) / (p.ry + (pad || 0) * .5); if (dx * dx + dy * dy < 1) return p; } return null; }
-function makeVig() { vig = mk(VW, VH, g => { const gr = g.createRadialGradient(VW / 2, VH / 2, Math.min(VW, VH) * .35, VW / 2, VH / 2, Math.max(VW, VH) * .75); gr.addColorStop(0, 'rgba(8,6,12,0)'); gr.addColorStop(1, 'rgba(8,6,12,.55)'); g.fillStyle = gr; g.fillRect(0, 0, VW, VH); }); dark = mk(VW, VH); }
+// Vignette und Licht-Ebene in Spielpixeln; im HD-Modus doppelt aufgelöst (gezeichnet wird trotzdem in Spielpixeln: Maßstab q)
+function makeVig() {
+  const q = HD ? 2 : 1;
+  vig = mk(VW * q, VH * q, g => { g.scale(q, q); const gr = g.createRadialGradient(VW / 2, VH / 2, Math.min(VW, VH) * .35, VW / 2, VH / 2, Math.max(VW, VH) * .75); gr.addColorStop(0, 'rgba(8,6,12,0)'); gr.addColorStop(1, 'rgba(8,6,12,.55)'); g.fillStyle = gr; g.fillRect(0, 0, VW, VH); });
+  dark = mk(VW * q, VH * q); dark.getContext('2d').scale(q, q);
+}
 function prepArena(act, seed) {
   // Hochformat: die Arena ist hoch statt breit
   const tall = VH > VW;

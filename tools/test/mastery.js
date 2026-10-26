@@ -100,6 +100,8 @@ window.mtStep = (n, dt) => { for (let i = 0; i < n; i++) { flash.a = Math.max(0,
   // Bildfolgen: Fähigkeit auf Rang I, III, VI (Stufe 1, 20, 50) – je Zeile 6 Bilder
   console.log('Meisterschaft: Bildfolgen Stufe ' + LVS.join(' / ') + ' → ' + OUT);
   const SEQ = [['mage', 'm1', 0, 7], ['mage', 'm3', 2, 3], ['mage', 'mu', 3, 14], ['knight', 'k2', 1, 7], ['knight', 'ku', 3, 9], ['knight', 'k3', 2, 9], ['rogue', 'r2', 1, 4], ['rogue', 'ru', 3, 14], ['ranger', 'a1', 0, 4], ['ranger', 'a3', 2, 20]];
+  // Bildfolgen aus der Spielfeld-Leinwand in Spielpixeln: Pixel-Modus (im HD-Modus hat die Leinwand Gerätepixel)
+  await page.evaluate(() => { SAVE.meta.settings.gfx = 'px'; resize(); });
   for (const [cls, id, slot, step] of SEQ) {
     const png = await page.evaluate(async ([cls, id, slot, step, LVS]) => {
       const c = newChar(cls, 'Bild', 'normal', false); SAVE.chars.push(c); activateChar(SAVE.chars.length - 1); P.lv = 30;

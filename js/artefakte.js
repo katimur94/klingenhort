@@ -1555,7 +1555,7 @@ const arteDebug = {
 /* ---------- Aussehen ---------- */
 const ATORN = (() => { const R = mulberry(77), t = [], b = []; for (let i = 0; i <= 32; i++) { const x = (i / 32 * 100).toFixed(1); t.push(`${x}% ${(R() * 5).toFixed(1)}px`); b.push(`${(100 - i / 32 * 100).toFixed(1)}% calc(100% - ${(R() * 5).toFixed(1)}px)`); } return 'polygon(' + t.concat(b).join(',') + ')'; })();
 document.head.insertAdjacentHTML('beforeend', `<style>
-#arfx{position:fixed;left:max(16px,var(--sal));top:calc(var(--sat) + 58px);z-index:5;display:flex;flex-wrap:wrap;max-width:calc(50vw - 20px);gap:3px;pointer-events:none;font-family:var(--f-display);font-size:7px}
+#arfx{zoom:var(--ui);position:fixed;left:max(16px,var(--sal));top:calc(var(--sat) + 58px);z-index:5;display:flex;flex-wrap:wrap;max-width:calc(50vw / var(--ui) - 20px);gap:3px;pointer-events:none;font-family:var(--f-display);font-size:7px}
 #arfx span{background:rgba(17,14,23,.84);padding:4px 6px;color:#ffd24a;box-shadow:0 0 0 2px var(--night);text-shadow:1px 1px 0 #000;white-space:nowrap}
 #arfx span.bad{color:#ff8a7a}
 .arnew,.arms{font-family:var(--f-display);font-size:8px;line-height:1.5;color:var(--night);background:var(--gold);padding:7px 8px;margin:0 0 8px;text-align:center;animation:pop .3s steps(3)}

@@ -57,9 +57,12 @@ function costHTML(c, gold) {
 function itemSlot(it, act, sel) { return `<button class="slot${sel ? ' sel' : ''}" data-act="${act}" data-id="${it.uid}" style="box-shadow:inset 0 0 0 2px ${itemColor(it)}${sel ? ',0 0 0 2px #e8b04a' : ''}" aria-label="${esc(itemName(it))}"><img src="${itemIconURL(it)}" alt="">${it.up ? `<span class="u">+${it.up}</span>` : ''}${it.gems.length ? `<span class="n">◆${it.gems.length}</span>` : it.fz ? `<span class="n">★${it.fz}</span>` : ''}</button>`; }
 function itemDetail(it, actions) { return `<div class="detail"><div style="display:flex;gap:10px;align-items:center"><div class="ic big" style="box-shadow:inset 0 0 0 2px ${itemColor(it)}"><img src="${itemIconURL(it)}" alt=""></div><div><div class="nm" style="color:${itemColor(it)}">${esc(itemName(it))}</div><div class="st" style="color:var(--parch-dim);font-size:16px">${RAR[it.rar].n} ${it.slot === 'weapon' ? WT[it.base].label : AR[it.slot].label} · ${MAT[it.tier].n} (${_t('Stufe {n}', { n: it.tier + 1 })})${canEquip(it) ? '' : ` · <span style="color:var(--blood)">${_t('nicht für deine Klasse')}</span>`}</div></div></div><ul>${itemLines(it).map(l => '<li>' + esc(l) + '</li>').join('')}</ul><div class="acts" style="justify-content:flex-start">${actions || ''}</div></div>`; }
 function findItem(id) { for (const s of ['weapon', 'armor', 'helm']) if (P.gear[s] && P.gear[s].uid === id) return { it: P.gear[s], eq: s }; const i = P.bag.findIndex(x => x.uid === id); return i >= 0 ? { it: P.bag[i], bi: i } : null; }
-const HELP = isTouch
-  ? '<b>' + _t('STEUERUNG') + '</b>' + _t('Linke Seite ziehen: laufen. Angriff halten (3er-Kombo) – über den Knopf wischen zielt von Hand. Rolle, drei Fähigkeiten, Ultimative (goldene Wut-Leiste). Der Trank sitzt links oben. Alle Knöpfe lassen sich unter Einstellungen → Steuerung verschieben.')
-  : '<b>' + _t('STEUERUNG') + '</b>' + _t('WASD laufen · J/Leertaste/Klick angreifen · K/Shift ausweichen · 1 2 3 Fähigkeiten · F Ultimative · H Trank · E Interagieren · C Charakter · Esc Pause');
+// Steuerungs-Hilfe passend zur gerade benutzten Eingabe (Finger oder Maus/Tastatur); data-help: wird beim Wechsel ausgetauscht
+function helpHTML() {
+  return '<b>' + _t('STEUERUNG') + '</b>' + (isTouch
+    ? _t('Linke Seite ziehen: laufen. Angriff halten (3er-Kombo) – über den Knopf wischen zielt von Hand. Rolle, drei Fähigkeiten, Ultimative (goldene Wut-Leiste). Der Trank sitzt links oben. Alle Knöpfe lassen sich unter Einstellungen → Steuerung verschieben.')
+    : _t('WASD laufen · Linke Maustaste angreifen (halten: Kombo) · Rechte Maustaste rollen · Angriffe und Fähigkeiten zielen auf den Mauszeiger · 1 2 3 Fähigkeiten · 4 Ultimative · 5 Trank · E Interagieren · C Charakter · Esc Pause') + '<br>' + _t('Auch: J/Leertaste angreifen · Shift/K rollen · F Ultimative · H Trank'));
+}
 const CREDIT = '<p class="credit">' + _t('Grafik: „16x16 DungeonTileset II“ von 0x72, Zauber-Effekte „Pixel Art Spells“, „Pixel Art Sword Slash“ und Explosionen von OpenGameArt – alle CC0.') + '</p>';
 
 /* ---------- Dialoge (Geschichte) ---------- */
@@ -81,8 +84,10 @@ function setW(id, v) { const s = clamp(v, 0, 100).toFixed(1) + '%'; if (hudCache
 function showHud(on) { $('hud').hidden = !on; $('skillbar').hidden = !on; $('touch').hidden = !on; $('objective').hidden = !on; if (!on) $('combo').classList.remove('on'); if (on) { buildSkillUI(); lastRage = -1; applyLayout(); } }
 function buildSkillUI() {
   const C = CLASSES[P.cls], ids = C.skills.concat([C.ult]);
-  let h = ''; ids.forEach((id, i) => { const S = SKILLS[id]; h += `<div class="sk${S.ult ? ' ult' : ''}" id="sk${i}"><img src="${iconURL(S.icon)}" alt=""><i class="cdv"></i><span class="k">${S.ult ? 'F' : i + 1}</span>${S.cost ? `<span class="c">${skillCost(i)}</span>` : ''}</div>`; });
-  h += `<div class="sk" id="skP"><img src="${iconURL(['s', 288, 336, 16, 16])}" alt=""><i class="cdv"></i><span class="k">H</span><span class="c" id="skPn" style="color:var(--gold)">${P.potions}</span></div>`;
+  // PC-Leiste: Angriff (linke Maustaste), Rolle (rechte Maustaste), Fähigkeiten 1 2 3, Ultimative 4, Trank 5
+  let h = `<div class="sk mb" id="skA" title="${_t('Linke Maustaste')}"><img id="skAImg" alt=""><span class="k"><i class="mouse"></i></span></div><div class="sk mb" id="skR" title="${_t('Rechte Maustaste')}"><img src="${iconURL(['fx', 'windbolt', 2])}" alt=""><i class="cdv"></i><span class="k"><i class="mouse r"></i></span></div><i class="skgap"></i>`;
+  ids.forEach((id, i) => { const S = SKILLS[id]; h += `<div class="sk${S.ult ? ' ult' : ''}" id="sk${i}"><img src="${iconURL(S.icon)}" alt=""><i class="cdv"></i><span class="k">${i + 1}</span>${S.cost ? `<span class="c">${skillCost(i)}</span>` : ''}</div>`; });
+  h += `<div class="sk" id="skP"><img src="${iconURL(['s', 288, 336, 16, 16])}" alt=""><i class="cdv"></i><span class="k">5</span><span class="c" id="skPn" style="color:var(--gold)">${P.potions}</span></div>`;
   $('skillbar').innerHTML = h;
   ['bS1', 'bS2', 'bS3'].forEach((b, i) => { $(b).querySelector('img').src = iconURL(SKILLS[C.skills[i]].icon); });
   $('bUlt').querySelector('img').src = iconURL(SKILLS[C.ult].icon);
@@ -91,7 +96,7 @@ function buildSkillUI() {
   const hide = G && G.type === 'versteck'; $('bPot').hidden = !!hide;
   updWeaponUI();
 }
-function updWeaponUI() { const it = visItem(P.gear.weapon); $('atkImg').src = itemIconURL(it); }
+function updWeaponUI() { const it = visItem(P.gear.weapon), u = itemIconURL(it); $('atkImg').src = u; const a = $('skAImg'); if (a) a.src = u; }
 let lastRage = -1, lastNear = null;
 function updHud() {
   setT('hudLv', (P.lv >= 50 ? 'P' + P.paragon : _t('LV {lv}', { lv: P.lv })));
@@ -115,6 +120,7 @@ function updHud() {
   }
   void C;
   const pcd = P.potCd > 0 ? P.potCd / 6 * 100 : 0; $('bPot').style.setProperty('--cd', pcd + '%'); const sp = $('skP'); if (sp) sp.style.setProperty('--cd', pcd + '%');
+  const sr = $('skR'); if (sr) sr.style.setProperty('--cd', (P.rollCd > 0 ? Math.min(100, P.rollCd / .7 * 100) : 0).toFixed(0) + '%');
   setT('potN', String(P.potions)); if ($('skPn')) $('skPn').textContent = P.potions;
 }
 let lastChain = 0;
@@ -164,9 +170,9 @@ function showTitle() {
     <button class="btn alt" data-act="hall">${_t('Ruhmeshalle')}</button>
     <button class="btn alt" data-act="code">${_t('Spielstand übertragen')}</button>
     <button class="btn alt" data-act="settings">${_t('Einstellungen')}</button>
-    ${hookHTML('titleBtns')}${installBtn()}
+    ${hookHTML('titleBtns')}${fsBtn()}${installBtn()}
   </div></div></div>
-  <div class="help">${HELP}</div>${CREDIT}<p class="credit">${_t('Version {v}', { v: VERSION })}</p>`, true);
+  <div class="help" data-help>${helpHTML()}</div>${CREDIT}<p class="credit">${_t('Version {v}', { v: VERSION })}</p>`, true);
   // Nach einem Update einmal die Neuigkeiten zeigen
   if (fresh && SAVE.chars.length && !newsAuto) { newsAuto = true; showNews('title'); }
 }
@@ -428,7 +434,7 @@ function doEvent(a) {
 function showPause() {
   if (state !== 'play') return; setState('pause');
   const hide = G && G.type === 'versteck';
-  showOverlay(`<h2 class="center">${_t('PAUSE')}</h2><p class="sub center">${esc(P.name)} · ${_t('LV {lv}', { lv: P.lv })} · ${hide ? _t('Versteck') : _t('Akt {act}', { act: P.act })}</p><div class="menu"><button class="btn" data-act="resume">${_t('Weiterspielen')}</button><button class="btn alt" data-act="pchar">${_t('Charakter')}</button>${isTouch ? `<button class="btn alt" data-act="ctledit" data-id="pause">${_t('Knöpfe anpassen')}</button>` : ''}<button class="btn alt" data-act="music">${SAVE.meta.settings.music !== false ? _t('Musik aus') : _t('Musik an')}</button><button class="btn alt" data-act="sfx">${SAVE.meta.settings.sfx !== false ? _t('Ton aus') : _t('Ton an')}</button>${hide ? `<button class="btn alt" data-act="hleave">${_t('Zur Weltkarte')}</button>` : ''}<button class="btn alt" data-act="title">${_t('Speichern & Hauptmenü')}</button></div><div class="help">${HELP}</div>`);
+  showOverlay(`<h2 class="center">${_t('PAUSE')}</h2><p class="sub center">${esc(P.name)} · ${_t('LV {lv}', { lv: P.lv })} · ${hide ? _t('Versteck') : _t('Akt {act}', { act: P.act })}</p><div class="menu"><button class="btn" data-act="resume">${_t('Weiterspielen')}</button><button class="btn alt" data-act="pchar">${_t('Charakter')}</button>${isTouch ? `<button class="btn alt" data-act="ctledit" data-id="pause">${_t('Knöpfe anpassen')}</button>` : ''}<button class="btn alt" data-act="music">${SAVE.meta.settings.music !== false ? _t('Musik aus') : _t('Musik an')}</button><button class="btn alt" data-act="sfx">${SAVE.meta.settings.sfx !== false ? _t('Ton aus') : _t('Ton an')}</button>${isTouch ? '' : gfxBtn() + fsBtn()}${hide ? `<button class="btn alt" data-act="hleave">${_t('Zur Weltkarte')}</button>` : ''}<button class="btn alt" data-act="title">${_t('Speichern & Hauptmenü')}</button></div><div class="help" data-help>${helpHTML()}</div>`);
 }
 function showDeath() {
   setState('over'); showHud(false);
@@ -477,7 +483,7 @@ function showCode(msg) {
 }
 function showSettings() {
   const s = SAVE.meta.settings;
-  showOverlay(`<h2>${_t('EINSTELLUNGEN')}</h2><div class="menu" style="margin-top:12px"><button class="btn alt" data-act="music">${_t('Musik: {v}', { v: s.music !== false ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="sfx">${_t('Soundeffekte: {v}', { v: s.sfx !== false ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="bigui">${_t('Schrift: {v}', { v: s.bigui ? _t('GROSS') : _t('NORMAL') })}</button><button class="btn alt" data-act="calm">${_t('Wackeln & Blitzen: {v}', { v: s.calm ? _t('AUS') : _t('AN') })}</button><button class="btn alt" data-act="controls">${_t('Steuerung')}</button><button class="btn alt" data-act="news" data-id="settings">${_t('Neuigkeiten')}</button><button class="btn alt" data-act="langs" data-id="settings">🌐 ${LANGS[LANG]}</button>${UPD.on ? `<button class="btn alt" data-act="checkupd">${_t('Nach Update suchen')}</button>` : ''}<button class="btn" data-act="backtitle">${_t('Zurück')}</button></div><p class="sub" id="updmsg">${_t('Version {v}', { v: VERSION })}</p>`);
+  showOverlay(`<h2>${_t('EINSTELLUNGEN')}</h2><div class="menu" style="margin-top:12px"><button class="btn alt" data-act="music">${_t('Musik: {v}', { v: s.music !== false ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="sfx">${_t('Soundeffekte: {v}', { v: s.sfx !== false ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="bigui">${_t('Schrift: {v}', { v: s.bigui ? _t('GROSS') : _t('NORMAL') })}</button><button class="btn alt" data-act="calm">${_t('Wackeln & Blitzen: {v}', { v: s.calm ? _t('AUS') : _t('AN') })}</button>${gfxBtn()}${fsBtn()}<button class="btn alt" data-act="controls">${_t('Steuerung')}</button><button class="btn alt" data-act="news" data-id="settings">${_t('Neuigkeiten')}</button><button class="btn alt" data-act="langs" data-id="settings">🌐 ${LANGS[LANG]}</button>${UPD.on ? `<button class="btn alt" data-act="checkupd">${_t('Nach Update suchen')}</button>` : ''}<button class="btn" data-act="backtitle">${_t('Zurück')}</button></div><p class="sub" id="updmsg">${_t('Version {v}', { v: VERSION })}</p>`);
 }
 // Sprache: jede in ihrer eigenen Schreibweise, der Wechsel lädt die Seite neu
 let langBack = 'title';
@@ -486,9 +492,18 @@ function showLang(back) {
   showOverlay(`<div class="head"><h2>${_t('SPRACHE')}</h2><div class="hbtns"><button class="btn alt sm" data-act="langback">${_t('Zurück')}</button></div></div>
   <div class="opts langs">${Object.keys(LANGS).map(c => `<button class="opt${c === LANG ? ' sel' : ''}" data-act="setlang" data-id="${c}" lang="${c}">${LANGS[c]}</button>`).join('')}</div>`);
 }
+// Grafik-Modus (HD scharf / Pixel schnell) und Vollbild: Knöpfe für Einstellungen, Pause und Titel
+function gfxBtn() { return `<button class="btn alt" data-act="gfx">${_t('Grafik: {v}', { v: HD ? _t('HD (scharf)') : _t('Pixel (schnell)') })}</button>`; }
+function fsLabel() { return document.fullscreenElement ? _t('Vollbild beenden') : _t('Vollbild'); }
+function fsBtn() { return isTouch || !document.fullscreenEnabled ? '' : `<button class="btn alt" data-act="fullscreen">${fsLabel()}</button>`; }
+// Tastenbelegung für Maus & Tastatur (Steuerung, PC)
+function pcKeysHTML() {
+  const k = s => `<kbd>${s}</kbd>`, row = (keys, what) => `<span>${keys.map(k).join(' ')}</span><span>${what}</span>`;
+  return `<h3>${_t('MAUS & TASTATUR')}</h3><div class="keys">${row(['W A S D', '↑ ← ↓ →'], _t('laufen'))}${row([_t('Linke Maustaste'), 'J', _t('Leertaste')], _t('angreifen – halten für die Kombo, zielt auf den Mauszeiger'))}${row([_t('Rechte Maustaste'), 'Shift', 'K'], _t('rollen – in Laufrichtung, im Stand zum Mauszeiger'))}${row(['1', '2', '3'], _t('Fähigkeiten – zielen auf den Mauszeiger'))}${row(['4', 'F'], _t('Ultimative (bei voller Wut)'))}${row(['5', 'H'], _t('Heiltrank'))}${row(['E'], _t('Interagieren'))}${row(['C'], _t('Charakter'))}${row(['Esc', 'P'], _t('Pause'))}</div>`;
+}
 function showControls() {
   const c = ctlSet(), opt = (act, on, label, small) => `<button class="opt${on ? ' sel' : ''}" data-act="${act}">${label}<small>${small}</small></button>`;
-  showOverlay(`<h2>${_t('STEUERUNG')}</h2>
+  showOverlay(`<h2>${_t('STEUERUNG')}</h2>${isTouch ? '' : pcKeysHTML()}
   <h3>${_t('JOYSTICK')}</h3><div class="opts">${opt('ctl_stick_float', c.stick !== 'fixed', _t('FREI'), _t('Erscheint dort, wo du links hintippst, und folgt dem Daumen'))}${opt('ctl_stick_fixed', c.stick === 'fixed', _t('FEST'), _t('Immer an derselben Stelle'))}</div>
   <div class="opts"><button class="opt" data-act="ctl_ss-">${_t('Joystick kleiner')}</button><button class="opt sel" style="cursor:default">${Math.round(c.stickSize * 100)} %</button><button class="opt" data-act="ctl_ss+">${_t('Joystick größer')}</button></div>
   <h3>${_t('HEILTRANK')}</h3><div class="opts">${opt('ctl_pot_tap', c.pot === 'tap', _t('TIPPEN'), _t('Sofort trinken (gesperrt kurz nach einer Rolle)'))}${opt('ctl_pot_hold', c.pot === 'hold', _t('HALTEN'), _t('Knopf kurz gedrückt halten – nie mehr aus Versehen'))}${opt('ctl_pot_auto', c.pot === 'auto', _t('AUTO'), _t('Trinkt automatisch unter 30 % LP'))}</div>
@@ -528,6 +543,8 @@ panel.addEventListener('click', ev => {
     case 'langback': if (langBack === 'settings') showSettings(); else showTitle(); break;
     case 'setlang': if (id === LANG) { b.blur(); break; } try { persist(); } catch (_) { } setLang(id); break;
     case 'calm': SAVE.meta.settings.calm = !SAVE.meta.settings.calm; persist(); showSettings(); break;
+    case 'gfx': SAVE.meta.settings.gfx = HD ? 'px' : 'hd'; persist(); resize(); sfx('click'); if (state === 'pause') { setState('play'); showPause(); } else showSettings(); break;
+    case 'fullscreen': toggleFullscreen(); break;
     case 'controls': showControls(); break;
     case 'ctledit': openCtlEditor(id); break;
     case 'backtitle': showTitle(); break;
@@ -595,16 +612,58 @@ panel.addEventListener('click', ev => {
 });
 
 /* ---------- Eingabe ---------- */
+/* Die letzte echte Eingabe bestimmt die Oberfläche: Finger → Touch-Knöpfe (body.touch); Maus, Stift oder Tastatur → PC-Leiste,
+   Fadenkreuz, Tasten-Hilfe. So geht auf Touch-Laptops beides, und die Maus wird nie ausgesperrt. */
+function setInputMode(touch) {
+  if (touch === isTouch) return;
+  isTouch = touch; document.body.classList.toggle('touch', touch);
+  if (touch) { mouse.down = false; mouse.aim = false; mBtn = 0; } else { touchAtk = false; if (P) P.manAim = null; }
+  for (const el of document.querySelectorAll('[data-help]')) el.innerHTML = helpHTML();
+  if (typeof applyLayout === 'function') applyLayout();
+}
+/* Maus über Pointer-Events (pointerType): nach einem Fingertipp schickt der Browser nachgemachte Maus-Events – die zählen so nicht.
+   Linke Taste = Angriff (halten = weiter angreifen), rechte = Rolle, mittlere = Ultimative. Weitere Tasten, während eine gedrückt ist,
+   melden Pointer-Events nur über e.buttons (pointermove) – deshalb die Bitmaske mBtn. */
+let mBtn = 0, mMove = 0;
+// Finger – auch ein Stift auf einem reinen Touch-Tablet (iPad mit Pencil); Stift am Windows-Gerät gilt wie die Maus
+const fingerPtr = e => e.pointerType === 'touch' || (e.pointerType === 'pen' && coarseOnly);
+function mouseButtons(e) {
+  const b = e.buttons || 0, down = b & ~mBtn, up = mBtn & ~b; mBtn = b;
+  if (down & 1) mouse.down = true; if (up & 1) mouse.down = false;
+  if (down & 2) doRoll(); if (down & 4) doUlt();
+}
+// Maus/Stift drückt aufs Spielfeld (auch weitergereicht vom Joystick-Feld, wenn noch die Touch-Knöpfe liegen)
+function gameMouseDown(e) {
+  audioOn(); mouse.x = e.clientX; mouse.y = e.clientY; mouse.in = true; mouse.aim = true;
+  if (e.button === 1) e.preventDefault();   // kein Auto-Scrollen mit der mittleren Taste
+  mouseButtons(e);
+}
+addEventListener('pointerdown', e => { if (!document.body.classList.contains('edit')) setInputMode(fingerPtr(e)); }, true);
+addEventListener('pointermove', e => {
+  if (fingerPtr(e)) return;
+  const d = Math.abs(e.clientX - mouse.x) + Math.abs(e.clientY - mouse.y); mouse.x = e.clientX; mouse.y = e.clientY; mouse.in = true;
+  // spürbar bewegt: die Maus zielt (und holt die PC-Oberfläche zurück, wenn zuletzt der Finger dran war)
+  if ((mMove += d) > 24) { mouse.aim = true; if (isTouch && !document.body.classList.contains('edit')) setInputMode(false); }
+  if (mBtn && mBtn !== (e.buttons || 0)) mouseButtons(e);   // nur solange ein Druck aufs Spielfeld läuft (nicht beim Ziehen in Menüs)
+}, true);
+addEventListener('pointerup', e => { if (!fingerPtr(e) && mBtn) mouseButtons(e); }, true);
+addEventListener('pointercancel', e => { if (!fingerPtr(e)) { mBtn = 0; mouse.down = false; } }, true);
+addEventListener('mouseout', e => { if (!e.relatedTarget) mouse.in = false; });   // Zeiger hat das Fenster verlassen: wieder automatisch zielen
+cv.addEventListener('pointerdown', e => { if (!fingerPtr(e)) gameMouseDown(e); });
+for (const el of [cv, $('touch')]) el.addEventListener('contextmenu', e => e.preventDefault());   // kein Browser-Menü auf dem Spielfeld
 addEventListener('keydown', e => {
   if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+  // nur echte Spieltasten wechseln auf Tastatur (keine Lautstärke-/Medientasten von Handy-Zubehör)
+  if (!e.ctrlKey && !e.metaKey && !e.altKey && /^(Key|Digit|Arrow|Space|Escape|Enter|Shift|Tab)/.test(e.code) && !document.body.classList.contains('edit')) setInputMode(false);
   if (e.repeat && !['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code) && !e.code.startsWith('Arrow')) { keys[e.code] = true; return; }
   keys[e.code] = true; audioOn();
-  if (state === 'play' && (e.code === 'Space' || e.code.startsWith('Arrow'))) e.preventDefault();
+  if (state === 'play' && (e.code === 'Space' || e.code.startsWith('Arrow') || e.code === 'Tab')) e.preventDefault();
   if (state === 'play') {
+    if (e.code === 'KeyJ' || e.code === 'Space') { mouse.aim = false; mMove = 0; }   // Angriff per Tastatur: wieder automatisch zielen
     if (e.code === 'KeyK' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') doRoll();
     else if (e.code === 'Digit1') useSkill(0); else if (e.code === 'Digit2') useSkill(1); else if (e.code === 'Digit3') useSkill(2);
-    else if (e.code === 'KeyF' || e.code === 'KeyL') doUlt();
-    else if (e.code === 'KeyH') drinkPotion();
+    else if (e.code === 'Digit4' || e.code === 'KeyF' || e.code === 'KeyL') doUlt();
+    else if (e.code === 'Digit5' || e.code === 'KeyH') drinkPotion();
     else if (e.code === 'KeyE' || e.code === 'Enter') interactNear();
     else if (e.code === 'KeyC') { showPause(); returnTo = 'pause'; openChar('gear', 'pause'); }
     else if (e.code === 'Escape' || e.code === 'KeyP') showPause();
@@ -612,13 +671,19 @@ addEventListener('keydown', e => {
   else if (state === 'menu' && e.code === 'Escape' && G && G.type === 'versteck') backToHide();
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
-addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouse.down = false; touchAtk = false; if (state === 'play') showPause(); });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouse.down = false; mBtn = 0; touchAtk = false; if (state === 'play') showPause(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') showPause(); });
-cv.addEventListener('mousedown', e => { if (isTouch) return; audioOn(); mouse.x = e.clientX; mouse.y = e.clientY; if (e.button === 0) mouse.down = true; else if (e.button === 2) doRoll(); else if (e.button === 1) doUlt(); });
-addEventListener('mouseup', e => { if (e.button === 0) mouse.down = false; });
-addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
-cv.addEventListener('contextmenu', e => e.preventDefault());
 $('pauseBtn').addEventListener('click', () => { audioOn(); showPause(); });
+// Erster Kampf mit der Maus: einmal (pro Spielstand) die PC-Steuerung zeigen – eigener Hinweis, Banner und Meldungen bleiben frei
+const PCTIP = document.createElement('div'); PCTIP.id = 'pctip'; PCTIP.hidden = true; document.body.appendChild(PCTIP);
+PCTIP.addEventListener('pointerdown', () => { PCTIP.hidden = true; });
+HOOK.room.push(() => {
+  if (isTouch || !SAVE || SAVE.meta.settings.pcTip) return;
+  SAVE.meta.settings.pcTip = 1; persist();
+  const k = s => `<kbd>${s}</kbd>`;
+  PCTIP.innerHTML = `<b>${_t('MAUS & TASTATUR')}</b><span>${k(_t('Linke Maustaste'))} ${_t('angreifen')}</span><span>${k(_t('Rechte Maustaste'))} ${_t('rollen')}</span><span>${k('W A S D')} ${_t('laufen')}</span><span>${k('1')}${k('2')}${k('3')} ${_t('Fähigkeiten')}</span><span>${k('4')} ${_t('Ultimative')}</span><span>${k('5')} ${_t('Trank')}</span><small>${_t('Angriffe und Fähigkeiten zielen auf den Mauszeiger.')}</small>`;
+  setTimeout(() => { if (state === 'play' && !isTouch) { PCTIP.hidden = false; setTimeout(() => { PCTIP.hidden = true; }, 9000); } }, 2300);
+});
 
 /* ---------- PWA: Installation, Vollbild ---------- */
 let deferredInstall = null;
@@ -635,6 +700,12 @@ function installBtn() { if (standalone) return ''; if (deferredInstall) return '
 window.__doInstall = async () => { if (!deferredInstall) return; deferredInstall.prompt(); try { await deferredInstall.userChoice; } catch (_) { } deferredInstall = null; showTitle(); };
 // Vollbild ohne feste Ausrichtung: Hoch- und Querformat werden beide unterstützt
 function goFullscreen() { if (!isTouch) return; const el = document.documentElement; if (!standalone && !document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).catch(() => { }); }
+// PC: Vollbild per Knopf (Titel, Einstellungen, Pause) an und aus; danach misst resize() den Bildschirm neu
+function toggleFullscreen() {
+  if (document.fullscreenElement) { document.exitFullscreen().catch(() => { }); return; }
+  const el = document.documentElement; if (el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).catch(() => { });
+}
+document.addEventListener('fullscreenchange', () => { resize(); setTimeout(fitPanel, 60); for (const b of panel.querySelectorAll('[data-act="fullscreen"]')) b.textContent = fsLabel(); });
 /* PWA-START */
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   UPD.on = true; UPD.had = !!navigator.serviceWorker.controller;
@@ -664,18 +735,53 @@ function checkUpdateNow() {
 }
 
 /* ---------- Hauptschleife ---------- */
+/* Bildschirm messen. PXS (Gerätepixel je Spielpixel) ist immer ganzzahlig – bei 125 %/150 % Windows-Skalierung und jeder Auflösung
+   (1080p, 1440p, 4K) bleiben alle Pixel gleich groß und scharf. Handy (kurze Seite unter 500 CSS-Pixeln): wie bisher etwa 200 Spielpixel
+   auf der kurzen Seite, nur auf ganze Gerätepixel gerundet. Großer Bildschirm: aus der echten Auflösung, etwa 180–200 Spielpixel hoch –
+   Held und Gegner wirken so groß wie auf dem Handy quer. Ultrabreit (über 2,4 : 1) zeigt nicht mehr Welt: das Spielfeld bleibt 2,4 : 1,
+   links und rechts dunkle Ränder (#view). */
 function resize() {
-  const w = innerWidth, h = innerHeight;
-  SCALE = Math.max(2, Math.round(Math.min(w, h) / 215));
-  // ein Pixel Rand: die Kamera bewegt sich weich unterhalb eines Spielpixels (siehe loop)
-  VW = Math.ceil(w / SCALE) + 1; VH = Math.ceil(h / SCALE) + 1;
-  cv.width = VW; cv.height = VH; cv.style.width = VW * SCALE + 'px'; cv.style.height = VH * SCALE + 'px';
-  ctx.imageSmoothingEnabled = false; makeVig();
+  const w = innerWidth, h = innerHeight, mn = Math.min(w, h), big = mn >= 500;
+  DPR = devicePixelRatio || 1;
+  PXS = big ? Math.max(2, Math.round(mn * DPR / 190)) : Math.max(1, Math.round(Math.max(2, Math.round(mn / 215)) * DPR));
+  SCALE = PXS / DPR;
+  const vh = h / SCALE, vw = big ? Math.min(w / SCALE, Math.ceil(vh * 2.4)) : w / SCALE;
+  // ein Pixel Rand: die Kamera bewegt sich weich unterhalb eines Spielpixels (siehe render und loop)
+  VW = Math.ceil(vw) + 1; VH = Math.ceil(vh) + 1;
+  VIEW.w = Math.min(w, Math.round(vw * PXS) / DPR); VIEW.ox = Math.round((w - VIEW.w) / 2 * DPR) / DPR;
+  HD = gfxHD(); const k = HD ? PXS : 1;
+  cv.width = VW * k; cv.height = VH * k; cv.style.width = VW * SCALE + 'px'; cv.style.height = VH * SCALE + 'px';
+  const vs = $('view').style; vs.left = VIEW.ox + 'px'; vs.width = VIEW.w + 'px';
+  ctx.imageSmoothingEnabled = false; makeVig(); uiScale(); lastTf = '';
 }
+// HD-Grafik: Einstellung (SAVE.meta.settings.gfx 'hd'/'px'); sonst an am PC und auf großen Bildschirmen, aus auf Handys (schnell, schont den Akku)
+function gfxHD() { const g = SAVE && SAVE.meta.settings.gfx; return g === 'hd' ? true : g === 'px' || GFXW.try ? false : !coarseOnly || Math.min(innerWidth, innerHeight) >= 700; }
+// Oberfläche wächst auf großen Bildschirmen mit (CSS zoom: var(--ui) auf HUD, Tafeln, Meldungen); Handys und kleine Fenster bleiben bei 1
+// (Achtelschritte: 1080p mit 125 % Windows-Skalierung bekommt 1,125, 1080p 1,5, 1440p 2, 4K 3)
+function uiScale() { UI = clamp(Math.floor(Math.min(innerHeight / 720, innerWidth / 1100) * 8) / 8, 1, 3); document.documentElement.style.setProperty('--ui', UI); }
+// Fenster auf einen anderen Bildschirm geschoben oder Browser-Zoom: devicePixelRatio ändert sich – neu messen
+let dprMQ = null;
+function watchDpr() { try { if (dprMQ) dprMQ.removeEventListener('change', onDpr); dprMQ = matchMedia(`(resolution: ${devicePixelRatio}dppx)`); dprMQ.addEventListener('change', onDpr); } catch (_) { } }
+function onDpr() { resize(); watchDpr(); setTimeout(fitPanel, 60); }
 addEventListener('resize', resize);
 // Gedreht: Weltkarte neu ausrichten, Tafel-Maße anpassen
 addEventListener('resize', () => setTimeout(() => { if (state === 'map' && !ov.hidden && portrait() !== MAPV) openMap(); else fitPanel(); }, 60));
-let last = performance.now(), achT = 0, lastTf = '';
+let last = performance.now(), achT = 0, lastTf = '', lastCur = null;
+/* HD zu langsam? (Rechner ohne Grafikbeschleunigung: dort zeichnet der Prozessor jedes Gerätepixel.) Gemessen wird der echte
+   Bildabstand im Spiel (Median über 90 Bilder, Ausreißer beim Laden zählen nicht). Liegt er in HD über 24 ms, probiert das Spiel
+   kurz Pixel: ist es dort klar schneller, bleibt es dabei (gespeichert, Meldung); sonst bremst etwas anderes (z. B. Energiesparen
+   mit 30 Bildern/s) – zurück zu HD, in dieser Sitzung keine weitere Probe. Nur solange der Spieler HD nicht selbst gewählt hat. */
+const GFXW = { a: [], try: false, hd: 0, done: false };
+function gfxWatch(ms) {
+  if (GFXW.done || state !== 'play' || !SAVE || SAVE.meta.settings.gfx || (!HD && !GFXW.try)) { GFXW.a.length = 0; return; }
+  GFXW.a.push(ms); if (GFXW.a.length < 90) return;
+  const med = GFXW.a.sort((a, b) => a - b)[45]; GFXW.a.length = 0;
+  if (!GFXW.try) { if (med > 24) { GFXW.try = true; GFXW.hd = med; resize(); } return; }
+  GFXW.try = false;
+  if (med < GFXW.hd * .75) { SAVE.meta.settings.gfx = 'px'; persist(); toast(_t('Grafik auf „Pixel (schnell)“ gestellt – für HD war dein Gerät zu langsam. Umstellen: Einstellungen → Grafik.'), '#e8b04a'); }
+  else GFXW.done = true;
+  resize();
+}
 function update(dt) {
   dt0 = dt;
   updPlayer(dt);
@@ -696,7 +802,9 @@ function camera(dt) {
 }
 function loop(now) {
   requestAnimationFrame(loop);
+  if ((devicePixelRatio || 1) !== DPR) onDpr();   // Sicherheitsnetz, falls der Browser beim Bildschirmwechsel kein change meldet
   // der rAF-Zeitstempel kann minimal vor performance.now() liegen: nie rückwärts laufen
+  gfxWatch(now - last);   // echter Bildabstand (ms) für die HD-Probe
   let dt = clamp((now - last) / 1000, 0, .05); last = Math.max(last, now); T += dt;
   if (slowmo > 0) { slowmo -= dt; dt *= .35; }
   flash.a = Math.max(0, flash.a - dt * 1.6);
@@ -704,11 +812,15 @@ function loop(now) {
   else if (state === 'title' || state === 'map' || state === 'menu') { P.moving = false; if (!G || !G.type) { P.turn = approach(P.turn, Math.sin(T * .4) > 0 ? 1 : -1, dt * 3); P.face = P.turn > 0 ? 1 : -1; } updParts(dt); if (!G) G = { ambT: 0 }; ambient(dt); }
   if (P && bg) { camera(dt); if (state === 'play') updHud(); }
   render();
-  const tf = `translate3d(${(-SUBX * SCALE).toFixed(1)}px,${(-SUBY * SCALE).toFixed(1)}px,0)`; if (tf !== lastTf) { lastTf = tf; cv.style.transform = tf; }
+  // Pixel-Modus: der Kamera-Rest unter einem Spielpixel verschiebt die ganze Leinwand – auf ganze Gerätepixel, sonst wird sie unscharf (HD: in render)
+  const tf = HD ? 'none' : `translate3d(${(-VIEW.sx / DPR).toFixed(3)}px,${(-VIEW.sy / DPR).toFixed(3)}px,0)`; if (tf !== lastTf) { lastTf = tf; cv.style.transform = tf; }
+  // Fadenkreuz über dem Spielfeld, solange mit der Maus gespielt wird
+  const cur = state === 'play' && !isTouch; if (cur !== lastCur) { lastCur = cur; document.body.classList.toggle('aimcur', cur); }
+  if (!PCTIP.hidden && state !== 'play') PCTIP.hidden = true;
 }
 loadAssets().then(() => {
   try {
-    loadAll(); applyUiPrefs(); resize(); applyLayout();
+    loadAll(); applyUiPrefs(); resize(); watchDpr(); applyLayout();
     if (SAVE.active >= 0 && SAVE.chars[SAVE.active]) activateChar(SAVE.active);
     titleScene(); showTitle(); checkAch(); hook('boot');
   } catch (e) {

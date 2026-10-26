@@ -99,9 +99,14 @@ function updObs(dt) {
 }
 
 /* ---------- Spieler ---------- */
-const keys = {}, mouse = { x: 0, y: 0, down: false };
+// mouse.in: Zeiger im Fenster · mouse.aim: die Maus zielt (zuletzt bewegt/geklickt; J/Leertaste schaltet zurück aufs automatische Zielen)
+const keys = {}, mouse = { x: 0, y: 0, down: false, in: false, aim: false };
 const stick = { id: null, ox: 0, oy: 0, x: 0, y: 0 };
 let touchAtk = false;
+// Mauszeiger in Weltkoordinaten (Ränder bei Ultrabreit und der Kamera-Rest unter einem Spielpixel eingerechnet)
+function mouseWorld() { return { x: CX + ((mouse.x - VIEW.ox) * DPR + VIEW.sx) / PXS, y: CY + (mouse.y * DPR + VIEW.sy) / PXS }; }
+// Winkel vom Helden zum Mauszeiger – nur wenn gerade mit der Maus gespielt wird, sonst null
+function mouseAimAng() { if (isTouch || !mouse.aim || !mouse.in) return null; const m = mouseWorld(); return Math.atan2(m.y - (P.y - 6), m.x - P.x); }
 function readInput() {
   let mx = 0, my = 0;
   if (keys.KeyA || keys.ArrowLeft) mx -= 1; if (keys.KeyD || keys.ArrowRight) mx += 1;
@@ -115,9 +120,16 @@ function nearestEnemy(range, from) {
   for (const e of enemies) { if (e.st === 'spawn' || e.dead || e.under > 0 || e.fade > .6) continue; const d = Math.hypot(e.x - from.x, e.y - from.y); if (d < b) { b = d; t = e; } }
   return t;
 }
+// Ziel für Ketten-Fähigkeiten: mit der Maus der Gegner, der dem Zeiger am nächsten ist (in Reichweite des Helden), sonst der nächste
+function aimTarget(range) {
+  if (mouseAimAng() == null) return nearestEnemy(range);
+  const m = mouseWorld(); let t = null, b = Infinity;
+  for (const e of enemies) { if (e.st === 'spawn' || e.dead || e.under > 0 || e.fade > .6 || Math.hypot(e.x - P.x, e.y - P.y) > range) continue; const d = Math.hypot(e.x - m.x, e.y - m.y); if (d < b) { b = d; t = e; } }
+  return t;
+}
 function autoAim(range, inp) {
   if (P.manAim != null) return P.manAim;
-  if (mouse.down && !isTouch) return Math.atan2(mouse.y / SCALE + CY - (P.y - 6), mouse.x / SCALE + CX - P.x);
+  const ma = mouseAimAng(); if (ma != null) return ma;   // PC: Angriffe und Fähigkeiten folgen dem Mauszeiger
   const t = nearestEnemy(range); if (t) return Math.atan2(t.y - P.y, t.x - P.x);
   if (inp && Math.hypot(inp.mx, inp.my) > .15) return Math.atan2(inp.my, inp.mx);
   return P.face > 0 ? 0 : Math.PI;
@@ -143,8 +155,9 @@ function startAttack(inp) {
 }
 function doRoll() {
   if (state !== 'play' || P.roll > 0 || P.rollCd > 0 || busy()) return;
-  const inp = readInput(); let dx = inp.mx, dy = inp.my; const l = Math.hypot(dx, dy);
-  if (l < .15) { dx = P.face; dy = 0; } else { dx /= l; dy /= l; }
+  // in Laufrichtung; im Stand mit der Maus zum Zeiger, sonst nach vorn
+  const inp = readInput(); let dx = inp.mx, dy = inp.my; const l = Math.hypot(dx, dy), ma = l < .15 ? mouseAimAng() : null;
+  if (ma != null) { dx = Math.cos(ma); dy = Math.sin(ma); } else if (l < .15) { dx = P.face; dy = 0; } else { dx /= l; dy /= l; }
   P.rdx = dx; P.rdy = dy; P.roll = .32; P.rollCd = .7; P.atkT = 0; if (Math.abs(dx) > .2) P.face = dx > 0 ? 1 : -1;
   P.rollT = T; sfx('roll'); dust(P.x, P.y, 4);
 }
@@ -251,7 +264,7 @@ function useSkill(i) {
       break;
     }
     case 'm3': {
-      let from = { x: P.x, y: P.y - 8 }, t = nearestEnemy(170), mul = 1.4, hit = new Set(), pts = [[P.x, P.y - 10]];
+      let from = { x: P.x, y: P.y - 8 }, t = aimTarget(170), mul = 1.4, hit = new Set(), pts = [[P.x, P.y - 10]];
       const n = 3 + mod('m3Chain'), jump = 80 * (1 + mod('m3Range')), keep = .85 + mod('m3Decay');
       for (let k = 0; k <= n && t; k++) {
         hit.add(t); pts.push([t.x, t.y - 8 * t.sc]); fxAnim('bolt', t.x, t.y - 18, { dur: .4, add: true, sk, sc: sk ? sk.sc : 1 });
@@ -293,7 +306,7 @@ function doUlt() {
   const inp = readInput(), w = playerW(), id = CLASSES[P.cls].ult;
   hook('skill', id, w);
   txt(P.x, P.y - 34, SKILLS[id].n.toLocaleUpperCase(LOCALE) + '!', '#ffd24a', true);
-  if (id === 'ku') { const a = autoAim(160, inp), t = nearestEnemy(999), d = Math.min(70, t ? dist(t, P) : 70); P.leap = { t: 0, dur: .5, sx: P.x, sy: P.y, tx: clamp(P.x + Math.cos(a) * d, BD.x0, BD.x1), ty: clamp(P.y + Math.sin(a) * d, BD.y0, BD.y1), w, sk: w.sk }; P.face = Math.cos(a) >= 0 ? 1 : -1; }
+  if (id === 'ku') { const a = autoAim(160, inp), t = mouseAimAng() != null ? mouseWorld() : nearestEnemy(999), d = Math.min(70, t ? dist(t, P) : 70); P.leap = { t: 0, dur: .5, sx: P.x, sy: P.y, tx: clamp(P.x + Math.cos(a) * d, BD.x0, BD.x1), ty: clamp(P.y + Math.sin(a) * d, BD.y0, BD.y1), w, sk: w.sk }; P.face = Math.cos(a) >= 0 ? 1 : -1; }
   else if (id === 'mu') { const n = 10 + mod('uCount'); for (let k = 0; k < n; k++) { const t = enemies.length ? pick(enemies) : null; const x = clamp((t ? t.x : P.x) + rnd(-30, 30), BD.x0, BD.x1), y = clamp((t ? t.y : P.y) + rnd(-20, 20), BD.y0, BD.y1); projs.push({ k: 'meteor', fxn: 'firebomb', x, y, tx: x, ty: y, h: 140, vx: 0, vy: 0, life: 9, max: 9, delay: k * .13, from: 'p', r: 0, w, hit: new Set() }); } }
   else if (id === 'ru') { const n = 3 + mod('uCount'); for (let k = 0; k < n; k++) { const a = k / n * 6.283; allies.push({ k: 'clone', x: P.x + Math.cos(a) * 16, y: P.y + Math.sin(a) * 10, life: 7 + mod('ruDur'), atkT: 0, phase: 0, face: 1, seed: rnd(0, 9), w, sk: w.sk }); burst(P.x + Math.cos(a) * 16, P.y + Math.sin(a) * 10, 8, w.sk ? w.sk.col : '#3a3448', 10, 40); } }
   else if (id === 'au') { P.volley = 3 + mod('uDur'); P.volleyT = 0; P.volleyW = w; P.aim = autoAim(220, inp); P.face = Math.cos(P.aim) >= 0 ? 1 : -1; }
@@ -446,7 +459,7 @@ function updPlayer(dt) {
       const prev = Math.sin(P.phase); P.phase += dt * 13;
       if (Math.sign(Math.sin(P.phase)) !== Math.sign(prev)) { P.squash = Math.max(P.squash, .07); if (Math.random() < .6) dust(P.x, P.y, 1); }
       if (P.atkT <= 0) { P.aim = Math.atan2(inp.my, inp.mx); if (Math.abs(inp.mx) > .2) P.face = inp.mx > 0 ? 1 : -1; }
-    }
+    } else if (P.atkT <= 0) { const ma = mouseAimAng(); if (ma != null && Math.abs(Math.cos(ma)) > .2) P.face = Math.cos(ma) > 0 ? 1 : -1; }   // im Stand zum Mauszeiger schauen
     if (inp.attack && P.atkCd <= 0 && P.spin <= 0 && P.volley <= 0) startAttack(inp);
   }
   P.x = clamp(P.x + P.vx * dt, BD.x0 + P.r, BD.x1 - P.r); P.y = clamp(P.y + P.vy * dt, BD.y0, BD.y1);

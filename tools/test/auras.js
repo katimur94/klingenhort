@@ -204,6 +204,8 @@ const save = (name, url) => { if (OUT) fs.writeFileSync(`${OUT}/${name}.png`, Bu
     for (const k in sheets) save(k, sheets[k]);
     // Held mit jeder Aura (hell und dunkel)
     await page.evaluate(() => {
+      // Bögen aus der Spielfeld-Leinwand in Spielpixeln: Pixel-Modus (im HD-Modus hat die Leinwand Gerätepixel)
+      SAVE.meta.settings.gfx = 'px'; resize();
       hideOverlay(); SAVE.meta.hide.intro = true; enterHideout(); setState('play'); DLG = null; hideOverlay();
       window.AUCFG = [['Ohne', {}], ['Episch (Waffe)', { weapon: { rar: 3 } }], ['Legendär Sonnenklinge', { weapon: { rar: 4, name: 'Sonnenklinge' } }], ['Legendär Rüstung+Helm', { armor: { rar: 4, name: 'Phönixherz' }, helm: { rar: 4, name: 'Löwenhaupt' } }],
         ['Set Löwe', { weapon: { rar: 5, set: 'lion' }, armor: { rar: 5, set: 'lion' }, helm: { rar: 5, set: 'lion' } }], ['Set Drachenfürst', { weapon: { rar: 5, set: 'drache' }, armor: { rar: 5, set: 'drache' }, helm: { rar: 5, set: 'drache' } }],
