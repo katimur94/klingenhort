@@ -383,6 +383,9 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
           o.bPack = { part: n('part'), egg: pickups.filter(c => c.k === 'legg').length, mod: n('mod') };
           o.bHome = { parts: Object.values(P.parts).reduce((s, v) => s + v, 0), mods: Object.values(P.mods || {}).reduce((s, v) => s + v, 0), eggs: SAVE.meta.pets.eggs.length };
         }
+        // tief draußen trägt die Welt-Stufe ihre Qual: Bosse aus B so stark wie die Gegner dort (Stufe heißt überall dasselbe)
+        { const c2 = landeCtx(8000, 0, 'Lq'), id2 = bossForLair('Lq', c2), W2 = bossPower(bossDef(id2), c2.stage), e2 = bossSpawn(id2, P.x + 80, P.y, { ctx: c2, stage: c2.stage, instant: true, quiet: true }), k = Math.pow(1.3, worldQual(c2.stage));
+          o.bossQual = !!e2 && c2.stage > 200 && Math.abs(e2.maxHp / W2.hp - k) < k * .01; if (e2) e2.dead = true; enemies = enemies.filter(x => !x.dead); $('bossbar').hidden = true; }
         // Wächter eines Schatzes (Teil A ruft Teil B): Stelle bleibt, bis der Wächter fällt – dann öffnet Teil A den Schatz selbst
         if (o.A) {
           const skip = []; let gc = -1; for (let k = 0; k < 60 && gc < 0; k++) { const r = arteRumor(0, 0, skip); if (!r) break; skip.push(r.chain); if (aChain(r.chain).rw.guard) gc = r.chain; }
@@ -410,6 +413,7 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
     } else console.log('  (Teil A nicht geladen – übersprungen)');
     if (xr.B) {
       ok(xr.bossOk && xr.bPack && xr.bPack.part >= 2 && xr.bPack.egg >= 1 && xr.bPack.mod >= 1 && !xr.bHome.parts && !xr.bHome.mods && !xr.bHome.eggs, 'Teil B echt: erster Boss-Sieg – Bauteile und Mods im Rucksack, das Ei als Bodenbeute, nichts direkt daheim ' + JSON.stringify([xr.bPack, xr.bHome]));
+      ok(xr.bossQual, 'Teil B echt: tief draußen (Stufe > 200) tragen Bosse die Qual der Welt-Stufe wie alle Gegner dort (worldQual)');
       if (xr.A) ok(xr.guard && xr.guardOpen && xr.guardGone, 'Teil A+B echt: Schatz-Wächter erscheint, Stelle bleibt; nach dem Sieg öffnet Teil A den Schatz, die Stelle verschwindet' + (xr.guard && xr.guardOpen && xr.guardGone ? '' : ' ' + JSON.stringify(xr)));
     } else console.log('  (Teil B nicht geladen – übersprungen)');
     // Spielstand nach 24 h Fußmarsch geradeaus: Karte und Regionen bleiben klein

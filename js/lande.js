@@ -14,7 +14,8 @@
    Spielstand: SAVE.meta.lande (Statistik, Ruf, Schlüssel, Werkzeuge, Leuchtfeuer, erkundete Kartenfelder, entdeckte Regionen, Fundkiste, laufender Ausflug).
    Schnittstelle: landeActive(), landeToolGive(key), landeToolHas(key), landeDepth(), landeCtx(cx, cy, salt) (mit biome, region, rname, landmark, stage, depth, R),
      LANDE_BIOMES, LANDE_TOOLS, worldStage(depth), landeLocal(wx, wy) / landeWorld(x, y) (Welt-Pixel ↔ Spiel-Koordinaten), landePos() → { wx, wy, cx, cy },
-     landeLootHTML(entry), landeLuck()/landeRar() (Seltenheit in randomItem), landePackAdd(entry), landeBeacons() → [{ name, x, y, i }] (Welt-Pixel)
+     landeLootHTML(entry), landeLuck()/landeRar() (Seltenheit in randomItem), landePackAdd(entry), landeBeacons() → [{ name, x, y, i }] (Welt-Pixel),
+     worldQual(stage) (Qual-Stufen in einer Welt-Stufe: ab Stufe 57 je 7 Stufen eine)
    Ruft (wenn vorhanden): bossForLair, bossSpawn, bossLairReady, arteInChunk (take()), arteTreasureInChunk (open()), arteHints, arteRumor, artePickup, arteTreasureOpen,
      encounterRoll, encounterOpen (enc.teleport), eggForBiome, modRoll/modName/modIconURL/modValue/modGive/modLootHTML
    Kill-Hooks anderer Systeme, die direkt gutschreiben (P.parts, P.mods, Eier im Brutnest), landen in der Freiwelt im Rucksack (lKillPre/lKillPost).
@@ -45,6 +46,8 @@ function lWarpY(x, y) { return (lVN(x / 3, y / 3, 22) - .5) * 1.8 + (lVN(x / .8,
 function worldStage(d) { return Math.round(6 + 234 * Math.pow(clamp(+d || 0, 0, 1), .75)); }
 // Wie die Qual der Kampagne: ab Stufe 57 alle 7 Stufen ×1,3 Leben (×1,3^0,8 Schaden) – „Stufe“ heißt überall dasselbe
 function lQualOf(st) { return Math.max(0, (st - 57) / 7); }
+// Schnittstelle: wie viele Qual-Stufen in einer Welt-Stufe stecken (Leben ×1,3^q, Schaden ×1,3^(0,8·q)) – in den Landen wendet HOOK.spawn sie an
+function worldQual(stage) { return lQualOf(+stage || 0); }
 function lLuckD(d) { return 1 + 9 * Math.pow(clamp(d, 0, 1), .6); }
 function lDepthC(cx, cy) { return Math.min(1, Math.hypot(cx, cy) / LWR); }
 
@@ -978,11 +981,12 @@ function lToolCount() { let n = 0; for (let i = 0; i < LANDE_TOOLS.length; i++) 
 // Das nächste fehlende Werkzeug (in Ring-Reihenfolge)
 function lNextTool() { for (let i = 0; i < LANDE_TOOLS.length; i++) if (!lToolBit(i)) return i; return -1; }
 /* ---------- Schnittstellen für andere Systeme ---------- */
-function landeActive() { return !!(LW && LW.on); }
+function landeActive() { return lOn(); }
+function lOn() { return !!(LW && LW.on); }   // intern: nicht über landeActive (Tests anderer Teile ersetzen es)
 function landeLocal(wx, wy) { return { x: wx + LOFF, y: wy + LOFF }; }
 function landeWorld(x, y) { return { x: x - LOFF, y: y - LOFF }; }
-function landePos() { if (!landeActive()) return null; const wx = P.x - LOFF, wy = P.y - LOFF; return { wx, wy, cx: Math.floor(wx / LCK), cy: Math.floor(wy / LCK) }; }
-function landeDepth() { if (!landeActive()) return 0; return Math.min(1, Math.hypot((P.x - LOFF) / LCK, (P.y - LOFF) / LCK) / LWR); }
+function landePos() { if (!lOn()) return null; const wx = P.x - LOFF, wy = P.y - LOFF; return { wx, wy, cx: Math.floor(wx / LCK), cy: Math.floor(wy / LCK) }; }
+function landeDepth() { if (!lOn()) return 0; return Math.min(1, Math.hypot((P.x - LOFF) / LCK, (P.y - LOFF) / LCK) / LWR); }
 function lCtxOf(cx, cy, salt) {
   const R = lRegAtC(cx + .5, cy + .5), depth = lDepthC(cx + .5, cy + .5);
   return { cx, cy, depth, stage: R.stage, biome: R.biome, region: R.id, rname: lRegName(R), landmark: lLandmark(R), ring: R.ring, x0: cx * LCK, y0: cy * LCK, trip: LW ? LW.seed : 0, R: mulberry(lH(cx, cy, lSalt(salt == null ? 0 : salt))) };
@@ -1081,7 +1085,7 @@ function lAdd(list, e, cap) { if (lStack(e)) { const s = list.find(x => x.t === 
 function lPackAdd(e) { return lAdd(LW.pack, e, lCap()); }
 // Für andere Systeme (z. B. Mods aus js/mods.js): Beute in den Rucksack – false, wenn kein Ausflug läuft oder der Rucksack voll ist
 function landePackAdd(e) {
-  if (!landeActive() || !lEntryOk(e)) return false;
+  if (!lOn() || !lEntryOk(e)) return false;
   if (!lPackAdd(e)) { lMsg('full', _t('Rucksack voll! Wirf etwas weg oder leg es in die Begleiter-Tasche.'), '#ff6a5a', 2.5); return false; }
   lGot(e); return true;
 }
@@ -1301,7 +1305,7 @@ function lSpawn(type, x, y, o) {
   if (!lWalk(x, y)) { const p = lFreeNear(x, y, 90); if (p) { x = p.x; y = p.y; } }
   lSetStage(st);
   const oo = Object.assign({ x, y, instant: o.instant !== false }, o); if (B.et && !o.tint && !o.boss && !o.champ && Math.random() < .7) oo.tint = B.et;
-  const e = spawnEnemy(type, oo);
+  let e; LW.own = true; try { e = spawnEnemy(type, oo); } finally { LW.own = false; }
   // Kampagnen-Qual raus, Tiefen-Qual rein (gleiche Formel wie die Qual der Kampagne)
   const q0 = Math.pow(1.3, qualOf(P.act)), qd = lQualOf(st), mh = Math.pow(1.3, qd) / q0, ma = Math.pow(1.3, qd * .8) / Math.pow(q0, .8);
   if (mh !== 1) { e.hp = e.maxHp = Math.max(1, Math.round(e.maxHp * mh)); e.atk *= ma; if (e.armorMax) { e.armorMax *= mh; e.armor = e.armorMax; } }
@@ -1310,6 +1314,16 @@ function lSpawn(type, x, y, o) {
   lSetStage(lStage(P.x, P.y));
   return e;
 }
+// Gegner, die nicht über lSpawn kommen (Bosse aus B, Wächter und Begegnungen aus A, Diener der Bosse, Mimiks, Beschworenes, Schleim-Teilung),
+// bekommen in der Freiwelt dieselbe Tiefen-Qual – „Stufe“ heißt überall dasselbe: Stufe 240 am Weltrand trägt 26 Qual-Stufen in sich.
+// Bosse aus B (bossPower) und Gegner aus A (aSpawn) rechnen die Kampagnen-Qual schon selbst heraus, bei allen anderen geschieht das hier.
+HOOK.spawn.push(e => {
+  if (!lOn() || LW.own || !e || e.bPractice) return;
+  const fromA = (typeof ATAG !== 'undefined' && ATAG && ATAG.v) || e.arteGuard != null || e.arteGrp, fromB = e.bossId != null || e.bz;
+  const q0 = fromA || fromB ? 1 : Math.pow(1.3, qualOf(P.act)), qd = lQualOf(e.bStage || lStage(e.x, e.y)), mh = Math.pow(1.3, qd) / q0, ma = Math.pow(1.3, qd * .8) / Math.pow(q0, .8);
+  if (mh === 1) return;
+  e.hp = e.maxHp = Math.max(1, Math.round(e.maxHp * mh)); e.atk *= ma; if (e.armorMax) { e.armorMax *= mh; e.armor = e.armorMax; }
+});
 function lSpawnGroup(src, list, x, y, rad) {
   list.forEach((r, i) => { const a = i / list.length * 6.283 + Math.random() * .5, d = rad * (.5 + Math.random() * .5); lSpawn(r.t, x + Math.cos(a) * d, y + Math.sin(a) * d * .7, { elite: r.el, src, rec: r }); });
   src.alive = (src.alive || 0) + list.length;
