@@ -19,7 +19,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .hbhead{display:flex;align-items:center;gap:8px;margin:0 0 8px;flex:none}
 .hbhead h2{flex:1;min-width:0;display:flex;align-items:center;gap:8px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hbhead h2 img{width:28px;height:28px;flex:none;image-rendering:pixelated}
-.hbhead .btn{min-height:44px;min-width:44px;flex:none}
+body .hbhead .btn.sm{min-height:44px;min-width:44px;flex:none}
 .hbhead .hbx{font-family:var(--f-body);font-size:30px;line-height:1;padding:0 10px}
 .hbsrch{position:relative;flex:none;margin:0 0 8px}
 .hbsrch input{display:block;width:100%;box-sizing:border-box;min-height:44px;font:20px var(--f-body);padding:6px 46px 6px 40px;background:var(--night);color:var(--parch);border:2px solid var(--stone-hi);border-radius:0;-webkit-appearance:none;appearance:none;user-select:text;-webkit-user-select:text}
@@ -32,7 +32,8 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .hbnav,.hbmain{min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scrollbar-width:thin;scrollbar-color:var(--gold-dk) var(--night)}
 .hbcols[data-v="list"] .hbmain,.hbcols[data-v="page"] .hbnav{display:none}
 @media (min-width:700px){.hbcols{grid-template-columns:minmax(220px,33%) minmax(0,1fr)}.hbcols[data-v] .hbnav,.hbcols[data-v] .hbmain{display:block}.hbnav{padding-right:4px}}
-.hbnav .row{min-height:48px;margin-bottom:4px}
+.hbnav{contain:strict}
+.hbnav .row{min-height:48px;margin-bottom:4px;content-visibility:auto;contain-intrinsic-size:auto 64px}
 .hbnav .row .nm{font-size:19px}
 .hbnav .row .st{font-size:15px}
 .hbnav .row.sel{box-shadow:inset 0 0 0 2px var(--gold);background:var(--stone-hi)}
@@ -40,7 +41,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .hbnav .hbc .nm{font-family:var(--f-display);font-size:9px;line-height:1.5;color:var(--gold)}
 .hbnav .hbc.on{box-shadow:inset 3px 0 0 var(--gold)}
 .hbnav .hbsub{padding-left:10px;margin:0 0 8px;border-left:2px solid var(--stone-hi)}
-.hbnav .hbgh{font-family:var(--f-display);font-size:8px;color:var(--parch-dim);margin:10px 0 6px;letter-spacing:1px}
+.hbnav .hbgh{font-family:var(--f-display);font-size:8px;line-height:1.7;color:var(--parch-dim);margin:10px 0 6px;letter-spacing:1px}
 .hbnav .hbar,.hbrow .hbar{font-size:26px;color:var(--parch-dim);line-height:1}
 .hbnav mark,.hbpage mark{background:#ffd24a;color:#110e17;padding:0 1px}
 .hbsw{display:block;width:30px;height:30px;box-shadow:inset 0 0 0 2px rgba(0,0,0,.35),inset -6px -6px 0 rgba(0,0,0,.18)}
@@ -95,7 +96,8 @@ button.hbrow:active{background:rgba(90,60,30,.22)}
 .hbgrid small{display:block;font-size:14px;color:#6a5a40}
 .hbhome .hbchips .hbchip{background:#3a3047}
 /* „?“ im Hauptmenü und an anderen Stellen */
-.hbtbtn{float:right;margin:0 0 8px 10px;min-width:44px;min-height:44px;padding:0 6px;font-family:var(--f-display);font-size:16px;line-height:1}
+.btn.hbtbtn{float:right;margin:0 0 8px 10px;min-width:44px;min-height:44px;padding:0 8px;font-size:15px;line-height:1}
+body:not(.touch) .btn.hbtbtn{min-width:34px;min-height:32px;font-size:12px}
 .hbqi{display:inline-grid;place-items:center;width:20px;height:20px;margin:-4px 6px -4px 0;background:var(--gold);color:var(--night);font-family:var(--f-display);font-size:10px;box-shadow:0 0 0 1px var(--night)}
 .btn.alt .hbqi{background:var(--gold)}
 .hbml{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;margin:0 0 0 6px;padding:0 8px;border:0;background:var(--gold);color:var(--night);font-family:var(--f-display);font-size:9px;cursor:pointer;vertical-align:middle}
@@ -113,16 +115,23 @@ function hbSafe(k, fn) { try { return fn(); } catch (e) { if (!HBERR[k]) { HBERR
 
 /* ---------- Suche: Normalisieren (Umlaute, Akzente, ß, ae/oe/ue) ---------- */
 const HBFOLD = { 'ä': 'a', 'ö': 'o', 'ü': 'u', 'ß': 'ss', 'ı': 'i', 'æ': 'ae', 'œ': 'oe', 'ø': 'o' };
-// mit Zuordnung zur Stelle im Original (für die Markierung)
-function hbNormMap(s) {
-  s = String(s || ''); let o = ''; const m = [];
+// mit Zuordnung zur Stelle im Original (für die Markierung); m = null: ohne Zuordnung (schneller, für den Index)
+const HBFC = {};
+function hbFoldC(c) { if (HBFC[c] != null) return HBFC[c]; const l = c.toLowerCase(); return HBFC[c] = HBFOLD[l] || l.normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+function hbNormMap(s, noMap) {
+  s = String(s || ''); let o = '', last = 0; const m = noMap ? null : [];
   for (let i = 0; i < s.length; i++) {
-    let c = s[i].toLowerCase(); c = HBFOLD[c] || c.normalize('NFD').replace(/[̀-ͯ]/g, '');
-    for (const ch of c) { if (ch === 'e' && /[aou]/.test(o[o.length - 1] || '')) continue; if (/\s/.test(ch)) { if (o[o.length - 1] === ' ') continue; o += ' '; } else o += ch; m.push(i); }
+    const k = s.charCodeAt(i), c = k < 128 ? (k >= 65 && k <= 90 ? String.fromCharCode(k + 32) : s[i]) : hbFoldC(s[i]);
+    for (let j = 0; j < c.length; j++) {
+      const ch = c[j], q = c.charCodeAt(j);
+      if (q === 101 && (last === 97 || last === 111 || last === 117)) continue;   // ae/oe/ue wie ä/ö/ü
+      if (q === 32 || q === 9 || q === 10 || q === 13 || q === 160) { if (last === 32) continue; o += ' '; last = 32; } else { o += ch; last = q; }
+      if (m) m.push(i);
+    }
   }
   return { s: o, m };
 }
-const hbNorm = s => hbNormMap(s).s;
+const hbNorm = s => hbNormMap(s, true).s;
 // Füllwörter in Fragen („Wie macht man Eisenholz?“) – zählen nur, wenn sonst nichts übrig bleibt
 const HB_STOP = new Set(hbNorm('wie wo was wer warum wann welche welcher welches macht mache machen man ich du er es mein meine dein deine bekomme bekommt bekommen kriege kriegt gibt finde findet finden hole holt holen kann kannst ist sind der die das den dem des ein eine einen einem einer und oder mit von für zu zum zur im in an am auf aus bei nach über brauche brauchst braucht herstellen stellt stelle her bitte geht gibts mehr how do does i you get make where what which is are the a an to of for can my find obtain craft come cosa come dove como donde que el la los las un una de del y o ne nasil nerede ne bir ve ile comment ou quoi le les des du et est').split(' '));
 function hbTerms(q) { const t = hbNorm(q).replace(/[?!.,;:"„“()]/g, ' ').split(' ').filter(Boolean); const u = t.filter(x => !HB_STOP.has(x)); return u.length ? u : t; }
@@ -150,11 +159,19 @@ function hbPlain(e) {
   HB.noImg = true; let h = ''; try { h = (e.s || '') + ' ' + (hbSafe('b:' + e.id, () => e.b()) || ''); } finally { HB.noImg = false; }
   return e.px = hbStrip(h);
 }
-function hbIndex() {
-  if (HB.idx) return; if (!HB.list) hbBuild();
-  const rev = hbRev();
-  for (const e of HB.list) { e.nt = hbNorm(e.t); e.nk = hbNorm(e.kw + ' ' + (rev.get(e.t) || '') + ' ' + (HB.chs.find(c => c.k === e.ch) || {}).n); e.nx = hbNorm(hbPlain(e)); }
-  HB.idx = true;
+// in Häppchen (ms = Zeitbudget, im Hintergrund) oder ganz (ohne Budget, beim ersten Tastendruck)
+function hbIndexEntry(e, rev) { if (e.nx != null) return; e.nt = hbNorm(e.t); e.nd = rev.has(e.t) ? hbNorm(rev.get(e.t)) : ''; e.nk = hbNorm(e.kw + ' ' + e.nd + ' ' + (HB.chs.find(c => c.k === e.ch) || {}).n); e.nx = hbNorm(hbPlain(e)); }
+function hbIndex(ms) {
+  if (HB.idx) return true; if (!HB.list) hbBuild();
+  const rev = hbRev(), t0 = performance.now();
+  for (const e of HB.list) { hbIndexEntry(e, rev); if (ms && performance.now() - t0 > ms) return false; }
+  HB.idx = true; return true;
+}
+// im Hintergrund: Index in kleinen Schritten, danach die Bilder der Trefferliste
+function hbIdle() {
+  const go = f => setTimeout(f, 0);   // zwischen den Bildern des Spiels, je ~10 ms
+  const step = () => { if (!HB.open || !HB.list) return; if (!hbSafe('index', () => hbIndex(10))) { go(step); return; } let i = 0; const ic = () => { if (!HB.open || !HB.list) return; const t0 = performance.now(); for (; i < HB.list.length && performance.now() - t0 < 8; i++) { const e = HB.list[i]; if (e.ih == null) e.ih = hbIco(e.ic); } if (i < HB.list.length) go(ic); }; go(ic); };
+  go(step);
 }
 // Treffer: alle Suchwörter (ohne Füllwörter) müssen vorkommen, sonst die mit den meisten; Titel vor Stichwort vor Text
 function hbFind(q) {
@@ -164,7 +181,7 @@ function hbFind(q) {
     let sc = 0, hit = 0;
     for (const t of T_) {
       let s = 0; const ti = e.nt.indexOf(t);
-      if (e.nt === t) s = 140; else if (ti === 0) s = 100; else if (ti > 0 && /[ \-(]/.test(e.nt[ti - 1])) s = 75; else if (ti > 0) s = 55;
+      if (e.nt === t || e.nd === t) s = 140; else if (ti === 0) s = 100; else if (ti > 0 && /[ \-(]/.test(e.nt[ti - 1])) s = 75; else if (ti > 0) s = 55;
       else if (e.nk.includes(t)) s = 35; else if (e.nx.includes(t)) s = 12;
       if (s) { hit++; sc += s; }
     }
@@ -184,12 +201,14 @@ function hbHi(text, terms) {
   for (let i = 0; i < text.length; i++) { if (mark[i] && !on) { o += '<mark>'; on = true; } else if (!mark[i] && on) { o += '</mark>'; on = false; } o += esc(text[i]); }
   return o + (on ? '</mark>' : '');
 }
-// Ausschnitt um den ersten Treffer im Text
+// Ausschnitt um den ersten Treffer im Text – nur ein Fenster um die Stelle wird mit Zuordnung normalisiert (schnell beim Tippen)
 function hbSnip(e, terms) {
-  const px = hbPlain(e), N = hbNormMap(px); let at = -1;
+  const px = hbPlain(e); let ni = -1;
+  for (const t of terms) { const i = e.nx ? e.nx.indexOf(t) : -1; if (i >= 0 && (ni < 0 || i < ni)) ni = i; }
+  const a0 = Math.max(0, ni - 40), N = hbNormMap(ni < 0 ? '' : px.slice(a0, ni + 400)); let at = -1;
   for (const t of terms) { const i = N.s.indexOf(t); if (i >= 0 && (at < 0 || i < at)) at = i; }
   if (at < 0) return esc(e.s ? hbStrip(e.s).slice(0, 90) : '');
-  const p = N.m[at], a = Math.max(0, px.lastIndexOf(' ', Math.max(0, p - 38))), b = Math.min(px.length, p + 70), cut = px.slice(a, b);
+  const p = a0 + N.m[at], a = Math.max(0, px.lastIndexOf(' ', Math.max(0, p - 38))), b = Math.min(px.length, p + 70), cut = px.slice(a, b);
   return (a > 0 ? '… ' : '') + hbHi(cut.trim(), terms) + (b < px.length ? ' …' : '');
 }
 
@@ -274,20 +293,21 @@ function hbHomeHTML() {
 function hbRecent() { try { const r = JSON.parse(localStorage.getItem(HBK) || '[]'); return Array.isArray(r) ? r.filter(x => typeof x === 'string').slice(0, 6) : []; } catch (_) { return []; } }
 function hbRemember(q) { q = String(q || '').trim(); if (q.length < 2) return; try { const r = hbRecent().filter(x => hbNorm(x) !== hbNorm(q)); r.unshift(q.slice(0, 40)); localStorage.setItem(HBK, JSON.stringify(r.slice(0, 6))); } catch (_) { } }
 // Linke Spalte: Kapitel zum Aufklappen – oder die Suchergebnisse, nach Kapiteln gruppiert (das Kapitel mit dem besten Treffer zuerst)
-function hbNavRow(e, terms, snip) { return `<button class="row hbr${HB.cur === e.id ? ' sel' : ''}" data-act="hb_e" data-id="${esc(e.id)}"><div class="ic">${hbIco(e.ic)}</div><div><div class="nm">${terms ? hbHi(e.t, terms) : esc(e.t)}</div>${snip ? `<div class="st">${snip}</div>` : e.s && !terms ? `<div class="st">${hbStrip(e.s).length > 70 ? esc(hbStrip(e.s).slice(0, 68)) + ' …' : esc(hbStrip(e.s))}</div>` : ''}</div><span class="hbar">›</span></button>`; }
+function hbNavRow(e, terms, snip) { return `<button class="row hbr${HB.cur === e.id ? ' sel' : ''}" data-act="hb_e" data-id="${esc(e.id)}"><div class="ic">${e.ih != null ? e.ih : (e.ih = hbIco(e.ic))}</div><div><div class="nm">${terms ? hbHi(e.t, terms) : esc(e.t)}</div>${snip ? `<div class="st">${snip}</div>` : e.s && !terms ? `<div class="st">${hbStrip(e.s).length > 70 ? esc(hbStrip(e.s).slice(0, 68)) + ' …' : esc(hbStrip(e.s))}</div>` : ''}</div><span class="hbar">›</span></button>`; }
 function hbNavHTML() {
-  if (HB.q.trim()) {
+  if (HB.q.trim().length >= 2) {
     const R = hbFind(HB.q), terms = hbTerms(HB.q);
     if (!R.length) return `<p class="sub">${_t('Nichts gefunden. Versuch ein anderes Wort – zum Beispiel „Holz“, „Schmiede“ oder „Drache“.')}</p>`;
-    const show = R.slice(0, 60), grp = new Map();
+    const show = R.slice(0, HB.more ? 120 : 24), grp = new Map();
     for (const r of show) { if (!grp.has(r.e.ch)) grp.set(r.e.ch, []); grp.get(r.e.ch).push(r.e); }
     let h = `<p class="hbmore">${R.length === 1 ? _t('1 Treffer') : _t('{n} Treffer', { n: R.length })}</p>`;
     for (const [k, L] of grp) { const C = HB.chs.find(c => c.k === k) || { n: '' }; h += `<div class="hbgh">${esc(C.n).toLocaleUpperCase(LOCALE)} · ${L.length}</div>` + L.map(e => hbNavRow(e, terms, hbSnip(e, terms))).join(''); }
-    if (R.length > show.length) h += `<p class="hbmore">${_t('… und {n} weitere. Gib ein Wort mehr ein.', { n: R.length - show.length })}</p>`;
+    if (R.length > show.length) h += HB.more ? `<p class="hbmore">${_t('… und {n} weitere. Gib ein Wort mehr ein.', { n: R.length - show.length })}</p>` : `<button class="hbchip" data-act="hb_more" style="width:100%;justify-content:center">${_t('{n} weitere Treffer zeigen', { n: R.length - show.length })}</button>`;
     return h;
   }
   const rec = hbRecent();
-  let h = rec.length ? `<div class="hbgh">${_t('ZULETZT GESUCHT')}</div><div class="hbchips">${rec.map(q => `<button class="hbchip" data-act="hb_q" data-id="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : '';
+  let h = HB.q.trim() ? `<p class="hbmore">${_t('Noch ein Buchstabe mehr …')}</p>` : '';
+  h += rec.length ? `<div class="hbgh">${_t('ZULETZT GESUCHT')}</div><div class="hbchips">${rec.map(q => `<button class="hbchip" data-act="hb_q" data-id="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : '';
   h += `<div class="hbgh">${_t('INHALT · {n} EINTRÄGE', { n: HB.list.length })}</div>`;
   for (const c of HB.chs) {
     const L = HB.list.filter(e => e.ch === c.k); if (!L.length) continue; const on = HB.ch === c.k;
@@ -305,17 +325,26 @@ function hbRender() {
   const q = $('hbq'); q.addEventListener('input', hbOnInput); q.addEventListener('keydown', hbOnKey);
   if (!isTouch && !HB.cur) q.focus({ preventScroll: true });
   const nav = $('hbnav'), cur = nav.querySelector('.row.sel') || (HB.ch && nav.querySelector('.hbc.on'));
-  if (HB.navY != null) { nav.scrollTop = HB.navY; HB.navY = null; } else if (cur && hbWide()) cur.scrollIntoView({ block: 'nearest' });
+  if (HB.navY != null) { nav.scrollTop = HB.navY; HB.navY = null; } else if (cur && hbWide()) hbScrollTo(nav, cur, false);
   $('hbmain').scrollTop = 0;
 }
-// Tippen: nur die Liste neu (das Eingabefeld bleibt, Fokus und Tastatur auch)
+// Zeile in der Liste sichtbar machen (nur die Liste scrollt, nie die Tafel): top = an den oberen Rand
+function hbScrollTo(box, el, top) {
+  const b = box.getBoundingClientRect(), r = el.getBoundingClientRect();
+  if (top || r.top < b.top) box.scrollTop += r.top - b.top - 4; else if (r.bottom > b.bottom) box.scrollTop += r.bottom - b.bottom + 4;
+}
+// Tippen: nur die Liste neu (das Eingabefeld bleibt, Fokus und Tastatur auch) – höchstens einmal je Bild, auch wenn schnell getippt wird
+let HBRAF = 0;
 function hbOnInput(ev) {
   const was = HB.q; HB.q = ev.target.value;
   if (HB.cur && !hbWide()) { HB.hist.push({ cur: HB.cur, ch: HB.ch, q: was }); HB.cur = null; }
-  const nav = $('hbnav'); if (!nav) return;
-  nav.innerHTML = hbNavHTML(); nav.scrollTop = 0;
-  const cols = panel.querySelector('.hbcols'); if (cols) cols.dataset.v = HB.cur ? 'page' : 'list';
   const c = panel.querySelector('.hbclr'); if (c) c.hidden = !HB.q;
+  if (!HBRAF) HBRAF = requestAnimationFrame(() => { HBRAF = 0; hbNavUpdate(); });
+}
+function hbNavUpdate() {
+  const nav = $('hbnav'); if (!nav || !hbIsOpen()) return;
+  HB.more = false; nav.innerHTML = hbNavHTML(); nav.scrollTop = 0;
+  const cols = panel.querySelector('.hbcols'); if (cols) cols.dataset.v = HB.cur ? 'page' : 'list';
 }
 function hbOnKey(ev) {
   if (ev.key === 'Enter') { ev.preventDefault(); hbRemember(HB.q); const R = HB.q.trim() ? hbFind(HB.q) : []; if (R.length && hbWide()) hbOpenEntry(R[0].e.id); else ev.target.blur(); }
@@ -323,7 +352,8 @@ function hbOnKey(ev) {
 function hbOpenEntry(id) {
   if (!HB.by[id]) return;
   if (HB.q.trim()) hbRemember(HB.q);
-  const nav = $('hbnav'); HB.navY = nav ? nav.scrollTop : null;
+  // Liste bleibt, wo sie war – außer ein anderes Kapitel klappt auf (dann zur Zeile scrollen)
+  const nav = $('hbnav'); HB.navY = nav && (HB.q || HB.ch === HB.by[id].ch) ? nav.scrollTop : null;
   HB.hist.push({ cur: HB.cur, ch: HB.ch, q: HB.q });
   HB.cur = id; if (!HB.q) HB.ch = HB.by[id].ch;
   sfx('page'); hbRender();
@@ -346,8 +376,8 @@ function openHandbuch(id, back) {
   hbBuild();
   if (id && HB.by[id]) { HB.cur = id; HB.ch = HB.by[id].ch; HB.deep = true; } else { HB.cur = null; HB.ch = null; HB.deep = false; }
   hbRender();
-  // Suchindex in einer ruhigen Sekunde vorbereiten – dann ist schon der erste Tastendruck schnell
-  setTimeout(() => { if (HB.open && HB.list) hbSafe('index', hbIndex); }, 400);
+  // Suchindex in ruhigen Momenten vorbereiten – dann ist schon der erste Tastendruck schnell
+  hbIdle();
   return true;
 }
 function hbClose() {
@@ -380,8 +410,9 @@ ON.hb_open = (id, b) => {
 ON.hb_close = () => { sfx('click'); hbClose(); };
 ON.hb_back = () => { sfx('click'); hbBack(); };
 ON.hb_e = id => hbOpenEntry(id);
-ON.hb_ch = id => { HB.ch = HB.ch === id ? null : id; sfx('click'); const nav = $('hbnav'), y = nav ? nav.scrollTop : 0; nav.innerHTML = hbNavHTML(); nav.scrollTop = y; const c = nav.querySelector('.hbc.on'); if (c) c.scrollIntoView({ block: 'nearest' }); };
+ON.hb_ch = id => { HB.ch = HB.ch === id ? null : id; sfx('click'); const nav = $('hbnav'); if (!nav) return; const y = nav.scrollTop; nav.innerHTML = hbNavHTML(); nav.scrollTop = y; const c = nav.querySelector('.hbc.on'); if (c) hbScrollTo(nav, c, true); };
 ON.hb_q = id => { HB.q = id; hbRemember(id); sfx('click'); hbRender(); };
+ON.hb_more = () => { HB.more = true; const nav = $('hbnav'); if (!nav) return; const y = nav.scrollTop; nav.innerHTML = hbNavHTML(); nav.scrollTop = y; };
 ON.hb_clear = () => { HB.q = ''; const q = $('hbq'); if (q) { q.value = ''; hbOnInput({ target: q }); if (!isTouch) q.focus(); } };
 ON.hb_go = (id, b, i) => { const e = HB.by[id], g = e && e.go.map(hbGo).filter(Boolean)[i]; if (!g) return; HB.open = false; sfx('click'); g.f(); };
 // Tasten: Esc zurück (Suche erst leeren), / in die Suche, F1 öffnet das Handbuch
@@ -395,7 +426,7 @@ addEventListener('keydown', e => {
 }, true);
 
 /* ---------- Zugänge: Hauptmenü („?“), Pause, Einstellungen (js/ui.js), Karte „Mehr“, Bibliothek ---------- */
-function hbTitleBtn() { return `<button class="btn sm hbtbtn" data-act="hb_open" data-id="|title" aria-label="${_t('Handbuch')}" title="${_t('Handbuch')}">?</button>`; }
+function hbTitleBtn() { return `<button class="btn hbtbtn" data-act="hb_open" data-id="|title" aria-label="${_t('Handbuch')}" title="${_t('Handbuch')}">?</button>`; }
 // Knopf „? Handbuch“ für Menüs (Pause: woher = 'pause', Einstellungen: 'settings')
 function hbMenuBtn(from) { return `<button class="btn alt" data-act="hb_open" data-id="|${from}"><span class="hbqi">?</span>${_t('Handbuch')}</button>`; }
 HOOK.mapMore.push(() => hbMenuBtn('map'));

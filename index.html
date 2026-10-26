@@ -398,6 +398,8 @@ body.touch .row{min-height:52px}
   .gearslot .slot{width:54px;height:54px}
   .help{font-size:16px}
 }
+/* Pause im Querformat: Knöpfe zweispaltig, „Weiterspielen“ über die ganze Breite */
+@media (max-height:540px) and (min-width:600px){.pmenu{grid-template-columns:1fr 1fr}.pmenu>[data-act="resume"]{grid-column:1/-1}}
 /* Wochen-Ereignis */
 .weekbox{display:flex;gap:10px;align-items:center;background:var(--stone-lo);padding:9px 10px;margin-top:10px;font-size:18px;line-height:1.15;box-shadow:inset 3px 0 0 var(--c)}
 .weekbox img{width:32px;height:32px;object-fit:contain;flex:none}

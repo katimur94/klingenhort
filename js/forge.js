@@ -397,7 +397,8 @@ function matWhere(k) {
   return o.slice(0, 3).join(' · ');
 }
 function needHTML(mats, gold) {
-  const L = Object.keys(mats || {}).filter(k => (P.mats[k] || 0) < mats[k]).map(k => `<li><b>${_t('{n}× {mat}', { n: mats[k] - (P.mats[k] || 0), mat: MATS[k].n })}</b> – ${esc(matWhere(k))}</li>`);
+  // „?“ öffnet das Handbuch beim Material (js/handbuch.js), „Zurück“ dort führt wieder hierher
+  const L = Object.keys(mats || {}).filter(k => (P.mats[k] || 0) < mats[k]).map(k => `<li><b>${_t('{n}× {mat}', { n: mats[k] - (P.mats[k] || 0), mat: MATS[k].n })}</b> – ${esc(matWhere(k))}${typeof hbMatBtn === 'function' ? hbMatBtn(k, 'wb') : ''}</li>`);
   if (gold && P.gold < gold) L.push(`<li><b>${_t('{n} Gold', { n: fmt(gold - P.gold) })}</b> – ${_t('Gegner, Truhen, Verkaufen beim Händler')}</li>`);
   return L.length ? `<div class="wbneed"><span>${_t('Es fehlt:')}</span><ul>${L.join('')}</ul></div>` : '';
 }
@@ -405,7 +406,7 @@ function wbCost(mats, gold) { return costHTML(mats || {}, gold) + needHTML(mats,
 // kurze Zeile für Listen: wo es das erste fehlende Material gibt
 function missLine(mats, gold) {
   const k = Object.keys(mats || {}).find(m => (P.mats[m] || 0) < mats[m]);
-  return k ? `<div class="st"><span class="wbbad">${esc(MATS[k].n)}:</span> ${esc(matWhere(k))}</div>` : gold && P.gold < gold ? `<div class="st wbbad">${_t('Dir fehlt Gold.')}</div>` : '';
+  return k ? `<div class="st"><span class="wbbad">${esc(MATS[k].n)}:</span> ${esc(matWhere(k))}${typeof hbMatBtn === 'function' ? hbMatBtn(k, 'station') : ''}</div>` : gold && P.gold < gold ? `<div class="st wbbad">${_t('Dir fehlt Gold.')}</div>` : '';
 }
 // Knopf, der sagt, warum er (noch) nicht geht: why = '' (geht), true (Grund steht schon darüber) oder Text
 function wbBtn(act, label, why, o) {
