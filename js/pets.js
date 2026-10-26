@@ -2148,7 +2148,9 @@ function petTick(dt) {
   if (PET_RT.shT > 0 && PET_RT.shT <= T) { PET_RT.shield = 0; PET_RT.shT = 0; }
   // Beutemagnet ab LV 10
   if (play && p.lv >= 10) {
-    const R = petMagRp(p), R2 = R * R;
+    // Reichweite (Talente) nur einmal pro Sekunde neu rechnen – keine Arbeit in jedem Bild
+    if (!(Math.abs(T - PET_RT.mrT) < 1) || PET_RT.mrId !== p.id) { PET_RT.mr = petMagRp(p); PET_RT.mrT = T; PET_RT.mrId = p.id; }
+    const R = PET_RT.mr, R2 = R * R;
     for (const c of pickups) { if (c.mag || c.k === 'loot' || c.t < .25) continue; const dx = c.x - P.x, dy = c.y - P.y; if (dx * dx + dy * dy < R2) { c.mag = 1; part(c.x, c.y, 5, 0, 0, 30, PET_EL[S.el].c, .35, 1, 0, 1); } }
   }
   // Aura ab Uralt, Glitzern bei schillernden
