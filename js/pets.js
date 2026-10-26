@@ -387,7 +387,8 @@ function petActive() { const p = petSel(); return p && !petIsHurt(p) ? p : null;
 function petName(p) { return p.nm ? p.nm : PET_SP[p.sp].n; }
 function petTier(sp) { return PET_TIERS[PET_SP[sp] ? PET_SP[sp].t : 0]; }
 // Beutel: Plätze nach Seltenheit, ab Uralt (LV 75) einer mehr, dazu Talent „Große Taschen“ und legendärer Talisman
-function petBagSize(p) { return p && PET_SP[p.sp] ? petTier(p.sp).bag + (petStage(p.lv) >= 4 ? 1 : 0) + Math.floor(petMods(p).pbag || 0) : 0; }
+// + Sattlerei (6.2): je zwei Stufen ein Platz mehr
+function petBagSize(p) { return p && PET_SP[p.sp] ? petTier(p.sp).bag + (petStage(p.lv) >= 4 ? 1 : 0) + Math.floor(petMods(p).pbag || 0) + (typeof sattlerLv === 'function' ? Math.floor(sattlerLv() / 2) : 0) : 0; }
 // Verletzung nach dem Tod in den Verlorenen Landen: kämpft nicht und kommt nicht mit, bis die Zeit um ist oder er geheilt wird
 function petIsHurt(p) { return !!p && p.hurt > Date.now(); }
 function petHurtLeft(p) { return petIsHurt(p) ? p.hurt - Date.now() : 0; }
@@ -1555,7 +1556,7 @@ function petFix(o, newId) {
   p.xp = p.lv >= 100 ? 0 : Math.min(p.xp, petNeed(p.lv) - 1);
   const col = o.col == null ? (p.shiny ? 6 : p.c0) : Math.floor(n(o.col)); p.col = petCols(p).includes(col) ? col : p.shiny ? 6 : p.c0;
   if (o.nw) p.nw = 1;
-  p.bag = (Array.isArray(o.bag) ? o.bag : []).map(petLootFix).filter(Boolean).slice(0, 12);
+  p.bag = (Array.isArray(o.bag) ? o.bag : []).map(petLootFix).filter(Boolean).slice(0, 24);   // Sattlerei: Taschen bis etwa 17 Plätze
   const h = n(o.hurt); p.hurt = h > Date.now() ? Math.min(h, Date.now() + 48 * 3600e3) : 0; // Uhr verstellt: höchstens 2 Tage
   // Kreaturen 2.0: Gene (alte Begleiter: fest aus der Kennung), Mutation, Talente, Ausrüstung, Zauber, Zucht
   p.gn = petGenesFix(o.gn) || petGenesOf(p.id);
@@ -1725,7 +1726,7 @@ function petBagTake(p) { if (!p || !Array.isArray(p.bag)) return []; const r = p
 function petLootGive(e) {
   if (!e || !petHero()) return;
   switch (e.t) {
-    case 'item': { const S = SAVE.meta.hide.stash; if (P.bag.length >= 30 && typeof stashCap === 'function' && S.length < stashCap()) { hook('pickup', e.it); S.push(e.it); } else addToBag(e.it); break; }
+    case 'item': { const S = SAVE.meta.hide.stash; if (P.bag.length >= bagCap() && typeof stashCap === 'function' && S.length < stashCap()) { hook('pickup', e.it); S.push(e.it); } else addToBag(e.it); break; }
     case 'mat': gainMat(e.k, e.n); break;
     case 'gem': P.gems[e.k] = (P.gems[e.k] || 0) + e.n; break;
     case 'part': if (!P.parts) P.parts = {}; P.parts[e.k] = (P.parts[e.k] || 0) + e.n; break;

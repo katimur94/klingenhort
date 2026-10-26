@@ -751,7 +751,7 @@ function refineBody(it) {
   return h + cmpHTML(it, pv) + wbCost(c.mats, c.gold) + wbBtn('af_ref', _t('Veredeln · Stufe {a} → {b}', { a: s, b: s + 1 }), canAfford(c.mats, c.gold) ? '' : true);
 }
 function extractBody(it) {
-  if (!P.bag.includes(it)) return `<p class="wbwhy">${_t('Angelegtes kann nicht extrahiert werden – leg es erst ab.')}</p>`;
+  if (!itemList(it)) return `<p class="wbwhy">${_t('Angelegtes kann nicht extrahiert werden – leg es erst ab.')}</p>`;
   const keys = Object.keys(it.aff); if (!keys.length) return `<p class="wbwhy">${_t('Gewöhnliche Gegenstände haben keine Zusatzwerte.')}</p>`;
   const S = mUI(it); if (!keys.includes(S.aff)) S.aff = keys.slice().sort((a, b) => affStufe(it, b) - affStufe(it, a))[0];
   const k = S.aff, s = affStufe(it, k), ek = 'aff_' + k + ':' + s, c = affExCost(it), back = [it.gems.length ? _t('Edelsteine kommen zurück in den Vorrat.') : '', modsOf(it).length ? _t('Mods kommen zurück in den Vorrat.') : ''].filter(Boolean).join(' ');
@@ -761,10 +761,10 @@ function extractBody(it) {
 function modVerBody(k, it) { return k === 'mods' ? modsBody(it) : k === 'reroll' ? rerollBody(it) : k === 'refine' ? refineBody(it) : k === 'extract' ? extractBody(it) : ''; }
 // Extrahieren: Gegenstand weg, ein Zusatzwert als Affix-Essenz in den Vorrat
 function affExtract(it, k) {
-  const bi = P.bag.indexOf(it); if (bi < 0 || !(k in it.aff)) return null;
+  if (!itemList(it) || !(k in it.aff)) return null;   // aus Beutel oder Lager
   const c = affExCost(it); if (P.gold < c) return 'poor';
   const ek = 'aff_' + k + ':' + affStufe(it, k); P.gold -= c;
-  for (const g of it.gems) gainGem(g); modTakeBack(it); P.bag.splice(bi, 1); modAdd(ek, 1); SAVE.meta.mods.ex++;
+  for (const g of it.gems) gainGem(g); modTakeBack(it); itemTake(it); modAdd(ek, 1); SAVE.meta.mods.ex++;
   if (typeof smithXP === 'function') smithXP(6 + 3 * it.tier + 4 * Math.min(it.rar, 5));
   return ek;
 }
@@ -900,9 +900,10 @@ ON.mod_comb = id => { const r = modCombine(id); if (r) { sfx('craft'); toast(mod
 ON.mod_comball = () => { const r = modCombAll(false); if (r.n) { sfx('craft'); toast(_t('{n}× kombiniert – bestes: {mod}', { n: r.n, mod: modName(r.best) }), modCol(r.best)); saveChar(); } else sfx('deny'); openChar('mods'); };
 // Verkaufen beim Händler und im Charakterbildschirm: Mods bleiben im Vorrat (wie js/ui.js, dazu die Mods zurück)
 const mBack = it => { const n = modTakeBack(it); if (n) toast(n === 1 ? _t('1 Mod zurück in den Vorrat') : _t('{n} Mods zurück in den Vorrat', { n }), '#9affd8'); };
-ON.sell = id => { const f = findItem(id); if (f && f.bi != null) { mBack(f.it); P.gold += itemPrice(f.it); P.bag.splice(f.bi, 1); sfx('coin'); saveChar(); } selItem = null; openChar(); };
-ON.msell = id => { const f = findItem(id); if (f && f.bi != null) { mBack(f.it); P.gold += itemPrice(f.it); P.bag.splice(f.bi, 1); sfx('coin'); saveChar(); } openMerchant(); };
-ON.sellall = () => { let g = 0; P.bag = P.bag.filter(it => { if (it.rar <= 1 && !it.gems.length && !it.up && !it.fz && !it.mw && !it.skin && !modsOf(it).length) { g += itemPrice(it); return false; } return true; }); P.gold += g; if (g) sfx('coin'); toast(_t('+{n} Gold', { n: g })); saveChar(); openMerchant(); };
+// aus Beutel oder Lager (6.2: sellItem, sellAll in js/ui.js); Sammel-Verkauf lässt Gegenstände mit Mods ohnehin aus
+ON.sell = id => { const f = findItem(id); if (f && !f.eq && sellItem(f.it, mBack)) { sfx('coin'); saveChar(); persist(); } selItem = null; openChar(); };
+ON.msell = id => { const f = findItem(id); if (f && !f.eq && sellItem(f.it, mBack)) { sfx('coin'); saveChar(); persist(); } openMerchant(); };
+ON.sellall = () => sellAll(mBack);
 
 document.head.insertAdjacentHTML('beforeend', `<style>
 .mslots{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}

@@ -181,7 +181,7 @@ function trAccept(p) {
   if (S.own.includes(p.id)) return 'own';
   const hero = p.t === 'i' || p.t === 'b';
   if (hero && !trHero()) return 'hero';
-  if (p.t === 'i') { if (P.bag.length >= 30) return 'bag'; const it = trItem(p.d); if (!it) return 'data'; addToBag(it); }
+  if (p.t === 'i') { if (P.bag.length >= bagCap()) return 'bag'; const it = trItem(p.d); if (!it) return 'data'; addToBag(it); }
   else if (p.t === 'b') { const b = trBundle(p.d); if (!b) return 'data'; trTake(b, 1); }
   else {
     const fn = p.t === 'p' ? (typeof petImport === 'function' ? petImport : null) : (typeof eggGive === 'function' ? eggGive : null);
@@ -203,7 +203,7 @@ function trErr(e) {
     used: _t('Diesen Code hast du schon eingelöst. Jeder Code gilt nur einmal.'),
     own: _t('Das ist dein eigener Tauschcode – schick ihn einem Freund.'),
     hero: _t('Wähle zuerst einen Helden, der das Geschenk bekommt.'),
-    bag: _t('Dein Beutel ist voll (30/30). Mach Platz und versuch es noch einmal.'),
+    bag: _t('Dein Beutel ist voll ({n}/{max}). Mach Platz und versuch es noch einmal.', { n: P ? P.bag.length : bagCap(), max: bagCap() }),
     pets: _t('In diesem Code steckt ein Begleiter – diese Version kann ihn noch nicht annehmen. Der Code bleibt gültig.'),
     petfull: _t('Kein Platz für einen weiteren Begleiter. Der Code bleibt gültig.'),
     petfail: _t('Der Begleiter konnte nicht übernommen werden. Der Code bleibt gültig.')
@@ -378,7 +378,7 @@ function trSendHTML() {
   let h = `<p class="sub">${_t('Daraus wird ein Tauschcode, den du als Link teilst. Wer ihn zuerst einlöst, bekommt es.')}</p><div class="opts">${md('item', _t('GEGENSTAND'))}${md('bun', _t('BÜNDEL'))}${pets ? md('pet', _t('BEGLEITER')) : ''}</div>`;
   if (TRD.mode === 'item') {
     const sel = TRD.sel && P.bag.find(x => x.uid === TRD.sel);
-    h += `<div class="split"><div><div class="box"><h3 style="margin-top:0">${_t('BEUTEL {n}/30', { n: P.bag.length })}</h3><div class="grid">${P.bag.map(it => itemSlot(it, 'tr_isel', it === sel)).join('') || '<p class="sub">' + _t('Leer') + '</p>'}</div></div></div>`;
+    h += `<div class="split"><div><div class="box">${capHead(_t('BEUTEL'), P.bag.length, bagCap())}${itemGridHTML(P.bag.map(it => itemSlot(it, 'tr_isel', it === sel)), 'trbag')}</div></div>`;
     h += sel ? `<div class="side sheet"><button class="btn alt sm sheetx" data-act="tr_isel" data-id="" aria-label="${_t('Schließen')}"><span class="x">×</span></button><div class="acts" style="margin:0 0 4px;justify-content:flex-start"><button class="btn" data-act="tr_ask" data-id="i:${sel.uid}">${_t('Verschenken')}</button></div>${itemDetail(sel, '')}</div>`
       : `<div class="side"><p class="sub" style="margin-top:0">${_t('Tippe einen Gegenstand aus deinem Beutel an. Angelegte Ausrüstung bleibt bei dir.')}</p></div>`;
     return h + '</div>';
@@ -453,7 +453,7 @@ function trPreview(p, err) {
   else if (hero && !trHero()) side = trHeroPick(_t('Wer soll das Geschenk bekommen? Wähle einen Helden:'));
   else {
     if (err) side += `<p class="sub tr-bad" style="margin-top:0">${trErr(err)}</p>`;
-    else if (p.t === 'i' && P.bag.length >= 30) side += `<p class="sub tr-bad" style="margin-top:0">${trErr('bag')}</p>`;
+    else if (p.t === 'i' && P.bag.length >= bagCap()) side += `<p class="sub tr-bad" style="margin-top:0">${trErr('bag')}</p>`;
     if (hero) side += `<div class="row" style="cursor:default"><div class="ic">${heroHTML(P, .9)}</div><div><div class="nm">${_t('Für {name}', { name: esc(P.name) })}</div><div class="st">${CLASSES[P.cls].name} · ${_t('LV {lv}', { lv: P.lv })}</div></div>${SAVE.chars.length > 1 && TRD.from === 'title' ? `<button class="btn alt sm" data-act="tr_pick">${_t('Wechseln')}</button>` : '<span></span>'}</div>`;
     side += `<div class="menu" style="margin:6px 0"><button class="btn" data-act="tr_take">${_t('Annehmen')}</button></div>`;
   }

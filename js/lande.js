@@ -8,8 +8,10 @@
    Koordinaten im Spiel = Welt-Pixel + LOFF (fester Ursprung je Welt, nie verschoben – andere Systeme merken sich Positionen; Zahlen bleiben genau).
    Nur ein Fenster von Chunks um den Helden ist geladen (Daten 5 × 5, Boden 3 × 3, je Chunk eine wiederverwendete Leinwand), Gegner nur in der Nähe.
    Ausflug: Start am Weltentor oder an einem eigenen Leuchtfeuer → Beute in den Rucksack → raus durch ein Tor der Alten, das Weltentor oder ein Leuchtfeuer.
-   Tod: Ausrüstung und Rucksack sind verloren, nur die Begleiter-Tasche (petBagSize, p.bag) kommt heim; was seit dem letzten Leuchtfeuer erkundet wurde, ist vergessen.
-   Abbrechen (nur außerhalb des Kampfes) oder neu laden: Rucksack verloren, Ausrüstung vom Aufbruch zurück. Neu laden mitten im Kampf zählt als Tod (M.cur.fight).
+   Rucksack (LW.pack, packCap(): 20 + 2 je Sattlerei-Stufe + Ruf) trägt Gegenstände und Eier; Gold, Material, Edelsteine, Bauteile und Mods kommen
+   ohne Platzgrenze in den Sammelbeutel (6.2, LW.pouch). Magische Vögel (js/voegel.js) bringen Dinge sofort heim – nicht mitten im Kampf.
+   Tod: Ausrüstung, Rucksack und Sammelbeutel sind verloren, nur die Begleiter-Tasche (petBagSize, p.bag) kommt heim; was seit dem letzten Leuchtfeuer erkundet wurde, ist vergessen.
+   Abbrechen (nur außerhalb des Kampfes) oder neu laden: Rucksack und Sammelbeutel verloren, Ausrüstung vom Aufbruch zurück. Neu laden mitten im Kampf zählt als Tod (M.cur.fight).
    Barrieren an Ringgrenzen (Schlucht, Fluss, Giftnebel, Eisklippen …) lassen sich nur an Übergängen und nur mit dem passenden Werkzeug queren.
    20 Ringgrenzen bis kurz vor den Rand (LRING): die ersten 11 mit den elf Grundwerkzeugen, danach je eine neue Barriere mit einem Meisterwerkzeug
    (Stufe II eines Grundwerkzeugs, z. B. „Seil II“), das in Horten im Ring davor liegt und auch vor der Gefahr der Biome dahinter schützt.
@@ -17,7 +19,8 @@
    Spielstand: SAVE.meta.lande (Statistik, Ruf, Schlüssel, Werkzeuge, Leuchtfeuer, erkundete Kartenfelder, entdeckte Regionen, Fundkiste, laufender Ausflug).
    Schnittstelle: landeActive(), landeToolGive(key), landeToolHas(key), landeDepth(), landeCtx(cx, cy, salt) (mit biome, region, rname, landmark, stage, depth, R),
      LANDE_BIOMES, LANDE_TOOLS, worldStage(depth), landeLocal(wx, wy) / landeWorld(x, y) (Welt-Pixel ↔ Spiel-Koordinaten), landePos() → { wx, wy, cx, cy },
-     landeLootHTML(entry), landeLuck()/landeRar() (Seltenheit in randomItem), landePackAdd(entry), landeBeacons() → [{ name, x, y, i }] (Welt-Pixel),
+     landeLootHTML(entry), landeLuck()/landeRar() (Seltenheit in randomItem), landePackAdd(entry) (Stapelbares in den Sammelbeutel), landeBeacons() → [{ name, x, y, i }] (Welt-Pixel),
+     landePouchAdd(k, n, quiet) (k = 'gold' | Material | 'gem:<k>' | 'part:<k>' | 'mod:<k>'; false außerhalb der Lande), packCap(),
      worldQual(stage) (Qual-Stufen in einer Welt-Stufe: ab Stufe 57 je 7 Stufen eine)
    Ruft (wenn vorhanden): bossForLair, bossSpawn, bossLairReady, arteInChunk (take()), arteTreasureInChunk (open()), arteHints, arteRumor, artePickup, arteTreasureOpen,
      encounterRoll, encounterOpen (enc.teleport), eggForBiome, modRoll/modName/modIconURL/modValue/modGive/modLootHTML
@@ -1314,27 +1317,62 @@ function landeLootHTML(e, right) {
 /* ---------- Rucksack ---------- */
 function lRank(rep) { let r = 0; LREP.forEach((x, i) => { if (rep >= x.at) r = i; }); return r; }
 function lPerk(k) { const r = lRank(lMeta().rep); if (k === 'pack') return (r >= 2 ? 1 : 0) + (r >= 4 ? 1 : 0); if (k === 'rabatt') return r >= 1 ? .9 : 1; if (k === 'mis') return r >= 3 ? 1 : 0; if (k === 'ch') return r >= 4 ? 1 : 0; if (k === 'key') return r >= 5 ? 1 : 0; if (k === 'stone') return r >= 1; return 0; }
-function lCap() { return LPACK + lPerk('pack'); }
+// Plätze im Rucksack: 20, je Sattlerei-Stufe (Versteck, 0–10) +2, dazu der Ruf bei den Kundschaftern
+function packCap() { return LPACK + 2 * (typeof sattlerLv === 'function' ? sattlerLv() : 0) + (SAVE && SAVE.meta.lande ? lPerk('pack') : 0); }
+function lCap() { return packCap(); }
 function lStack(e) { return e.t === 'mat' || e.t === 'gem' || e.t === 'part' || e.t === 'gold' || e.t === 'mod'; }
 function lAdd(list, e, cap) { if (lStack(e)) { const s = list.find(x => x.t === e.t && x.k === e.k); if (s) { s.n += e.n; return true; } } if (list.length >= cap) return false; list.push(e); return true; }
-function lPackAdd(e) { return lAdd(LW.pack, e, lCap()); }
+// Stapelbares in den Sammelbeutel (immer Platz), Gegenstände und Eier in einen Rucksack-Platz
+function lPackAdd(e) { lPouch(); if (lStack(e)) return lPouchPut(e); return lAdd(LW.pack, e, lCap()); }
 // Für andere Systeme (z. B. Mods aus js/mods.js): Beute in den Rucksack – false, wenn kein Ausflug läuft oder der Rucksack voll ist
 function landePackAdd(e) {
   if (!lOn() || !lEntryOk(e)) return false;
   if (!lPackAdd(e)) { lMsg('full', _t('Rucksack voll! Wirf etwas weg oder leg es in die Begleiter-Tasche.'), '#ff6a5a', 2.5); return false; }
   lGot(e); return true;
 }
-function lPackHas(t, k) { let n = 0; for (const e of LW.pack) if (e.t === t && e.k === k) n += e.n; return n; }
-function lPackGold() { const g = LW.pack.find(e => e.t === 'gold'); return g ? g.n : 0; }
-function lPackPay(t, k, n) { const e = LW.pack.find(x => x.t === t && x.k === k); if (!e || e.n < n) return false; e.n -= n; if (e.n <= 0) LW.pack.splice(LW.pack.indexOf(e), 1); return true; }
+function lPackHas(t, k) { return lPouchHas(lPouchKey({ t, k })); }
+function lPackGold() { return lPouchHas('gold'); }
+function lPackPay(t, k, n) { return lPouchTake(lPouchKey({ t, k }), n); }
 
-/* ---------- Heimbringen: Beutel → Lager → Fundkiste → verkauft ---------- */
-function lDeliver(list) {
+/* ---------- Sammelbeutel (6.2): Gold, Material, Edelsteine, Bauteile und Mods ohne Platzgrenze ----------
+   LW.pouch = { gold: n, <Material>: n, 'gem:<k>': n, 'part:<k>': n, 'mod:<k>': n } – nur im Speicher wie der Rucksack:
+   beim Entkommen daheim, bei Tod und Abbruch verloren. Was noch als Stapel im Rucksack liegt (6.1, andere Systeme), wandert hinein. */
+function lPouch() {
+  const L = LW; if (!L.pouch || typeof L.pouch !== 'object' || Array.isArray(L.pouch)) L.pouch = {};
+  if (Array.isArray(L.pack) && L.pack.some(lStack)) L.pack = L.pack.filter(e => { if (!lStack(e)) return true; if (lEntryOk(e)) lPouchPut(e); return false; });
+  return L.pouch;
+}
+function lPouchKey(e) { return e.t === 'gold' ? 'gold' : e.t === 'mat' ? String(e.k) : e.t + ':' + e.k; }
+function lPouchEntry(k, n) {
+  k = String(k); n = Math.floor(+n) || 0; if (k === 'gold') return { t: 'gold', n };
+  const i = k.indexOf(':'); if (i < 0) return { t: 'mat', k, n };
+  const t = k.slice(0, i); return t === 'gem' || t === 'part' || t === 'mod' ? { t, k: k.slice(i + 1), n } : null;
+}
+function lPouchPut(e) { const n = Math.floor(+e.n) || 0; if (n <= 0 || !LW.pouch) return false; const k = lPouchKey(e); if (/^(__proto__|constructor|prototype)$/.test(k)) return false; LW.pouch[k] = (LW.pouch[k] || 0) + n; return true; }
+function lPouchHas(k) { const B = lPouch(); return Object.prototype.hasOwnProperty.call(B, k) ? B[k] || 0 : 0; }
+function lPouchTake(k, n) { const B = lPouch(), h = lPouchHas(k); if (!(n > 0) || h < n) return false; B[k] = h - n; if (B[k] <= 0) delete B[k]; return true; }
+const LPOUCH_T = { gold: 0, mat: 1, gem: 2, part: 3, mod: 4 };
+function lPouchList() {
+  const B = lPouch(), out = [];
+  for (const k of Object.keys(B)) { const e = lPouchEntry(k, B[k]); if (e && e.n > 0 && lEntryOk(e)) out.push(e); }
+  const mi = k => { const i = MATORDER.indexOf(k); return i < 0 ? 99 : i; };
+  return out.sort((a, b) => LPOUCH_T[a.t] - LPOUCH_T[b.t] || (a.t === 'mat' ? mi(a.k) - mi(b.k) : a.t === 'gem' ? lGemParts(b.k).gr - lGemParts(a.k).gr || (a.k < b.k ? -1 : 1) : a.k < b.k ? -1 : a.k > b.k ? 1 : 0));
+}
+function lPouchTakeAll() { const l = lPouchList(); LW.pouch = {}; return l; }
+// Schnittstelle: Gesammeltes (Holz, Stein, Fasern … – Teil B) in den Sammelbeutel. false außerhalb der Lande – dann gibt der Aufrufer selbst.
+function landePouchAdd(k, n, quiet) {
+  if (!lOn()) return false;
+  const e = lPouchEntry(k, n); if (!e || !(e.n > 0) || !lEntryOk(e)) return false;
+  lPouch(); lPouchPut(e); if (!quiet) lGot(e); return true;
+}
+
+/* ---------- Heimbringen: Beutel → Lager → Fundkiste → verkauft (Vögel: Lager → Beutel → Fundkiste) ---------- */
+function lDeliver(list, stashFirst) {
   const r = { bag: 0, stash: 0, box: 0, sold: 0, eggs: 0, n: 0 }, M = lMeta(), S = SAVE.meta.hide.stash, cap = typeof stashCap === 'function' ? stashCap() : 0;
   for (const e of list) {
     if (!lEntryOk(e)) continue; r.n++;
     switch (e.t) {
-      case 'item': { const it = e.it; delete it.lw; if (P.bag.length < 30) { P.bag.push(it); r.bag++; } else if (S.length < cap) { S.push(it); r.stash++; } else if (M.box.length < LBOX) { M.box.push(e); r.box++; } else { r.sold += itemPrice(it); P.gold += itemPrice(it); } break; }
+      case 'item': { const it = e.it; delete it.lw; if (stashFirst && S.length < cap) { S.push(it); r.stash++; } else if (P.bag.length < bagCap()) { P.bag.push(it); r.bag++; } else if (S.length < cap) { S.push(it); r.stash++; } else if (M.box.length < LBOX) { M.box.push(e); r.box++; } else { r.sold += itemPrice(it); P.gold += itemPrice(it); } break; }
       case 'mat': gainMat(e.k, e.n); break;
       case 'gem': P.gems[e.k] = (P.gems[e.k] || 0) + e.n; break;
       case 'part': if (typeof padd === 'function' && P.parts) padd(e.k, e.n); else if (M.box.length < LBOX) { M.box.push(e); r.box++; } break;
@@ -1409,7 +1447,7 @@ function lBegin(st) {
   const M = lMeta(), seed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
   lPoolReg();
   if (LW) for (const r of LW.cm.values()) lFree(r);
-  const L = LW = { id: uid(), seed, on: false, t: 0, cm: new Map(), ts: new Map(), fog: new Map(), regs: new Set(), pack: [], mis: [], misOn: false, misFrom: null, pats: [], rivals: [], beast: null, offers: new Map(), healFree: true, scrolls: 0, xs: [], buffT: 0, buffV: 0, sleep: [], near: null, dig: 0, digO: null, tick: 0, hudT: 0, mapT: 0, huntT: 50, revT: 0, kills: 0, chests: 0, msgT: {}, hurtT: -9, ch: 0, chEx: null, danger: 0, reg: null, pcx: null, pcy: null, q: [], farT: 0, rivT: 150 + Math.random() * 120, start: st.id, nights: 0, cross: new Set(), lx: 0, ly: 0, ambA: 0, hazT: 0, newR: 0 };
+  const L = LW = { id: uid(), seed, on: false, t: 0, cm: new Map(), ts: new Map(), fog: new Map(), regs: new Set(), pack: [], pouch: {}, mis: [], misOn: false, misFrom: null, pats: [], rivals: [], beast: null, offers: new Map(), healFree: true, scrolls: 0, xs: [], buffT: 0, buffV: 0, sleep: [], near: null, dig: 0, digO: null, tick: 0, hudT: 0, mapT: 0, huntT: 50, revT: 0, kills: 0, chests: 0, msgT: {}, hurtT: -9, ch: 0, chEx: null, danger: 0, reg: null, pcx: null, pcy: null, q: [], farT: 0, rivT: 150 + Math.random() * 120, start: st.id, nights: 0, cross: new Set(), lx: 0, ly: 0, ambA: 0, hazT: 0, newR: 0 };
   LRL = null;
   AW = AH = LWS; BD = { x0: 16, x1: LWS - 16, y0: 16, y1: LWS - 16 };
   bg = { c: { width: LWS, height: LWS, getContext: () => LDEC }, draw: lBgDraw, b: { key: '', name: '', tint: [1, 1, 1], dark: 0, root: 45, dust: '#8a7a6a', vein: 'erz', pool: null }, fountains: [], torches: [] };
@@ -1460,7 +1498,7 @@ function lRestoreGear(cur) {
   lStripFlags(); computeStats(); P.hp = Math.min(P.hp, P.st.hp);
 }
 function lAbandon(why) {
-  const M = lMeta(), cur = M.cur, lost = LW ? LW.pack.slice() : [], pet = LW && LW.pet;
+  const M = lMeta(), cur = M.cur, lost = LW ? LW.pack.concat(lPouchTakeAll()) : [], pet = LW && LW.pet;
   M.aband++; if (cur) lRestoreGear(cur);
   const r = lDeliver(lPetBagTake(pet)); M.cur = null;
   lEnd(); if (LW) for (const r of LW.cm.values()) lFree(r); LW = null; saveChar(); persist();
@@ -1484,7 +1522,7 @@ HOOK.activate.push(H => {
 });
 function lHurtMin(d) { return 45 + Math.round(clamp(+d || 0, 0, 1) * 240); }
 function lExtract(ex) {
-  const L = LW, M = lMeta(), pack = L.pack.splice(0), bag = lPetBagTake(L.pet), mis = [];
+  const L = LW, M = lMeta(), pouch = lPouchTakeAll(), pack = L.pack.splice(0).concat(pouch), bag = lPetBagTake(L.pet), mis = [];
   let rep = 0;
   for (const m of L.mis) if (m.done && !m.paid) { m.paid = true; rep += m.rep; mis.push(m); for (const e of m.rew) if (e.t !== 'key' && e.t !== 'map') pack.push(e); else if (e.t === 'key') M.keys++; }
   const nR = L.regs.size, nF = lCommit(), all = pack.concat(bag), val = lSum(all), r = lDeliver(all);
@@ -1511,7 +1549,7 @@ function lDie() {
 }
 HOOK.die.push(h => { if (h || !LW || !LW.on) return h; lDie(); return true; });
 function lDeathScreen() {
-  const L = LW, M = lMeta(), pet = L.pet, gear = ['weapon', 'armor', 'helm'].map(s => P.gear[s]).filter(Boolean), pack = L.pack.splice(0), saved = lPetBagTake(pet);
+  const L = LW, M = lMeta(), pet = L.pet, gear = ['weapon', 'armor', 'helm'].map(s => P.gear[s]).filter(Boolean), pouch = lPouchTakeAll(), pack = L.pack.splice(0).concat(pouch), saved = lPetBagTake(pet);
   const lost = gear.map(it => ({ t: 'item', it })).concat(pack), lostV = lSum(lost), lostMap = L.regs.size, d = lDepthAt(P.x, P.y);
   M.deaths++; M.cur = null; L.fog = new Map(); L.regs = new Set();   // Erkundetes seit dem letzten Leuchtfeuer ist vergessen
   let hurt = '';
@@ -1608,6 +1646,7 @@ function lDrop(x, y, e, sp) {
     case 'key': pickups.push(Object.assign(b(), { k: 'lkey' })); break;
     case 'map': pickups.push(Object.assign(b(), { k: 'lmap' })); break;
     case 'stone': pickups.push(Object.assign(b(), { k: 'lstone' })); break;
+    case 'bird': pickups.push(Object.assign(b(), { k: 'lbird', bk: e.k })); break;   // eingesammelt und gezeichnet in js/voegel.js
   }
 }
 function lRollSpot(o) {
@@ -1622,6 +1661,8 @@ function lRollSpot(o) {
   if (C.key && Math.random() < C.key) out.push({ t: 'key' });
   if (C.map && Math.random() < C.map) out.push({ t: 'map' });
   if (C.stone && Math.random() < C.stone * (1 + dep * 3)) out.push({ t: 'stone' });
+  const bc = { holz: .02, eisen: .04, gold: .08, fluch: .08, schloss: .12, rest: .05, versteck: .06 }[o.t] || 0;   // Magische Vögel (js/voegel.js)
+  if (bc && typeof birdRoll === 'function' && Math.random() < bc * (1 + dep * 2)) out.push({ t: 'bird', k: birdRoll(dep) });
   return out;
 }
 function lBurst(o, list) { list.forEach((e, i) => setTimeout(() => { if (LW && LW.on) lDrop(o.x, o.y - 4, e, 1 + i * .06); }, 120 + i * 90)); }
@@ -1678,11 +1719,11 @@ HOOK.collect.unshift((h, c) => {
     case 'lrel': c.got = true; LW.relic = true; sfx('ach'); lBanner(_t('ERBSTÜCK GEFUNDEN'), _t('Bring es heil zurück – zu einer Kundschafterin oder durch einen Ausgang.')); lMisEvent('relic'); return true;
     default: return false;
   }
-  if (!lPackAdd(e)) { lMsg('full', _t('Rucksack voll! Wirf etwas weg oder leg es in die Begleiter-Tasche.'), '#ff6a5a', 2.5); c.t = -.6; return true; }
+  if (!lPackAdd(e)) { lMsg('full', _t('Rucksack voll! Wirf etwas weg, leg es in die Begleiter-Tasche oder schick einen Vogel heim.'), '#ff6a5a', 2.5); c.t = -.6; return true; }
   c.got = true; lGot(e); return true;
 });
 function lGot(e) {
-  const hp = $('lhPack'); if (hp) { hp.classList.remove('pop'); void hp.offsetWidth; hp.classList.add('pop'); }
+  const hp = $(lStack(e) ? 'lhPo' : 'lhPack'); if (hp) { hp.classList.remove('pop'); void hp.offsetWidth; hp.classList.add('pop'); }
   if (e.t === 'gold') { sfx('coin'); return; }
   lTip(1, _t('Tipp: Alles im Rucksack ist verloren, wenn du fällst. Wertvolles in die Begleiter-Tasche legen – Rucksack-Knopf oben rechts.'));
   if (e.t === 'item') {
@@ -2226,6 +2267,7 @@ function lKillPost(e) {
   if (e.elite && Math.random() < .25) lDrop(e.x, e.y, { t: 'item', it: lItem(2, 1.5) });
   if ((e.elite || e.boss) && Math.random() < (e.boss ? .5 : .06) * (1 + dep * 4)) { const m = lMod(dep, e.boss ? 2 : 1.3); if (m) lDrop(e.x, e.y, m); }
   if (e.boss && Math.random() < .1 + dep) lDrop(e.x, e.y, { t: 'stone' });
+  if (e.elite && typeof birdRoll === 'function' && Math.random() < (e.boss ? .12 : .015) * (1 + dep * 2)) lDrop(e.x, e.y, { t: 'bird', k: birdRoll(dep) });
   if (!s) return;
   s.alive = Math.max(0, (s.alive || 0) - 1);
   if (s.left && s.state === 'act' && !s.alive && !s.left.length) {
@@ -2470,6 +2512,10 @@ body.lande #bossbar{top:calc(var(--sat) + 56px);left:max(16px,var(--sal));transf
 .lfoot{grid-template-columns:1fr 1fr}.lfoot .wide{grid-column:1/-1}
 @media (min-width:600px){.lfoot{grid-template-columns:2fr 1fr 1fr}.lfoot .wide{grid-column:auto}}
 .lnw+.lpk{margin-top:10px}.side .lwd{margin-bottom:10px}
+.lslot.lfree{font-family:var(--f-display);font-size:8px;color:var(--parch-dim);text-align:center;line-height:1.4;padding:2px}
+.lpouch{margin-top:10px;box-shadow:inset 0 0 0 2px var(--gold-dk)}.lpdim{font-family:var(--f-body);font-size:17px;color:var(--parch-dim)}
+.lpg{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:5px}.lpg .lslot .n{font-size:8px}
+#lhPo{min-height:30px;gap:4px}#lhPo img+span{margin-right:2px}
 .lgmini{padding:6px}.lgmini .lgear>div:first-child{display:none}.lgmini .lgear .lslot{width:46px;height:46px;margin:0 auto}
 @media (min-width:600px){.lnw{display:none}}
 @media (max-width:599px){.lwd{display:none}}
@@ -2484,9 +2530,9 @@ body.touch .lslot .n{font-size:8px}
 .lstart .opt{text-align:left;line-height:1.5}
 .lstart .opt small{display:block}
 </style>`);
-document.body.insertAdjacentHTML('beforeend', `<div id="lhud" hidden><canvas id="lhMap" width="96" height="96" aria-label="${_t('Karte')}"></canvas><div class="lc"><div class="lp"><b id="lhD">${LDNG[0].n}</b><span id="lhT">0:00</span><b id="lhSt">6</b></div><div class="lr"><button class="lp" id="lhCp" aria-label="${_t('Leuchtfeuer setzen')}" hidden><img src="" alt=""><span id="lhCpn">0</span></button><button class="lp" id="lhPack" aria-label="${_t('Rucksack')}"><img src="" alt=""><span id="lhP">0/20</span></button></div><div class="lp" id="lhK" hidden><img src="" alt=""><span id="lhKn">0</span></div><div id="lhReg"></div><div id="lhMis"></div></div></div>`);
+document.body.insertAdjacentHTML('beforeend', `<div id="lhud" hidden><canvas id="lhMap" width="96" height="96" aria-label="${_t('Karte')}"></canvas><div class="lc"><div class="lp"><b id="lhD">${LDNG[0].n}</b><span id="lhT">0:00</span><b id="lhSt">6</b></div><div class="lr"><button class="lp" id="lhCp" aria-label="${_t('Leuchtfeuer setzen')}" hidden><img src="" alt=""><span id="lhCpn">0</span></button><button class="lp" id="lhPack" aria-label="${_t('Rucksack')}"><img src="" alt=""><span id="lhP">0/20</span></button></div><button class="lp" id="lhPo" aria-label="${_t('Sammelbeutel')}"><img src="" alt=""><span id="lhPg">0</span><img src="" alt="" id="lhPoM"><span id="lhPm">0</span></button><div class="lp" id="lhK" hidden><img src="" alt=""><span id="lhKn">0</span></div><div id="lhReg"></div><div id="lhMis"></div></div></div>`);
 const LH = { on: false, c: {} };
-function lHudShow(on) { if (LH.on === on) return; LH.on = on; $('lhud').hidden = !on; if (on) { $('lhPack').querySelector('img').src = iconURL(['pa', 'l_pack']); $('lhK').querySelector('img').src = iconURL(['pa', 'l_schl']); $('lhCp').querySelector('img').src = iconURL(['pa', 'l_feuer']); LH.c = {}; } }
+function lHudShow(on) { if (LH.on === on) return; LH.on = on; $('lhud').hidden = !on; if (on) { $('lhPack').querySelector('img').src = iconURL(['pa', 'l_pack']); $('lhPo').querySelector('img').src = iconURL(['pa', 'l_gold']); $('lhPoM').src = iconURL(['pa', 'l_beutel']); $('lhK').querySelector('img').src = iconURL(['pa', 'l_schl']); $('lhCp').querySelector('img').src = iconURL(['pa', 'l_feuer']); LH.c = {}; } }
 function lSetH(id, v) { if (LH.c[id] !== v) { LH.c[id] = v; $(id).textContent = v; } }
 function lClock(t) { return Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0'); }
 function lHudTick() {
@@ -2494,7 +2540,8 @@ function lHudTick() {
   const ph = L.danger, p = (L.t / LDAY) % 1, nxt = ph === 0 ? .6 : ph === 1 ? .67 : ph === 2 ? .95 : 1, left = (nxt - p) * LDAY, D = LDNG[ph];
   lSetH('lhD', D.n); $('lhD').style.color = D.c; lSetH('lhT', lClock(left));
   const st = lStage(P.x, P.y), rt = lRate(st); lSetH('lhSt', _t('ST. {n}', { n: st })); $('lhSt').style.color = rt.c;
-  const cap = lCap(); lSetH('lhP', L.pack.length + '/' + cap); $('lhPack').classList.toggle('full', L.pack.length >= cap);
+  const cap = lCap(); lPouch(); lSetH('lhP', L.pack.length + '/' + cap); $('lhPack').classList.toggle('full', L.pack.length >= cap);
+  let pm = 0; for (const k in L.pouch) if (k !== 'gold') pm += L.pouch[k] || 0; lSetH('lhPg', fmt(L.pouch.gold || 0)); lSetH('lhPm', fmt(pm));
   const M = lMeta(), k = M.keys; $('lhK').hidden = !k; lSetH('lhKn', String(k));
   $('lhCp').hidden = !M.stones; lSetH('lhCpn', String(M.stones)); $('lhCp').classList.toggle('dim', lDanger() || lCpBlock() !== '');
   lSetH('lhReg', L.reg ? lRegName(L.reg) : '');
@@ -2545,6 +2592,7 @@ function lHeroArrow(g, hx, hy, k) { const a = Math.hypot(P.vx, P.vy) > 8 ? Math.
 // „click“ statt „pointerdown“: sonst trifft der nachfolgende Klick einen Knopf der eben geöffneten Tafel
 $('lhMap').addEventListener('click', () => { if (LW && LW.on && state === 'play') { audioOn(); lMapScreen(); } });
 $('lhPack').addEventListener('click', () => { if (LW && LW.on && state === 'play') { audioOn(); LG.sel = null; LG.arm = null; lInv(); } });
+$('lhPo').addEventListener('click', () => { if (LW && LW.on && state === 'play') { audioOn(); LG.sel = null; LG.arm = null; lInv(); } });
 $('lhCp').addEventListener('click', () => { if (LW && LW.on && state === 'play') { audioOn(); lCpScreen(); } });
 $('bAct').addEventListener('click', () => { if (LW && LW.on && state === 'play') lInteract(); });
 addEventListener('keydown', e => {
@@ -2577,14 +2625,16 @@ function lGetSel(id) {
   if (k === 'g') return P.gear[v] ? { e: { t: 'item', it: P.gear[v] }, where: 'g', slot: v } : null;
   if (k === 'p') return LW.pack[+v] ? { e: LW.pack[+v], where: 'p', i: +v } : null;
   if (k === 'b' && LW.pet) { const b = lBag(LW.pet); return b[+v] ? { e: b[+v], where: 'b', i: +v } : null; }
+  if (k === 'u') { const pk = id.slice(2), e = lPouchEntry(pk, lPouchHas(pk)); return e && e.n > 0 ? { e, where: 'u', k: pk } : null; }   // Sammelbeutel
   return null;
 }
 function lInv() {
   if (!LW || !LW.on) return;
   setState('menu'); showHud(false);
-  const L = LW, cap = lCap(), pet = L.pet, bs = pet ? L.petBag : 0, bag = pet ? lBag(pet) : [], s = lGetSel(LG.sel);
+  const L = LW, cap = lCap(), pet = L.pet, bs = pet ? L.petBag : 0, bag = pet ? lBag(pet) : [], pouch = lPouchList(), s = lGetSel(LG.sel);
   const gear = ['weapon', 'armor', 'helm'].map(sl => `<div class="gearslot lgear"><div style="font-size:14px;color:var(--parch-dim)">${sl === 'weapon' ? _t('Waffe') : AR[sl].label}</div>${lSlot(P.gear[sl] ? { t: 'item', it: P.gear[sl] } : null, 'g:' + sl, LG.sel === 'g:' + sl)}</div>`).join('');
-  const packG = Array.from({ length: cap }, (_, i) => lSlot(L.pack[i], 'p:' + i, LG.sel === 'p:' + i)).join('');
+  const freeN = cap - L.pack.length, showE = freeN > 6 ? 4 : freeN;   // viele freie Plätze: vier zeigen, Rest als „+N frei“
+  const packG = L.pack.map((e, i) => lSlot(e, 'p:' + i, LG.sel === 'p:' + i)).join('') + Array.from({ length: showE }, () => lSlot(null)).join('') + (freeN > showE ? `<div class="lslot empty lfree">${_t('+{n} frei', { n: freeN - showE })}</div>` : '');
   const bagG = pet ? Array.from({ length: bs }, (_, i) => lSlot(bag[i], 'b:' + i, LG.sel === 'b:' + i)).join('') : '';
   const gearBox = cls => `<div class="box ${cls}"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${gear}</div></div>`;
   let side = `<div class="side">${gearBox('lwd')}<p class="sub">${_t('Tippe etwas an: anlegen, in die Begleiter-Tasche legen oder wegwerfen.')}</p></div>`;
@@ -2592,26 +2642,31 @@ function lInv() {
     const e = s.e, it = e.t === 'item' ? e.it : null, petFree = pet && bag.length < bs, packFree = L.pack.length < cap;
     let acts = '';
     if (s.where !== 'g' && it && canEquip(it)) acts += `<button class="btn sm" data-act="l_eq">${_t('Anlegen')}</button>`;
-    if (s.where === 'p' && pet) acts += `<button class="btn ${petFree ? '' : 'alt '}sm" data-act="l_tobag" ${petFree ? '' : 'disabled'}>${petFree ? _t('In die Begleiter-Tasche') : _t('Tasche voll')}</button>`;
-    if (s.where === 'b') acts += `<button class="btn alt sm" data-act="l_topack" ${packFree ? '' : 'disabled'}>${_t('In den Rucksack')}</button>`;
-    if (s.where !== 'g' && e.t !== 'gold') acts += `<button class="btn ${LG.arm === LG.sel ? 'red' : 'alt'} sm" data-act="l_drop">${LG.arm === LG.sel ? _t('Wirklich wegwerfen?') : _t('Wegwerfen')}</button>`;
-    const val = `<p class="sub" style="margin:4px 0">${_t('Wert: {n} Gold', { n: fmt(lVal(e)) })}${s.where === 'b' ? ' · <b style="color:var(--moss)">' + _t('sicher in der Tasche') + '</b>' : s.where === 'g' ? ' · <b style="color:var(--blood)">' + _t('geht beim Tod verloren') + '</b>' : ''}</p>`;
+    const petStack = pet && lStack(e) && bag.some(x => x.t === e.t && x.k === e.k), petOk = petFree || petStack;
+    if ((s.where === 'p' || s.where === 'u') && pet) acts += `<button class="btn ${petOk ? '' : 'alt '}sm" data-act="l_tobag" ${petOk ? '' : 'disabled'}>${petOk ? (s.where === 'u' && e.n > 1 ? _t('Alle {n} in die Begleiter-Tasche', { n: fmt(e.n) }) : _t('In die Begleiter-Tasche')) : _t('Tasche voll')}</button>`;
+    if (s.where === 'b') acts += `<button class="btn alt sm" data-act="l_topack" ${packFree || lStack(e) ? '' : 'disabled'}>${lStack(e) ? _t('In den Sammelbeutel') : _t('In den Rucksack')}</button>`;
+    if (s.where !== 'g' && s.where !== 'u' && e.t !== 'gold') acts += `<button class="btn ${LG.arm === LG.sel ? 'red' : 'alt'} sm" data-act="l_drop">${LG.arm === LG.sel ? _t('Wirklich wegwerfen?') : _t('Wegwerfen')}</button>`;
+    const val = `<p class="sub" style="margin:4px 0">${_t('Wert: {n} Gold', { n: fmt(lVal(e)) })}${s.where === 'b' ? ' · <b style="color:var(--moss)">' + _t('sicher in der Tasche') + '</b>' : s.where === 'g' || s.where === 'u' ? ' · <b style="color:var(--blood)">' + _t('geht beim Tod verloren') + '</b>' : ''}</p>`;
     side = `<div class="side sheet">${gearBox('lwd lgmini')}<button class="btn alt sm sheetx" data-act="l_sel" data-id="" aria-label="${_t('Schließen')}"><span class="x">×</span></button>${it ? itemDetail(it, acts) + (s.where !== 'g' ? compareHTML(it) : '') : `<div class="detail"><div style="display:flex;gap:10px;align-items:center"><div class="ic big" style="box-shadow:inset 0 0 0 2px ${lCol(e)}"><img src="${lIcon(e)}" alt=""></div><div class="nm" style="color:${lCol(e)}">${esc(lName(e))}${lCount(e) > 1 ? ' ×' + lCount(e) : ''}</div></div><div class="acts" style="justify-content:flex-start;margin-top:8px">${acts}</div></div>`}${val}</div>`;
   }
   const petBox = pet ? `<div class="box" style="margin-top:10px;box-shadow:inset 0 0 0 2px var(--moss)"><div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><img class="px" src="${lPetIcon(pet)}" alt="" style="width:32px;height:32px;object-fit:contain"><div><h3 style="margin:0">${_t('BEGLEITER-TASCHE {n}/{max}', { n: bag.length, max: bs })}</h3><div class="sub" style="margin:2px 0 0;font-size:16px">${_t('{name} bringt das heim – auch wenn du fällst.', { name: esc(lPetName(pet)) })}</div></div></div><div class="grid">${bagG || `<p class="sub">${_t('Keine Plätze.')}</p>`}</div></div>`
     : `<div class="box" style="margin-top:10px"><p class="sub" style="margin:0">${lPetApi() ? _t('Kein Begleiter dabei: Stirbst du, ist alles verloren.') : _t('Ohne Begleiter-Tasche: Stirbst du, ist alles verloren.')}</p></div>`;
-  showOverlay(`${lHead(_t('RUCKSACK {n}/{max}', { n: L.pack.length, max: cap }), 'l_resume', `<span class="pill dim">${_t('{n} G', { n: fmt(lSum(L.pack)) })}</span>`)}
-  <div class="split"><div>${gearBox('lnw')}
-  <div class="box lpk"><h3 style="margin-top:0;line-height:1.6">${_t('Rucksack').toLocaleUpperCase(LOCALE)} <span style="font-family:var(--f-body);font-size:17px;color:#ff8a7a">${_t('geht beim Tod verloren')}</span></h3><div class="grid">${packG}</div><div class="acts" style="justify-content:flex-start;margin-top:8px">${lJunk().length ? `<button class="btn ${LG.arm === 'junk' ? 'red' : 'alt'} sm" data-act="l_junk">${LG.arm === 'junk' ? _t('Wirklich {n} wegwerfen?', { n: lJunk().length }) : _t('Plunder wegwerfen ({n})', { n: lJunk().length })}</button>` : ''}${L.scrolls ? `<button class="btn alt sm" data-act="l_scroll">${_t('Rückkehrrolle lesen ({n})', { n: L.scrolls })}</button>` : ''}</div></div>${petBox}</div>${side}</div>`, true);
+  const pouchG = pouch.map(e => lSlot(e, 'u:' + lPouchKey(e), LG.sel === 'u:' + lPouchKey(e))).join('');
+  const pouchBox = `<div class="box lpouch"><h3 style="margin-top:0;line-height:1.6">${_t('SAMMELBEUTEL')} <span class="lpdim">${_t('ohne Platzgrenze · {n} G', { n: fmt(lSum(pouch)) })}</span></h3>${pouch.length ? `<div class="lpg">${pouchG}</div>` : `<p class="sub" style="margin:0">${_t('Gold, Material, Edelsteine, Bauteile und Mods landen hier – sie brauchen keinen Platz im Rucksack.')}</p>`}</div>`;
+  const birds = typeof birdBarHTML === 'function' ? birdBarHTML() : '';
+  showOverlay(`${lHead(_t('RUCKSACK {n}/{max}', { n: L.pack.length, max: cap }), 'l_resume', `<span class="pill dim">${_t('{n} G', { n: fmt(lSum(L.pack) + lSum(pouch)) })}</span>`)}
+  ${birds}<div class="split"><div>${gearBox('lnw')}
+  <div class="box lpk"><h3 style="margin-top:0;line-height:1.6">${_t('Rucksack').toLocaleUpperCase(LOCALE)} <span style="font-family:var(--f-body);font-size:17px;color:#ff8a7a">${_t('geht beim Tod verloren')}</span></h3><div class="${L.pack.length > 24 ? 'igrid scroll' : ''}" data-sk="lpack"><div class="grid">${packG}</div></div><div class="acts" style="justify-content:flex-start;margin-top:8px">${lJunk().length ? `<button class="btn ${LG.arm === 'junk' ? 'red' : 'alt'} sm" data-act="l_junk">${LG.arm === 'junk' ? _t('Wirklich {n} wegwerfen?', { n: lJunk().length }) : _t('Plunder wegwerfen ({n})', { n: lJunk().length })}</button>` : ''}${L.scrolls ? `<button class="btn alt sm" data-act="l_scroll">${_t('Rückkehrrolle lesen ({n})', { n: L.scrolls })}</button>` : ''}</div></div>${pouchBox}${petBox}</div>${side}</div>`, true);
 }
 function lJunk() { const low = MATORDER.slice(0, 4); return LW.pack.filter(e => (e.t === 'item' && e.it.rar === 0 && (!canEquip(e.it) || !P.gear[e.it.slot] || itemScore(e.it) <= itemScore(P.gear[e.it.slot]))) || (e.t === 'mat' && low.includes(e.k))); }
 ON.l_junk = () => { if (LG.arm !== 'junk') { LG.arm = 'junk'; lInv(); return; } const j = new Set(lJunk()); LW.pack = LW.pack.filter(e => !j.has(e)); LG.arm = null; LG.sel = null; sfx('wood'); toast(_t('{n} Dinge weggeworfen', { n: j.size }), '#a8997e'); lInv(); };
 function lMoveSel(to) {
   const s = lGetSel(LG.sel); if (!s) return;
   const L = LW, bag = L.pet ? lBag(L.pet) : null, src = s.where === 'p' ? L.pack : bag;
-  if (to === 'b') { if (!bag || !lBagOk(s.e) || !lAdd(bag, s.e, L.petBag)) { sfx('deny'); return; } }
-  else if (!lAdd(L.pack, s.e, lCap())) { sfx('deny'); return; }
-  src.splice(s.i, 1); LG.sel = null; sfx('click'); persist();
+  if (to === 'b') { if (!bag || !lBagOk(s.e) || !lAdd(bag, Object.assign({}, s.e), L.petBag)) { sfx('deny'); return; } }
+  else if (!lPackAdd(s.e)) { sfx('deny'); return; }   // Stapel in den Sammelbeutel, sonst ein Rucksack-Platz
+  if (s.where === 'u') lPouchTake(s.k, s.e.n); else src.splice(s.i, 1);
+  LG.sel = null; sfx('click'); persist();
 }
 ON.l_sel = id => { LG.sel = id && id !== LG.sel ? id : null; LG.arm = null; sfx('click'); lInv(); };
 ON.l_resume = () => lResume();
@@ -2817,10 +2872,11 @@ function lTradeScreen(npc) {
   else if (tab === 'kauf') {
     const goods = [['pot', _t('Heiltrank'), Math.round((25 + Math.min(st, 150) * 3) * f), ['s', 288, 336, 16, 16]], ['key', _t('Schlüssel'), Math.round((180 + Math.min(st, 150) * 18) * f), ['pa', 'l_schl']], ['map', _t('Kartenstück'), Math.round((90 + Math.min(st, 150) * 8) * f), ['pa', 'l_karte']], ['scroll', _t('Rückkehrrolle (Ausgang überall, doppelt so lange stehen)'), Math.round((380 + Math.min(st, 150) * 30) * f), ['pa', 'l_rolle']]];
     if (lPerk('stone')) goods.push(['stone', _t('Leuchtfeuerstein (einer je Außenposten)'), Math.round((900 + Math.min(st, 150) * 60) * f), ['pa', 'l_feuer']]);
-    const sold = k => (k === 'scroll' && L.boughtScroll) || (k === 'stone' && L.ts.get('st' + npc.op));
+    if (typeof birdShop === 'function') for (const b of birdShop(st, f)) goods.push(b);   // Magische Vögel (js/voegel.js)
+    const sold = k => (k === 'scroll' && L.boughtScroll) || (k === 'stone' && L.ts.get('st' + npc.op)) || (k.startsWith('bird:') && L.ts.get('bd' + npc.op + k));
     body = goods.map(([k, n, p, ic]) => `<div class="row" style="cursor:default"><div class="ic"><img src="${iconURL(ic)}" alt=""></div><div><div class="nm">${n}</div></div><button class="btn sm" data-act="l_buyx" data-id="${k}" data-i="${p}" ${gold >= p && !(k === 'pot' && P.potions >= potMax()) && !sold(k) ? '' : 'disabled'}><i class="coin"></i>${fmt(p)}</button></div>`).join('') + `<p class="sub">${_t('Bezahlt wird mit dem Gold in deinem Rucksack.')}${lPerk('stone') ? '' : ' ' + _t('Leuchtfeuersteine verkaufen Händler erst ab dem Ruf „Bekannter“.')}</p>`;
   }
-  else body = L.pack.length ? L.pack.map((e, i) => e.t === 'gold' ? '' : landeLootHTML(e, `<button class="btn sm" data-act="l_sell" data-i="${i}"><i class="coin"></i>${fmt(Math.max(1, Math.round(lVal(e) * .45 / f)))}</button>`)).join('') + `<p class="sub">${_t('Das Gold kommt in den Rucksack – raustragen musst du es trotzdem.')}</p>` : `<p class="sub">${_t('Dein Rucksack ist leer.')}</p>`;
+  else { const pl = lPouchList().filter(e => e.t !== 'gold'); body = L.pack.length || pl.length ? L.pack.map((e, i) => e.t === 'gold' ? '' : landeLootHTML(e, `<button class="btn sm" data-act="l_sell" data-i="${i}"><i class="coin"></i>${fmt(Math.max(1, Math.round(lVal(e) * .45 / f)))}</button>`)).join('') + pl.map(e => landeLootHTML(e, `<button class="btn sm" data-act="l_sellp" data-id="${esc(lPouchKey(e))}"><i class="coin"></i>${fmt(Math.max(1, Math.round(lVal(e) * .45 / f)))}</button>`)).join('') + `<p class="sub">${_t('Das Gold kommt in den Sammelbeutel – raustragen musst du es trotzdem.')}</p>` : `<p class="sub">${_t('Dein Rucksack ist leer.')}</p>`; }
   showOverlay(`${lHead(esc(npc.name).toLocaleUpperCase(LOCALE), 'l_resume', `<div class="gold"><img src="${iconURL(['pa', 'l_gold'])}" alt="" style="width:16px;vertical-align:-3px;image-rendering:pixelated"> ${fmt(gold)}</div>`)}
   <div class="say"><img class="px" src="${iconURL(['sp', npc.sp])}" alt=""><div><b style="color:#79c24e">${esc(npc.name)}</b>${_t('„Hier draußen zahlt man mit dem, was man trägt. Zeig her, was du hast.“')}</div></div>
   <div class="tabs" role="tablist">${t_('tausch', _t('TAUSCH'))}${t_('kauf', _t('KAUFEN'))}${t_('verkauf', _t('VERKAUFEN'))}</div>${body}`, true);
@@ -2828,7 +2884,7 @@ function lTradeScreen(npc) {
 ON.l_ttab = id => { LG.tab = id; sfx('click'); lTradeScreen(); };
 ON.l_buyo = (id, b, i) => {
   const L = LW, offers = L.tnpc && L.offers.get(L.tnpc.op), o = offers && offers[i]; if (!o || o.done || !lGiveOk(o.give)) { sfx('deny'); return; }
-  if (!lPackAdd(Object.assign({}, o.get)) && !(lStack(o.get) && L.pack.some(x => x.t === o.get.t && x.k === o.get.k))) { toast(_t('Rucksack voll!'), '#ff6a5a'); sfx('deny'); return; }
+  if (!lPackAdd(Object.assign({}, o.get))) { toast(_t('Rucksack voll!'), '#ff6a5a'); sfx('deny'); return; }
   for (const g of o.give) lPackPay(g.t, g.k, g.n); o.done = true; if (o.get.t === 'item') { o.get.it.lw = L.id; hook('pickup', o.get.it); }
   sfx('buy'); toast(_t('Getauscht: {n}', { n: lName(o.get) }), lCol(o.get)); lTradeScreen();
 };
@@ -2839,11 +2895,17 @@ ON.l_buyx = (id, b, p) => {
   else if (id === 'map') lMapPiece();
   else if (id === 'scroll') { if (L.boughtScroll) return; L.boughtScroll = true; L.scrolls++; }
   else if (id === 'stone') { if (!lPerk('stone') || !L.tnpc || L.ts.get('st' + L.tnpc.op)) return; L.ts.set('st' + L.tnpc.op, 1); lMeta().stones++; toast(_t('Leuchtfeuerstein gekauft ({n})', { n: lMeta().stones }), '#ff8a3a'); }
+  else if (String(id).startsWith('bird:')) { const k = id.slice(5); if (typeof birdGive !== 'function' || !L.tnpc || L.ts.get('bd' + L.tnpc.op + id) || !birdGive(k, 1)) return; L.ts.set('bd' + L.tnpc.op + id, 1); toast(_t('{bird} gekauft – im Rucksack unter „Vogel schicken“', { bird: BIRDS[k].n }), BIRDS[k].c); saveChar(); }
   lPackPay('gold', undefined, p); sfx('buy'); persist(); lTradeScreen();
 };
 ON.l_sell = (id, b, i) => {
   const e = LW.pack[i]; if (!e || e.t === 'gold') return; const g = Math.max(1, Math.round(lVal(e) * .45 / lPerk('rabatt')));
   LW.pack.splice(i, 1); lPackAdd({ t: 'gold', n: g }); sfx('coin'); lTradeScreen();
+};
+// ganzen Stapel aus dem Sammelbeutel verkaufen
+ON.l_sellp = id => {
+  const e = lPouchEntry(id, lPouchHas(id)); if (!e || e.t === 'gold' || !(e.n > 0)) return; const g = Math.max(1, Math.round(lVal(e) * .45 / lPerk('rabatt')));
+  lPouchTake(id, e.n); lPackAdd({ t: 'gold', n: g }); sfx('coin'); lTradeScreen();
 };
 // Heilerin
 function lHealScreen(npc) {
@@ -2919,6 +2981,7 @@ function lArt(name, b) {
   switch (name) {
     case 'tor': b.rect(2, 3, 3, 12, '#5a5662'); b.rect(11, 3, 3, 12, '#5a5662'); b.rect(1, 1, 14, 3, '#6a6672'); b.rect(2, 3, 1, 12, '#8a8692'); b.disc(8, 9, 3.5, '#2e8a52'); b.disc(8, 9, 2.2, '#6ae08a'); b.set(8, 9, '#e0ffe8'); b.set(3, 6, '#6ae08a'); b.set(12, 9, '#6ae08a'); break;
     case 'l_pack': b.rect(4, 4, 8, 10, '#8a5a32'); b.rect(3, 6, 10, 7, '#8a5a32'); b.rect(4, 4, 8, 2, '#b07a48'); b.rect(6, 2, 4, 3, '#5e3a1e'); b.rect(7, 8, 2, 2, '#e8b04a'); b.rect(3, 12, 10, 1, '#5e3a1e'); break;
+    case 'l_beutel': b.disc(8, 10, 5, '#6a4224'); b.disc(8, 10, 4, '#a8743e'); b.rect(6, 3, 4, 3, '#a8743e'); b.rect(5, 5, 6, 1, '#4a2a18'); b.rect(5, 2, 2, 1, '#6a4224'); b.rect(9, 2, 2, 1, '#6a4224'); b.disc(7, 9, 1.2, '#d8a868'); b.rect(9, 11, 2, 2, '#e8b04a'); b.set(10, 11, '#ffe08a'); break;   // Sammelbeutel
     case 'l_gold': b.disc(5, 11, 3.5, '#9c6a24'); b.disc(5, 11, 2.6, '#ffd24a'); b.disc(11, 11, 3.5, '#9c6a24'); b.disc(11, 11, 2.6, '#e8b04a'); b.disc(8, 6, 3.5, '#9c6a24'); b.disc(8, 6, 2.6, '#ffe08a'); b.set(7, 5, '#ffffff'); break;
     case 'l_ei': b.disc(8, 9, 5, '#efe2bf'); b.disc(8, 7, 4, '#efe2bf'); b.disc(7, 7, 2, '#fff8e8'); b.set(10, 11, '#c8a87a'); b.set(6, 12, '#c8a87a'); b.set(9, 5, '#c8a87a'); break;
     case 'l_teil': b.rect(3, 6, 10, 4, '#9aa2ae'); b.rect(3, 6, 10, 1, '#d0d6de'); b.rect(6, 3, 4, 10, '#7a828e'); b.set(8, 8, '#e8b04a'); break;
