@@ -79,8 +79,17 @@ function trValid(o) {
   if (o.t === 'i') d = trItem(o.d);
   else if (o.t === 'b') d = trBundle(o.d);
   else if (o.t === 'p') { d = trPlain(o.d, 0); if (!(trObj(d) && trSp(d.sp))) d = null; }
-  else if (o.t === 'e') d = trObj(o.d) && trSp(o.d.sp) ? { sp: o.d.sp, tier: trInt(o.d.tier, 0, 6) ? o.d.tier | 0 : 0 } : null;
+  else if (o.t === 'e') d = trObj(o.d) && trSp(o.d.sp) ? trEggX({ sp: o.d.sp, tier: trInt(o.d.tier, 0, 6) ? o.d.tier | 0 : 0 }, o.d) : null;
   return d ? { id: o.id, t: o.t, d, n: n || '?', at } : null;
+}
+// Zucht-Ei (js/pets.js, Kreaturen 2.0): Gene, Mutation, Eltern, Generation, Farbe – nur einfache, geprüfte Werte
+function trEggX(d, src) {
+  if (!trObj(src)) return d;
+  if (Array.isArray(src.gn) && src.gn.length === 5 && src.gn.every(v => Number.isFinite(v))) d.gn = src.gn.map(v => clamp(Math.round(v), 0, 100));
+  if (trSp(src.mu)) d.mu = src.mu;
+  if (Array.isArray(src.pa) && src.pa.length === 2 && src.pa.every(trSp)) d.pa = src.pa.slice();
+  if (trInt(src.ge, 1, 999)) d.ge = src.ge; if (trInt(src.c0, 0, 5)) d.c0 = src.c0;
+  return d;
 }
 // Gegenstand Feld für Feld prüfen: ungültig → abgelehnt, unplausibel → auf erlaubte Werte gesetzt
 function trItem(d) {
@@ -149,7 +158,7 @@ function trSend(a) {
     if (!trObj(d)) return null; d = JSON.parse(JSON.stringify(d)); if (!d.sp) d.sp = pet.sp;
     const code = trMake('p', d); if (!code) return null; trPetRemove(a.i, pet); persist(); return code;
   }
-  if (a.t === 'e') { const egg = Array.isArray(S.eggs) && S.eggs[a.i]; if (!egg || !trSp(egg.sp)) return null; const code = trMake('e', { sp: egg.sp, tier: egg.tier | 0 }); if (!code) return null; if (typeof eggExport === 'function') eggExport(a.i); else S.eggs.splice(a.i, 1); persist(); return code; }
+  if (a.t === 'e') { const egg = Array.isArray(S.eggs) && S.eggs[a.i]; if (!egg || !trSp(egg.sp)) return null; let ex = null; try { ex = typeof eggExport === 'function' ? eggExport(a.i, true) : null; } catch (_) { ex = null; } const code = trMake('e', trEggX({ sp: egg.sp, tier: egg.tier | 0 }, ex)); if (!code) return null; if (typeof eggExport === 'function') eggExport(a.i); else S.eggs.splice(a.i, 1); persist(); return code; }
   return null;
 }
 // Begleiter abgeben: pets.js darf das selbst (petRemove), sonst aus der Liste nehmen
@@ -173,7 +182,7 @@ function trAccept(p) {
   else {
     const fn = p.t === 'p' ? (typeof petImport === 'function' ? petImport : null) : (typeof eggGive === 'function' ? eggGive : null);
     if (!fn) return 'pets';
-    let r; try { r = p.t === 'p' ? fn(JSON.parse(JSON.stringify(p.d))) : typeof petImport === 'function' ? petImport({ egg: 1, sp: p.d.sp, tier: p.d.tier | 0 }) : fn(p.d.sp); } catch (_) { return 'petfail'; }
+    let r; try { r = p.t === 'p' ? fn(JSON.parse(JSON.stringify(p.d))) : typeof petImport === 'function' ? petImport(Object.assign(JSON.parse(JSON.stringify(p.d)), { egg: 1, tier: p.d.tier | 0 })) : fn(p.d.sp); } catch (_) { return 'petfail'; }
     if (r === false) return 'petfull';
   }
   S.got.push(p.id); S.log.unshift({ c: p.code, at: Date.now(), r: 1 }); S.log.length = Math.min(S.log.length, TR_LOG);
@@ -267,7 +276,7 @@ function trPetName(p) { return p && typeof p.nm === 'string' && p.nm.trim() ? p.
 function trPetIcon(p) { if (typeof petIconURL === 'function') { try { const u = petIconURL(p); if (typeof u === 'string' && u.startsWith('data:')) return u; } catch (_) { } } const el = trSpEl(p && p.sp); return trArt('paw', el ? TR_ELC[el] : '#e8b04a'); }
 function trEggIcon(sp, tier) { if (typeof petIconURL === 'function') { try { const u = petIconURL({ egg: 1, sp, tier: tier | 0 }); if (typeof u === 'string' && u.startsWith('data:')) return u; } catch (_) { } } const el = trSpEl(sp); return trArt('egg', el ? TR_ELC[el] : '#efe2bf', '#6a4a8a'); }
 // Eier zeigen nur die Seltenheit – welche Kreatur darin steckt, verrät erst das Schlüpfen
-function trEggName(d) { if (typeof petLabel === 'function') { try { const s = petLabel({ egg: 1, sp: d.sp, tier: d.tier | 0 }); if (typeof s === 'string' && s) return s; } catch (_) { } } return _t('Ei: {sp}', { sp: trSpName(d.sp) }); }
+function trEggName(d) { if (typeof petLabel === 'function') { try { const s = petLabel({ egg: 1, sp: d.sp, tier: d.tier | 0, pa: d.pa }); if (typeof s === 'string' && s) return s; } catch (_) { } } return _t('Ei: {sp}', { sp: trSpName(d.sp) }); }
 function trPartName(k) {
   if (typeof pname === 'function' && typeof pparse === 'function') { try { const p = pparse(k), s = pname(p.t, p.g, p.el); if (typeof s === 'string' && s) return s; } catch (_) { } }
   const a = k.split(':'), g = +a[a.length - 1], t = TR_PART[a[0]] || a[0].replace(/^./, c => c.toUpperCase()), el = a.length > 2 ? TR_ELN[a[1]] || a[1] : null;

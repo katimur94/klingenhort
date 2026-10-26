@@ -2339,7 +2339,7 @@ HOOK.kill.push(petSafe('kill', petKill));
 HOOK.stats.push(petSafe('stats', add => {
   const p = petActive(); if (!p) return; const v = petPas(p); for (const k in v) add(k, v[k]);
   const m = petMods(p); for (const k in m) if (!PET_INK.has(k)) add(k, m[k]);
-  add('hp', petGene(p, 2) / 100 * .04); add('loot', petGene(p, 4) / 100 * .03);
+  add('hp', petGene(p, 2) / 100 * .05); add('loot', petGene(p, 4) / 100 * .05);
 }));
 // Giftzahn der Natter: Treffer des Helden vergiften manchmal
 HOOK.afterHit.push(petSafe('afterHit', (e, w, dmg) => { if (!e || e.dead || (w && w.pet)) return; const c = mod('pgift'); if (c && Math.random() < c) { e.poison = Math.max(e.poison || 0, 3); e.poisonDmg = Math.max(e.poisonDmg || 0, Math.max(1, Math.round(dmg * .2))); } }));
@@ -2524,9 +2524,9 @@ function petGeneTxt(p, i) {
   switch (i) {
     case 0: return _t('Schaden ×{k}', { k: petNum(petGeneK(p, 0, .85, .3)) });
     case 1: return _t('Angriffstempo ×{k}', { k: petNum(petGeneK(p, 1, .9, .2)) });
-    case 2: return _t('Verletzungen ×{k} · +{v} LP für dich', { k: petNum(petGeneK(p, 2, 1.15, -.3)), v: pct(petGene(p, 2) / 100 * .04) });
+    case 2: return _t('Verletzungen ×{k} · +{v} LP für dich', { k: petNum(petGeneK(p, 2, 1.15, -.3)), v: pct(petGene(p, 2) / 100 * .05) });
     case 3: return _t('Zauberkraft ×{k} · Abklingzeit ×{c}', { k: petNum(petGeneK(p, 3, .8, .5)), c: petNum(petGeneK(p, 3, 1.1, -.2)) });
-    default: return _t('+{v} Beute für dich · mehr Mutationen bei der Zucht', { v: pct(petGene(p, 4) / 100 * .03) });
+    default: return _t('+{v} Beute für dich · mehr Mutationen bei der Zucht', { v: pct(petGene(p, 4) / 100 * .05) });
   }
 }
 function petGearLines(it, cmp) {
@@ -2563,7 +2563,7 @@ function petHeadHTML(p, M) {
   // Übersicht: große Karte; sonst eine knappe Zeile, damit der Inhalt auf dem Handy gleich zu sehen ist
   if (petSub !== 'ov') {
     const U1 = petURL(p, true), s1 = Math.max(1, Math.min(2, Math.floor(Math.min(84 / U1.W, 60 / U1.H) * 2) / 2)), nv = M.list.length > 1;
-    return `${subs}<div class="box pmini"><div class="pmi">${petSprHTML(U1, s1, false)}</div><div style="min-width:0"><div class="petnm" style="font-size:22px">${esc(petName(p))}${p.shiny ? ' <span style="color:#ff9af0">✦</span>' : ''}</div><div class="st" style="font-size:16px;margin-top:3px">${_t('LV {lv}', { lv: p.lv })} · ${tierPill(S.t)} <span class="pel" style="background:${E.c}">${E.n}</span> ${mu}${hurt ? ` <span style="color:#ff8a7a">${_t('verletzt')}</span>` : ''}</div></div>${nv ? `<div class="pnav"><button class="btn alt sm" data-act="petnav" data-i="-1" aria-label="${_t('Voriger Begleiter')}">‹</button><button class="btn alt sm" data-act="petnav" data-i="1" aria-label="${_t('Nächster Begleiter')}">›</button></div>` : ''}</div>`;
+    return `${subs}<div class="box pmini"><div class="pmi">${petSprHTML(U1, s1, false)}</div><div style="min-width:0"><div class="petnm" style="font-size:22px">${esc(petName(p))}${p.shiny ? ' <span style="color:#ff9af0">✦</span>' : ''}</div><div class="st" style="font-size:16px;margin-top:3px">${_t('LV {lv}', { lv: p.lv })} · ${tierPill(S.t)} ${mu}${hurt ? ` <span style="color:#ff8a7a">${_t('verletzt')}</span>` : ''}</div></div>${nv ? `<div class="pnav"><button class="btn alt sm" data-act="petnav" data-i="-1" aria-label="${_t('Voriger Begleiter')}">‹</button><button class="btn alt sm" data-act="petnav" data-i="1" aria-label="${_t('Nächster Begleiter')}">›</button></div>` : ''}</div>`;
   }
   return `${subs}<div class="box"><div class="petcard">${prev}${info}</div>${ren}${nav}</div>`;
 }
@@ -2646,7 +2646,8 @@ function petBreedHTML(where, p) {
   }
   const cand = M.list.filter(o => where === 'nest' || o.id !== PET_BR.a);
   const grid = `<div class="pgrid">${cand.map(o => { const why = petBreedWhy(o); return `<button class="${o.id === PET_BR.a && where === 'nest' ? 'sel' : o.id === PET_BR.b ? 'selb' : ''}${why ? ' off' : ''}" style="--tc:${PET_TIERS[PET_SP[o.sp].t].c}" data-act="petbrsel" data-id="${o.id}" data-i="${where === 'nest' ? 1 : 0}" title="${esc(petName(o) + (why ? ' – ' + why : ''))}" aria-label="${esc(petName(o))}">${why ? '<i class="cd"></i>' : '<i></i>'}<img src="${petURL(o).url}" alt=""><b>${o.lv}</b></button>`; }).join('')}</div>`;
-  const book = PET_HY.map(sp => { const [a, b] = PET_SP[sp].hy, seen = M.seen.includes(sp), ka = M.seen.includes(a), kb = M.seen.includes(b); return `<div><span>${ka || seen ? PET_SP[a].n : '???'} × ${kb || seen ? PET_SP[b].n : '???'}</span><b>${seen ? PET_SP[sp].n : '???'}</b></div>`; }).join('');
+  // Zuchtbuch: entdeckte Hybride mit Rezept, Hinweise, wenn ein Elternteil bekannt ist, der Rest nur gezählt
+  let hidden = 0; const book = PET_HY.map(sp => { const [a, b] = PET_SP[sp].hy, seen = M.seen.includes(sp), ka = M.seen.includes(a), kb = M.seen.includes(b); if (!seen && !ka && !kb) { hidden++; return ''; } return `<div${seen ? '' : ' style="opacity:.75"'}><span>${ka || seen ? PET_SP[a].n : '???'} × ${kb || seen ? PET_SP[b].n : '???'}</span><b>${seen ? PET_SP[sp].n : '???'}</b></div>`; }).join('') + (hidden ? `<div><span class="sub" style="margin:0">${_t('{n} weitere Rezepte – entdecke mehr Arten für Hinweise.', { n: hidden })}</span><b></b></div>` : '');
   return `${where === 'tab' ? '' : `<h3>${_t('ZUCHT')}</h3>`}<p class="sub" style="margin-top:0">${_t('Zwei Begleiter ab LV {lv} legen zusammen ein Ei. Es erbt Gene, manchmal Mutationen – und passende Paare ergeben Hybride.', { lv: PET_BREED_LV })}</p>
     <div class="pbr">${card(A, _t('Elternteil 1'))}<b>×</b>${card(B, _t('Partner wählen'))}</div>${out}
     <h3>${where === 'tab' ? _t('PARTNER') : _t('BEGLEITER WÄHLEN')}</h3>${grid}
