@@ -54,6 +54,15 @@ const VIEWS = [[390, 844, false], [844, 390, false], [1280, 720, true]];
       const reso = hbText('fg:resonanz'), R0 = RESO[0]; o.reso = !reso.includes(R0.n) && reso.includes('???') && reso.includes(R0.h);
       o.pets = hbText('pet:arten').includes('???');
       o.err = Object.keys(HBERR);
+      // jede Seite sauber: keine Platzhalter/undefined, keine leeren Bilder, alle Verweise zeigen auf echte Einträge
+      o.bad = [];
+      for (const e of HB.list) {
+        const h = hbPageHTML(e), t = hbStrip(h);
+        if (/undefined|NaN|\[object|\{[a-z]+\}/.test(t)) o.bad.push(e.id + ': Platzhalter');
+        if (/src=""/.test(h)) o.bad.push(e.id + ': leeres Bild');
+        for (const id of e.see) if (!HB.by[id]) o.bad.push(e.id + ': Siehe auch ' + id);
+        for (const m of h.matchAll(/data-act="hb_e" data-id="([^"]+)"/g)) if (!HB.by[m[1]]) o.bad.push(e.id + ': Verweis ' + m[1]);
+      }
       return o;
     }, [HERO.toString()]);
     console.log('  Kapitel: ' + r.chaps.join(' · '));
@@ -69,6 +78,7 @@ const VIEWS = [[390, 844, false], [844, 390, false], [1280, 720, true]];
     ok(r.reso, 'Resonanzen: unentdeckte nur als „???“ mit Hinweis');
     ok(r.pets, 'Begleiter-Arten: unentdeckte als „???“');
     ok(!r.err.length, 'jede Seite lässt sich bauen' + (r.err.length ? ': ' + r.err.join(', ') : ''));
+    ok(!r.bad.length, 'jede Seite ohne Platzhalter, leere Bilder oder tote Verweise' + (r.bad.length ? ': ' + r.bad.slice(0, 8).join(', ') : ''));
     // Tempo: Index im Hintergrund, dann jeder Tastendruck (Telefon nachgestellt: Prozessor 4× langsamer)
     const cdp = await page.context().newCDPSession(page); await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
     const sp = await page.evaluate(async () => {
