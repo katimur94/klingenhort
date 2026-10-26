@@ -86,6 +86,18 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Vers
 
 Klingenhort wird jede Woche erweitert. Im Spiel zeigt **Neuigkeiten** (Titelmenü, Einstellungen oder Weltkarte → Mehr) alle Updates und was als Nächstes kommt; nach einem Update öffnet sich die Seite einmal von selbst.
 
+**Neu in 6.2 – Sammeln & Bauen**
+
+| System | Was es kann |
+|---|---|
+| **Rohstoffe & Sammeln** | Holz, Stein, Pflanzenfaser, Samen, Feder und seltene Rohstoffe (Eisenholz, Sternholz, Marmor, Obsidian). In den Endlosen Landen lassen sich Bäume, Felsen, Büsche, Pilze und mehr mit Angriffen abbauen (je Ausflug, beim nächsten Mal nachgewachsen; Vogelnester geben Federn). Im Versteck: Holzplatz und Steinbruch, die in echter Zeit nachwachsen, Kisten in den Kerkern geben Holz |
+| **Felder** | Kräutergarten mit 2–6 Beeten: Flachs, Heilkraut, Schössling, Seelenmoos, Eisenholz-Setzling, Sternblume wachsen in echter Zeit |
+| **Bauen mit Bauzeit** | Jeder Ausbau ist eine Baustelle: 10 s bis 20 h je Stufe, läuft auch bei geschlossenem Spiel weiter, beschleunigen gegen Gold oder Glücksmünzen. Ein Bautrupp, ab Versteck-Stufe 50 ein zweiter. Gebäude bis Stufe 10, Schatzkammer und Trainingsplatz bis 15 |
+| **Taschen** | Sattlerei (Stufe 0–10): Beutel 30 → 90 Plätze, Rucksack in den Landen 20 → 40, Begleiter-Tasche bis +5. Schatzkammer 12 → 400 Plätze. Sortieren-Knöpfe |
+| **Sammelbeutel** | Gold, Materialien, Edelsteine, Bauteile und Mods belegen in den Landen keinen Platz mehr (gehen beim Tod aber verloren) |
+| **Magische Vögel** | Vogelhaus (Stufe 1–5): Spatz 3, Taube 5, Rabe 7, Eule 9, Phönixfeder 10 Plätze – schicken Gegenstände und Eier aus den Landen sicher nach Hause (nicht im Kampf) |
+| **Lager überall** | Händler, Basar, Werkbank, Schmiede und Juwelier arbeiten auch direkt mit Gegenständen aus dem Lager (Umschalter „Beutel \| Lager“) |
+
 **Neu in 6.1 – Die Endlosen Lande**
 
 **6.1.2 – Besser spielen am PC:** Linke Maustaste angreifen, rechte rollen, 1–3 Fähigkeiten, 4 Ultimative, 5 Trank, WASD; Zielen auf den Mauszeiger; HD-Grafik und scharfe Skalierung bei jeder Windows-Skalierung; größere Anzeigen auf großen Bildschirmen; Vollbild-Knopf; Maus auch auf Touch-Laptops.
@@ -489,6 +501,8 @@ js/auras.js            Aussehen der Beute nach Material/Seltenheit, Auren der He
 js/bosses.js           1200 Bosse: Generator, Mechaniken, Höhlen, Boss-Kodex, Trophäen
 js/artefakte.js        Artefakte, Geschichten, Spuren, Schätze, Chronik, mystische Begegnungen
 js/mods.js             Mods, Resonanzen, Umschmieden, Veredeln, Extrahieren
+js/voegel.js           Magische Vögel, Vogelhaus, Sammelbeutel-Versand
+js/bauen.js            Rohstoffe sammeln, Felder, Bauzeiten und Beschleunigen
 js/lande.js            Die Endlosen Lande: feste Chunk-Welt, Biome, Barrieren, Leuchtfeuer, Rucksack, NPCs, Tod
 js/market.js           Basar: Angebote, Verkauf, Auktionen, Marktwert (Schnittstelle MARKET)
 js/lang/               Übersetzungen (en, tr, es, it, fr) – Schlüssel ist der deutsche Text

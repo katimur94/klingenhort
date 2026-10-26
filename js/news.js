@@ -7,6 +7,18 @@
 
 const CHANGELOG = [
   {
+    v: '6.2.0', d: '2026-10-26', t: 'Sammeln & Bauen', items: [
+      ['neu', 'Holz, Stein, Fasern, Federn und seltene Rohstoffe wie Eisenholz, Sternholz, Marmor und Obsidian: Fälle Bäume, schlag Steine ab und ernte Pflanzen in den Endlosen Landen – und am Holzplatz und Steinbruch deines Verstecks.'],
+      ['neu', 'Felder im Kräutergarten: Pflanze Samen von Flachs bis Sternblume, sie wachsen in echter Zeit – auch während das Spiel zu ist.'],
+      ['neu', 'Bauen braucht jetzt Zeit: Ausbauten laufen von 10 Sekunden bis zu 20 Stunden. Wer nicht warten will, beschleunigt mit Gold oder Glücksmünzen. Alle Gebäude haben mehr Stufen, die Schatzkammer sogar 15.'],
+      ['neu', 'Sattlerei: größere Taschen – Beutel bis 90 Plätze, Rucksack in den Landen bis 40, mehr Platz in der Begleiter-Tasche. Die Schatzkammer fasst bis zu 400 Gegenstände.'],
+      ['neu', 'Sammelbeutel: Gold, Materialien, Edelsteine, Bauteile und Mods nehmen in den Landen keinen Rucksack-Platz mehr weg.'],
+      ['neu', 'Magische Vögel aus dem Vogelhaus: Spatz, Taube, Rabe, Eule und Phönixfeder fliegen bis zu 10 Dinge aus den Landen sicher nach Hause.'],
+      ['besser', 'Händler, Basar, Werkbank, Schmiede und Juwelier können jetzt auch direkt mit Gegenständen aus dem Lager arbeiten.'],
+      ['fix', 'Wer seinen ersten Mod im Basar kauft, sieht jetzt zuerst „Gekauft!“.']
+    ]
+  },
+  {
     v: '6.1.2', d: '2026-10-26', t: 'Besser spielen am PC', items: [
       ['neu', 'Steuerung am PC: Linke Maustaste greift an, rechte rollt, 1 2 3 für die Fähigkeiten, 4 für die Ultimative, 5 für den Trank, WASD zum Laufen. Angriffe und Fähigkeiten zielen auf den Mauszeiger.'],
       ['neu', 'HD-Grafik: Am PC werden Schrift, Licht und Effekte in voller Bildschirmauflösung gezeichnet – die Pixel bleiben gestochen scharf, auch bei 125 % oder 150 % Windows-Skalierung und in 4K. Umschalten: Einstellungen → Grafik.'],
@@ -157,10 +169,10 @@ const CHANGELOG = [
 
 // Vorschau: was in den nächsten Wochen kommt (Version, Text – siehe ROADMAP.md)
 const COMING = [
-  ['6.2', 'Aufträge & Ruf: Tages- und Wochenaufträge, Fraktionen mit Ruf-Stufen und besseren Tauschangeboten'],
-  ['6.3', 'Neues Gebiet: der Sturmgipfel mit Blitz-Gegnern, eigenem Boss und Sturmsilber'],
-  ['6.4', 'Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste'],
-  ['6.5', 'Begleiter-Expeditionen: Schick deine Begleiter allein in die Endlosen Lande – sie bringen Beute, Eier und Artefakte mit']
+  ['6.3', 'Aufträge & Ruf: Tages- und Wochenaufträge, Fraktionen mit Ruf-Stufen und besseren Tauschangeboten'],
+  ['6.4', 'Neues Gebiet: der Sturmgipfel mit Blitz-Gegnern, eigenem Boss und Sturmsilber'],
+  ['6.5', 'Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste'],
+  ['6.6', 'Begleiter-Expeditionen: Schick deine Begleiter allein in die Endlosen Lande – sie bringen Beute, Eier und Artefakte mit']
 ];
 
 const NEWS_KIND = { neu: [_t('NEU'), '#79c24e'], besser: [_t('BESSER'), '#57a7d6'], fix: [_t('BEHOBEN'), '#e8b04a'] };
