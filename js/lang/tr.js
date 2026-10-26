@@ -5758,17 +5758,5 @@ I18N.tr = {
   "TREFFER": "VURUŞ",
   "ROLLE": "TAKLA",
   "Ultimative Fähigkeit": "Nihai Yetenek",
-  "Lade …": "Yükleniyor …",
-  "Fördert pro geschafftem Raum Eisenerz": "Geçilen her oda için demir cevheri çıkarır",
-  "Wächst pro geschafftem Raum: Schleimkerne": "Geçilen her oda için yetişir: Balçık Çekirdeği",
-  "Auch Leder": "Deri de",
-  "Auch Heiltränke": "Can İksiri de",
-  "Auch Seelenkristalle": "Ruh Kristali de",
-  "Doppelte Ernte": "İki kat hasat",
-  "BEUTEL {n}/30": "ÇANTA {n}/30",
-  "Dein Beutel ist voll (30/30). Mach Platz und versuch es noch einmal.": "Çantan dolu (30/30). Yer aç ve tekrar dene.",
-  "Der Rucksack bleibt in den Landen, und was du seit dem letzten Leuchtfeuer erkundet hast, ist vergessen. Du behältst die Ausrüstung, mit der du aufgebrochen bist, und alles in der Begleiter-Tasche.": "Sırt çantası topraklarda kalır ve son işaret ateşinden beri keşfettiklerin unutulur. Yola çıktığın ekipman ve Yoldaş Çantası'ndaki her şey sende kalır.",
-  "Das Gold kommt in den Rucksack – raustragen musst du es trotzdem.": "Altın sırt çantana gider – yine de onu dışarı taşıman gerek.",
-  "Stirbst du, sind Ausrüstung und Rucksack verloren.": "Ölürsen ekipman ve sırt çantası kaybolur.",
-  "{name}: Stufe {lv}": "{name}: Seviye {lv}"
+  "Lade …": "Yükleniyor …"
 };

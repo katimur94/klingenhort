@@ -5758,17 +5758,5 @@ I18N.es = {
   "TREFFER": "GOLPES",
   "ROLLE": "RODAR",
   "Ultimative Fähigkeit": "Habilidad definitiva",
-  "Lade …": "Cargando…",
-  "Fördert pro geschafftem Raum Eisenerz": "Extrae mineral de hierro por cada sala superada",
-  "Wächst pro geschafftem Raum: Schleimkerne": "Crece por cada sala superada: núcleos de limo",
-  "Auch Leder": "También cuero",
-  "Auch Heiltränke": "También pociones de vida",
-  "Auch Seelenkristalle": "También cristales de alma",
-  "Doppelte Ernte": "Cosecha doble",
-  "BEUTEL {n}/30": "BOLSA {n}/30",
-  "Dein Beutel ist voll (30/30). Mach Platz und versuch es noch einmal.": "Tu bolsa está llena (30/30). Haz sitio y vuelve a intentarlo.",
-  "Der Rucksack bleibt in den Landen, und was du seit dem letzten Leuchtfeuer erkundet hast, ist vergessen. Du behältst die Ausrüstung, mit der du aufgebrochen bist, und alles in der Begleiter-Tasche.": "La mochila se queda en las Tierras, y olvidarás lo que hayas explorado desde el último fuego guía. Conservas el equipo con el que partiste y todo lo que hay en la bolsa del compañero.",
-  "Das Gold kommt in den Rucksack – raustragen musst du es trotzdem.": "El oro va a la mochila… aun así, tendrás que sacarlo de aquí.",
-  "Stirbst du, sind Ausrüstung und Rucksack verloren.": "Si mueres, pierdes el equipo y la mochila.",
-  "{name}: Stufe {lv}": "{name}: nivel {lv}"
+  "Lade …": "Cargando…"
 };

@@ -5758,17 +5758,5 @@ I18N.fr = {
   "TREFFER": "COUPS",
   "ROLLE": "ROULADE",
   "Ultimative Fähigkeit": "Compétence ultime",
-  "Lade …": "Chargement …",
-  "Fördert pro geschafftem Raum Eisenerz": "Extrait du minerai de fer pour chaque salle terminée",
-  "Wächst pro geschafftem Raum: Schleimkerne": "Pousse à chaque salle terminée : noyaux de gelée",
-  "Auch Leder": "Aussi du cuir",
-  "Auch Heiltränke": "Aussi des potions de soin",
-  "Auch Seelenkristalle": "Aussi des cristaux d'âme",
-  "Doppelte Ernte": "Récolte doublée",
-  "BEUTEL {n}/30": "SAC {n}/30",
-  "Dein Beutel ist voll (30/30). Mach Platz und versuch es noch einmal.": "Ton sac est plein (30/30). Fais de la place et réessaie.",
-  "Der Rucksack bleibt in den Landen, und was du seit dem letzten Leuchtfeuer erkundet hast, ist vergessen. Du behältst die Ausrüstung, mit der du aufgebrochen bist, und alles in der Begleiter-Tasche.": "Le sac à dos reste dans les Terres, et tout ce que tu as exploré depuis le dernier fanal est oublié. Tu gardes l'équipement avec lequel tu es parti et tout ce qui est dans la sacoche du compagnon.",
-  "Das Gold kommt in den Rucksack – raustragen musst du es trotzdem.": "L'or va dans ton sac à dos – mais il faut encore le ramener.",
-  "Stirbst du, sind Ausrüstung und Rucksack verloren.": "Si tu meurs, ton équipement et ton sac à dos sont perdus.",
-  "{name}: Stufe {lv}": "{name} : niveau {lv}"
+  "Lade …": "Chargement …"
 };

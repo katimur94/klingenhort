@@ -5758,17 +5758,5 @@ I18N.it = {
   "TREFFER": "COLPI",
   "ROLLE": "SCHIVA",
   "Ultimative Fähigkeit": "Abilità suprema",
-  "Lade …": "Caricamento …",
-  "Fördert pro geschafftem Raum Eisenerz": "Estrae minerale di ferro per ogni stanza completata",
-  "Wächst pro geschafftem Raum: Schleimkerne": "Cresce per ogni stanza completata: nuclei di melma",
-  "Auch Leder": "Anche cuoio",
-  "Auch Heiltränke": "Anche pozioni curative",
-  "Auch Seelenkristalle": "Anche cristalli d'anima",
-  "Doppelte Ernte": "Raccolto doppio",
-  "BEUTEL {n}/30": "BORSA {n}/30",
-  "Dein Beutel ist voll (30/30). Mach Platz und versuch es noch einmal.": "La tua borsa è piena (30/30). Fai spazio e riprova.",
-  "Der Rucksack bleibt in den Landen, und was du seit dem letzten Leuchtfeuer erkundet hast, ist vergessen. Du behältst die Ausrüstung, mit der du aufgebrochen bist, und alles in der Begleiter-Tasche.": "Lo zaino resta nelle Terre e ciò che hai esplorato dall'ultimo faro viene dimenticato. Tieni l'equipaggiamento che avevi alla partenza e tutto ciò che c'è nella sacca del compagno.",
-  "Das Gold kommt in den Rucksack – raustragen musst du es trotzdem.": "L'oro finisce nello zaino – ma devi comunque portarlo fuori.",
-  "Stirbst du, sind Ausrüstung und Rucksack verloren.": "Se muori, perdi equipaggiamento e zaino.",
-  "{name}: Stufe {lv}": "{name}: livello {lv}"
+  "Lade …": "Caricamento …"
 };

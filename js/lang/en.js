@@ -5758,17 +5758,5 @@ I18N.en = {
   "TREFFER": "HITS",
   "ROLLE": "ROLL",
   "Ultimative Fähigkeit": "Ultimate skill",
-  "Lade …": "Loading …",
-  "Fördert pro geschafftem Raum Eisenerz": "Mines Iron Ore for every room you clear",
-  "Wächst pro geschafftem Raum: Schleimkerne": "Grows with every room you clear: Slime Cores",
-  "Auch Leder": "Leather too",
-  "Auch Heiltränke": "Health potions too",
-  "Auch Seelenkristalle": "Soul Crystals too",
-  "Doppelte Ernte": "Double harvest",
-  "BEUTEL {n}/30": "BAG {n}/30",
-  "Dein Beutel ist voll (30/30). Mach Platz und versuch es noch einmal.": "Your bag is full (30/30). Make some room and try again.",
-  "Der Rucksack bleibt in den Landen, und was du seit dem letzten Leuchtfeuer erkundet hast, ist vergessen. Du behältst die Ausrüstung, mit der du aufgebrochen bist, und alles in der Begleiter-Tasche.": "Your backpack stays in the Lands, and whatever you've explored since your last beacon is forgotten. You keep the gear you set out with and everything in the companion pouch.",
-  "Das Gold kommt in den Rucksack – raustragen musst du es trotzdem.": "The gold goes into your backpack – you still have to carry it out.",
-  "Stirbst du, sind Ausrüstung und Rucksack verloren.": "If you die, your gear and backpack are lost.",
-  "{name}: Stufe {lv}": "{name}: level {lv}"
+  "Lade …": "Loading …"
 };
