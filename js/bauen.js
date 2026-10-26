@@ -115,12 +115,13 @@ function buildSiteHTML() {
   if (!Q.length) return `<p class="sub">${n > 1 ? _t('Beide Baumeister haben gerade nichts zu tun.') : _t('Der Baumeister hat gerade nichts zu tun. Ab Versteck-Stufe 50 hilft ein zweiter mit.')}</p>`;
   return Q.map(q => `<div class="bsite"><div class="nm">${_t('Im Bau: {name}', { name: esc(bName(q)) })}</div>${buildProgHTML(q)}</div>`).join('') + (Q.length < n ? `<p class="sub">${_t('Ein Baumeister ist noch frei.')}</p>` : '');
 }
-// Baustelle im Versteck: Gerüst vor der Station, Balken mit Fortschritt, Restzeit darüber
+// Baustelle im Versteck: Gerüst vor der Station, Balken mit Fortschritt, Restzeit darüber (BMARKH = Höhe des Bilds je Station)
+const BMARKH = { schmiede: 26, alchemie: 38, juwelier: 24, lager: 20, training: 28, tempel: 34, bibliothek: 38, mine: 34, garten: 22, sattler: 28, voliere: 40 };
 function buildMark(o, x, y, first) {
   const q = buildOf(o.id); if (!q) return;
   const r = (dx, dy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x + dx, y + dy, w, h); }, left = buildLeft(q), tot = Math.max(1, (q.end - q.t0) / 1000), p = clamp(1 - left / tot, 0, 1);
   if (!first) { r(-15, -24, 2, 25, WOOD[1]); r(13, -24, 2, 25, WOOD[1]); r(-16, -18, 32, 2, WOOD[2]); r(-16, -8, 32, 2, WOOD[2]); r(-14, -17, 1, 9, WOOD[0]); r(12, -17, 1, 9, WOOD[0]); }
-  const by = first ? -26 : -44;
+  const by = first ? -26 : -8 - (BMARKH[o.id] || 30);
   r(-13, by, 26, 5, '#1a1420'); r(-12, by + 1, Math.round(24 * p), 3, '#e8b04a');
   ptext(buildClock(left), x, y + by - 6, '#ffe08a', 6);
   // Hammerschläge
@@ -157,7 +158,7 @@ function bBack() { if (bView === 'feuer') openCampfire(); else if (bView) openSt
 ON.bskip = (id, btn) => {
   const q = buildOf(id); if (!q) { bBack(); return; }
   const pay = btn.dataset.pay, pr = buildSkipPrice(q), price = pay === 'free' || pr.free ? _t('kostenlos') : pay === 'coins' ? (pr.coins === 1 ? _t('1 Glücksmünze') : _t('{n} Glücksmünzen', { n: pr.coins })) : _t('{n} Gold', { n: pr.gold.toLocaleString(LOCALE) });
-  showOverlay(`<div class="center"><h2>${_t('SOFORT FERTIG?')}</h2><p class="sub">${_t('{name} wird sofort fertig. Restzeit: {t}.', { name: esc(bName(q)), t: buildTimeText(buildLeft(q)) })}</p><p class="sub">${_t('Preis: {p}', { p: `<b style="color:var(--gold)">${price}</b>` })}</p>
+  showOverlay(`<div class="center"><h2>${_t('SOFORT FERTIG?')}</h2><p class="sub">${_t('{name} wird sofort fertig und spart {t} Bauzeit.', { name: esc(bName(q)), t: buildTimeText(buildLeft(q)) })}</p><p class="sub">${_t('Preis: {p}', { p: `<b style="color:var(--gold)">${price}</b>` })}</p>
   <div class="menu"><button class="btn" data-act="bskipok" data-id="${id}" data-pay="${pr.free ? 'free' : pay}">${pr.free ? _t('Fertigstellen') : _t('Ja, bezahlen')}</button><button class="btn alt" data-act="bskipno">${_t('Abbrechen')}</button></div></div>`);
 };
 ON.bskipok = (id, btn) => { if (!buildSkip(id, btn.dataset.pay)) { sfx('deny'); if (buildOf(id)) toast(btn.dataset.pay === 'coins' ? _t('Nicht genug Glücksmünzen') : _t('Zu wenig Gold'), '#ff6a5a'); } else saveChar(); bBack(); };
@@ -346,6 +347,14 @@ function gatherSweep(range, arc) {
     if (Math.abs(angDiff(Math.atan2(ey, ex), P.aim)) > arc / 2 + .4 && d > o.r + 8) continue;
     P.hitSet.add(o); gatherHitL(o, ex / (d || 1), ey / (d || 1));
   }
+}
+// Zielen im Stand ohne Gegner (js/combat.js autoAim): auf den nächsten Baum/Fels/Busch direkt daneben – am Handy einfach antippen
+function gatherAim() {
+  let best = null, bd = 1e9;
+  const look = o => { const d = Math.hypot(o.x - P.x, o.y - P.y) - o.r; if (d < 30 && d < bd) { bd = d; best = o; } };
+  if (G && G.type === 'versteck') { for (const o of obs) if (o.k === 'gat' && !o.gone) look(o); }
+  else if (typeof LW !== 'undefined' && LW && LW.on) { for (const o of lNear(P.x, P.y, 50)) if (o.k === 'prop' && !o.gone && GPROP[o.t]) look(o); }
+  return best ? Math.atan2(best.y - P.y, best.x - P.x) : null;
 }
 // Pfeil, Zauber … trifft einen Baum/Felsen (js/lande.js)
 function gatherProj(o, p) { if (!LW || !LW.on || o.gone || !GPROP[o.t]) return; const v = Math.hypot(p.vx, p.vy) || 1; gatherHitL(o, p.vx / v, p.vy / v); }

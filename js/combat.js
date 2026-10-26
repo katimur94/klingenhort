@@ -133,6 +133,7 @@ function autoAim(range, inp) {
   const ma = mouseAimAng(); if (ma != null) return ma;   // PC: Angriffe und Fähigkeiten folgen dem Mauszeiger
   const t = nearestEnemy(range); if (t) return Math.atan2(t.y - P.y, t.x - P.x);
   if (inp && Math.hypot(inp.mx, inp.my) > .15) return Math.atan2(inp.my, inp.mx);
+  const ga = typeof gatherAim === 'function' ? gatherAim() : null; if (ga != null) return ga;   // im Stand: Baum/Fels in Reichweite (js/bauen.js)
   return P.face > 0 ? 0 : Math.PI;
 }
 function busy() { return P.spin > 0 || P.leap || P.dash; }
