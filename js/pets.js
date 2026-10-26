@@ -258,7 +258,7 @@ const PET_HY = PET_ORDER.filter(sp => PET_SP[sp].hy);
 // Gegner-Art → Kreatur (Monster-Eier in den Landen); auch für andere Systeme (Bosse, Welt)
 const PET_MON = {}; for (const sp of PET_ORDER) for (const t of PET_SP[sp].mon || []) if (!PET_MON[t]) PET_MON[t] = sp;
 // Futter: EP je Stück (seltenes Material = viel), Lieblingsfutter zählt doppelt
-const PET_FEED = {}; MATORDER.forEach((k, i) => { PET_FEED[k] = Math.round(15 * Math.pow(1.75, i)); });
+const PET_FEED = { holz: 8, stein: 8, faser: 8, samen: 10, feder: 30, eisenholz: 200, marmor: 200, obsidian: 600, sternholz: 1500 }; MONMATS.forEach((k, i) => { PET_FEED[k] = Math.round(15 * Math.pow(1.75, i)); });   // Rohstoffe (6.2): eigene Werte
 
 /* ---------- Werte ---------- */
 // EP bis zum nächsten Level ≈ 100·LV^2,6 (die ersten Level billiger): LV 10 nach etwa einer Stunde, LV 25 nach einem Spieltag, LV 100 nach Hunderten Stunden

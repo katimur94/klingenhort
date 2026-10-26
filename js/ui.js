@@ -259,7 +259,8 @@ function showMapMore() {
   <div class="menu two"><button class="btn alt" data-act="daily">${_t('Tages-Challenge')}</button><button class="btn alt" data-act="news" data-id="map">${_t('Neuigkeiten')}</button><button class="btn alt" data-act="title">${_t('Speichern & Hauptmenü')}</button>${hookHTML('mapMore')}</div>
   ${weekHTML()}<h3>${_t('LEGENDE')}</h3><div class="legend open">${legend}</div>`);
 }
-function hideReady() { return minePending('mine') > 0 || minePending('garden') > 0 || BUILDORDER.some(k => { const c = buildCost(k); return c && !BUILD[k].fixed && canAfford(c.mats, c.gold); }); }
+// Versteck hat etwas für dich: Mine/Garten voll, Acker reif, oder ein Ausbau ist bezahlbar und ein Baumeister frei (js/bauen.js)
+function hideReady() { return minePending('mine') > 0 || minePending('garden') > 0 || farmReady() > 0 || (buildFree() && BUILDORDER.some(k => { const c = buildCost(k); return c && !BUILD[k].fixed && !buildOf(k) && canAfford(c.mats, c.gold); })); }
 function drawMapCanvas(M, av) {
   const cv = $('mapcv'); if (!cv) return;
   // quadratische Pixel: Auflösung passend zur Größe des Kartenrahmens
@@ -318,8 +319,9 @@ function openChar(tab, back) {
     body += '</div>';
     body += `<h3>${_t('FÄHIGKEITEN')}</h3>${C.skills.concat([C.ult]).map(id => { const S = SKILLS[id]; return `<div class="row" style="cursor:default"><div class="ic"><img src="${iconURL(S.icon)}" alt=""></div><div><div class="nm">${S.n}${S.ult ? ' (' + _t('Ultimative') + ')' : ''}</div><div class="st">${S.d}${S.cost ? ' · ' + S.cost + ' ' + C.res.name + ' · ' + S.cd + ' s' : ' · ' + _t('bei voller Wut')}</div>${hookHTML('skillRow', id)}</div><span></span></div>`; }).join('')}`;
   } else if (charTab === 'vorrat') {
-    body = `<h3>${_t('MATERIALIEN')}</h3><div class="grid">${MATORDER.map(k => `<div class="slot" title="${MATS[k].n}" style="cursor:default"><img src="${iconURL(['mat', k])}" alt="${MATS[k].n}"><span class="n">${P.mats[k] || 0}</span></div>`).join('')}</div>
-    <p style="font-size:15px;color:var(--parch-dim)">${MATORDER.map(k => MATS[k].n + ' ' + (P.mats[k] || 0)).join(' · ')}</p>
+    // Gegner-Materialien und Rohstoffe (Holz, Stein … aus js/bauen.js) getrennt
+    const mg = L => `<div class="grid">${L.map(k => `<div class="slot" title="${MATS[k].n}" style="cursor:default"><img src="${iconURL(['mat', k])}" alt="${MATS[k].n}"><span class="n">${P.mats[k] || 0}</span></div>`).join('')}</div><p style="font-size:15px;color:var(--parch-dim)">${L.map(k => MATS[k].n + ' ' + (P.mats[k] || 0)).join(' · ')}</p>`;
+    body = `<h3>${_t('MATERIALIEN')}</h3>${mg(MONMATS)}<h3>${_t('ROHSTOFFE')}</h3>${mg(MATORDER.filter(k => MATS[k].res))}
     <h3>${_t('EDELSTEINE')}</h3>${gemListHTML(false)}<h3>${_t('TRÄNKE & MÜNZEN')}</h3><p class="sub">${_t('{n}/{max} Heiltränke (heilen {p} %, 6 s Abklingzeit). {fate} Glücksmünzen für den Glückstempel.', { n: P.potions, max: potMax(), p: Math.round(potHeal() * 100), fate: P.fate || 0 })}</p>`;
   } else if (charTab === 'look') {
     lkMode = 'char'; body = lookEditorHTML();

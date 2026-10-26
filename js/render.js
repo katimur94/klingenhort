@@ -187,6 +187,7 @@ function drawObs(o) {
   const x = Math.round(o.x - CX), y = Math.round(o.y - CY);
   if (o.k === 'station') { drawStation(o); return; }
   if (o.k === 'npc') { drawNpc(o); return; }
+  if (o.k === 'gat') { gatherDrawObs(o); return; }   // Holzplatz im Versteck (js/bauen.js)
   if (o.k === 'col') { ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(x, y + 1, 9, 3.5, 0, 0, 6.283); ctx.fill(); ctx.drawImage(SHEET, 80, 80, 16, 48, x - 8, y - 44, 16, 48); return; }
   if (o.k === 'quelle') {
     ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(x, y + 1, 10, 4, 0, 0, 6.283); ctx.fill();

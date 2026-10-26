@@ -31,8 +31,8 @@ function activateChar(i) {
 function newRuntime() { return { x: 0, y: 0, z: 0, vx: 0, vy: 0, r: 5, turn: 1, face: 1, aim: 0, phase: 0, squash: 0, flash: 0, lean: 0, moving: false, hp: 1, atkT: 0, atkDur: 1, atkCd: 0, hitSet: null, struck: false, inv: 0, roll: 0, rollCd: 0, rdx: 1, rdy: 0, rollA: 0, hand: null, combo: 0, comboT: 0, chain: 0, chainT: 0, spin: 0, spinA: 0, spinTick: 0, leap: null, dash: null, volley: 0, volleyT: 0, ghostT: 0, cds: [0, 0, 0], potCd: 0, wall: 0, stealth: 0, poisonT: 0, slowT: 0, st: null, manAim: null, poolT: 0 }; }
 /* Versteck-Stufe eines Gebäudes (gilt für alle Helden) */
 function hideLv(k) { return (SAVE && SAVE.meta.hide && SAVE.meta.hide.b[k]) || 0; }
-function potMax() { return [9, 10, 10, 12, 14][hideLv('alchemie')]; }
-function potHeal() { return [.45, .45, .55, .55, .65][hideLv('alchemie')]; }
+function potMax() { return [9, 10, 10, 12, 14, 15, 15, 16, 16, 18, 20][Math.min(10, hideLv('alchemie'))]; }
+function potHeal() { return [.45, .45, .55, .55, .65, .65, .68, .68, .7, .7, .75][Math.min(10, hideLv('alchemie'))]; }
 function saveChar() {
   if (!P || SAVE.active < 0) return;
   const o = {}; for (const k of PERSIST) o[k] = P[k];
@@ -197,7 +197,7 @@ function upCost(it, k) {
   const w = it.slot === 'weapon', c = {};
   if (w) { c.erz = 2 + k; if (k >= 4) c.zahn = k - 2; if (k >= 7) c.kristall = k - 5; } else { c.leder = 2 + k; if (k >= 4) c.knochen = k - 2; if (k >= 7) c.horn = k - 5; }
   if (k >= 9) c.glut = k - 7; if (k === 10) c.schuppe = 2;
-  const sl = hideLv('schmiede'), bonus = (sl >= 2 ? .05 : 0) + (sl >= 3 ? .05 : 0) + (sl >= 4 ? .05 : 0) + (wbFreeBonus() || 0);
+  const sl = hideLv('schmiede'), bonus = (sl >= 2 ? .05 : 0) + (sl >= 3 ? .05 : 0) + (sl >= 4 ? .05 : 0) + Math.max(0, sl - 4) * .01 + (wbFreeBonus() || 0);
   const wk = 1 - weekFx('smith'); for (const m in c) c[m] = Math.max(1, Math.ceil(c[m] * wk));
   return { mats: c, gold: Math.round((30 + PRICE[it.tier] * .08) * k * wk), chance: Math.min(1, UPCHANCE[k - 1] + (UPCHANCE[k - 1] < 1 ? bonus + weekFx('upChance') : 0)) };
 }
@@ -229,7 +229,7 @@ function craft(id, it) {
 }
 /* Schmieden nach Material: garantiert die gewählte Stufe */
 function forgeCost(tier, slot) {
-  const F = FORGE[tier], c = Object.assign({}, slot === 'weapon' ? F.w : F.a), disc = hideLv('schmiede') >= 2 ? .8 : 1;
+  const F = FORGE[tier], c = Object.assign({}, slot === 'weapon' ? F.w : F.a), disc = smithDisc();
   return { mats: c, gold: Math.round(PRICE[tier] * .3 * disc + 30) };
 }
 function forgeOk(tier) { return P.lv >= REQ[tier]; }
@@ -245,6 +245,8 @@ function forgeItem(tier, slot) {
 /* ---------- Verschmelzen ----------
    Hauptgegenstand a bleibt (Form, Name, Set), Opfer b geht verloren.
    Ergebnis: höhere Stufe und Aufwertung, beste Zusatzwerte beider, ein Zusatzwert mehr, +6 % Grundwerte */
+// Schmiede-Rabatt aufs Schmieden: ab Stufe 2 20 %, 6/8/10: 25/30/35 %
+function smithDisc() { const sl = hideLv('schmiede'); return sl >= 10 ? .65 : sl >= 8 ? .7 : sl >= 6 ? .75 : sl >= 2 ? .8 : 1; }
 function fuseMax() { return hideLv('schmiede') >= 4 ? 5 : 3; }
 function fuseCheck(a, b) {
   if (!a) return _t('Wähle zuerst den Hauptgegenstand.');

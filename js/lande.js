@@ -552,6 +552,7 @@ function lTripLayer(rec) {
   const free = (x, y, r) => { const lx = x - X0, ly = y - Y0; if (lx < 20 || ly < 20 || lx > LCK - 20 || ly > LCK - 20) return false; const i = (Math.floor(ly / LTS) + 1) * N + Math.floor(lx / LTS) + 1; if (d.bar[i] || d.lakeT[i] || d.road[i]) return false; if (d.clear.some(c => Math.hypot(c.x - lx, c.y - ly) < c.r + r)) return false; return !solidNear(x, y, r); };
   const spot = r => { for (let k = 0; k < 18; k++) { const x = X0 + 24 + R() * (LCK - 48), y = Y0 + 24 + R() * (LCK - 48); if (free(x, y, r)) return { x, y }; } return null; };
   const add = o => { o.sk = pre + (n++); return lRecAdd(rec, o); };
+  gatherReset(rec);   // Bäume/Felsen zum Abbauen erst im Grundzustand (die Plätze für Truhen hängen daran), der Ausflugs-Zustand kommt am Ende (js/bauen.js)
   // Zustand aus diesem Ausflug (geöffnet, gesäubert) wieder anwenden
   for (const c of rec.grid) for (const o of c) { if (o.k === 'exit' && o.t === 'schluessel') o.open = !!lTS('x' + o.id); if (o.k === 'lair' || o.k === 'tool') o.ts = lTS(o.key) || 0; if (o.k === 'end') { const s = lTS(o.key); o.state = s === 'done' ? 'done' : s === 'won' ? 'open' : 'idle'; o.act = false; o.alive = 0; } }
   // Truhen und Fundstellen
@@ -590,6 +591,7 @@ function lTripLayer(rec) {
   if (typeof arteInChunk === 'function') { try { for (const s of arteInChunk(ctx_) || []) if (s && !(s.got || s.found || s.done) && isFinite(s.x) && isFinite(s.y)) lRecAdd(rec, { k: 'arte', s, x: s.x + LOFF, y: s.y + LOFF, r: 0, solid: false }); } catch (e) { console.error('Lande (arteInChunk):', e); } }
   if (typeof arteTreasureInChunk === 'function') { try { for (const s of arteTreasureInChunk(ctx_) || []) if (s && !(s.got || s.found || s.done) && isFinite(s.x) && isFinite(s.y)) lRecAdd(rec, { k: 'arteT', s, x: s.x + LOFF, y: s.y + LOFF, r: 0, solid: false }); } catch (e) { console.error('Lande (arteTreasureInChunk):', e); } }
   if (typeof encounterRoll === 'function' && !gate) { try { const e = encounterRoll(lCtxOf(cx, cy, 'enc')); if (e && isFinite(e.x) && isFinite(e.y) && !lTS('e' + key36(cx, cy))) lRecAdd(rec, { k: 'enc', enc: e, x: e.x + LOFF, y: e.y + LOFF, r: 0, solid: false, ek: 'e' + key36(cx, cy) }); } catch (e) { console.error('Lande (encounterRoll):', e); } }
+  gatherApply(rec);   // in diesem Ausflug schon gefällt/abgebaut, Vogelnester (js/bauen.js)
 }
 function key36(cx, cy) { return cx.toString(36) + '.' + cy.toString(36); }
 // Leuchtfeuer aus Spielständen vor den neuen Ringgrenzen (ohne cp.w), die heute in einer Barriere stehen: ringsum ein Durchgang
@@ -1244,7 +1246,7 @@ function lPetAny() { const M = SAVE && SAVE.meta.pets; return M && Array.isArray
 function lPetHurt(p) { try { return !!p && typeof petIsHurt === 'function' && petIsHurt(p); } catch (_) { return false; } }
 
 /* ---------- Beute-Einträge: Name, Bild, Wert ---------- */
-const LMATV = {}; MATORDER.forEach((k, i) => { LMATV[k] = Math.round(5 * Math.pow(1.5, i)); });
+const LMATV = { holz: 2, stein: 2, faser: 2, samen: 3, feder: 5, eisenholz: 20, marmor: 20, obsidian: 60, sternholz: 150 }; MONMATS.forEach((k, i) => { LMATV[k] = Math.round(5 * Math.pow(1.5, i)); });   // Rohstoffe: eigener Wert (js/bauen.js)
 function lGemParts(k) { const [id, gr] = String(k).split(':'); return { id, gr: +gr || 0 }; }
 function lName(e) {
   try {
@@ -1369,7 +1371,7 @@ function lSetStage(st) { if (!G) return; G.row = st - 1 - (P.act - 1) * 7; G.sta
 function lBioAt(x, y) { return lRegAt(x, y).biome; }
 function lPool(bk, st) { const l = (LANDE_BIOMES[bk] ? LANDE_BIOMES[bk].en : []).filter(k => EN[k] && EN[k].from <= st + 5); return l.length ? l : poolFor(Math.max(1, st)).slice(-6); }
 function lWave(bk, st, budget, max) { const pool = lPool(bk, st), list = []; while (budget > .9 && list.length < (max || 8)) { const o = pool.filter(k => EN[k].cost <= budget + .5); if (!o.length) break; const k = pick(o); list.push(k); budget -= EN[k].cost; } if (!list.length) list.push(pool[0]); return list; }
-function lMatPick(st) { const a = MATORDER.slice(0, clamp(5 + Math.floor(st / 5), 5, MATORDER.length)); return a[Math.max(0, a.length - 1 - Math.floor(Math.random() * Math.random() * a.length))]; }
+function lMatPick(st) { const a = MONMATS.slice(0, clamp(5 + Math.floor(st / 5), 5, MONMATS.length)); return a[Math.max(0, a.length - 1 - Math.floor(Math.random() * Math.random() * a.length))]; }
 // Begleiter-Ei: aus dem Biom (Teil K: eggForBiome), sonst aus dem Brutnest-Würfel
 function lEgg(luck, bk, depth) {
   try {
@@ -1643,6 +1645,7 @@ function lOpenSpot(o) {
     o.open = 1; if (o.sk) lTSet(o.sk, 1); sfx('heal'); const h = Math.round(P.st.hp * .2); P.hp = Math.min(P.st.hp, P.hp + h); txt(P.x, P.y - 24, '+' + h, '#79c24e', true);
     if (P.potions < potMax() && Math.random() < .6) { P.potions++; toast(_t('Kräuter gesammelt: +1 Heiltrank'), '#79c24e'); } else toast(_t('Kräuter gesammelt: +{n} LP', { n: h }), '#79c24e');
     if (Math.random() < .35) lDrop(o.x, o.y, { t: 'mat', k: Math.random() < .5 ? 'schleim' : 'kristall', n: 1 });
+    gatherKraut(o);   // Samen und Fasern (js/bauen.js)
     for (let i = 0; i < 14; i++) part(o.x + rnd(-6, 6), o.y, rnd(0, 8), rnd(-20, 20), rnd(-10, 10), rnd(20, 50), pick(['#79c24e', '#c8f06a', '#f786a0']), rnd(.4, .8), 1, -20, 1);
     return;
   }
@@ -1842,7 +1845,7 @@ HOOK.update.push(dt => {
     e.lpx = e.x; e.lpy = e.y;
     if (e.rival && e.rival.look && e.st !== 'spawn') e.alpha = 0;
   }
-  for (const p of projs) { if (p.life <= 0 || p.k === 'meteor' || p.k === 'bomb' || p.k === 'flask') continue; const N = lNear(p.x, p.y, 20); for (let i = 0; i < N.length; i++) { const o = N[i]; if (o.solid && o.k === 'prop' && LPROPR[o.t] >= 4 && p.life > 0 && Math.hypot(o.x - p.x, (o.y - p.y) * 1.35) < o.r + 2) { p.life = 0; if (p.k === 'fireball') projHitEnd(p); burst(p.x, p.y, p.h, '#8a7a6a', 4, 30); } } }
+  for (const p of projs) { if (p.life <= 0 || p.k === 'meteor' || p.k === 'bomb' || p.k === 'flask') continue; const N = lNear(p.x, p.y, 20); for (let i = 0; i < N.length; i++) { const o = N[i]; if (o.solid && o.k === 'prop' && LPROPR[o.t] >= 4 && p.life > 0 && Math.hypot(o.x - p.x, (o.y - p.y) * 1.35) < o.r + 2) { p.life = 0; if (p.k === 'fireball') projHitEnd(p); burst(p.x, p.y, p.h, '#8a7a6a', 4, 30); if (p.from === 'p') gatherProj(o, p); } } }
   for (const c of pickups) { if (c.z > 1) continue; if (!lWalk(c.x, c.y)) { c.x = c.lx != null ? c.lx : P.x; c.y = c.ly != null ? c.ly : P.y; c.vx = c.vy = 0; } else { c.lx = c.x; c.ly = c.y; } }
   lChannelTick(dt);
   if (state === 'dead' && L.dead) { L.dead -= dt; if (L.dead <= 0) { L.dead = 0; lDeathScreen(); } }
@@ -2261,6 +2264,7 @@ function lDraw(o) {
   const x = Math.round(o.x - CX), y = Math.round(o.y - CY);
   switch (o.k) {
     case 'prop': {
+      if ((o.gone || o.gh || o.nest) && gatherDraw(o, x, y)) return;   // gefällt, angeschlagen, Vogelnest (js/bauen.js)
       // Bild mit eingebackenem Schatten (ein drawImage je Baum); Spieler hinter der Krone: durchsichtig
       const s = lPropImg(o.t, o.v), behind = s.tree && P.y < o.y && P.y > o.y - s.h && Math.abs(P.x - o.x) < s.c.width / 2;
       if (behind) ctx.globalAlpha = .5; ctx.drawImage(s.c, x - s.ox, y - s.oy); ctx.globalAlpha = 1;
@@ -2799,7 +2803,7 @@ ON.l_claim = (id, b, i) => {
 };
 // Händler: Tausch, Verkauf, Kauf – bezahlt wird mit dem, was du dabei hast
 function lOffers(npc) {
-  const st = lRegAt(npc.x, npc.y).stage, dep = lDepthAt(npc.x, npc.y), f = lPerk('rabatt'), O = [], av = MATORDER.slice(0, clamp(5 + Math.floor(st / 5), 5, MATORDER.length)), mat = av[av.length - 1 - ri(0, 1)], mat2 = av[Math.max(0, av.length - 3 - ri(0, 2))], low = av[ri(0, 2)];
+  const st = lRegAt(npc.x, npc.y).stage, dep = lDepthAt(npc.x, npc.y), f = lPerk('rabatt'), O = [], av = MONMATS.slice(0, clamp(5 + Math.floor(st / 5), 5, MONMATS.length)), mat = av[av.length - 1 - ri(0, 1)], mat2 = av[Math.max(0, av.length - 3 - ri(0, 2))], low = av[ri(0, 2)];
   const it1 = lItem(3, 2, st + 2), v1 = lVal({ t: 'item', it: it1 });
   O.push({ give: [{ t: 'mat', k: mat, n: clamp(Math.round(v1 * .7 / LMATV[mat]), 3, 25) }], get: { t: 'item', it: it1 } });
   const it2 = lItem(2, 2.4, st + 2); O.push({ give: [{ t: 'gold', n: Math.round(lVal({ t: 'item', it: it2 }) * 1.25 * f) }], get: { t: 'item', it: it2 } });

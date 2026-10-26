@@ -42,7 +42,7 @@ function dropLoot(x, y, minRar, setChance) { const it = randomItem(stageNum(), m
 function dropItem(x, y, it) { pickups.push({ k: 'loot', it, x, y, z: 8, vz: 120, vx: rnd(-30, 30), vy: rnd(-15, 15), t: 0 }); }
 function dropMat(x, y, k, n) { pickups.push({ k: 'mat', m: k, n, x, y, z: 6, vz: rnd(60, 100), vx: rnd(-40, 40), vy: rnd(-25, 25), t: 0 }); }
 function dropGem(x, y, gk) { pickups.push({ k: 'gem', g: gk, x, y, z: 8, vz: 110, vx: rnd(-30, 30), vy: rnd(-20, 20), t: 0 }); }
-function gemMul() { return (mod('my_midas') ? 2 : 1) * (hideLv('juwelier') >= 3 ? 1.5 : 1); }
+function gemMul() { const jl = hideLv('juwelier'); return (mod('my_midas') ? 2 : 1) * (jl >= 3 ? 1.5 + (jl - 3) * .1 : 1); }
 function gainFate(n, show) { P.fate = (P.fate || 0) + n; if (show) { toast(n > 1 ? _t('+{n} Glücksmünzen', { n }) : _t('+{n} Glücksmünze', { n }), '#ffd24a'); sfx('coin'); } }
 /* Chronikseite finden (account-weit) */
 function gainLore() {
@@ -55,6 +55,7 @@ function loreChance() { return hideLv('bibliothek') >= 3 ? 1.6 : 1; }
 function hitObs(o, dmg, nx, ny, boom) {
   if (o.dead) return;
   if (o.k === 'col' || o.k === 'station' || o.k === 'npc') return;
+  if (o.k === 'gat') { if (typeof gatherHit === 'function') gatherHit(o, nx, ny); return; }   // Holzplatz im Versteck (js/bauen.js)
   if (o.k === 'quelle') { useFountain(o); return; }
   if (o.k === 'chest') { openChest(o); return; }
   if (o.k === 'lever') { if (o.cd > 0) return; o.on = !o.on; o.cd = 1; G.spikeRush = 4; sfx('spike'); shake(2); toast(_t('Die Fallen sind scharf!')); return; }
@@ -69,14 +70,14 @@ function hitObs(o, dmg, nx, ny, boom) {
     o.dead = true; sfx('wood');
     for (let i = 0; i < 10; i++) part(o.x, o.y, 8, rnd(-70, 70), rnd(-40, 40), rnd(40, 100), pick(['#8a4a2a', '#b8642e', '#5a2e18']), rnd(.4, .8), Math.random() < .4 ? 2 : 1);
     if (o.k === 'xcrate') explode(o.x, o.y, 36, 30 + stageNum() * 6, o.kicked ? 'p' : 'n');
-    else { if (Math.random() < .55) dropCoins(o.x, o.y, ri(2, 5) + stageNum()); if (Math.random() < .25) dropMat(o.x, o.y, pick(['erz', 'leder']), 1); if (Math.random() < .06) pickups.push({ k: 'flask', x: o.x, y: o.y, z: 6, vz: 80, vx: rnd(-20, 20), vy: rnd(-10, 10), t: 0 }); }
+    else { if (Math.random() < .55) dropCoins(o.x, o.y, ri(2, 5) + stageNum()); if (Math.random() < .25) dropMat(o.x, o.y, pick(['erz', 'leder']), 1); if (Math.random() < .3) dropMat(o.x, o.y, 'holz', ri(1, 2)); if (Math.random() < .06) pickups.push({ k: 'flask', x: o.x, y: o.y, z: 6, vz: 80, vx: rnd(-20, 20), vy: rnd(-10, 10), t: 0 }); }
   }
 }
 function openChest(o) {
   if (o.open) return; o.open = .001;
   if (o.mimic) { o.dead = true; spawnEnemy(o.gold ? 'goldmimik' : 'mimic', { x: o.x, y: o.y, instant: true, elite: Math.random() < .3 }); toast(o.gold ? _t('Eine Goldmimik!') : _t('Ein Mimik!'), '#ff6a5a'); shake(4); sfx('lunge'); return; }
   sfx('chest');
-  setTimeout(() => { if (!G) return; const st = stageNum(), mats = MATORDER.slice(0, Math.min(MATORDER.length, 6 + Math.floor(st / 8))); dropCoins(o.x, o.y, (10 + st * 5) * (o.gold ? 2.5 : 1), true); if (Math.random() < (o.gold ? 1 : .55) * G.lootMul) dropLoot(o.x, o.y, o.gold ? 2 : 1); if (Math.random() < .25 * gemMul()) dropGem(o.x, o.y, randomGem(st)); dropMat(o.x, o.y, pick(mats), ri(1, 3)); if (Math.random() < .25) pickups.push({ k: 'flask', x: o.x, y: o.y, z: 8, vz: 90, vx: rnd(-30, 30), vy: rnd(-10, 20), t: 0 }); if (Math.random() < .04 * loreChance()) gainLore(); if (Math.random() < (o.gold ? .1 : .02) * (1 + weekFx('fate'))) gainFate(1, true); }, 250);
+  setTimeout(() => { if (!G) return; const st = stageNum(), mats = MONMATS.slice(0, Math.min(MONMATS.length, 6 + Math.floor(st / 8))); dropCoins(o.x, o.y, (10 + st * 5) * (o.gold ? 2.5 : 1), true); if (Math.random() < (o.gold ? 1 : .55) * G.lootMul) dropLoot(o.x, o.y, o.gold ? 2 : 1); if (Math.random() < .25 * gemMul()) dropGem(o.x, o.y, randomGem(st)); dropMat(o.x, o.y, pick(mats), ri(1, 3)); if (Math.random() < .25) pickups.push({ k: 'flask', x: o.x, y: o.y, z: 8, vz: 90, vx: rnd(-30, 30), vy: rnd(-10, 20), t: 0 }); if (Math.random() < .04 * loreChance()) gainLore(); if (Math.random() < (o.gold ? .1 : .02) * (1 + weekFx('fate'))) gainFate(1, true); }, 250);
 }
 function useFountain(o) {
   if (o.used) return; o.used = true; const h = Math.round(P.st.hp * .35); P.hp = Math.min(P.st.hp, P.hp + h);
@@ -207,6 +208,7 @@ function meleeSweep(w, fin) {
     weaponHit(e, w, mul, ex / n, ey / n, fin ? 1.8 : 1);
   }
   for (const o of obs) { if (o.dead || o.k === 'col' || P.hitSet.has(o)) continue; const ex = o.x - P.x, ey = o.y - P.y, d = Math.hypot(ex, ey); if (d < range + o.r && (Math.abs(angDiff(Math.atan2(ey, ex), P.aim)) < arc / 2 + .4 || d < o.r + 6)) { P.hitSet.add(o); hitObs(o, 1, ex / (d || 1), ey / (d || 1)); } }
+  if (typeof gatherSweep === 'function') gatherSweep(range, arc);   // Bäume, Felsen, Büsche in den Landen (js/bauen.js)
   for (const p of projs) {
     if (p.from !== 'e' || p.k === 'fire' || p.k === 'bomb' || p.life <= 0) continue;
     const ex = p.x - P.x, ey = p.y - P.y, d = Math.hypot(ex, ey);

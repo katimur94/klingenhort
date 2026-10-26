@@ -21,9 +21,9 @@ const MK_RV = [.5, .9, 1.6, 3, 6.5, 5.5, 16];   // Seltenheit: Gewöhnlich … M
 const MK_AFW = { krit: 1.2, tempo: 1.1, raub: 1, feuer: .9, frost: .9, wucht: 1.3 }, MK_AFA = { leben: 1.2, panzer: 1, heil: .8, schutz: 1.3, eile: .9, glueck: 1 };
 const MK_MYW = { klinge: 1.25, zorn: 1.15, ernter: 1.1, phoenix: 1.3, dornen: 1.05, krone: 1.2, eisherz: 1, midas: 1.25 };
 // Gold je Stück – so gewählt, dass Veredeln, Kombinieren und der Händler auf der Karte keinen Gewinn im Kreis ergeben
-const MK_MATV = { erz: 8, leder: 8, knochen: 14, schleim: 12, zahn: 22, kristall: 80, horn: 100, glut: 140, mithril: 120, adamant: 200, schuppe: 380, stern: 520, aether: 1100 };
+const MK_MATV = { erz: 8, leder: 8, knochen: 14, schleim: 12, zahn: 22, kristall: 80, horn: 100, glut: 140, mithril: 120, adamant: 200, schuppe: 380, stern: 520, aether: 1100, holz: 4, stein: 4, faser: 4, samen: 6, feder: 12, eisenholz: 45, marmor: 45, obsidian: 130, sternholz: 320 };
 const MK_GEMV = [60, 200, 680, 2200, 6900], MK_GEMF = { rubin: 1.1, saphir: .95, smaragd: 1.05, amethyst: 1, topas: .9 };
-const MK_BAND = [['erz', 'leder', 'knochen', 'schleim', 'zahn'], ['kristall', 'horn', 'glut', 'mithril'], ['adamant', 'schuppe', 'stern', 'aether']];
+const MK_BAND = [['erz', 'leder', 'knochen', 'schleim', 'zahn', 'holz', 'stein', 'faser', 'feder'], ['kristall', 'horn', 'glut', 'mithril', 'eisenholz', 'marmor'], ['adamant', 'schuppe', 'stern', 'aether', 'obsidian', 'sternholz']];
 // Bieter: Name und Art (0 früh, 1 stetig, 2 Last-Minute, 3 Sammler, 4 Schnäppchenjäger) – jeder bleibt sich treu
 const MK_NAMES = [['Kaspar', 2], ['Ysolde', 0], ['Grimbart', 3], ['Mirela', 1], ['Thorvald', 1], ['Hagen', 4], ['Lirien', 0], ['Ansgar', 1], ['Fenna', 2], ['Ulrich', 4], ['Zarah', 3], ['Oswin', 1], ['Rika', 0], ['Tobias', 4], ['Gundula', 1], ['Sigrun', 2], ['Alarich', 3], ['Notburga', 4], ['Wendelin', 1], ['Ilvy', 0], ['Elric', 2], ['Brann', 1], ['Odalys', 3], ['Merek', 4], ['Saskia', 0], ['Joris', 1], ['Tilda', 4], ['Rurik', 2], ['Esme', 1], ['Falk', 0], ['Wanda', 3], ['Bertolt', 4]];
 const MK_TYPE = [_t('Frühbieter'), _t('Stetig'), _t('Last-Minute'), _t('Sammler'), _t('Schnäppchenjäger')];

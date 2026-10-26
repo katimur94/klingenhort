@@ -1087,7 +1087,7 @@ const AMIRROR = 'Spiegelzorn'; _t('Spiegelzorn');   // Name bleibt deutsch im Sp
 function eDef(k, o) { o.k = k; ENCD[k] = o; }
 const eGold = (E, k) => Math.max(5, Math.round((25 + E.st * 9) * k));
 function eItem(E, min, up) { return { t: 'item', it: randomItem(Math.max(1, E.st + (up || 0)), min || 0) }; }
-function eMat(E, hi) { const a = MATORDER.slice(0, clamp(5 + Math.floor(E.st / 5) + (hi ? 2 : 0), 5, MATORDER.length)); return a[Math.max(0, a.length - 1 - Math.floor(Math.random() * Math.random() * a.length))]; }
+function eMat(E, hi) { const a = MONMATS.slice(0, clamp(5 + Math.floor(E.st / 5) + (hi ? 2 : 0), 5, MONMATS.length)); return a[Math.max(0, a.length - 1 - Math.floor(Math.random() * Math.random() * a.length))]; }
 function eFx(E, k, v, sec, n, bad) { aFx(k, v, sec, n, bad); E.fx.push({ n, bad: !!bad, sec }); }
 const eLater = (E, fn) => E.after.push(fn);
 function eHurt(pct) { P.hp = Math.max(1, Math.round(P.hp - P.st.hp * pct)); }

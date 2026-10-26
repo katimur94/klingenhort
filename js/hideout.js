@@ -8,7 +8,9 @@ const HIDE_POS = {
   schmiede: [.13, .2], alchemie: [.31, .2], bibliothek: [.5, .16], juwelier: [.69, .2], tempel: [.87, .2],
   spiegel: [.06, .6], feuer: [.5, .56], portal: [.94, .6],
   lager: [.18, .9], training: [.38, .92], mine: [.62, .92], garten: [.82, .9],
-  basar: [.28, .56], weltentor: [.72, .56], brutnest: [.5, .92]
+  basar: [.28, .56], weltentor: [.72, .56], brutnest: [.5, .92],
+  // 6.2: zwischen oberer und mittlerer Reihe (im Hochformat nie unter den Touch-Knöpfen); links/rechts außen der Holzplatz (js/bauen.js GHIDE)
+  sattler: [.24, .38], voliere: [.76, .38]
 };
 function hideTotal() { let n = 0; for (const k in BUILD) if (!BUILD[k].fixed) n += hideLv(k); return n; }
 function npcLine(id) {
@@ -39,6 +41,7 @@ function layoutHideout() {
     if (lv && B.npc) { const sp = B.body; obs.push({ k: 'npc', sp, x: p.x + (p.x > AW / 2 ? -22 : 22), y: p.y + 8, r: 5, solid: true, act: id, label: B.npc, face: p.x > AW / 2 ? 1 : -1 }); }
     if (id === 'training' && lv) { const e = spawnEnemy('dummy', { x: p.x - 26, y: p.y - 2, instant: true }); e.hx = e.x; e.hy = e.y; e.dmgLog = []; e.alpha = null; e.name = _t('Trainingspuppe'); }
   }
+  gatherHideLayout();   // Holzplatz: Bäume, Felsen, Büsche zum Abbauen (js/bauen.js)
   const tl = hideTotal(), n = Math.min(12, 2 + Math.floor(tl / 2)), bn = [[16, 32], [32, 32], [16, 48], [32, 48]];
   bg.banners = []; for (let i = 0; i < n; i++) { const x = Math.round(48 + (i + .5) / n * (AW - 96)); const b = bn[i % 4]; bg.banners.push({ x, sx: b[0], sy: b[1] }); }
 }
@@ -73,42 +76,49 @@ function openStation(id, tab) {
     case 'tempel': if (!rolling()) ROLL = null; openTemple(); break;
     case 'bibliothek': openLibrary(); break;
     case 'mine': case 'garten': openProd(id); break;
+    case 'sattler': openSattler(); break;
+    // Station ohne eigene Tafel (z. B. Vogelhaus, solange js/ für die Vögel fehlt): Beschreibung und Ausbau
+    default: stationShell(id, `<p class="sub">${esc(buildDesc(id, Math.max(0, lv - 1)))}</p>`);
   }
 }
 function buildCost(id) { const B = BUILD[id], lv = hideLv(id); if (!B.lv || lv >= B.lv.length) return null; const c = Object.assign({}, B.lv[lv]), gold = c.gold || 0; delete c.gold; return { mats: c, gold }; }
 function buildDesc(id, lv) { const B = BUILD[id]; return B.d[Math.min(lv, B.d.length - 1)]; }
+// Ausbau-Abschnitt einer Station: Baustelle (Fortschritt, Sofort fertig), sonst Kosten, Bauzeit und Knopf (Bauzeit: js/bauen.js)
 function buildHTML(id) {
-  const B = BUILD[id], lv = hideLv(id), c = buildCost(id);
+  const B = BUILD[id], lv = hideLv(id), c = buildCost(id), q = buildOf(id);
+  if (q) return `<h3>${_t('IM BAU: STUFE {lv}', { lv: q.lv })}</h3><p class="sub" style="margin:0 0 4px">${esc(buildDesc(id, q.lv - 1))}</p>${buildProgHTML(q)}`;
   if (!c) return `<h3>${_t('AUSBAU')}</h3><p class="sub">${_t('{name} ist vollständig ausgebaut (Stufe {lv}).', { name: B.n, lv })}</p>`;
-  return `<h3>${_t('AUSBAU AUF STUFE {lv}', { lv: lv + 1 })}</h3><p class="sub" style="margin:0 0 4px">${esc(buildDesc(id, lv))}</p>${costHTML(c.mats, c.gold)}<button class="btn" data-act="build" data-id="${id}" ${canAfford(c.mats, c.gold) ? '' : 'disabled'}>${lv ? _t('Ausbauen') : _t('Errichten')}</button>`;
+  const busy = !buildFree(), ok = canAfford(c.mats, c.gold) && !busy;
+  return `<h3>${_t('AUSBAU AUF STUFE {lv}', { lv: lv + 1 })}</h3><p class="sub" style="margin:0 0 4px">${esc(buildDesc(id, lv))}</p>${costHTML(c.mats, c.gold)}
+  <p class="sub bwhen">${_t('Bauzeit: {t}', { t: `<b>${buildTimeText(buildDur(lv + 1))}</b>` })}${busy ? ' · <span class="bbusy">' + buildBusyText() + '</span>' : ''}</p><button class="btn" data-act="build" data-id="${id}" ${ok ? '' : 'disabled'}>${lv ? _t('Ausbauen') : _t('Errichten')}</button>`;
 }
+// Ausbau beginnen: bezahlen, die Stufe zählt erst, wenn die Bauzeit um ist (hideLv) – sofort fertig nur mit Bauzeit 0
 function doBuild(id) {
-  const c = buildCost(id); if (!c || !canAfford(c.mats, c.gold)) { sfx('deny'); return false; }
-  payMats(c.mats); P.gold -= c.gold; const H = SAVE.meta.hide, was = H.b[id] || 0; H.b[id] = was + 1;
-  if (!was && id === 'mine') H.mine = H.rooms; if (!was && id === 'garten') H.garden = H.rooms;
-  statMax('hideLv', hideTotal()); sfx('build'); shake(3); computeStats(); saveChar(); persist(); checkAch();
-  if (G && G.type === 'versteck') { const px_ = P.x, py_ = P.y; layoutHideout(); P.x = px_; P.y = py_; const p = hidePos(id); for (let i = 0; i < 30; i++) part(p.x + rnd(-14, 14), p.y, rnd(0, 20), rnd(-40, 40), rnd(-20, 20), rnd(30, 90), pick(['#e8b04a', '#ffd24a', '#a8743e']), rnd(.5, 1), 1, 120, 1); }
-  toast(_t('{name}: Stufe {lv}', { name: BUILD[id].n, lv: H.b[id] }), '#ffd24a');
+  if (!buildStart(id)) { sfx('deny'); return false; }
+  const q = buildOf(id); sfx('build'); shake(2);
+  if (G && G.type === 'versteck') { const p = hidePos(id); for (let i = 0; i < 18; i++) part(p.x + rnd(-14, 14), p.y, rnd(0, 16), rnd(-40, 40), rnd(-20, 20), rnd(30, 80), pick(['#a8743e', '#d8b878', '#8a8a7a']), rnd(.4, .8), 1, 160, 1); }
+  if (q) toast(_t('Baustelle: {name} Stufe {lv} · fertig in {t}', { name: BUILD[id].n, lv: q.lv, t: buildTimeText(buildLeft(q)) }), '#e8b04a');
   return true;
 }
 function openBuild(id) {
-  const B = BUILD[id];
-  showOverlay(`<div class="head"><h2>${B.n.toLocaleUpperCase(LOCALE)}</h2><div class="hbtns"><div class="gold"><i class="coin"></i>${fmt(P.gold)}</div><button class="btn alt sm" data-act="hback">${_t('Zurück')}</button></div></div>
-  <div style="display:flex;gap:12px;align-items:center"><img class="px" src="${iconURL(['pa', 'bau'])}" alt="" style="width:48px"><p class="sub">${_t('Hier steht nur ein Gerüst. {d}.', { d: esc(B.d[0]) })}</p></div>
+  const B = BUILD[id], q = buildOf(id); bView = id;
+  showOverlay(`<div class="head"><h2>${B.n.toLocaleUpperCase(LOCALE)}</h2><div class="hbtns"><div class="gold"><i class="coin"></i>${fmt(P.gold)}${P.fate ? ` <span style="color:#ffd24a"><i class="fc"></i>${P.fate}</span>` : ''}</div><button class="btn alt sm" data-act="hback">${_t('Zurück')}</button></div></div>
+  <div style="display:flex;gap:12px;align-items:center"><img class="px" src="${iconURL(['pa', 'bau'])}" alt="" style="width:48px"><p class="sub">${q ? _t('Die Bauleute sind bei der Arbeit. {d}.', { d: esc(B.d[0]) }) : _t('Hier steht nur ein Gerüst. {d}.', { d: esc(B.d[0]) })}</p></div>
   ${buildHTML(id)}`);
 }
 function stationShell(id, body, wide) {
-  const B = BUILD[id], lv = hideLv(id);
+  const B = BUILD[id], lv = hideLv(id); bView = id;
   showOverlay(`<div class="head"><h2>${B.n.toLocaleUpperCase(LOCALE)}${B.fixed ? '' : ' · ' + lv}</h2><div class="hbtns"><div class="gold"><i class="coin"></i>${fmt(P.gold)}${P.fate ? ` <span style="color:#ffd24a"><i class="fc"></i>${P.fate}</span>` : ''}</div><button class="btn alt sm" data-act="hback">${_t('Zurück')}</button></div></div>${npcLine(id)}${body}${B.fixed ? '' : buildHTML(id)}`, wide);
 }
 
 /* Lagerfeuer: Rast einmal pro Akt, Gespräche, Ausbau-Übersicht */
 function openCampfire() {
   const rested = P.map && P.map.rested;
-  const list = BUILDORDER.filter(k => !BUILD[k].fixed).map(k => { const lv = hideLv(k), c = buildCost(k); return `<div class="row" style="cursor:default"><div class="ic"><img src="${iconURL(['pa', BUILD[k].icon])}" alt=""></div><div><div class="nm">${BUILD[k].n} <span style="color:var(--gold);font-size:16px">${_t('Stufe {lv}/{max}', { lv, max: BUILD[k].lv.length })}</span></div><div class="st">${esc(c ? buildDesc(k, lv) : _t('Vollständig ausgebaut'))}</div>${c ? costHTML(c.mats, c.gold) : ''}</div>${c ? `<button class="btn sm" data-act="build" data-id="${k}" ${canAfford(c.mats, c.gold) ? '' : 'disabled'}>${lv ? _t('Ausbauen') : _t('Bauen')}</button>` : '<span></span>'}</div>`; }).join('');
+  // je Gebäude: Stufe, was die nächste bringt, Kosten und Bauzeit – oder „im Bau“ mit Restzeit (Baustellen oben, js/bauen.js)
+  const free = buildFree(), list = BUILDORDER.filter(k => !BUILD[k].fixed).map(k => { const lv = hideLv(k), c = buildCost(k), q = buildOf(k); return `<div class="row" style="cursor:default"><div class="ic"><img src="${iconURL(['pa', BUILD[k].icon])}" alt=""></div><div><div class="nm">${BUILD[k].n} <span style="color:var(--gold);font-size:16px">${_t('Stufe {lv}/{max}', { lv, max: BUILD[k].lv.length })}</span></div><div class="st">${esc(q ? buildDesc(k, q.lv - 1) : c ? buildDesc(k, lv) : _t('Vollständig ausgebaut'))}</div>${q ? `<div class="st bbusy">${_t('Im Bau: Stufe {lv} · noch {t}', { lv: q.lv, t: `<b data-bt="${k}">${buildClock(buildLeft(q))}</b>` })}</div>` : c ? costHTML(c.mats, c.gold) + `<div class="st bwhen">${_t('Bauzeit: {t}', { t: buildTimeText(buildDur(lv + 1)) })}</div>` : ''}</div>${q ? '<span></span>' : c ? `<button class="btn sm" data-act="build" data-id="${k}" ${free && canAfford(c.mats, c.gold) ? '' : 'disabled'}>${lv ? _t('Ausbauen') : _t('Bauen')}</button>` : '<span></span>'}</div>`; }).join('');
   stationShell('feuer', `<p class="sub">${_t('LP {hp}/{max}.', { hp: Math.ceil(P.hp), max: P.st.hp })} ${rested ? _t('Du hast in diesem Akt schon gerastet.') : _t('Einmal pro Akt kannst du hier vollständig heilen.')}</p>
   <div class="menu two"><button class="btn" data-act="rest" ${rested || P.hp >= P.st.hp ? 'disabled' : ''}>${_t('Rasten (voll heilen)')}</button><button class="btn alt" data-act="tale">${_t('Am Feuer erzählen')}</button></div>
-  <h3>${_t('AUSBAU-ÜBERSICHT · VERSTECK-STUFE {lv}', { lv: hideTotal() })}</h3>${list}`, true);
+  <h3>${_t('AUSBAU-ÜBERSICHT · VERSTECK-STUFE {lv}', { lv: hideTotal() })}</h3>${buildSiteHTML()}${list}`, true);
 }
 /* Alchemielabor */
 function openAlchemy() {
@@ -138,15 +148,19 @@ function openTraining() {
 function minePending(k) { const H = SAVE.meta.hide; if (!hideLv(k === 'mine' ? 'mine' : 'garten')) return 0; return Math.min(25, H.rooms - (k === 'mine' ? H.mine : H.garden)); }
 function prodYield(id, n) {
   const lv = hideLv(id), r = {};
-  if (id === 'mine') { r.erz = n * lv; if (lv >= 2) r.mithril = Math.floor(n * .3); if (lv >= 3) r.adamant = Math.floor(n * .18); if (lv >= 4) r.glut = Math.floor(n * .22); if (lv >= 5) r.stern = Math.floor(n * .12); }
-  else { r.schleim = n * Math.min(lv, 4) * (lv >= 5 ? 2 : 1); if (lv >= 2) r.leder = n; if (lv >= 4) r.kristall = Math.floor(n * .25); }
+  if (id === 'mine') {
+    const m7 = lv >= 7 ? 1.5 : 1, m9 = lv >= 9 ? 1.5 : 1;
+    r.erz = n * lv; r.stein = Math.floor(n * (1 + Math.floor(lv / 3)) * m7); if (lv >= 2) r.mithril = Math.floor(n * .3 * m7); if (lv >= 3) r.adamant = Math.floor(n * .18 * m7); if (lv >= 4) r.glut = Math.floor(n * .22 * m9); if (lv >= 5) r.stern = Math.floor(n * .12 * m9);
+    if (lv >= 6) r.marmor = Math.floor(n * .25); if (lv >= 8) r.obsidian = Math.floor(n * .15); if (lv >= 10) r.aether = Math.floor(n * .05);   // 6.2: Stein, Marmor, Obsidian, Äther
+  }
+  else { r.schleim = n * Math.min(lv, 4) * (lv >= 5 ? 2 : 1); if (lv >= 2) r.leder = n; if (lv >= 4) r.kristall = Math.floor(n * .25); r.faser = n * (1 + Math.floor(lv / 3)); r.samen = Math.floor(n * (lv >= 5 ? .6 : .4)); if (lv >= 2) r.feder = Math.floor(n * .2); }
   return r;
 }
 function openProd(id) {
   const k = id === 'mine' ? 'mine' : 'garden', n = minePending(k), y = prodYield(id, n), pot = id === 'garten' && hideLv('garten') >= 3 ? Math.floor(n / 3) : 0;
   const list = Object.keys(y).filter(m => y[m] > 0).map(m => `<span><img src="${iconURL(['mat', m])}" alt="">${y[m]} ${MATS[m].n}</span>`).join('') + (pot ? `<span>${pot === 1 ? _t('1 Heiltrank') : _t('{n} Heiltränke', { n: pot })}</span>` : '');
   stationShell(id, `<p class="sub">${id === 'mine' ? _t('Die Kumpel fördern für jeden geschafften Raum (bis zu 25).') : _t('Der Garten wächst für jeden geschafften Raum (bis zu 25).')} ${_t('Seit dem letzten Besuch: {n}.', { n: `<b style="color:var(--gold)">${n === 1 ? _t('1 Raum') : _t('{n} Räume', { n })}</b>` })}</p>
-  ${n > 0 ? `<div class="cost">${list}</div><button class="btn" data-act="collect" data-id="${id}">${_t('Einsammeln')}</button>` : `<p class="sub">${_t('Noch nichts zum Einsammeln. Schaff ein paar Räume!')}</p>`}`);
+  ${n > 0 ? `<div class="cost">${list}</div><button class="btn" data-act="collect" data-id="${id}">${_t('Einsammeln')}</button>` : `<p class="sub">${_t('Noch nichts zum Einsammeln. Schaff ein paar Räume!')}</p>`}${id === 'garten' ? farmHTML() : ''}`, id === 'garten');
 }
 function collectProd(id) {
   const k = id === 'mine' ? 'mine' : 'garden', n = minePending(k); if (n <= 0) return;
@@ -165,7 +179,8 @@ function openLibrary() {
 }
 
 /* ---------- Glückstempel ---------- */
-function coinPrice() { return Math.round((400 + P.lv * 30) * (hideLv('tempel') >= 2 ? .75 : 1)); }
+// Münztausch: ab Tempel-Stufe 2 25 % günstiger, ab Stufe 4 je Stufe 3 % mehr (Stufe 10: 46 %)
+function coinPrice() { const tl = hideLv('tempel'); return Math.round((400 + P.lv * 30) * (tl >= 2 ? .75 - Math.max(0, tl - 3) * .03 : 1)); }
 /* ---------- Glücksrolle: wie beim Case-Opening rauscht eine Reihe Belohnungen vorbei und bleibt beim Gewinn stehen.
    Reiner Zufall: der Gewinn wird vor der Rolle ausgelost und sofort gutgeschrieben, die Rolle zeigt ihn nur.
    Die Kacheln davor und danach sind mit denselben Chancen gezogen – keine Garantie, keine gestellten Beinahe-Treffer. */
@@ -274,7 +289,7 @@ function wheelReward(k) {
   const give = it => { addToBag(it); res.it = it; if (it.rar === 4) stat('legs'); };
   switch (k) {
     case 'gold': { const g = 150 + st * 30; P.gold += g; res.t = _t('+{n} Gold', { n: g }); break; }
-    case 'mats': { const ms = MATORDER.slice(0, Math.min(MATORDER.length, 6 + Math.floor(st / 6))), got = []; for (let i = 0; i < 3; i++) { const m = pick(ms), n = ri(2, 4); gainMat(m, n); got.push(n + ' ' + MATS[m].n); } res.t = got.join(', '); break; }
+    case 'mats': { const ms = MONMATS.slice(0, Math.min(MONMATS.length, 6 + Math.floor(st / 6))), got = []; for (let i = 0; i < 3; i++) { const m = pick(ms), n = ri(2, 4); gainMat(m, n); got.push(n + ' ' + MATS[m].n); } res.t = got.join(', '); break; }
     case 'pots': P.potions = Math.min(potMax(), P.potions + 3); res.t = _t('3 Heiltränke'); break;
     case 'gem': { const g = randomGem(st + 6); gainGem(g); const [id, gr] = g.split(':'); res.t = _t('{grade} {gem}', { grade: GEMGRADE[+gr], gem: GEMS[id].n }); break; }
     case 'rare': give(randomItem(st, 2)); break;

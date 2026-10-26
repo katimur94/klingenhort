@@ -158,6 +158,18 @@ function matIcon(id) {
       case 'mithril': case 'adamant': px(g, 1, 5, 10, 5, '#4a4450'); px(g, 2, 4, 8, 2, '#5e5866'); px(g, 3, 5, 3, 3, a); px(g, 7, 6, 3, 3, a); px(g, 4, 8, 2, 1, b); px(g, 3, 5, 1, 1, '#fff'); px(g, 8, 6, 1, 1, '#fff'); break;
       case 'stern': for (const [x, y, s] of [[5, 1, 2], [2, 5, 1], [8, 6, 2], [4, 8, 1], [9, 2, 1]]) { px(g, x, y, s, s, a); if (s > 1) { px(g, x - 1, y, 1, 1, b); px(g, x + s, y + 1, 1, 1, b); px(g, x, y, 1, 1, '#fff'); } } break;
       case 'aether': px(g, 5, 0, 2, 12, b); px(g, 4, 2, 4, 8, a); px(g, 3, 4, 6, 4, a); px(g, 5, 2, 1, 6, '#fff'); px(g, 7, 6, 1, 3, b); break;
+      // Rohstoffe (6.2)
+      case 'holz': case 'eisenholz': case 'sternholz': // zwei Scheite mit Jahresringen
+        px(g, 1, 6, 10, 4, b); px(g, 1, 5, 10, 4, a); px(g, 3, 2, 8, 4, b); px(g, 3, 2, 8, 3, a); px(g, 9, 2, 2, 3, b); px(g, 9, 5, 2, 4, b);
+        px(g, 10, 3, 1, 1, id === 'sternholz' ? '#fff' : '#e8c890'); px(g, 10, 6, 1, 2, id === 'sternholz' ? '#fff' : '#e8c890'); px(g, 4, 3, 3, 1, id === 'eisenholz' ? '#c8d0dc' : id === 'sternholz' ? '#e8ecff' : '#d8a068');
+        if (id === 'sternholz') { px(g, 2, 6, 1, 1, '#fff'); px(g, 6, 7, 1, 1, '#ffe08a'); } break;
+      case 'stein': case 'marmor': // Bruchstein
+        px(g, 2, 4, 8, 6, b); px(g, 1, 6, 10, 3, b); px(g, 3, 3, 6, 5, a); px(g, 2, 5, 7, 3, a); px(g, 4, 4, 2, 1, '#fff');
+        if (id === 'marmor') { px(g, 5, 5, 3, 1, '#b8b0a0'); px(g, 7, 6, 1, 2, '#b8b0a0'); px(g, 3, 7, 2, 1, '#c8c0b0'); } else px(g, 6, 6, 2, 1, b); break;
+      case 'obsidian': px(g, 5, 1, 2, 10, b); px(g, 3, 3, 6, 7, b); px(g, 4, 2, 4, 8, a); px(g, 5, 3, 1, 5, '#a890d0'); px(g, 7, 5, 1, 3, '#ff8a3a'); px(g, 4, 9, 4, 1, b); break;
+      case 'faser': for (const x of [3, 5, 7, 9]) { px(g, x, 2 + (x % 3), 1, 8 - (x % 3), b); px(g, x, 2 + (x % 3), 1, 3, a); } px(g, 2, 7, 9, 2, '#a8864a'); px(g, 2, 7, 9, 1, '#d8b878'); break;
+      case 'samen': for (const [x, y] of [[3, 4], [7, 3], [5, 7], [8, 7], [2, 8]]) { px(g, x, y, 2, 3, b); px(g, x, y, 2, 2, a); px(g, x, y, 1, 1, '#fff0c0'); } break;
+      case 'feder': for (let i = 0; i < 9; i++) { const x = 2 + i, y = 10 - i; px(g, x, y - 2, 1, 3, i > 1 ? a : b); if (i > 2) px(g, x + 1, y - 1, 1, 1, b); } px(g, 1, 10, 2, 1, b); px(g, 9, 1, 1, 1, '#fff'); break;
     }
   });
 }
@@ -243,7 +255,8 @@ function setMusic(root, boss) { mRoot = root; mBoss = !!boss; }
 /* ---------- Speichern ---------- */
 let SAVE = null;
 function defaultMeta() { return { stats: {}, ach: {}, bestiary: {}, fallen: [], best: [], daily: {}, settings: { music: true, sfx: true }, hide: defaultHide(), luck: { spins: 0, pityL: 0, pityM: 0 }, lore: [], cos: [] }; }
-function defaultHide() { return { b: {}, stash: [], rooms: 0, mine: 0, garden: 0, intro: false }; }
+// q = Baustellen [{ k, lv, t0, end }] (Bauzeit, js/bauen.js), gat = Holzplatz { id: nachgewachsen um }, farm = Beete im Acker
+function defaultHide() { return { b: {}, stash: [], rooms: 0, mine: 0, garden: 0, intro: false, q: [], gat: {}, farm: [] }; }
 // Ältere Spielstände um neue Felder ergänzen, ohne etwas zu verlieren
 function fixMeta(m) {
   const d = defaultMeta(); m = Object.assign(d, m || {});

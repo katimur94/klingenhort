@@ -541,6 +541,9 @@ function artIcon(name) {
     case 'muenze': b.disc(8, 8, 5.5, '#9c6a24'); b.disc(8, 8, 4.5, '#ffd24a'); b.rect(7, 5, 2, 6, '#e8b04a'); b.rect(6, 7, 4, 1, '#fff3c0'); b.set(6, 6, '#fff'); break;
     case 'bau': b.rect(2, 3, 2, 12, WOOD[1]); b.rect(12, 3, 2, 12, WOOD[1]); b.rect(1, 5, 14, 2, WOOD[2]); b.rect(1, 10, 14, 2, WOOD[2]); b.rect(6, 7, 4, 3, '#e8b04a'); b.set(8, 8, '#1a1420'); break;
     case 'held': b.disc(8, 5, 3, '#fccba3'); b.rect(5, 9, 7, 6, '#57a7d6'); break;
+    // 6.2: Sattlerei (Tasche), Vogelhaus (Vogel)
+    case 'sattel': b.rect(3, 5, 10, 9, '#8a4a24'); b.rect(4, 6, 8, 7, '#a8643a'); b.rect(5, 2, 6, 2, '#6a3a1e'); b.rect(5, 3, 1, 3, '#6a3a1e'); b.rect(10, 3, 1, 3, '#6a3a1e'); b.rect(3, 8, 10, 1, '#6a3a1e'); b.rect(7, 8, 2, 2, '#e8b04a'); b.set(5, 11, '#c8844a'); break;
+    case 'voliere': b.disc(7, 9, 4, '#8a90a0'); b.disc(6, 8, 3, '#c8c8d0'); b.disc(10, 6, 2.2, '#c8c8d0'); b.set(11, 5, '#1a1420'); b.rect(12, 6, 2, 1, '#e8b04a'); b.rect(2, 9, 3, 2, '#8a90a0'); b.rect(6, 13, 1, 2, '#e8b04a'); b.rect(8, 13, 1, 2, '#e8b04a'); b.rect(5, 8, 3, 1, '#ffffff'); break;
     default: hook('artIcon', name, b);
   }
   return PACACHE[name] = pbCanvas(pbOutline(b));
@@ -684,6 +687,7 @@ function drawStation(o) {
   ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(x, y + 1, 12, 4, 0, 0, 6.283); ctx.fill();
   if (!lv) {
     r(-10, -16, 2, 17, WOOD[1]); r(8, -16, 2, 17, WOOD[1]); r(-11, -13, 22, 2, WOOD[2]); r(-11, -6, 22, 2, WOOD[2]); r(-6, -3, 12, 3, '#6a6470'); r(-4, -5, 5, 2, '#5a5460');
+    if (buildOf(o.id)) { buildMark(o, x, y, true); return; }   // erste Stufe im Bau: Fortschritt statt Schild
     r(-4, -24, 9, 7, '#c8a878'); r(-1, -17, 2, 3, WOOD[0]); ptext('?', x + 1, y - 20, '#1a1420', 6);
     return;
   }
@@ -753,11 +757,39 @@ function drawStation(o) {
     case 'garten':
       r(-14, -6, 28, 6, '#5e3a1e'); r(-14, -6, 28, 1, '#7a4a28');
       for (let i = 0; i < 5; i++) { const h = 4 + (i * 7 + lv) % 5 + Math.round(Math.sin(T * 2 + i)), dx = -12 + i * 6; r(dx, -6 - h, 1, h, '#3a7a2a'); r(dx - 1, -7 - h, 3, 2, i % 2 ? '#79c24e' : '#5aaa42'); if (lv >= 3 && i % 2 === 0) r(dx, -8 - h, 1, 1, '#f786a0'); }
-      if (minePending('garden') > 0) { r(-1, -24, 3, 5, '#ffd24a'); r(-1, -18, 3, 2, '#ffd24a'); }
+      if (minePending('garden') > 0 || farmReady() > 0) { r(-1, -24, 3, 5, '#ffd24a'); r(-1, -18, 3, 2, '#ffd24a'); }
       break;
+    case 'sattler': {
+      // Werkbank mit Sattel auf dem Bock, Taschen am Gestell (mehr mit der Stufe)
+      r(-14, -10, 20, 3, WOOD[2]); r(-13, -7, 2, 7, WOOD[0]); r(3, -7, 2, 7, WOOD[0]); r(-12, -12, 6, 2, '#c8b890'); r(-4, -12, 1, 2, '#9aa2ae'); r(-2, -13, 5, 1, '#a8743e');
+      r(-10, -20, 12, 5, '#8a4a24'); r(-11, -18, 14, 3, '#a8643a'); r(-9, -21, 4, 2, '#c8844a'); r(-3, -15, 2, 5, '#6a3a1e'); r(-12, -16, 2, 3, '#e8b04a');
+      r(8, -26, 2, 26, WOOD[1]); r(15, -26, 2, 26, WOOD[1]); r(7, -27, 11, 2, WOOD[2]);
+      const nb = Math.min(4, 1 + Math.floor(lv / 3)), bc = ['#a8743e', '#6a8a3a', '#8a4a6a', '#3a6a9a'];
+      for (let i = 0; i < nb; i++) { const bx = 9 + (i % 2) * 4, by = -24 + Math.floor(i / 2) * 9; r(bx, by, 4, 6, bc[i]); r(bx, by, 4, 1, '#2a1e18'); r(bx + 1, by + 2, 2, 1, '#e8b04a'); }
+      if (lv >= 10) { r(-8, -22, 1, 1, '#fff'); addLight(x - 4, y - 18, 16, .3); }
+      break;
+    }
+    case 'voliere': {
+      // Vogelhaus auf dem Pfahl, Käfig daneben, Vögel je Stufe (Spatz, Taube, Rabe, Eule, Phönix)
+      r(-1, -22, 3, 23, WOOD[0]); r(-7, -32, 15, 10, '#8a5a32'); r(-6, -31, 13, 8, '#a8743e'); r(-1, -29, 3, 3, '#1a1420'); r(-2, -25, 5, 1, WOOD[2]);
+      r(-9, -34, 19, 2, '#6a2a2a'); r(-7, -36, 15, 2, '#7a3434'); r(-4, -38, 9, 2, '#8a3e3e');
+      r(5, -17, 15, 17, 'rgba(60,46,30,.45)'); for (let i = 0; i < 5; i++) r(5 + i * 3 + (i === 4 ? 2 : 0), -17, 1, 17, '#9aa2ae'); r(4, -19, 17, 2, '#6a707c'); r(4, -1, 17, 2, '#5a606c'); r(7, -9, 12, 1, WOOD[1]);
+      // Vögel: [x, y, Körper, Flügel, Schnabel] – Spatz auf der Stange, Taube auf dem Dach, Rabe, Eule, Phönix im Käfig
+      r(-11, -14, 10, 1, WOOD[1]);
+      const BD_ = [[-10, -17, '#c8945a', '#6a4424', '#e8b04a'], [-2, -41, '#d8d8e0', '#8a90a0', '#e8a0a0'], [7, -4, '#2a2430', '#4a3a5a', '#5a5a6a'], [13, -13, '#a8865a', '#efe2bf', '#e8b04a'], [7, -14, '#ff6a2a', '#ffd24a', '#fff0a0']];
+      for (let i = 0; i < Math.min(5, lv); i++) {
+        const [bx, b0, c1, c2, bk] = BD_[i], by = b0 - ((Math.floor(T * 3 + i * 1.7) % 5 === 0) ? 1 : 0);
+        r(bx, by, 5, 3, c1); r(bx + 3, by - 2, 3, 3, c1); r(bx + 6, by - 1, 1, 1, bk); r(bx + 4, by - 1, 1, 1, i === 3 ? '#ffd24a' : '#000'); r(bx, by + 1, 3, 1, c2); r(bx - 1, by, 1, 1, c2); r(bx + 2, by + 3, 1, 1, '#5a4a3a');
+        if (i === 3) { r(bx + 3, by - 3, 1, 1, c1); r(bx + 5, by - 3, 1, 1, c1); }
+        if (i === 4) { r(bx - 2, by - 1, 2, 1, '#ffd24a'); addLight(x + bx, y + by, 16, .55); if (Math.random() < .1) part(o.x + bx + 2, o.y, -by, rnd(-6, 6), 0, 10, '#ffb03a', .5, 1, -10, 1); }
+      }
+      break;
+    }
     default: hook('drawStation', o, x, y, r, lv);
   }
-  if (!B.fixed) for (let i = 0; i < lv; i++) { r(-lv * 2 + i * 4, 4, 3, 2, '#e8b04a'); }
+  // Stufen-Marken: bis 5 in einer Reihe, darüber Reihen zu je 5 (bis 15)
+  if (!B.fixed) { if (lv <= 5) for (let i = 0; i < lv; i++) r(-lv * 2 + i * 4, 4, 3, 2, '#e8b04a'); else for (let i = 0; i < lv; i++) r(-10 + (i % 5) * 4, 4 + Math.floor(i / 5) * 3, 3, 2, i >= 10 ? '#ffe08a' : '#e8b04a'); }
+  if (!B.fixed && buildOf(o.id)) buildMark(o, x, y, false);   // Baustelle: Gerüst, Fortschritt, Restzeit (js/bauen.js)
 }
 function drawNpc(o) {
   const x = Math.round(o.x - CX), y = Math.round(o.y - CY), S = SP[o.sp], fl = o.face || 1;
