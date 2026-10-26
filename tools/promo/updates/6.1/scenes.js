@@ -62,7 +62,7 @@ const BIOMES = ['gletscher', 'wueste', 'pilz', 'kristall', 'schattenwald', 'riff
     window.__ui = () => {
       if (typeof LW !== 'undefined' && LW) { try { if (LW.on) lEnd(); } catch (e) { } try { lRelease(); } catch (e) { } LW = null; }
       SAVE.meta.lande.cur = null; document.body.classList.remove('lande'); try { lHudShow(false); } catch (e) { }
-      if (BA) { try { bArenaClear(); } catch (e) { } BA = null; } BZ.fx = [];
+      if (BA) { try { bArenaClear(); } catch (e) { } BA = null; } BZ.fx = []; BZ.call = null; try { bDarkEnd(); } catch (e) { } slowmo = 0; hitStop = 0;
       DLG = null; hideOverlay(); showHud(false); $('bossbar').hidden = true; window.__camDX = 0; window.__camDY = 0; window.__txtNo = null; window.__txtOK = null; window.__kinds = null;
       __off2(); titleScene(); texts = []; parts = []; setState('title');
     };
@@ -225,7 +225,6 @@ const BIOMES = ['gletscher', 'wueste', 'pilz', 'kristall', 'schattenwald', 'riff
     await ev(() => {
       __lgo({ seed: 9, tools: 1, stones: 2 }); const [x, y] = lRoadPt(1, 8); __tp(x * LCK + LOFF, y * LCK + LOFF); __quiet(1200);
       for (const o of lNear(P.x, P.y, 400)) if (o.k === 'camp') o.state = 'done'; P.face = 1; __vp(3.0); __snap(); __step(10); __clear();
-      LW.regs.add('x1'); LW.regs.add('x2');   // auf dem Weg hierher entdeckte Regionen (für die Meldung „Karte gesichert (… neue Regionen)“)
     });
     fresh('cp_screen');
     await still('cp_screen', 'screen', () => { lCpScreen(); panel.scrollTop = 0; });
@@ -303,7 +302,8 @@ const BIOMES = ['gletscher', 'wueste', 'pilz', 'kristall', 'schattenwald', 'riff
     const st = await ev(id => {
       __ui(); __hero(0); const M = SAVE.meta.bosses; M.b = {}; for (let i = 0; i < 137; i++) M.b[i * 3 + 3] = [29400000, 1, i, -i]; BTROPH = -1;
       hideOverlay(); BA = null; slowmo = 0; hitStop = 0; bossArena(id, { practice: false }); __vp(2.6); P.inv = 1e9; for (let k = 0; k < 240 && !enemies.some(x => x.bz); k++) __step(1); __step(8);
-      const e = enemies.find(x => x.bz); P.x = e.x + 6; P.y = e.y + 64; P.face = 1; window.__camDY = -30; __snap(); window.__msg = [];
+      // zäher Boss (×40 Leben): der Held auf Level 40 hätte Rang 1 sonst mit zwei Treffern besiegt, bevor die Mechanik zu sehen ist
+      const e = enemies.find(x => x.bz); e.maxHp *= 40; e.hp = e.maxHp; P.x = e.x + 6; P.y = e.y + 64; P.face = 1; window.__camDY = -54; window.__camDX = 0; __step(2); __snap(); window.__msg = [];
       const B = bossDef(id); return { id, name: B.name, title: B.title, rank: B.rank, band: BBAND[B.band], mech: B.mech.map(k => BMECH[k].n), keys: B.mech, el: B.el };
     }, id);
     console.log(scene, JSON.stringify(st));
@@ -313,7 +313,7 @@ const BIOMES = ['gletscher', 'wueste', 'pilz', 'kristall', 'schattenwald', 'riff
       e.hp = Math.max(e.hp, e.maxHp * .62); const ks = e.bDef.mech.filter(k => !BMECH[k].p), every = ${id > 600 ? 22 : 40};
       if (i % every === 4) { const k = ks[Math.floor(i / every) % ks.length]; bossCast(e, k); window.__log.push(['cast', i, k]); }
       const d = Math.hypot(e.x - P.x, e.y - P.y); keys.KeyJ = d < 70; __go(e.x + 4, e.y + 40, 18);
-      window.__camDX = clamp((e.x - P.x) * .4, -40, 40); window.__camDY = clamp((e.y - P.y) * .5, -50, 0);
+      window.__camDX = clamp((e.x - P.x) * .4, -40, 40); window.__camDY = clamp((e.y - P.y) * .5, -50, 0) - 24;   // etwas tiefer: oben ist Platz für die Überschriften
       window.__log.push(['z', i, BZ.fx.length]);
     }`);
     await ev(() => __off2());
@@ -322,9 +322,10 @@ const BIOMES = ['gletscher', 'wueste', 'pilz', 'kristall', 'schattenwald', 'riff
   // Erster Sieg über Rang 1200: Trophäe, Beute
   if (R.want('b_kill')) {
     await ev(() => {
-      const e = enemies.find(x => x.bz && !x.dead); if (e) { e.hp = Math.max(1, e.maxHp * .02); } window.__msg = [];
+      const e = enemies.find(x => x.bz && !x.dead); if (e) { e.hp = 1; e.armor = 0; } window.__msg = [];
     });
-    await cap('b_kill', 108, `i => { P.inv = 1e9; P.hp = P.st.hp; const e = enemies.find(x => x.bz && !x.dead); if (e) { const d = Math.hypot(e.x - P.x, e.y - P.y); keys.KeyJ = true; __go(e.x + 4, e.y + 30, 16); window.__camDX = clamp((e.x - P.x) * .4, -40, 40); window.__camDY = clamp((e.y - P.y) * .5, -50, 0); } else { __off2(); window.__camDX *= .9; window.__camDY *= .9; for (const c of pickups) c.mag = 0; } window.__log.push([e ? 1 : 0, pickups.length]); }`);
+    // der Kampf ist gekürzt: der letzte Treffer fällt in Bild 8 (killEnemy wie im Spiel), danach Beute, „BOSS BESIEGT“ und die Trophäe
+    await cap('b_kill', 132, `i => { P.inv = 1e9; P.hp = P.st.hp; let e = enemies.find(x => x.bz && !x.dead); if (e && i === 8) { killEnemy(e, 0, -1); e = null; } if (e) { const d = Math.hypot(e.x - P.x, e.y - P.y); keys.KeyJ = true; __go(e.x + 4, e.y + 30, 16); window.__camDX = clamp((e.x - P.x) * .4, -40, 40); window.__camDY = clamp((e.y - P.y) * .5, -50, 50) - 24; } else { __off2(); window.__camDX *= .9; window.__camDY *= .9; for (const c of pickups) c.mag = 0; } window.__log.push([e ? 1 : 0, pickups.length]); }`);
     await ev(() => { __off2(); BA && (BA.end = 0); });
   }
 
@@ -452,9 +453,11 @@ const BIOMES = ['gletscher', 'wueste', 'pilz', 'kristall', 'schattenwald', 'riff
   if (R.want('p_fight')) {
     await ev(() => {
       __lgo({ seed: 15, tools: 2047 }); const S = __bio.kristall, p0 = __wp(S.sx + 1, S.sy + 1), p = lFreeNear(p0.x, p0.y, 200) || p0; __tp(p.x, p.y); __quiet(1500);
-      window.__txtOK = /METEOR|BLITZ|SCHILD/; window.__txtNo = /^\d+$/; __vp(3.2); __snap(); for (let i = 0; i < 5; i++) __lkeep(6); __step(6);
+      window.__txtOK = /METEOR|BLITZ|SCHILD/; window.__txtNo = /^\d+$|SCHWÄCHE|MONSTER|PANZER/; __vp(3.2); __snap(); for (let i = 0; i < 5; i++) __lkeep(6); __step(6);
+      if (!window.__pc) { window.__pc = petCast; window.petCast = function (p, k) { const r = window.__pc(p, k); if (r) window.__msg.push({ f: window.__fi, k: 'c', t: k }); return r; }; }
     });
-    await cap('p_fight', 120, `i => { __calm(); __quiet(900); __lkeep(7, i % 30 > 6); keys.KeyD = keys.KeyA = false; window.__log.push([PET_RT.casts || 0]); }`);
+    // 20 s echte Zeit mit echten Abklingzeiten – der Schnitt nimmt die Stellen, an denen ein Zauber kommt
+    await cap('p_fight', 600, `i => { __calm(); __quiet(900); __lkeep(7, i % 30 > 6); keys.KeyD = keys.KeyA = false; window.__log.push([PET_RT.casts || 0]); }`);
     await ev(() => { window.__txtOK = null; window.__txtNo = null; __off2(); });
   }
 
@@ -470,11 +473,11 @@ const BIOMES = ['gletscher', 'wueste', 'pilz', 'kristall', 'schattenwald', 'riff
       const el = panel.querySelector('.wbact.open'); panel.scrollTop = el ? el.offsetTop - 140 : 0; window.__msg = [];
     });
     const scrollMods = () => { const el = panel.querySelector('.wbact.open'); panel.scrollTop = el ? el.offsetTop - 140 : 0; };
-    await still('m_wb', 'w0', scrollMods); await rect('m_wb', 'act0', '#panel .wbact.open'); await rect('m_wb', 'slots0', '#panel .wbact.open .mslots'); await rect('m_wb', 'item0', '#panel .wbsel, #panel .detail');
+    await still('m_wb', 'w0', scrollMods); await rect('m_wb', 'pick0', '#panel [data-act="mod_pick"][data-id="glyphe_kette:6"]'); await rect('m_wb', 'act0', '#panel .wbact.open'); await rect('m_wb', 'slots0', '#panel .wbact.open .mslots'); await rect('m_wb', 'item0', '#panel .wbsel, #panel .detail');
     await still('m_wb', 'w1', () => { document.querySelector('#panel [data-act="mod_pick"][data-id="glyphe_kette:6"]').click(); const el = panel.querySelector('.wbact.open'); panel.scrollTop = el ? el.offsetTop - 140 : 0; });
     await rect('m_wb', 'act1', '#panel .wbact.open'); await rect('m_wb', 'in1', '#panel [data-act="mod_in"]'); await rect('m_wb', 'cmp1', '#panel .wbact.open .wbcmp');
     await still('m_wb', 'w2', () => { document.querySelector('#panel [data-act="mod_in"]').click(); const el = panel.querySelector('.wbact.open'); panel.scrollTop = el ? el.offsetTop - 140 : 0; });
-    await rect('m_wb', 'slots2', '#panel .wbact.open .mslots');
+    await rect('m_wb', 'slots2', '#panel .wbact.open .mslots'); await rect('m_wb', 'pick2', '#panel [data-act="mod_pick"][data-id="essenz_blitz:5"]');
     await still('m_wb', 'w3', () => { document.querySelector('#panel [data-act="mod_pick"][data-id="essenz_blitz:5"]').click(); const el = panel.querySelector('.wbact.open'); panel.scrollTop = el ? el.offsetTop - 140 : 0; });
     await rect('m_wb', 'act3', '#panel .wbact.open'); await rect('m_wb', 'resn', '#panel .mresn'); await rect('m_wb', 'in3', '#panel [data-act="mod_in"]');
     await still('m_wb', 'w4', () => { document.querySelector('#panel [data-act="mod_in"]').click(); const el = panel.querySelector('.wbact.open'); panel.scrollTop = el ? el.offsetTop - 140 : 0; });
@@ -489,9 +492,9 @@ const BIOMES = ['gletscher', 'wueste', 'pilz', 'kristall', 'schattenwald', 'riff
       __lgo({ seed: 16, tools: 2047, noPet: true }); const w = P.gear.weapon; w.mods = []; delete w.el0;
       for (const k of ['glyphe_kette:10', 'glyphe_meteor:10', 'essenz_blitz:8', 'glyphe_explosion:8']) modPut(w, k); computeStats();
       const S = __bio.riff, p0 = __wp(S.sx + 1, S.sy + .8), p = lFreeNear(p0.x, p0.y, 200) || p0; __tp(p.x, p.y); __quiet(1500);
-      MODS.fired = {}; window.__txtNo = /^\d+$/; __vp(3.2); __snap(); for (let i = 0; i < 6; i++) __lkeep(8); __step(6);
+      MODS.fired = {}; window.__txtNo = /^\d+$|SCHWÄCHE|MONSTER|PANZER/; __vp(3.2); __snap(); for (let i = 0; i < 6; i++) __lkeep(8); __step(6);
     });
-    await cap('m_fight', 132, `i => { __calm(); __quiet(900); __lkeep(9); for (const e of enemies) if (!e.dead && !e.boss) e.hp = Math.min(e.hp, e.maxHp * .55); window.__log.push(Object.assign({}, MODS.fired)); }`);
+    await cap('m_fight', 300, `i => { __calm(); __quiet(900); __lkeep(9); for (const e of enemies) if (!e.dead && !e.boss) e.hp = Math.min(e.hp, e.maxHp * .55); window.__log.push(Object.assign({}, MODS.fired)); }`);
     await ev(() => { window.__txtNo = null; __off2(); });
   }
   // Werkbank: Umschmieden, Veredeln, Extrahieren – vorher/nachher
