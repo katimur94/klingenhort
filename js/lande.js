@@ -1493,6 +1493,8 @@ function lBasicGear() { const C = CLASSES[P.cls]; return { weapon: makeItem({ sl
 // Neu laden/abbrechen: Ausrüstung vom Aufbruch zurück, aber nichts doppelt (was in einer Begleiter-Tasche liegt, bleibt dort)
 function lRestoreGear(cur) {
   const inBag = new Set(), PM = SAVE.meta.pets; if (PM && Array.isArray(PM.list)) for (const p of PM.list) for (const e of (Array.isArray(p.bag) ? p.bag : [])) if (e && e.t === 'item' && e.it) inBag.add(e.it.uid);
+  for (const it of P.bag.concat(SAVE.meta.hide.stash || [])) if (it && it.uid) inBag.add(it.uid);   // per Vogel heimgeschickt (6.2): nicht verdoppeln
+  for (const e of lMeta().box) if (e && e.t === 'item' && e.it) inBag.add(e.it.uid);
   const basic = lBasicGear(), g0 = cur.gear0 || {};
   for (const s of ['weapon', 'armor', 'helm']) { const it = P.gear[s]; if (!it || it.lw) { const o = g0[s]; P.gear[s] = o && !inBag.has(o.uid) ? o : basic[s]; } }
   lStripFlags(); computeStats(); P.hp = Math.min(P.hp, P.st.hp);

@@ -145,6 +145,10 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
       o.pouchSlot = birdSend('spatz', E().slice(0, 3), true).err === 'slots';
       const r2 = birdSend('spatz', E().slice(0, 2), true); o.pouch = r2.ok && P.gold === g0 + 321 && P.mats.erz === e0 + 4 && !lPouchList().length && birdCount('spatz') === 0;
       o.noBird = birdSend('spatz', E().slice(0, 1), false).err === 'bird';
+      // Ausrüstung vom Aufbruch per Vogel heim, danach neu geladen (wie Abbruch): nichts verdoppelt
+      const w0 = P.gear.weapon, w1 = makeItem({ slot: 'weapon', base: CLASSES[P.cls].start, tier: 2, rar: 2 }); w1.lw = LW.id; P.gear.weapon = w1; const we = { t: 'item', it: w0 }; LW.pack.push(we);
+      birdGive('spatz', 1); const rw = birdSend('spatz', [we], false); lRestoreGear(lMeta().cur); const cnt = [P.gear.weapon].concat(H.stash, P.bag).filter(x => x && x.uid === w0.uid).length;
+      o.noDup = rw.ok && cnt === 1 && H.stash.includes(w0) && P.gear.weapon !== w0;
       // Lager voll → Beutel → Fundkiste
       while (H.stash.length < stashCap()) H.stash.push(makeItem({ slot: 'helm', tier: 0, rar: 0 }));
       P.bag = []; for (let i = 0; i < bagCap() - 2; i++) P.bag.push(makeItem({ slot: 'helm', tier: 0, rar: 0 })); const box0 = SAVE.meta.lande.box.length;
@@ -178,6 +182,7 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
     ok(bd.send, 'Vogel schicken: Gegenstände sofort ins Lager (ohne Lande-Marke), ein Vogel verbraucht');
     ok(bd.pouchSlot && bd.pouch, 'Sammelbeutel mitschicken: zählt als ein Platz, Gold und Material sofort beim Helden');
     ok(bd.overflow, 'Lager voll → Beutel, Beutel voll → Fundkiste am Weltentor');
+    ok(bd.noDup, 'Ausrüstung vom Aufbruch per Vogel heim, dann neu geladen: nichts verdoppelt');
     ok(bd.egg && bd.flight, 'Ei per Vogel ins Brutnest; der Vogel fliegt sichtbar davon');
     ok(bd.found && bd.roll, 'Vögel als seltene Bodenbeute (Truhen, Elite) landen beim Helden');
     ok(bd.shop && bd.shopOnce, 'Händler Bodo verkauft Vögel gegen Gold aus dem Sammelbeutel, einmal je Außenposten');
