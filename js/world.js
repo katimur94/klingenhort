@@ -134,11 +134,12 @@ function spawnEnemy(type, o) {
   if (o.x != null) { e.x = o.x; e.y = o.y; } else placeFar(e);
   e.face = P.x >= e.x ? 1 : -1; e.turn = e.face;
   if (!o.instant) { burst(e.x, e.y, 4, '#6a5a7a', 10, 30); fx.push({ k: 'portal', x: e.x, y: e.y, life: .7, max: .7 }); }
+  hook('spawn', e, o);
   enemies.push(e); return e;
 }
 /* Gegner je Stufe; jedes Gebiet bevorzugt seine Bewohner */
 const BIOME_EN = { kerker: ['goblin', 'skeleton', 'gobarcher', 'bomber', 'orc', 'zwerg'], moss: ['slime', 'lizard', 'lizshaman', 'orc', 'toxslime', 'gobarcher'], gruft: ['skeleton', 'skelarcher', 'mage', 'geist', 'skelmage', 'zombie'], glut: ['imp', 'chort', 'pyro', 'glutschleim', 'lavadaemon', 'kuerbis'], frost: ['icez', 'eisgeist', 'frostoger', 'skelarcher', 'golem', 'elfe'], sumpf: ['toxslime', 'seuche', 'hexe', 'wurm', 'lizshaman', 'kuerbis'], schatten: ['todesritter', 'engel', 'schattenimp', 'elfe', 'skelmage', 'geist'], hort: ['jungdrache', 'lavadaemon', 'chort', 'imp', 'zwerg', 'golem'] };
-function poolFor(stage) { return Object.keys(EN).filter(k => !EN[k].boss && EN[k].from <= Math.max(stage, 1)); }
+function poolFor(stage) { return Object.keys(EN).filter(k => !EN[k].boss && EN[k].cost < 99 && EN[k].from <= Math.max(stage, 1)); }   // Kosten 99 = Sonderarten (Puppe, Schatzgoblin, Mimik …), nie in Wellen
 function biomeFav(stage) { return (BIOME_EN[biomeOf(P.act).key] || []).filter(k => EN[k].from <= stage + 4); }
 function buildWave(stage, budget) {
   const pool = poolFor(stage), fav = biomeFav(stage), list = [];
