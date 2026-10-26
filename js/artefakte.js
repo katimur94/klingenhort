@@ -1112,8 +1112,9 @@ function eBoss(E, name, reward) {
 }
 function eTele(E) {
   eLater(E, () => {
-    const t = E.enc && E.enc.teleport, a = Math.random() * 6.283, d = (2 + Math.random() * 3) * ACK, x0 = isFinite(E.enc && E.enc.x) ? E.enc.x : null;
-    if (typeof t === 'function' && x0 != null) { try { t(Math.round(x0 + Math.cos(a) * d), Math.round(E.enc.y + Math.sin(a) * d)); return; } catch (e) { console.error('Begegnung (Teleport):', e); } }
+    // Ziel: 2–5 Chunks von dir entfernt (Welt-px); ohne Position der Welt vom Ort der Begegnung aus
+    const t = E.enc && E.enc.teleport, a = Math.random() * 6.283, d = (2 + Math.random() * 3) * ACK, h = aHere() || (isFinite(E.enc && E.enc.x) ? { x: E.enc.x, y: E.enc.y } : null);
+    if (typeof t === 'function' && h) { try { const r = Math.hypot(h.x / ACK - AGATE, h.y / ACK - AGATE), out = r > AWR - 8 ? -1 : 1; t(Math.round(h.x + Math.cos(a) * d * out), Math.round(h.y + Math.sin(a) * d * out)); return; } catch (e) { console.error('Begegnung (Teleport):', e); } }
     if (G && G.type && BD) { P.x = clamp(P.x + Math.cos(a) * 180, BD.x0 + 20, BD.x1 - 20); P.y = clamp(P.y + Math.sin(a) * 120, BD.y0 + 20, BD.y1 - 20); P.inv = Math.max(P.inv || 0, 1); fxAnim('ring', P.x, P.y - 6, { sc: .7, dur: .5, add: true }); }
   });
 }
