@@ -12,10 +12,13 @@
    Abbrechen (nur außerhalb des Kampfes) oder neu laden: Rucksack verloren, Ausrüstung vom Aufbruch zurück. Neu laden mitten im Kampf zählt als Tod (M.cur.fight).
    Barrieren an Ringgrenzen (Schlucht, Fluss, Giftnebel, Eisklippen …) lassen sich nur an Übergängen und nur mit dem passenden Werkzeug queren.
    Spielstand: SAVE.meta.lande (Statistik, Ruf, Schlüssel, Werkzeuge, Leuchtfeuer, erkundete Kartenfelder, entdeckte Regionen, Fundkiste, laufender Ausflug).
-   Schnittstelle: landeActive(), landeToolGive(key), landeToolHas(key), landeDepth(), landeCtx(cx, cy, salt), LANDE_BIOMES, LANDE_TOOLS, worldStage(depth),
-     landeLocal(wx, wy) / landeWorld(x, y) (Welt-Pixel ↔ Spiel-Koordinaten), landePos(), landeLootHTML(entry), landeLuck()/landeRar() (Seltenheit in randomItem), landePackAdd(entry)
-   Ruft (wenn vorhanden): bossForLair, bossSpawn, bossLairReady, arteInChunk, arteTreasureInChunk, arteHints, artePickup/arteOpen, arteTreasureOpen,
-     encounterRoll, encounterOpen, eggForBiome, modRoll/modName/modIconURL/modValue/modGive/modLootHTML
+   Schnittstelle: landeActive(), landeToolGive(key), landeToolHas(key), landeDepth(), landeCtx(cx, cy, salt) (mit biome, region, rname, landmark, stage, depth, R),
+     LANDE_BIOMES, LANDE_TOOLS, worldStage(depth), landeLocal(wx, wy) / landeWorld(x, y) (Welt-Pixel ↔ Spiel-Koordinaten), landePos() → { wx, wy, cx, cy },
+     landeLootHTML(entry), landeLuck()/landeRar() (Seltenheit in randomItem), landePackAdd(entry), landeBeacons() → [{ name, x, y, i }] (Welt-Pixel)
+   Ruft (wenn vorhanden): bossForLair, bossSpawn, bossLairReady, arteInChunk (take()), arteTreasureInChunk (open()), arteHints, arteRumor, artePickup, arteTreasureOpen,
+     encounterRoll, encounterOpen (enc.teleport), eggForBiome, modRoll/modName/modIconURL/modValue/modGive/modLootHTML
+   Kill-Hooks anderer Systeme, die direkt gutschreiben (P.parts, P.mods, Eier im Brutnest), landen in der Freiwelt im Rucksack (lKillPre/lKillPost).
+   Der Ursprung wird nie verschoben: HOOK.shift (Teil B) wird deshalb nie gerufen.
    Beute-Einträge: { t: 'item', it } | { t: 'mat', k, n } | { t: 'gem', k, n } | { t: 'part', k, n } | { t: 'egg', d } | { t: 'gold', n } | { t: 'mod', k, n }
    ========================================================= */
 
@@ -259,7 +262,13 @@ function lFixed(cx, cy) {
   if (LGEN && LGEN.key === key) { let r; do r = LGEN.it.next(); while (!r.done); d = r.value; LGEN = null; } else d = lGenFixed(cx, cy);
   lFixPut(key, d); return d;
 }
-const LMARK = { turm: _t('Alter Wachturm'), kreis: _t('Steinkreis'), riese: _t('Weltenbaum'), statue: _t('Statue des Ordens'), obelisk: _t('Obelisk der Alten'), schrein: _t('Vergessener Schrein') };
+const LMARK = { turm: _t('Alter Wachturm'), kreis: _t('Steinkreis'), riese: _t('Weltenbaum'), statue: _t('Statue des Ordens'), obelisk: _t('Obelisk der Alten'), schrein: _t('Vergessener Schrein') }, LMARKT = ['turm', 'kreis', 'riese', 'statue', 'obelisk', 'schrein'];
+// Wahrzeichen in der Mitte einer Region (aus der Welt-Saat, ohne den Chunk zu erzeugen) – wie in lGenIt: Hort, Wahrzeichen oder Ruinenfeld
+function lLandmark(R) {
+  if (R.lm != null) return R.lm;
+  const h = lF(R.rx, R.ry, 81);
+  return R.lm = R.dist < 5 ? _t('Weltentor') : h < .3 ? _t('Hort') : h < .72 ? LMARK[LMARKT[Math.floor(lF(R.rx, R.ry, 82) * LMARKT.length)]] : _t('Ruinenfeld');
+}
 const LPROPR = { eiche: 5, herbst: 5, tanne: 5, schnee: 5, tot: 3, kohle: 3, stein: 5, fels: 9, saeule: 7, birke: 4, pilz: 5, kaktus: 4, palme: 4, dorn: 6, kristall: 5, knochen: 6, grab: 4, eisz: 5, obs: 4, busch: 5, weide: 5, sternbaum: 5, koralle: 5, salzk: 4, schilf: 0, statue: 7, riese: 12 };
 function lGenFixed(cx, cy) { const it = lGenIt(cx, cy); let r; do r = it.next(); while (!r.done); return r.value; }
 // Erzeugt einen Chunk in Häppchen (yield): das Vorladen verteilt die Arbeit auf mehrere Bilder, ohne Ruckeln
@@ -325,7 +334,7 @@ function* lGenIt(cx, cy) {
     const h = lF(R.rx, R.ry, 81), [lx, ly] = loc(R.sx, R.sy, 150), p = nudge(lx, ly, 26); if (!p) continue;
     if (h < .3) { clear(p[0], p[1], 90); add({ k: 'lair', x: X0 + p[0], y: Y0 + p[1], r: 0, solid: false, key: 'L' + R.id, rid: R.id }); d.pois.push({ k: 'lair', x: X0 + p[0], y: Y0 + p[1], key: 'L' + R.id }); }
     else if (h < .72) {
-      const ts = ['turm', 'kreis', 'riese', 'statue', 'obelisk', 'schrein'], t = ts[Math.floor(lF(R.rx, R.ry, 82) * ts.length)];
+      const t = LMARKT[Math.floor(lF(R.rx, R.ry, 82) * LMARKT.length)];
       clear(p[0], p[1], t === 'kreis' ? 70 : 54);
       add({ k: 'mark', t, x: X0 + p[0], y: Y0 + p[1], r: t === 'turm' ? 15 : t === 'riese' ? 12 : t === 'statue' ? 7 : t === 'obelisk' ? 6 : t === 'schrein' ? 9 : 0, solid: t !== 'kreis', name: LMARK[t], rid: R.id });
       if (t === 'kreis') for (let i = 0; i < 7; i++) { const a = i / 7 * 6.283; add({ k: 'prop', t: 'menhir', v: i % 2, x: X0 + p[0] + Math.cos(a) * 36, y: Y0 + p[1] + Math.sin(a) * 22, r: 4, solid: true }); }
@@ -969,9 +978,11 @@ function landePos() { if (!landeActive()) return null; const wx = P.x - LOFF, wy
 function landeDepth() { if (!landeActive()) return 0; return Math.min(1, Math.hypot((P.x - LOFF) / LCK, (P.y - LOFF) / LCK) / LWR); }
 function lCtxOf(cx, cy, salt) {
   const R = lRegAtC(cx + .5, cy + .5), depth = lDepthC(cx + .5, cy + .5);
-  return { cx, cy, depth, stage: R.stage, biome: R.biome, region: R.id, rname: lRegName(R), ring: R.ring, x0: cx * LCK, y0: cy * LCK, trip: LW ? LW.seed : 0, R: mulberry(lH(cx, cy, lSalt(salt == null ? 0 : salt))) };
+  return { cx, cy, depth, stage: R.stage, biome: R.biome, region: R.id, rname: lRegName(R), landmark: lLandmark(R), ring: R.ring, x0: cx * LCK, y0: cy * LCK, trip: LW ? LW.seed : 0, R: mulberry(lH(cx, cy, lSalt(salt == null ? 0 : salt))) };
 }
 function landeCtx(cx, cy, salt) { return lCtxOf(Math.floor(+cx) || 0, Math.floor(+cy) || 0, salt); }
+// Leuchtfeuer des Helden (Welt-Pixel), z. B. für Hinweise anderer Systeme
+function landeBeacons() { try { if (!SAVE || !SAVE.meta) return []; return lMeta().cps.map(c => ({ name: lCpName(c), x: c.x, y: c.y, i: c.i })); } catch (_) { return []; } }
 // Aussagen über einen Ort (Welt-Pixel): Region, Biom, Stufe, Tiefe, Entfernung zum Tor
 function lInfoW(wx, wy) { const R = lRegAtC(wx / LCK, wy / LCK); return { R, B: LANDE_BIOMES[R.biome], stage: R.stage, depth: Math.min(1, Math.hypot(wx, wy) / LCK / LWR), km: Math.hypot(wx, wy) / 8000 }; }
 function lKm(px_) { const m = px_ / 8; return m < 1000 ? _t('{n} m', { n: Math.round(m / 10) * 10 }) : _t('{n} km', { n: (m / 1000).toLocaleString(LOCALE, { maximumFractionDigits: m < 10000 ? 1 : 0 }) }); }
@@ -1622,7 +1633,7 @@ function lTick(dt) {
       case 'tool': lToolTick(o, d); break;
       case 'rune': if (o.site.state !== 'open' && o.site.state !== 'done' && !o.on && d < 12) lRune(o); break;
       case 'enc': if (d < 34 && !o.used) lEncounter(o); break;
-      case 'arte': case 'arteT': if (d < 18 && !o.used) lArte(o); break;
+      case 'arte': case 'arteT': lArteTick(o, d); break;
       case 'mile': if (d < 40 && !L.msgT['mile' + o.km]) { L.msgT['mile' + o.km] = T; toast(_t('Meilenstein: {n} km vom Weltentor', { n: o.km }), '#efe2bf'); } break;
       case 'cross': if (d < 30 && o.need >= 0 && lToolBit(o.need) && !L.cross.has(o)) { L.cross.add(o); const T_ = LANDE_TOOLS[o.need]; toast(_t('Mit {tool} über {bar}!', { tool: T_.n, bar: LBAR[LBARK[o.kind]].n }), T_.c); lMeta().cross++; } break;
     }
@@ -1735,14 +1746,30 @@ function lEncounter(o) {
   try { e.teleport = e.teleport || ((wx, wy) => lTeleport(wx + LOFF, wy + LOFF)); e.local = { x: o.x, y: o.y }; if (typeof encounterOpen === 'function') encounterOpen(e); } catch (err) { console.error('Lande (encounterOpen):', err); }
   for (const r of LW.cm.values()) lRecDel(r, o);
 }
+// Artefakt auflesen (take) oder Schatz öffnen (open) – Ton, Lesebildschirm und Beute macht Teil A selbst.
+// Ein Schatz bleibt liegen, solange open() nicht true liefert (versiegelt, Wächter erwacht): erst nach dem Weggehen fragt er wieder.
 function lArte(o) {
-  o.used = true; const s = o.s;
+  const s = o.s; let r = false;
+  o.wait = true;
   try {
-    if (typeof s.open === 'function') s.open(s);
-    else if (o.k === 'arte') { if (typeof artePickup === 'function') artePickup(s.id, s); else if (typeof arteOpen === 'function') arteOpen(s.id, s); }
-    else if (typeof arteTreasureOpen === 'function') arteTreasureOpen(s.id != null ? s.id : s, s);
-  } catch (err) { console.error('Lande (Artefakt):', err); }
-  sfx('page'); for (const r of LW.cm.values()) lRecDel(r, o);
+    if (o.k === 'arte') r = typeof s.take === 'function' ? s.take() : typeof artePickup === 'function' ? artePickup(s.id) : typeof s.open === 'function' ? s.open() : false;
+    else r = typeof s.open === 'function' ? s.open() : typeof arteTreasureOpen === 'function' ? arteTreasureOpen(s.chain != null ? s.chain : s.id) : false;
+  } catch (err) { console.error('Lande (Artefakt):', err); r = false; }
+  if (o.k === 'arte') { lArteGone(o); if (r === true) lArteReady(s.chain); }
+  else if (r === true) lArteGone(o);
+}
+function lArteGone(o) { o.used = true; for (const r of LW.cm.values()) lRecDel(r, o); }
+// Liegt die Schatzstelle noch da? (Teil A weiß es: nach dem Wächter öffnet er sie selbst, ein neuer Fund bricht das Siegel)
+function lArteLive(o) {
+  if (typeof arteTreasureInChunk !== 'function') return true;
+  try { const cx = Math.floor((o.x - LOFF) / LCK), cy = Math.floor((o.y - LOFF) / LCK), l = arteTreasureInChunk(lCtxOf(cx, cy, 'arte')) || [], s = l.find(q => q && q.id === o.s.id); if (!s) return false; o.s = s; return true; } catch (_) { return true; }
+}
+// Neues Artefakt: Schatzstellen derselben Spur in geladenen Chunks neu fragen (Siegel gebrochen?)
+function lArteReady(chain) { if (chain == null) return; for (const rec of LW.cm.values()) for (const c of rec.grid) for (const o of c) if (o.k === 'arteT' && o.s && o.s.chain === chain) lArteLive(o); }
+function lArteTick(o, d) {
+  if (o.used) return;
+  if (!o.wait) { if (d < 18) lArte(o); return; }
+  if (d > 46 || (o.chk = (o.chk || 0) - .2) <= 0) { o.chk = 1; if (!lArteLive(o)) { lArteGone(o); return; } if (d > 46) o.wait = false; }
 }
 function lExitOpen(ex) { if (ex.t === 'mond') return ((LW.t + ex.ph) % 80) < 40; if (ex.t === 'schluessel') return !!ex.open; return true; }
 // Ausgänge in der Nähe: Tore der Alten (aus der Welt-Saat), Weltentor, Leuchtfeuer, Rückkehrrolle
@@ -1833,16 +1860,24 @@ function lRivalTick(r) {
 }
 // Kill: Bauteile und Eier anderer Systeme werden in der Freiwelt zur Beute am Boden; Lager, Horte, Bosse, Rivalen
 function lEggIds() { const E = SAVE && SAVE.meta.pets && SAVE.meta.pets.eggs; return Array.isArray(E) ? new Set(E.map(g => g.id)) : null; }
-function lKillPre() { if (LW && LW.on) { LW.pk = Object.assign({}, P.parts || {}); LW.ek = lEggIds(); } }
+// Was Kill-Hooks anderer Systeme direkt gutschreiben (Bauteile, Mods, Eier – z. B. der erste Sieg über einen Boss aus Teil B),
+// gehört in der Freiwelt zum Ausflug: Bauteile und Mods in den Rucksack (voll: auf den Boden), Eier als Bodenbeute – beim Tod verloren
+function lKillPre() { if (LW && LW.on) { LW.pk = Object.assign({}, P.parts || {}); LW.mk = Object.assign({}, P.mods || {}); LW.ek = lEggIds(); } }
 HOOK.kill.unshift(lKillPre);
 HOOK.kill.push(lKillPost);
+// erst nach allen Kill-Hooks (auch aus später geladenen Dateien) nachsehen, was dazugekommen ist
+HOOK.boot.push(() => { const i = HOOK.kill.indexOf(lKillPost); if (i >= 0) HOOK.kill.splice(i, 1); HOOK.kill.push(lKillPost); const j = HOOK.kill.indexOf(lKillPre); if (j > 0) { HOOK.kill.splice(j, 1); HOOK.kill.unshift(lKillPre); } });
+function lKillTake(e, x) { if (lPackAdd(x)) lGot(x); else lDrop(e.x, e.y, x, .6); }
 function lKillPost(e) {
   if (!LW || !LW.on) return;
   const L = LW, M = lMeta(); L.kills++; M.kills++; lMisEvent('kill');
-  if (L.pk && P.parts) for (const k in P.parts) { const d = P.parts[k] - (L.pk[k] || 0); if (d > 0) { if (typeof padd === 'function') padd(k, -d); else P.parts[k] -= d; if (!lPackAdd({ t: 'part', k, n: d })) lDrop(e.x, e.y, { t: 'part', k, n: d }); } }
+  if (L.pk && P.parts) for (const k in P.parts) { const d = P.parts[k] - (L.pk[k] || 0); if (d > 0) { if (typeof padd === 'function') padd(k, -d); else P.parts[k] -= d; lKillTake(e, { t: 'part', k, n: d }); } }
   L.pk = null;
+  if (L.mk && P.mods) for (const k of Object.keys(P.mods)) { const d = P.mods[k] - (L.mk[k] || 0); if (d > 0) { if (typeof modAdd === 'function') modAdd(k, -d); else { P.mods[k] -= d; if (P.mods[k] <= 0) delete P.mods[k]; } lKillTake(e, { t: 'mod', k, n: d }); } }
+  L.mk = null;
   const E = SAVE.meta.pets && SAVE.meta.pets.eggs;
-  if (L.ek && Array.isArray(E)) { const nw = E.filter(g => !L.ek.has(g.id)); if (nw.length) { SAVE.meta.pets.eggs = E.filter(g => L.ek.has(g.id)); for (const g of nw) lDrop(e.x, e.y, { t: 'egg', d: { egg: 1, sp: g.sp, tier: g.tier } }, .6); $('toast').classList.remove('show'); persist(); } }
+  // Eier wie in 6.0 als Bodenbeute (Teil K verlässt sich darauf) – aufgehoben kommen sie in den Rucksack
+  if (L.ek && Array.isArray(E)) { const nw = E.filter(g => !L.ek.has(g.id)); if (nw.length) { SAVE.meta.pets.eggs = E.filter(g => L.ek.has(g.id)); $('toast').classList.remove('show'); for (const g of nw) lDrop(e.x, e.y, { t: 'egg', d: { egg: 1, sp: g.sp, tier: g.tier } }, .6); persist(); } }
   L.ek = null;
   const s = e.lw && e.lw.src, dep = lDepthAt(e.x, e.y);
   if (e.elite && !e.boss && Math.random() < .3) lDrop(e.x, e.y, { t: 'key' });
@@ -1945,7 +1980,7 @@ function lDraw(o) {
     case 'cross': { const own = o.need < 0 || lToolBit(o.need); ctx.fillStyle = WOOD[0]; ctx.fillRect(x - 1, y - 18, 2, 18); ctx.fillStyle = own ? '#3a6a3a' : '#6a2a2a'; ctx.fillRect(x - 9, y - 28, 18, 12); ctx.fillStyle = own ? '#79c24e' : '#ff6a5a'; ctx.fillRect(x - 9, y - 28, 18, 1); if (o.need >= 0) ctx.drawImage(lToolImg(o.need), x - 6, y - 28, 12, 12); else { ctx.fillStyle = '#efe2bf'; ctx.fillRect(x - 5, y - 23, 10, 2); } return; }
     case 'enc': { const a = .5 + .4 * Math.sin(T * 4); ctx.globalAlpha = a; ctx.fillStyle = '#b892f4'; for (let i = 0; i < 6; i++) { const an = T * 2 + i * 1.05; ctx.fillRect(Math.round(x + Math.cos(an) * 9), Math.round(y - 10 + Math.sin(an) * 5), 2, 2); } ctx.globalAlpha = 1; ptext('?', x, y - 22 + Math.round(Math.sin(T * 3) * 2), '#e0c8ff', 8); addLight(x, y - 10, 34, .8); return; }
     case 'arte': { const b = Math.round(Math.sin(T * 3 + o.x) * 2); ctx.drawImage(lSpr('relikt', 0), x - 6, y - 16 + b); addLight(x, y - 10, 26, .9); if (Math.random() < .12) part(o.x + rnd(-5, 5), o.y, rnd(4, 14), 0, 0, 20, '#ffe08a', .6, 1, -6, 1); return; }
-    case 'arteT': { ctx.fillStyle = '#c8342c'; for (let i = -5; i <= 5; i++) { ctx.fillRect(x + i, y + i * .5, 2, 1); ctx.fillRect(x - i, y + i * .5, 2, 1); } addLight(x, y, 22, .6); if (Math.random() < .1) part(o.x + rnd(-5, 5), o.y, rnd(2, 8), 0, 0, 20, '#ffd24a', .6, 1, -4, 1); return; }
+    case 'arteT': { const rd = !!o.s.ready; ctx.fillStyle = rd ? '#ffd24a' : '#8a2a26'; for (let i = -5; i <= 5; i++) { ctx.fillRect(x + i, y + i * .5, 2, 1); ctx.fillRect(x - i, y + i * .5, 2, 1); } addLight(x, y, rd ? 30 : 18, rd ? .9 : .4); if (Math.random() < (rd ? .2 : .05)) part(o.x + rnd(-5, 5), o.y, rnd(2, 8), 0, 0, 20, rd ? '#ffd24a' : '#c8342c', .6, 1, -4, 1); return; }
   }
 }
 // Rivale als Held gezeichnet (charStrip): Bild 0–3 Ruhe, 4–7 Laufen, 8 Treffer
@@ -2378,7 +2413,17 @@ function lMisList(claim) {
 }
 // Richtung als Wort (Norden oben)
 function lDir(dx, dy) { const a = (Math.atan2(dy, dx) * 180 / Math.PI + 360 + 22.5) % 360, k = Math.floor(a / 45); return [_t('Osten'), _t('Südosten'), _t('Süden'), _t('Südwesten'), _t('Westen'), _t('Nordwesten'), _t('Norden'), _t('Nordosten')][k]; }
-// Kundschafterin: Aufträge annehmen und abholen, dazu ein Gerücht über das nächste Werkzeug
+// Gerücht über die nächste unentdeckte Spur von Artefakten (Teil A), vom Außenposten aus – danach liegt ein Suchkreis auf der Karte
+function lArteRumorHTML(npc) {
+  if (!npc || typeof arteRumor !== 'function') return '';
+  try {
+    const r = arteRumor(Math.floor((npc.x - LOFF) / LCK), Math.floor((npc.y - LOFF) / LCK));
+    if (!r || !r.text) return '';
+    if (r.chain != null && typeof aRumorAdd === 'function') aRumorAdd(r.chain);
+    return `<div class="lmis" style="--c:#b892f4"><div class="nm">${_t('Gerücht über eine Spur')}</div><div class="st">${esc(r.text)}</div></div>`;
+  } catch (e) { console.error('Lande (arteRumor):', e); return ''; }
+}
+// Kundschafterin: Aufträge annehmen und abholen, dazu Gerüchte über das nächste Werkzeug und eine Spur
 function lMisScreen(npc) {
   const L = LW; npc = npc || L.near; setState('menu'); showHud(false);
   if (npc && (!L.misOn || L.mis.every(m => m.paid))) { L.misOn = true; L.mis = lMisGen(npc); L.misFrom = npc.op; sfx('page'); }
@@ -2387,6 +2432,7 @@ function lMisScreen(npc) {
   const M = lMeta(), r = lRank(M.rep), nx = LREP[r + 1], nt = lNextTool();
   let rumor = '';
   if (nt >= 0 && npc) { const wx = (npc.x - LOFF) / LCK, wy = (npc.y - LOFF) / LCK, N = lToolN(nt); let best = null, bd = 1e9; for (let j = 0; j < N; j++) { const s = lToolSite(nt, j), d = Math.hypot(s.x - wx, s.y - wy); if (d < bd) { bd = d; best = s; } } if (best) rumor = `<div class="lmis" style="--c:${LANDE_TOOLS[nt].c}"><div class="nm">${_t('Gerücht: {tool}', { tool: esc(LANDE_TOOLS[nt].n) })}</div><div class="st">${_t('Ein Hort mit diesem Werkzeug soll etwa {d} im {dir} liegen. Auf der Karte ist die Gegend markiert.', { d: lKm(bd * LCK), dir: lDir(best.x - wx, best.y - wy) })}</div></div>`; }
+  rumor += lArteRumorHTML(npc);
   showOverlay(`${lHead(esc(npc ? npc.name : LNPC.mis.n).toLocaleUpperCase(LOCALE), 'l_resume')}
   <div class="say"><img class="px" src="${iconURL(['sp', npc ? npc.sp : 'elff'])}" alt=""><div><b style="color:#57c7e6">${esc(npc ? npc.name : LNPC.mis.n)}</b>${_t('„Der Orden braucht Augen hier draußen. Erledige, was du kannst – bezahlt wird, wenn du es mir bringst oder lebend durch ein Tor gehst.“')}</div></div>
   <div class="stats"><span style="color:#57c7e6">${_t('RUF: {n}', { n: LREP[r].n.toLocaleUpperCase(LOCALE) })}</span><span>${M.rep}${nx ? ' / ' + nx.at : ''}</span></div>${nx ? `<div class="lbar"><i style="width:${Math.round((M.rep - LREP[r].at) / (nx.at - LREP[r].at) * 100)}%"></i></div><p class="sub" style="margin-top:0">${_t('Nächster Rang: {n} – {d}', { n: nx.n, d: nx.d })}</p>` : ''}

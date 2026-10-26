@@ -220,7 +220,7 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
       const r = lDeliver([{ t: 'egg', d }]), E = SAVE.meta.pets.eggs; o.deliver = r.eggs === 1 && E.length === n0 + 1 && E[E.length - 1].sp === d.sp;
       LW.pack.length = 0; pickups.length = 0; return o;
     });
-    ok(eg.roll && eg.inPack && eg.killEgg, 'Begleiter-Eier: Weltbeute im Rucksack – auch Eier aus Siegen landen erst am Boden');
+    ok(eg.roll && eg.inPack && eg.killEgg, 'Begleiter-Eier: Weltbeute im Rucksack – Eier aus Siegen landen wie in 6.0 erst am Boden');
     ok(eg.fmt && eg.val && eg.deliver, 'Beute-Format passt zum Begleiter-Beutel, Wert ' + (eg.market ? 'aus dem Basar' : 'geschätzt') + ', heimgebrachtes Ei ins Brutnest');
     // Tod: Ausrüstung und Rucksack weg, Begleiter-Tasche kommt heim, Begleiter verletzt
     const d = await page.evaluate(() => {
@@ -332,6 +332,83 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
     ok(ot.log.includes('enc:test:function'), 'Teil A: Begegnung (encounterRoll) öffnet encounterOpen mit enc.teleport');
     ok(!ot.lair || (ot.log.some(l => l.startsWith('lair:L')) && ot.log.includes('spawn:7')), 'Teil B: Hort fragt bossForLair und ruft bossSpawn');
     ok(ot.egg && ot.mod && ot.give, 'Teil K/M: eggForBiome für Eier, modRoll/modGive für Mods');
+    // Mit den ECHTEN Teilen B (Bosse) und A (Artefakte), wenn sie geladen sind
+    const xr = await page.evaluate(async ([CALM_, HERO_]) => {
+      const CALM = eval('(' + CALM_ + ')'), o = { A: typeof arteInChunk === 'function' && typeof aChain === 'function' && typeof arteRumor === 'function', B: typeof bossSpawn === 'function' && typeof bossForLair === 'function' };
+      if (landeActive()) ON.l_quitok();
+      eval('(' + HERO_ + ')')();
+      const c0 = landeCtx(40, -12); o.landmark = typeof c0.landmark === 'string' && c0.landmark.length > 0;
+      SAVE.meta.lande.cps = [{ i: 0, x: 30 * 768, y: -12 * 768, t: 1, u: 1 }]; SAVE.meta.lande.cpn = 1;
+      const bs = landeBeacons(); o.beacons = bs.length === 1 && bs[0].x === 30 * 768 && bs[0].y === -12 * 768 && /Leuchtfeuer 1/.test(bs[0].name);
+      SAVE.meta.lande.cps = []; SAVE.meta.lande.cpn = 0;
+      const at = (x, y) => { P.x = x; P.y = y; LW.tick = 0; lTick(.2); };
+      if (o.A) {
+        lBegin(); CALM(); P.inv = 1e9;
+        // Elwa erzählt ein Gerücht über die nächste Spur (Suchkreis auf der Karte)
+        const npc = lNear(P.x, P.y, 700).find(x => x.k === 'npc' && x.role === 'mis');
+        lMisScreen(npc); o.rumor = /Gerücht über eine Spur/.test(panel.textContent) && /Man erzählt von/.test(panel.textContent); o.ru = SAVE.meta.arte.ru.length > 0 && arteHints().some(h => h.k === 'rumor'); lResume();
+        // Artefakt: take() liest auf, die Fundstelle verschwindet
+        const ch = arteRumor(0, 0).chain, C = aChain(ch), s0 = C.sites[0];
+        lTeleport(s0.x + LOFF, s0.y + LOFF + 50); CALM(); P.inv = 1e9;
+        const a = lNear(s0.x + LOFF, s0.y + LOFF, 60).find(x => x.k === 'arte' && x.s.id === s0.id); o.arteObj = !!a;
+        if (a) { at(a.x, a.y); o.took = aHas(s0.id) && a.used && state === 'menu' && !lNear(a.x, a.y, 30).includes(a); lResume(); }
+        // Schatz ohne Wächter: versiegelt bleibt er liegen und fragt erst nach dem Weggehen wieder; offen → Beute, Stelle weg
+        const skip = []; let tc = -1; for (let k = 0; k < 40 && tc < 0; k++) { const r = arteRumor(0, 0, skip); if (!r) break; skip.push(r.chain); if (!aChain(r.chain).rw.guard) tc = r.chain; }
+        if (tc >= 0) {
+          const TC = aChain(tc), ts = TC.sites[TC.L];
+          lTeleport(ts.x + LOFF, ts.y + LOFF + 60); CALM(); P.inv = 1e9;
+          const t = lNear(ts.x + LOFF, ts.y + LOFF, 60).find(x => x.k === 'arteT' && x.s.chain === tc); o.trObj = !!t && !t.s.ready;
+          if (t) {
+            at(t.x, t.y); o.sealed = state === 'menu' && /VERSIEGELT/.test(panel.textContent) && lNear(t.x, t.y, 30).includes(t) && !aOpened(tc); lResume();
+            at(t.x, t.y); o.noSpam = state === 'play';
+            at(t.x, t.y + 80); at(t.x, t.y); o.again = state === 'menu'; lResume();
+            for (let i = 0; i < TC.L; i++) artePickup(TC.sites[i].id, { quiet: true }); lArteReady(tc); o.ready = !!t.s.ready;
+            CALM(); at(t.x, t.y + 80); const g0 = P.gold; at(t.x, t.y);
+            o.opened = aOpened(tc) && !lNear(t.x, t.y, 30).includes(t) && state === 'menu' && P.gold > g0; lResume();
+          }
+        }
+      }
+      if (o.B) {
+        // erster Sieg über einen Boss aus Teil B: Bauteile, Ei und Mods (direkt gutgeschrieben) kommen in den Rucksack, nicht nach Hause
+        if (!landeActive()) lBegin(); lTeleport(LOFF + 384, LOFF + 420); CALM(); P.inv = 1e9; LW.pack = []; pickups.length = 0;
+        SAVE.meta.pets.eggs = []; P.parts = {}; P.mods = {};
+        const c = landeCtx(0, 0, 'Ltest'), id = bossForLair('Ltest', c), e = bossSpawn(id, P.x + 60, P.y, { ctx: c, lair: 'Ltest', stage: c.stage, instant: true, quiet: true });
+        o.bossOk = !!e && e.bossId === id;
+        if (e) {
+          killEnemy(e, 1, 0);
+          const n = t => LW.pack.filter(x => x.t === t).reduce((s, x) => s + (x.n || 1), 0);
+          o.bPack = { part: n('part'), egg: pickups.filter(c => c.k === 'legg').length, mod: n('mod') };
+          o.bHome = { parts: Object.values(P.parts).reduce((s, v) => s + v, 0), mods: Object.values(P.mods || {}).reduce((s, v) => s + v, 0), eggs: SAVE.meta.pets.eggs.length };
+        }
+        // Wächter eines Schatzes (Teil A ruft Teil B): Stelle bleibt, bis der Wächter fällt – dann öffnet Teil A den Schatz selbst
+        if (o.A) {
+          const skip = []; let gc = -1; for (let k = 0; k < 60 && gc < 0; k++) { const r = arteRumor(0, 0, skip); if (!r) break; skip.push(r.chain); if (aChain(r.chain).rw.guard) gc = r.chain; }
+          if (gc >= 0) {
+            const GC = aChain(gc), gs = GC.sites[GC.L]; for (let i = 0; i < GC.L; i++) artePickup(GC.sites[i].id, { quiet: true });
+            lTeleport(gs.x + LOFF, gs.y + LOFF + 60); CALM(); P.inv = 1e9;
+            const t = lNear(gs.x + LOFF, gs.y + LOFF, 60).find(x => x.k === 'arteT' && x.s.chain === gc);
+            if (t) {
+              const n0 = enemies.length; at(t.x, t.y); const gd = enemies.slice(n0).find(x => x.boss);
+              o.guard = !!gd && lNear(t.x, t.y, 30).includes(t) && !aOpened(gc);
+              if (gd) { killEnemy(gd, 1, 0); await new Promise(r => setTimeout(r, 1500)); o.guardOpen = aOpened(gc); lResume(); CALM(); for (let i = 0; i < 6; i++) at(t.x, t.y + 80); o.guardGone = !lNear(t.x, t.y, 30).includes(t); }
+            }
+          }
+        }
+      }
+      if (landeActive()) ON.l_quitok();
+      return o;
+    }, [CALM.toString(), HERO.toString()]);
+    ok(xr.landmark && xr.beacons, 'landeCtx gibt das Wahrzeichen der Region (landmark), landeBeacons() die Leuchtfeuer mit Namen' + (xr.landmark && xr.beacons ? '' : ' ' + JSON.stringify(xr)));
+    if (xr.A) {
+      ok(xr.rumor && xr.ru, 'Teil A echt: Elwa erzählt ein Gerücht über die nächste Spur (arteRumor), Suchkreis auf der Karte');
+      ok(xr.arteObj && xr.took, 'Teil A echt: Artefakt-Fundstelle in der Welt, take() liest auf, Stelle verschwindet' + (xr.arteObj && xr.took ? '' : ' ' + JSON.stringify(xr)));
+      ok(xr.trObj && xr.sealed && xr.noSpam && xr.again, 'Teil A echt: versiegelter Schatz bleibt liegen (open() = false), fragt erst nach dem Weggehen wieder' + (xr.sealed && xr.noSpam && xr.again ? '' : ' ' + JSON.stringify(xr)));
+      ok(xr.ready && xr.opened, 'Teil A echt: alle Artefakte gefunden → Siegel bricht, Schatz geöffnet, Stelle weg' + (xr.ready && xr.opened ? '' : ' ' + JSON.stringify(xr)));
+    } else console.log('  (Teil A nicht geladen – übersprungen)');
+    if (xr.B) {
+      ok(xr.bossOk && xr.bPack && xr.bPack.part >= 2 && xr.bPack.egg >= 1 && xr.bPack.mod >= 1 && !xr.bHome.parts && !xr.bHome.mods && !xr.bHome.eggs, 'Teil B echt: erster Boss-Sieg – Bauteile und Mods im Rucksack, das Ei als Bodenbeute, nichts direkt daheim ' + JSON.stringify([xr.bPack, xr.bHome]));
+      if (xr.A) ok(xr.guard && xr.guardOpen && xr.guardGone, 'Teil A+B echt: Schatz-Wächter erscheint, Stelle bleibt; nach dem Sieg öffnet Teil A den Schatz, die Stelle verschwindet' + (xr.guard && xr.guardOpen && xr.guardGone ? '' : ' ' + JSON.stringify(xr)));
+    } else console.log('  (Teil B nicht geladen – übersprungen)');
     // Spielstand nach 24 h Fußmarsch geradeaus: Karte und Regionen bleiben klein
     const sz = await page.evaluate(() => {
       const M = SAVE.meta.lande; M.map = {}; M.regs = []; LMAP = null; LREGS = null; lBegin(); const L = LW, t0 = performance.now();
