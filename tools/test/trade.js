@@ -244,6 +244,9 @@ const PETS_MOCK = () => {
   await tapA('[data-act="tr_done"]'); await tapA('[data-act="tr_ask"][data-id="e:0"]'); await tapA('[data-act="tr_send"]');
   const ecode = await A.evaluate(() => { const v = $('trOut').value; return v.slice(v.indexOf('KH5-')); });
   ok(await B.evaluate(c => { const p = trParse(c).p; return trAccept(p) === 'ok' && SAVE.meta.pets.eggs.some(e => e.sp === 'natter'); }, ecode), 'Ei verschenkt und angekommen');
+  // Zucht-Ei (Kreaturen 2.0): Gene, Mutation und Eltern reisen im Code mit
+  const gcode = await A.evaluate(() => { const now = Date.now(); SAVE.meta.pets.eggs.push({ id: 'zz1', v: 2, sp: 'fuchs', tier: 2, got: 0, need: 7200, nest: 0, w: 0, f: 0, z: 0, t: now, born: now, gn: [91, 92, 93, 94, 95], mu: 'gold', pa: ['fuchs', 'irrlicht'], ge: 2 }); persist(); return trSend({ t: 'e', i: SAVE.meta.pets.eggs.length - 1 }) || ''; });
+  ok(await B.evaluate(c => { const r = trParse(c); if (!r.p) return false; const ok1 = trAccept(r.p) === 'ok', E = SAVE.meta.pets.eggs, g = E[E.length - 1]; return ok1 && !!g.gn && g.gn[0] === 91 && (typeof PET_MUT === 'undefined' || g.mu === 'gold') && g.pa && g.pa.join() === 'fuchs,irrlicht'; }, gcode), 'Zucht-Ei verschenkt: Gene, Mutation und Eltern kommen an');
   ok(await B.evaluate(c => { const f = window.petImport; window.petImport = undefined; const p = trParse(c).p; p.id = 'neuneu000000'; const r = trAccept(p); window.petImport = f; return r === 'pets' && !SAVE.meta.trades.got.includes('neuneu000000'); }, pcode), 'ohne Begleiter-System: Begleiter-Code bleibt gültig');
 
   /* ---------- Bildschirme antippen: Händlerin, Spiegel, Aussehen ---------- */
