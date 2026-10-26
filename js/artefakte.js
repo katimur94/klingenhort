@@ -668,7 +668,7 @@ function aStarted() { const B = aBits(), l = []; if (B) for (let c = 0; c < ARTE
 const ASEEN = [];
 function aSeen(ctx) { if (!ctx || !isFinite(ctx.cx)) return; ASEEN.push([ctx.cx | 0, ctx.cy | 0]); if (ASEEN.length > 9) ASEEN.shift(); }
 function aHere() {
-  try { if (typeof landePos === 'function') { const p = landePos(); if (p && isFinite(p.x)) return { x: p.x, y: p.y }; } } catch (_) { }
+  try { if (typeof landePos === 'function') { const p = landePos(); if (p && isFinite(p.wx)) return { x: p.wx, y: p.wy }; if (p && isFinite(p.x)) return { x: p.x, y: p.y }; } } catch (_) { }
   if (!ASEEN.length || !(typeof landeActive === 'function' && landeActive())) return null;
   let x = 0, y = 0; for (const [cx, cy] of ASEEN) { x += cx; y += cy; } return { x: (x / ASEEN.length + .5) * ACK, y: (y / ASEEN.length + .5) * ACK };
 }
@@ -682,7 +682,7 @@ function arteInChunk(ctx) {
     if (!ctx) return []; aSeen(ctx);
     const l = ALAY.idx.get(aKey(ctx.cx | 0, ctx.cy | 0)); if (!l) return [];
     const out = [];
-    for (const s of l) if (!s.t && !aHas(s.id)) { const d = arteDef(s.id); out.push({ id: s.id, x: s.x, y: s.y, chain: s.c, idx: s.i, kind: d.kind, name: d.name, icon: d.icon, next: s.i === 0 || aHas(s.id - 1), take: () => artePickup(s.id) }); }
+    for (const s of l) if (!s.t && !aHas(s.id)) { const d = arteDef(s.id); out.push({ id: s.id, x: s.x, y: s.y, chain: s.c, idx: s.i, kind: d.kind, name: d.name, icon: d.icon, next: s.i === 0 || aHas(s.id - 1), take: () => artePickup(s.id), open: () => artePickup(s.id) }); }
     return out;
   } catch (e) { console.error('Artefakte (Chunk):', e); return []; }
 }
@@ -946,6 +946,7 @@ function aTreasureLoot(c) {
 function arteTreasureOpen(c, o) {
   o = o || {};
   try {
+    if (c && typeof c === 'object') c = c.chain; if (typeof c === 'string' && c[0] === 'T') c = c.slice(1);
     c = Math.floor(+c); if (!(c >= 0 && c < ARTE_NC) || !P) return false;
     const C = aChain(c), M = aLocal(); if (!M) return false;
     if (aOpened(c)) { toast(_t('Die Truhe ist leer – diesen Schatz hast du schon geborgen.'), '#a8997e'); return false; }
@@ -1550,7 +1551,7 @@ const arteDebug = {
 /* ---------- Aussehen ---------- */
 const ATORN = (() => { const R = mulberry(77), t = [], b = []; for (let i = 0; i <= 32; i++) { const x = (i / 32 * 100).toFixed(1); t.push(`${x}% ${(R() * 5).toFixed(1)}px`); b.push(`${(100 - i / 32 * 100).toFixed(1)}% calc(100% - ${(R() * 5).toFixed(1)}px)`); } return 'polygon(' + t.concat(b).join(',') + ')'; })();
 document.head.insertAdjacentHTML('beforeend', `<style>
-#arfx{position:fixed;left:max(16px,var(--sal));top:calc(var(--sat) + 60px);z-index:5;display:flex;flex-direction:column;align-items:flex-start;gap:3px;pointer-events:none;font-family:var(--f-display);font-size:7px}
+#arfx{position:fixed;left:max(16px,var(--sal));top:calc(var(--sat) + 58px);z-index:5;display:flex;flex-wrap:wrap;max-width:calc(50vw - 20px);gap:3px;pointer-events:none;font-family:var(--f-display);font-size:7px}
 #arfx span{background:rgba(17,14,23,.84);padding:4px 6px;color:#ffd24a;box-shadow:0 0 0 2px var(--night);text-shadow:1px 1px 0 #000;white-space:nowrap}
 #arfx span.bad{color:#ff8a7a}
 .arnew,.arms{font-family:var(--f-display);font-size:8px;line-height:1.5;color:var(--night);background:var(--gold);padding:7px 8px;margin:0 0 8px;text-align:center;animation:pop .3s steps(3)}
