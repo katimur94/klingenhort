@@ -114,7 +114,7 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
       o.nb = [lKm(6160), lKm(16800), lKm(9e6)].every(t => /\d k?m$/.test(t) && !/\d k?m/.test(t));
       // Seltenheit: Kampagne unverändert, Freiwelt besser – nach Tiefe
       const cnt = [0, 0, 0, 0, 0, 0, 0]; for (let i = 0; i < 20000; i++) cnt[randomItem(10, 0).rar]++; o.campLeg = cnt[4] / 200; o.campMyth = cnt[6];
-      const w = [0, 0, 0, 0, 0, 0, 0], w4 = [0, 0, 0, 0, 0, 0, 0]; for (let i = 0; i < 40000; i++) { w[landeRar(Math.random(), lLuckD(0))]++; w4[landeRar(Math.random(), lLuckD(.1))]++; }
+      const w = [0, 0, 0, 0, 0, 0, 0], w4 = [0, 0, 0, 0, 0, 0, 0]; for (let i = 0; i < 40000; i++) { const r = (i + .5) / 40000; w[landeRar(r, lLuckD(0))]++; w4[landeRar(r, lLuckD(.1))]++; }   // gleichmäßig statt Zufall: genaue Anteile
       o.wLeg = w[4] / 400; o.wMyth = w[6] / 400; o.w4Leg = w4[4] / 400; o.w4Myth = w4[6] / 400;
       return o;
     });
@@ -186,15 +186,15 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
       const CALM = eval('(' + CALM_ + ')'); lTeleport(LOFF + 384, LOFF + 372); CALM(); P.inv = 1e9;
       const ex = lNear(P.x, P.y, 200).find(o => o.k === 'exit' && o.t === 'tor'); P.x = ex.x; P.y = ex.y; LW.lx = P.x; LW.ly = P.y; const need = lChannel(ex); let t = 0;
       while (landeActive() && t < 20) { CALM(); P.x = ex.x; P.y = ex.y; update(1 / 60); t += 1 / 60; }
-      return { need, t, done: !landeActive() && /ENTKOMMEN/.test(panel.textContent) };
+      return { need, t, done: !landeActive() && /ENTKOMMEN/.test(panel.textContent), why: state + ' · ' + $('objective').textContent };
     }, [CALM.toString()]);
-    ok(ch.done && Math.abs(ch.t - ch.need) < .15, `Ausgang: ${ch.t.toFixed(2)} s gestanden für ${ch.need.toFixed(1)} s Anzeige`);
+    ok(ch.done && Math.abs(ch.t - ch.need) < .15, `Ausgang: ${ch.t.toFixed(2)} s gestanden für ${ch.need.toFixed(1)} s Anzeige` + (ch.done ? '' : ` (${ch.why})`));
     // Leuchtfeuer: Stein kostet, nicht im Kampf, sichert die Karte, Start und Ausgang
     await page.evaluate(() => { ON.l_home(); lBegin(); });
     const cp = await page.evaluate(([CALM_]) => {
       const CALM = eval('(' + CALM_ + ')'), M = SAVE.meta.lande, o = {}; CALM(); P.inv = 1e9;
       const [x, y] = lRoadPt(2, 9); lTeleport(x * LCK + LOFF, y * LCK + LOFF); CALM(); lTick(.3); lTick(.3);
-      M.stones = 1; LW.hurtT = T; o.fight = !!lCpBlock(); LW.hurtT = -99;
+      M.stones = 1; LW.hurtT = T; o.fight = !!lCpBlock(); CALM();   // CALM auch für Gegner, die lTick gerade zufällig nahe erscheinen ließ
       const fog = LW.fog.size, map0 = Object.keys(M.map).length; o.free = lCpBlock() === '';
       ON.l_cpok(); o.set = M.cps.length === 1 && M.stones === 0 && M.start === 'c' + M.cps[0].i && Object.keys(M.map).length > map0 && fog > 0 && LW.fog.size === 0;
       o.beacon = lNear(P.x, P.y, 200).some(b => b.k === 'beacon');
@@ -217,10 +217,10 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
       lBegin(st.find(s => s.id === M.start)); CALM(); P.inv = 1e9;
       const b = lNear(P.x, P.y, 200).find(x => x.k === 'beacon'); o.near = !!b && Math.hypot(b.x - P.x, b.y - P.y) < 70;
       P.x = b.x; P.y = b.y; LW.lx = P.x; LW.ly = P.y; let t = 0; while (landeActive() && t < 20) { CALM(); P.x = b.x; P.y = b.y; update(1 / 60); t += 1 / 60; }
-      o.out = !landeActive() && /ENTKOMMEN/.test(panel.textContent); o.ext = M.ext === 2;
+      o.out = !landeActive() && /ENTKOMMEN/.test(panel.textContent); o.ext = M.ext === 2; o.why = state + ' · ' + $('objective').textContent;
       return o;
     }, [CALM.toString()]);
-    ok(cs.starts && cs.near && cs.out && cs.ext, 'Start am Leuchtfeuer, Leuchtfeuer ist ein Ausgang');
+    ok(cs.starts && cs.near && cs.out && cs.ext, 'Start am Leuchtfeuer, Leuchtfeuer ist ein Ausgang' + (cs.out ? '' : ` (${cs.why})`));
     // Höchstens 12 Leuchtfeuer: das am längsten unbenutzte erlischt
     const lim = await page.evaluate(([CALM_]) => {
       const CALM = eval('(' + CALM_ + ')'), M = SAVE.meta.lande; ON.l_home(); lBegin(); CALM();
@@ -573,7 +573,8 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
     ok(!over.length, pre + 'HUD überdeckt weder Pause, Trank noch Knöpfe' + (over.length ? ': ' + over.join(', ') : ''));
     await page.waitForTimeout(1500); await shot('04_world');
     // Rucksack über das HUD
-    await page.evaluate(() => { LW.pack.push({ t: 'item', it: lItem(2, 2) }, { t: 'gold', n: 120 }, { t: 'mat', k: 'erz', n: 6 }); });
+    // schlichter Gegenstand (Selten/Episch, ohne Set, Element und Mods): bei langen Beschreibungen rutschen die Knöpfe quer zufällig unter den Rand
+    await page.evaluate(() => { let it; do it = lItem(2, 2); while (it.set || it.rar > 3); it.el = null; it.mods = []; LW.pack.push({ t: 'item', it }, { t: 'gold', n: 120 }, { t: 'mat', k: 'erz', n: 6 }); });
     await page.locator('#lhPack').tap(); await page.waitForTimeout(400);
     ok(await page.evaluate(() => state === 'menu' && /RUCKSACK/.test(panel.textContent)), pre + 'Rucksack öffnet über das HUD');
     await tap('[data-act="l_sel"][data-id="p:0"]');
