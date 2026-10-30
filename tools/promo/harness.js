@@ -33,13 +33,14 @@ function setup() {
   hero('ranger', 'Faelwen', { body: 'elf_f', hair: 6, skin: -1, accent: -1, cape: 1, wings: 'w_fee', aura: 'a_gold' }, () => ({ weapon: W('bow', 'reflex', 6, 4, 9), armor: A('armor', 3, 3, 8), helm: A('helm', 6, 4, 6) }));
   persist();
   // Banner, Hinweise und Touch-Knöpfe ausblenden: Texte kommen später im Schnitt dazu
-  document.head.insertAdjacentHTML('beforeend', '<style>#banner,#toast,#skillbar,#objective,#touch{display:none!important}#combo{top:150px!important}</style>');
+  document.head.insertAdjacentHTML('beforeend', '<style>#banner,#toast,#skillbar,#objective,#touch,#pctip{display:none!important}#combo{top:150px!important}</style>');
   window.requestAnimationFrame = () => 0;
   const RT = []; window.setTimeout = (fn, ms) => { RT.push({ fn, t: T + (ms || 0) / 1000 }); return RT.length; };
   // ein Schritt = ein Videobild (30 fps); Timer laufen in Spielzeit
   window.__step = n => { for (let i = 0; i < (n || 1); i++) { for (let k = RT.length - 1; k >= 0; k--) if (RT[k].t <= T) { const r = RT.splice(k, 1)[0]; try { r.fn(); } catch (e) { } } loop(last + 1000 / 30); } };
   // Zoom: s = Bildschirmpixel pro Spielpixel (3–3.5 nah, 2.4 Übersicht)
-  window.__vp = s => { SCALE = s; VW = Math.ceil(innerWidth / SCALE) + 1; VH = Math.ceil(innerHeight / SCALE) + 1; cv.width = VW; cv.height = VH; cv.style.width = VW * SCALE + 'px'; cv.style.height = VH * SCALE + 'px'; ctx.imageSmoothingEnabled = false; makeVig(); };
+  // HD aus (seit 6.1.2 am PC an): sonst zeichnet das Spiel PXS-fach in die kleine Leinwand und zeigt nur eine Ecke
+  window.__vp = s => { SAVE.meta.settings.gfx = 'px'; HD = false; SCALE = s; VW = Math.ceil(innerWidth / SCALE) + 1; VH = Math.ceil(innerHeight / SCALE) + 1; cv.width = VW; cv.height = VH; cv.style.width = VW * SCALE + 'px'; cv.style.height = VH * SCALE + 'px'; ctx.imageSmoothingEnabled = false; makeVig(); };
   window.__snap = () => { cam.x = clamp(P.x + (window.__camDX || 0) - VW / 2, 0, Math.max(0, AW - VW)); cam.y = clamp(P.y + (window.__camDY || 0) - 10 - VH / 2, 0, Math.max(0, AH - VH)); };
   // Kamera-Versatz in Spielpixeln (z. B. __camDX = 24: Held links, Gegner rechts im Bild); 0 = wie im Spiel
   const _cam = window.camera; window.camera = function (dt) { const dx = window.__camDX || 0, dy = window.__camDY || 0; if (!P || (!dx && !dy)) return _cam.apply(this, arguments); P.x += dx; P.y += dy; try { return _cam.apply(this, arguments); } finally { P.x -= dx; P.y -= dy; } };
