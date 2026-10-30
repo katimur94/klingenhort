@@ -310,7 +310,7 @@ function aufQmHTML() {
     const desc = o.e.t === 'mod' && typeof modDesc === 'function' ? aufTry(() => modDesc(o.e.k), '') : o.e.t === 'egg' ? _t('Kommt in dein Brutnest.') : o.e.t === 'title' ? _t('Erscheint bei deinem Helden.') : '';
     return `<div class="row fkoff${lock || o.left <= 0 ? ' dim' : ''}" style="cursor:default"><div class="ic" style="box-shadow:inset 0 0 0 2px ${c}"><img src="${rwIcon(o.e)}" alt=""></div><div><div class="nm" style="color:${c}">${esc(rwName(o.e))}</div><div class="st">${desc ? esc(desc) + ' · ' : ''}${st}</div></div><button class="btn sm" data-act="auf_buy" data-id="${o.id}" ${can ? '' : 'disabled'} aria-label="${_t('Tauschen')}"><img src="${fkTokIc(f)}" alt="">${o.tok}${o.gold ? ` <i class="coin"></i>${fmt(o.gold)}` : ''}</button></div>`;
   }).join('');
-  return `<div class="fkopts">${opts}</div><div class="say"><img class="px" src="${iconURL(['sp', F.sp])}" alt=""><div><b style="color:${F.c}">${esc(F.n)} · ${esc(F.who())}</b>${_t('Du hast {n} Ruf-Marken. Rang {r}: {rank}.', { n: fkTok(f), r: r + 1, rank: esc(R[r].n) })}</div></div>
+  return `<div class="fkopts">${opts}</div><div class="say"><img class="px" src="${iconURL(['sp', F.sp])}" alt=""><div><b style="color:${F.c}">${esc(F.who())}</b>${_t('{fk}: Du hast {n} Ruf-Marken, dein Rang ist {r} – {rank}.', { fk: esc(F.n), n: fkTok(f), r: r + 1, rank: esc(R[r].n) })}</div></div>
   <p class="sub" style="margin-top:0">${_t('Tauschangebote dieser Woche – neue in {t}. Bezahlt wird mit Ruf-Marken und Gold.', { t: aufLeftTxt(aufMonday(now) - now) })}</p>${rows}`;
 }
 function aufShow() {

@@ -87,7 +87,7 @@ function fkGain(f, rep, tok, still) {
 // Rangaufstiege feststellen (einmal je Rang) – auch für Ruf aus den Landen (Elwa) – und melden
 function fkCheck(still) {
   const M = fkM(), up = []; if (!M) return up;
-  for (const f of FKORDER) { const r = fkRank(f), X = M.f[f]; if (r > X.rk) { for (let i = X.rk + 1; i <= r; i++) up.push({ f, r: i }); X.rk = r; } }
+  for (const f of FKORDER) { const r = fkRank(f), X = M.f[f]; if (r > X.rk) { for (let i = X.rk + 1; i <= r; i++) up.push({ f, r: i }); X.rk = r; } else if (r < X.rk) X.rk = r; }   // kaputter Spielstand: gemeldeten Rang zurücksetzen
   if (!up.length) return up;
   if (P && P.st) computeStats(); persist();
   if (!still) for (const u of up) {
