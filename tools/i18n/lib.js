@@ -4,7 +4,7 @@ const ROOT = path.join(__dirname, '..', '..');
 const R = f => path.join(ROOT, f);
 // Reihenfolge wie in index.html: so stehen zusammengehörige Texte auch in den Sprachdateien beieinander
 const DATA = ['js/data.js', 'js/story.js', 'js/news.js', 'js/weekly.js'];
-const CODE = ['js/data.js', 'js/story.js', 'js/news.js', 'js/weekly.js', 'js/core.js', 'js/art.js', 'js/items.js', 'js/elements.js', 'js/forge.js', 'js/pets.js', 'js/mastery.js', 'js/trade.js', 'js/auras.js', 'js/bosses.js', 'js/artefakte.js', 'js/mods.js', 'js/lande.js', 'js/voegel.js', 'js/market.js', 'js/world.js', 'js/combat.js', 'js/render.js', 'js/hideout.js', 'js/bauen.js', 'js/controls.js', 'js/handbuch.js', 'js/ui.js', 'js/i18n.js'];
+const CODE = ['js/data.js', 'js/story.js', 'js/news.js', 'js/weekly.js', 'js/core.js', 'js/art.js', 'js/items.js', 'js/elements.js', 'js/forge.js', 'js/pets.js', 'js/mastery.js', 'js/trade.js', 'js/auras.js', 'js/bosses.js', 'js/artefakte.js', 'js/mods.js', 'js/lande.js', 'js/voegel.js', 'js/market.js', 'js/world.js', 'js/combat.js', 'js/render.js', 'js/hideout.js', 'js/bauen.js', 'js/controls.js', 'js/handbuch.js', 'js/fraktionen.js', 'js/auftraege.js', 'js/ui.js', 'js/i18n.js'];
 
 function langs() { return Object.keys(vm.runInNewContext(fs.readFileSync(R('js/i18n.js'), 'utf8').match(/const LANGS = (\{[^}]*\})/)[1].replace(/^/, '(') + ')')); }
 

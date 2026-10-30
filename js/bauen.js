@@ -207,10 +207,12 @@ function gatherGive(k, n) {
   if (L) (L.gat || (L.gat = {}))[k] = (L.gat[k] || 0) + n;
   // landePouchAdd(k, n, still) liefert false außerhalb der Lande – dann direkt in den Vorrat; die „+n“-Zahl zeigt gatherGiveAll selbst
   if (!(L && typeof landePouchAdd === 'function' && landePouchAdd(k, n, true) !== false)) gainMat(k, n);
+  stat('g_' + k, n);   // je Rohstoff (Aufträge)
 }
 const GFX = [];
 function gatherGiveAll(o, got) {
-  let i = 0;
+  let i = 0; const b = perk('gather', 0);   // Hüter der Wildnis: mehr Ertrag (Bruchteile mit Glück)
+  if (b > 0) for (const k in got) { const x = got[k] * (1 + b); got[k] = Math.floor(x) + (Math.random() < x % 1 ? 1 : 0); }
   for (const k in got) { const n = got[k], row = i; if (!(n > 0)) continue; gatherGive(k, n); setTimeout(() => { if (G) txt(o.x, o.y - 22 - row * 9, '+' + n + ' ' + MATS[k].n, MATS[k].c); }, row * 180); for (let j = 0; j < Math.min(n, 4); j++) GFX.push({ k, x: o.x + rnd(-4, 4), y: o.y, z: 10, vx: rnd(-45, 45), vy: rnd(-18, 18), vz: rnd(80, 120), t: -(i * .08 + j * .06) }); i++; }
   if (i) setTimeout(() => sfx('coin'), 260);
   stat('gather');
@@ -428,7 +430,7 @@ HOOK.update.push(dt => { if (GFX.length) gfxUpd(dt); if (G && G.type === 'verste
 
 /* ---------- Acker im Kräutergarten: säen, wachsen (Echtzeit), ernten ---------- */
 function farmBeds() { return [0, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6][Math.min(10, hideLv('garten'))]; }
-function farmSpeed() { return hideLv('garten') >= 10 ? 2 : 1; }
+function farmSpeed() { return (hideLv('garten') >= 10 ? 2 : 1) * perk('farm', 1); }
 function farmList() { const H = SAVE.meta.hide; if (!Array.isArray(H.farm)) H.farm = []; return H.farm; }
 function farmFree() { const F = farmList(); for (let i = 0; i < farmBeds(); i++) if (!F[i]) return i; return -1; }
 function farmReady() { if (!SAVE || !SAVE.meta.hide) return 0; const F = farmList(), now = bNow(); let n = 0; for (let i = 0; i < farmBeds(); i++) if (F[i] && F[i].end <= now) n++; return n; }

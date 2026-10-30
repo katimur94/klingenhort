@@ -132,10 +132,10 @@ function lootValue(e) {
 // Sofortpreis bei Hedda: fair, aber niedrig (nie weniger als beim Händler auf der Karte)
 function mkQuote(e) {
   if (!mkO(e)) return 0;
-  if (e.t === 'item') { let p = 0; try { p = itemPrice(e.it); } catch (_) { p = 0; } return Math.max(p, Math.round(itemValue(e.it) * .4)); }
+  if (e.t === 'item') { let p = 0; try { p = itemPrice(e.it); } catch (_) { p = 0; } return Math.max(p, Math.round(itemValue(e.it) * .4 * perk('sell', 1))); }
   if (e.t === 'gold') return e.n | 0;
-  if (e.t === 'egg') return Math.round(lootValue(e) * .4);
-  return Math.max(1, Math.floor(mkUnit(e) * .4)) * Math.max(1, e.n | 0);
+  if (e.t === 'egg') return Math.round(lootValue(e) * .4 * perk('sell', 1));
+  return Math.max(1, Math.floor(mkUnit(e) * .4 * perk('sell', 1))) * Math.max(1, e.n | 0);
 }
 HOOK.itemLines.push((it, L) => { const v = itemValue(it); if (v > 0) L.push(_t('Marktwert: {n} Gold', { n: mkG(v) })); });
 
@@ -268,11 +268,11 @@ function mkGenE(R, kind, lv, cls, auc, sl) {
   if (kind === 'mod') { if (typeof modRoll !== 'function') return null; const k = modRoll(clamp(lv / 60, 0, .35) + (auc ? .08 : 0), 1, R); return mkModOk(k) ? { t: 'mod', k, n: 1 } : null; }
   return null;
 }
-const mkOfferPrice = o => Math.max(1, mkR(lootValue(o.e) * o.f));
+const mkOfferPrice = o => Math.max(1, mkR(lootValue(o.e) * o.f * perk('buy', 1)));   // mit Vorteil der Handelsgilde
 function mkShopGen() {
   const M = mkM(), R = mkRng(M), lv = P.lv, rk = mkRankI(), L = [];
   const add = (e, n) => { if (e) L.push({ id: uid(), e, n, f: +(R() < .15 ? .85 + R() * .12 : 1.08 + R() * .22).toFixed(3) }); };
-  for (let i = 0, ni = 4 + (rk >= 3) + (rk >= 6); i < ni; i++) add(mkGenE(R, 'item', lv, i === 0 || R() < .75 ? P.cls : mkCls(R), false, i === 0 ? 'weapon' : null), 1);   // immer eine Waffe für die eigene Klasse
+  for (let i = 0, ni = 4 + (rk >= 3) + (rk >= 6) + Math.round(perk('stock', 0)); i < ni; i++) add(mkGenE(R, 'item', lv, i === 0 || R() < .75 ? P.cls : mkCls(R), false, i === 0 ? 'weapon' : null), 1);   // immer eine Waffe für die eigene Klasse
   add(mkGenE(R, 'mat', lv), 1 + Math.floor(R() * 3)); add(mkGenE(R, 'mat', lv), 1 + Math.floor(R() * 2));
   add(mkGenE(R, 'gem', lv), 1 + Math.floor(R() * 2)); add(mkGenE(R, 'part', lv), 1 + Math.floor(R() * 2));
   if (R() < .6) add(mkGenE(R, 'egg', lv), 1);
@@ -355,9 +355,9 @@ function mkEnd(A, ev, t) {
   const M = mkM(), top = mkTop(A), at = A.t1;
   if (top) mkHistAdd(A.e, top[2], at);
   if (A.own) {
-    if (top) { const fee = Math.ceil(top[2] * mkFee()); mkBoxAdd({ t: 'gold', n: Math.max(0, top[2] - fee) }, 'sold', at); M.sold++; M.best = Math.max(M.best, top[2]); mkVol(top[2]); ev.push({ k: 'sold', t: at, id: A.id, e: A.e, who: top[1], n: top[2], fee }); }
+    if (top) { const fee = Math.ceil(top[2] * mkFee()); mkBoxAdd({ t: 'gold', n: Math.max(0, top[2] - fee) }, 'sold', at); M.sold++; stat('mkSold'); M.best = Math.max(M.best, top[2]); mkVol(top[2]); ev.push({ k: 'sold', t: at, id: A.id, e: A.e, who: top[1], n: top[2], fee }); }
     else { mkBoxAdd(A.e, 'back', at); ev.push({ k: 'unsold', t: at, id: A.id, e: A.e }); }
-  } else if (top && top[1] === -1) { mkBoxAdd(A.e, 'won', at); M.bought++; mkVol(top[2]); ev.push({ k: 'won', t: at, id: A.id, e: A.e, n: top[2] }); }
+  } else if (top && top[1] === -1) { mkBoxAdd(A.e, 'won', at); M.bought++; stat('mkWon'); mkVol(top[2]); ev.push({ k: 'won', t: at, id: A.id, e: A.e, n: top[2] }); }
   else if (A.me && top) ev.push({ k: 'lost', t: at, id: A.id, e: A.e, who: top[1], n: top[2] });
 }
 function mkBoxAdd(e, w, t) {
@@ -424,7 +424,7 @@ function mkHist(e) {
   return out.concat(real);
 }
 function mkRankI() { const M = mkM(), v = M ? M.vol : 0; let r = 0; MK_RANK.forEach((x, i) => { if (v >= x[0]) r = i; }); return r; }
-const mkFee = () => MK_FEE[mkRankI()], mkSlots = () => MK_SLOT[mkRankI()];
+const mkFee = () => Math.max(.02, MK_FEE[mkRankI()] - perk('fee', 0)), mkSlots = () => MK_SLOT[mkRankI()];
 function mkVol(n) {
   const M = mkM(); M.vol = Math.min(1e13, M.vol + Math.max(0, n));
   const r = mkRankI(); if (r > M.rk) { M.rk = r; mkToastQ({ txt: _t('Handelsrang {n}: {title}! Weniger Gebühr, mehr Plätze.', { n: r + 1, title: MK_RANK[r][1] }), c: '#ffd24a', s: 'lvl' }); }
@@ -527,13 +527,13 @@ const MARKET = {
     const e = mkClone(o.e); if (e.t === 'item') e.it.uid = uid();
     const c = MK_HERO.can(e); if (c) return { err: c };
     const where = MK_HERO.give(e); if (!where) return { err: e.t === 'egg' ? 'nest' : 'full' };
-    MK_HERO.pay(price); o.n--; mkM().bought++; mkVol(price); mkHistAdd(e, price, mkNow()); MK_REV++;
+    MK_HERO.pay(price); o.n--; mkM().bought++; stat('mkBuy'); mkVol(price); mkHistAdd(e, price, mkNow()); MK_REV++;
     return { ok: 1, e, price, where };
   },
   sell(e) {
     if (!MK_HERO.ok()) return { err: 'hero' };
     e = mkFixE(e); if (!e || e.t === 'gold') return { err: 'data' };
-    const g = mkQuote(e); MK_HERO.earn(g); mkVol(g); MK_REV++;
+    const g = mkQuote(e); MK_HERO.earn(g); mkVol(g); MK_REV++; stat('mkSell');
     return { ok: 1, gold: g };
   },
   auction(e, start, bo, hours) {
@@ -545,7 +545,7 @@ const MARKET = {
     if (!(start >= 1 && start <= 1e9)) return { err: 'start' };
     if (bo <= start || bo > 1e10) bo = 0;
     const now = mkNow(), D = hours * MK_H, A = { id: uid(), e, own: 1, t0: now, t1: now + D, d: D, start, bo, bids: [], bd: [], rs: (mkRng(M)() * 4294967296) | 0, me: 0, s: 0, ext: 0, done: 0 };
-    mkBidders(A, Math.max(1, lootValue(e))); M.own.push(A); MK_REV++;
+    mkBidders(A, Math.max(1, lootValue(e))); M.own.push(A); MK_REV++; stat('mkAuc');
     return { ok: 1, id: A.id };
   },
   bid(id, amt) {

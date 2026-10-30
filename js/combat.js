@@ -785,8 +785,8 @@ function updPickups(dt) {
     c.x += c.vx * dt; c.y += c.vy * dt; c.vx *= Math.pow(.05, dt); c.vy *= Math.pow(.05, dt);
     c.x = clamp(c.x, BD.x0, BD.x1); c.y = clamp(c.y, BD.y0, BD.y1);
     const dx = P.x - c.x, dy = P.y - c.y, d = Math.hypot(dx, dy) || 1;
-    const magR = c.k === 'loot' ? 0 : 48;
-    if (state === 'play' && (d < magR || c.mag) && c.t > .3) { const sp = c.mag ? 260 : 170; c.x += dx / d * sp * dt; c.y += dy / d * sp * dt; }
+    const magR = c.k === 'loot' ? 0 : 48, keep = c.k === 'loot' && (c.lt || (c.mag && lootRule(c.it) === 'leave'));   // Beute-Filter: bleibt liegen
+    if (state === 'play' && (d < magR || c.mag) && c.t > .3 && !keep) { const sp = c.mag ? 260 : 170; c.x += dx / d * sp * dt; c.y += dy / d * sp * dt; }
     if (state === 'play' && d < (c.k === 'loot' ? 10 : 8) && c.t > .4) {
       if (hookVal('collect', false, c)) continue; // ein System nimmt die Beute selbst (Verlorene Lande: in den Rucksack)
       c.got = true;
@@ -795,7 +795,12 @@ function updPickups(dt) {
       else if (c.k === 'flask') { P.potions = Math.min(potMax(), P.potions + 1); toast(_t('Heiltrank +1')); sfx('heal'); }
       else if (c.k === 'mat') { gainMat(c.m, c.n); txt(P.x, P.y - 22, '+' + c.n + ' ' + MATS[c.m].n, MATS[c.m].c); sfx('coin'); }
       else if (c.k === 'gem') { gainGem(c.g); const [id, gr] = c.g.split(':'); toast(_t('{grade} {gem}', { grade: GEMGRADE[+gr], gem: GEMS[id].n }) + '!', GEMS[id].c); sfx('loot'); }
-      else if (c.k === 'loot') pickItem(c.it);
+      else if (c.k === 'loot') {
+        const r = lootRule(c.it);
+        if (r === 'leave') { c.got = false; if (!c.lt) { c.lt = 1; txt(c.x, c.y - 14, _t('liegen gelassen'), '#a8997e'); } continue; }
+        if (r === 'sell') { const g = itemPrice(c.it); P.gold += g; stat('autoSold'); txt(P.x, P.y - 24, _t('+{n} G', { n: g }), '#e8b04a'); sfx('coin'); }
+        else pickItem(c.it);
+      }
     }
   }
   pickups = pickups.filter(c => !c.got);

@@ -15,12 +15,17 @@ translateData(); translateStatic();
    roomUpd(handled, dt) → true wenn ein eigener Raum (z. B. Freiwelt) selbst aktualisiert wird · die(handled) → true wenn ein System den Tod selbst behandelt
    postRender() zeichnet über die Spielwelt (Bildschirm-Koordinaten), unter Vignette und Blitz
    collect(handled, pickup) → true wenn ein System eine Beute am Boden selbst einsammelt (Freiwelt: in den Rucksack)
-   spawn(e, o) neuer Gegner, bevor er ins Spiel kommt · enemyUpd(e, dt) jeder aktive Gegner pro Bild · loot(e, lm) nach den Drops eines Kills · itemGen(it) neuer Gegenstand */
-const HOOK = { meta: [], activate: [], stats: [], statsPost: [], hit: [], afterHit: [], kill: [], hurt: [], skill: [], update: [], room: [], draw: [], drawEnemy: [], pickup: [], itemLines: [], itemActions: [], skillRow: [], titleBtns: [], mapMore: [], mirror: [], charTabs: [], wbTabs: [], boot: [], station: [], drawStation: [], artIcon: [], roomUpd: [], die: [], postRender: [], collect: [], spawn: [], enemyUpd: [], loot: [], itemGen: [] };
+   spawn(e, o) neuer Gegner, bevor er ins Spiel kommt · enemyUpd(e, dt) jeder aktive Gegner pro Bild · loot(e, lm) nach den Drops eines Kills · itemGen(it) neuer Gegenstand
+   stat(k, n) jede Zählung über stat() (Statistik-Schlüssel, Menge) – z. B. für Aufträge (js/auftraege.js)
+   perk(v, k) → v Vorteile verändern Werte, abgefragt über perk(k, v): buy/sell Preisfaktor, fee Auktionsgebühr −, stock Basar-Angebote +,
+     egg Ei-Pflege hält länger ×, gather Sammelertrag +, farm Acker schneller × (Ruf der Fraktionen: js/fraktionen.js) */
+const HOOK = { meta: [], activate: [], stats: [], statsPost: [], hit: [], afterHit: [], kill: [], hurt: [], skill: [], update: [], room: [], draw: [], drawEnemy: [], pickup: [], itemLines: [], itemActions: [], skillRow: [], titleBtns: [], mapMore: [], mirror: [], charTabs: [], wbTabs: [], boot: [], station: [], drawStation: [], artIcon: [], roomUpd: [], die: [], postRender: [], collect: [], spawn: [], enemyUpd: [], loot: [], itemGen: [], stat: [], perk: [] };
 const ON = {};
 function hook(n, ...a) { for (const f of HOOK[n]) f(...a); }
 function hookVal(n, v, ...a) { for (const f of HOOK[n]) v = f(v, ...a); return v; }
 function hookHTML(n, ...a) { return HOOK[n].map(f => f(...a) || '').join(''); }
+// Vorteil abfragen: Grundwert v, verändert von allen HOOK.perk (z. B. perk('buy', 1) → 0,94 mit Rang in der Handelsgilde)
+function perk(k, v) { return hookVal('perk', v, k); }
 const $ = id => document.getElementById(id);
 const cv = $('game'), ctx = cv.getContext('2d');
 /* Bildschirm (js/ui.js resize): VW×VH Spielpixel. PXS = Gerätepixel je Spielpixel, immer ganzzahlig → gleich große, scharfe Pixel
@@ -261,6 +266,8 @@ function defaultHide() { return { b: {}, stash: [], rooms: 0, mine: 0, garden: 0
 function fixMeta(m) {
   const d = defaultMeta(); m = Object.assign(d, m || {});
   m.settings = Object.assign({ music: true, sfx: true }, m.settings || {});
+  // Beute-Filter (6.3): c = Gewöhnlich, m = Magisch → 'take' | 'sell' | 'leave'
+  const lf = m.settings.loot, lr = v => v === 'sell' || v === 'leave' ? v : 'take'; m.settings.loot = { c: lr(lf && lf.c), m: lr(lf && lf.m) };
   m.hide = Object.assign(defaultHide(), m.hide || {}); m.hide.b = m.hide.b || {}; if (!Array.isArray(m.hide.stash)) m.hide.stash = [];
   m.luck = Object.assign({ spins: 0, pityL: 0, pityM: 0 }, m.luck || {});
   if (!Array.isArray(m.lore)) m.lore = []; if (!Array.isArray(m.cos)) m.cos = [];
@@ -302,5 +309,5 @@ function importCode(code) {
   if (s && s.lv) { SAVE.chars.push(migrateV1(s)); SAVE.active = SAVE.chars.length - 1; persist(); return 'v1'; }
   throw new Error('bad');
 }
-function stat(k, v) { const s = SAVE.meta.stats; s[k] = (s[k] || 0) + (v == null ? 1 : v); }
+function stat(k, v) { const s = SAVE.meta.stats, n = v == null ? 1 : v; s[k] = (s[k] || 0) + n; hook('stat', k, n); }
 function statMax(k, v) { const s = SAVE.meta.stats; if ((s[k] || 0) < v) s[k] = v; }

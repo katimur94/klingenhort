@@ -97,7 +97,9 @@ function itemLines(it) {
   hook('itemLines', it, L);
   return L;
 }
-function itemPrice(it) { return Math.max(8, Math.round(PRICE[it.tier] * .22 * (1 + Math.min(it.rar, 5) * .6 + (it.rar === 6 ? 3 : 0)) * (1 + it.up * .3) * (1 + (it.fz || 0) * .2))); }
+// Verkaufspreis beim Händler; itemPrice0 = ohne Vorteile (Grundlage für Händler-Ware), itemPrice mit Ruf der Handelsgilde (perk 'sell')
+function itemPrice0(it) { return Math.max(8, Math.round(PRICE[it.tier] * .22 * (1 + Math.min(it.rar, 5) * .6 + (it.rar === 6 ? 3 : 0)) * (1 + it.up * .3) * (1 + (it.fz || 0) * .2))); }
+function itemPrice(it) { return Math.max(8, Math.round(itemPrice0(it) * perk('sell', 1))); }
 function itemScore(it) {
   const gr = it.mw ? it.mw.griff || 0 : 0, ms = typeof modScore === 'function' ? 1 + modScore(it) : 1;   // Mods zählen mit (js/mods.js)
   if (it.slot === 'weapon') return ms * weaponDmg(it) / (wform(it).sp || 1) * (1 + (it.aff.wucht || 0)) * (1 + (it.aff.krit || 0) + (wform(it).crit || 0) + gr * .006) * (1 + (it.aff.tempo || 0) + gr * .015) * (1 + it.gems.length * .05) * (it.myth ? 1.3 : 1) * (it.el ? 1.06 : 1);
@@ -131,6 +133,25 @@ function equipFromBag(i) {
   computeStats(); P.hp = Math.min(P.hp, P.st.hp);
   if (setCount(it.set) >= 3) stat('fullset');
   return true;
+}
+// Schnell-Ausrüsten (6.3): je Platz das Beste aus dem Beutel anlegen (itemScore zählt Mods mit), nie etwas Schlechteres; nur was die Klasse tragen kann.
+// Ein Set mit aktivem Bonus (2+ Teile) bleibt, außer das Neue gehört zum selben Set. → [{ slot, it, old, d }] (d = besser um, 0,12 = +12 %)
+function equipBest() {
+  const ch = [];
+  for (const s of ['weapon', 'armor', 'helm']) {
+    const cur = P.gear[s], cs = cur ? itemScore(cur) : 0, keep = cur && cur.set && setCount(cur.set) >= 2; let best = null, bs = cs;
+    for (const it of P.bag) if (it.slot === s && canEquip(it) && !(keep && it.set !== cur.set)) { const v = itemScore(it); if (v > bs * 1.001 + 1e-9) { best = it; bs = v; } }
+    if (best && equipFromBag(P.bag.indexOf(best))) ch.push({ slot: s, it: best, old: cur, d: cs > 0 ? bs / cs - 1 : 1 });
+  }
+  return ch;
+}
+// Beute-Filter (6.3, Einstellungen): Gewöhnliches (c) und Magisches (m) aufheben, gleich verkaufen oder liegen lassen → 'take' | 'sell' | 'leave'.
+// Nur schlichte Teile (plainItem); was besser ist als das Angelegte, hebst du immer auf. Lande: kein Verkaufen (kein Händler – kommt in den Rucksack).
+function lootRule(it, lande) {
+  const L = SAVE && SAVE.meta.settings.loot, r = L && it && it.rar <= 1 ? L[it.rar ? 'm' : 'c'] : 'take';
+  if ((r !== 'sell' && r !== 'leave') || !plainItem(it)) return 'take';
+  const cur = P.gear[it.slot]; if (canEquip(it) && (!cur || itemScore(it) > itemScore(cur) * 1.05)) return 'take';
+  return lande && r === 'sell' ? 'take' : r;
 }
 function addToBag(it) { hook('pickup', it); if (it.rar === 6) statMax('myths', 1); if (P.bag.length >= bagCap()) { const g = itemPrice(it); P.gold += g; return g; } P.bag.push(it); return 0; }
 /* ---------- Taschen (6.2): die Sattlerei (Versteck, Stufe 0–10) macht Beutel, Rucksack der Lande und Begleiter-Taschen größer ---------- */
@@ -240,6 +261,7 @@ function upgradeItem(it) {
   const k = it.up + 1, c = upCost(it, k);
   if (!canAfford(c.mats, c.gold)) return 'poor';
   payMats(c.mats); P.gold -= c.gold;
+  stat('upTry');
   if (Math.random() < c.chance) { it.up = k; statMax('maxUp', k); computeStats(); return 'ok'; }
   return 'fail';
 }
@@ -268,7 +290,7 @@ function forgeItem(tier, slot) {
   payMats(c.mats); P.gold -= c.gold;
   const it = randomItem(stageNum(), 1, { slot, tier, setChance: .03 });
   if (hideLv('schmiede') >= 4 && Math.random() < .2 && it.rar < 4) { it.rar++; rollAffixes(it); if (it.rar === 4 && !it.name) it.name = pick(LEGEND[slot === 'weapon' ? it.base : slot]); }
-  if (!itemPut(it)) addToBag(it); if (it.rar === 4) stat('legs');
+  if (!itemPut(it)) addToBag(it); if (it.rar === 4) stat('legs'); stat('forged');
   return it;
 }
 

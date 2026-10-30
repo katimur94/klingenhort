@@ -308,7 +308,7 @@ function resumeNode() {
   const n = P.map.rows[P.map.pos.r][P.map.pos.i];
   if (n.t === 'haendler') openMerchant(); else if (n.t === 'schrein') openShrine(); else if (n.t === 'werkbank') openWorkbench('node'); else if (n.t === 'event') openEvent(); else if (n.t === 'rast') openRest(); else if (n.t === 'raetsel') openRiddle(); else openMap();
 }
-function markNodeDone() { const M = P.map; if (M && M.pos.r >= 0) M.rows[M.pos.r][M.pos.i].done = true; }
+function markNodeDone() { const M = P.map; if (M && M.pos.r >= 0) { const n = M.rows[M.pos.r][M.pos.i]; if (!n.done) stat('nodes'); n.done = true; } }
 function nodeLeave() { markNodeDone(); saveChar(); openMap(); }
 
 /* ---------- Tages-Herausforderung ---------- */

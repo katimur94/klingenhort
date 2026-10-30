@@ -264,7 +264,7 @@ function openMap() {
   showOverlay(`<div class="head"><h2>${_t('AKT {act}', { act: P.act })} · ${b.name.toLocaleUpperCase(LOCALE)}${qualOf(P.act) ? ' · ' + _t('QUAL {q}', { q: qualOf(P.act) }) : ''}</h2><div class="gold"><i class="coin"></i>${fmt(P.gold)} <span style="color:#ffd24a"><i class="fc"></i>${P.fate || 0}</span></div></div>
   <div class="stats">${A ? `<span style="color:var(--rune)">${esc(A.t)}</span>` : ''}<span style="color:${weekEvent().c}">${weekEvent().n.toLocaleUpperCase(LOCALE)}</span><span>${_t('LV {lv}', { lv: P.lv })}${P.paragon ? ' · P' + P.paragon : ''}</span><span>${_t('LP {n}', { n: Math.ceil(P.hp) + '/' + P.st.hp })}</span><span>${_t('TRÄNKE {n}', { n: P.potions })}</span>${P.sp ? `<span style="color:var(--gold)">${P.sp > 1 ? _t('{n} TALENTPUNKTE', { n: P.sp }) : _t('1 TALENTPUNKT')}</span>` : ''}${P.buffs.map(b => `<span style="color:var(--rune)">${b.n} (${b.rooms})</span>`).join('')}</div>
   <div class="mapwrap"><canvas id="mapcv" width="320" height="150"></canvas>${nodes}<div class="hero" style="left:${hp[0]}%;top:${hp[1]}%">${heroHTML(P, 1.3)}</div>${info}</div>
-  <div class="menu foot row">${selN ? `<button class="btn wide" data-act="enter">${_t('Betreten')}</button>` : ''}<button class="btn${selN ? ' alt' : ''}" data-act="hide">${_t('Versteck')}${hideReady() ? ' (!)' : ''}</button><button class="btn alt" data-act="char">${_t('Charakter')}${P.sp ? ' (' + P.sp + ')' : ''}</button><button class="btn alt" data-act="mapmore">${_t('Mehr')}</button></div>`, true);
+  <div class="menu foot row">${selN ? `<button class="btn wide" data-act="enter">${_t('Betreten')}</button>` : ''}<button class="btn${selN ? ' alt' : ''}" data-act="hide">${_t('Versteck')}${hideReady() ? ' (!)' : ''}</button><button class="btn alt" data-act="char">${_t('Charakter')}${P.sp ? ' (' + P.sp + ')' : ''}</button><button class="btn alt" data-act="mapmore">${_t('Mehr')}${typeof aufReady === 'function' && aufReady() ? ' (!)' : ''}</button></div>`, true);
   drawMapCanvas(M, av);
   checkAch(); weekAnnounce();
 }
@@ -322,7 +322,7 @@ function openChar(tab, back) {
     const side = sel ? `<div class="side sheet"><button class="btn alt sm sheetx" data-act="isel" data-id="" aria-label="${_t('Schließen')}"><span class="x">×</span></button>${itemDetail(sel.it, sel.eq ? '' : `${canEquip(sel.it) ? `<button class="btn sm" data-act="equip" data-id="${sel.it.uid}">${_t('Anlegen')}</button>` : ''}<button class="btn alt sm" data-act="sell" data-id="${sel.it.uid}">${_t('Verkaufen')} <i class="coin"></i>${itemPrice(sel.it)}</button>${hookHTML('itemActions', sel.it)}`)}${sel.eq ? '' : compareHTML(sel.it)}</div>`
       : `<div class="side"><p class="sub" style="margin-top:0">${_t('Tippe einen Gegenstand an, um Details, Vergleich und Aktionen zu sehen.')}</p></div>`;
     body = `<div class="split"><div><div class="box"><div style="display:flex;gap:12px;align-items:center">${heroHTML(P, 2.4)}<div class="stats" style="flex:1"><span>${_t('SCH {n}', { n: Math.round(st.wbase * st.dmgMul) })}</span><span>${_t('LP {n}', { n: st.hp })}</span><span>${_t('VER {n}', { n: Math.round(st.def) })}</span><span>${_t('KRIT {n}', { n: pct(st.crit) })}</span><span>${_t('KRIT-SCH {n}', { n: pct(st.critdmg) })}</span><span>${_t('TEMPO {n}/s', { n: (1 / st.cd).toFixed(1) })}</span>${st.dr ? `<span>${_t('MINDERUNG {n}', { n: pct(st.dr) })}</span>` : ''}${st.dodge ? `<span>${_t('AUSWEICHEN {n}', { n: pct(st.dodge) })}</span>` : ''}${st.regen ? `<span>${_t('REGEN {n}', { n: st.regen.toFixed(1) })}</span>` : ''}${st.leech ? `<span>${_t('LEBENSRAUB {n}', { n: pct(st.leech) })}</span>` : ''}${st.gold ? `<span>${_t('GOLD +{n}', { n: pct(st.gold) })}</span>` : ''}${st.m.xp ? `<span>${_t('EP +{n}', { n: pct(st.m.xp) })}</span>` : ''}</div></div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px">${gear}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px">${gear}</div>${landeActive() ? '' : `<button class="btn alt bestgear" data-act="bestgear">${_t('Bestes anlegen')}</button>`}
       ${Object.keys(sets).map(k => `<p style="font-size:16px;color:#4ade80;margin:8px 0 0">${SETS[k].n} ${sets[k]}/3 – ${sets[k] >= 2 ? SETS[k].d2 : ''}${sets[k] >= 3 ? ' · ' + SETS[k].d3 : ''}</p>`).join('')}</div>
       <div class="box" style="margin-top:10px">${capHead(_t('BEUTEL'), P.bag.length, bagCap(), P.bag.length > 1 ? `<button class="btn alt sm" data-act="bagsort">${_t('Sortieren')}</button>` : '')}${itemGridHTML(P.bag.map(it => itemSlot(it, 'isel', sel && sel.it === it)), 'cbag')}</div></div>${side}</div>`;
   } else if (charTab === 'tal') {
@@ -373,19 +373,21 @@ function genShop() {
   const C = CLASSES[P.cls], st = stageNum(), stock = [];
   const maxT = REQ.filter(r => r <= P.lv).length - 1;
   for (const t of [Math.max(0, maxT - 1), maxT]) { stock.push({ it: makeItem({ slot: 'weapon', base: pick(C.weapons), tier: t, rar: 0 }), price: PRICE[t] }); stock.push({ it: makeItem({ slot: pick(['armor', 'helm']), base: 'armor', tier: t, rar: 0 }), price: Math.round(PRICE[t] * .8) }); }
-  for (let i = 0; i < 3; i++) { const it = randomItem(st, 1); stock.push({ it, price: itemPrice(it) * 4 }); }
+  for (let i = 0; i < 3; i++) { const it = randomItem(st, 1); stock.push({ it, price: itemPrice0(it) * 4 }); }
   return { stock, uniq: uid() };
 }
+// Einkauf beim Händler: Preis mit Vorteil der Handelsgilde (perk 'buy', js/fraktionen.js)
+const mBuy = p => Math.max(1, Math.round(p * perk('buy', 1)));
 function openMerchant() {
   setState('menu'); showHud(false);
   if (!P.map.shop || P.map.shopAt !== P.map.pos.r + ':' + P.map.pos.i) { P.map.shop = genShop(); P.map.shopAt = P.map.pos.r + ':' + P.map.pos.i; saveChar(); }
   const tab_ = (k, l) => `<button class="tab" role="tab" aria-selected="${mTab === k}" data-act="mtab" data-id="${k}">${l}</button>`;
   let body = '';
   if (mTab === 'buy') {
-    body = P.map.shop.stock.map((s, i) => s.sold ? '' : `<div class="row" style="cursor:default"><div class="ic"><img src="${itemIconURL(s.it)}" alt=""></div><div><div class="nm" style="color:${itemColor(s.it)}">${esc(itemName(s.it))}</div><div class="st">${itemLines(s.it).slice(0, 3).join(' · ')}</div></div><button class="btn sm" data-act="buy" data-i="${i}" ${P.gold >= s.price ? '' : 'disabled'}><i class="coin"></i>${s.price}</button></div>`).join('');
+    body = P.map.shop.stock.map((s, i) => s.sold ? '' : `<div class="row" style="cursor:default"><div class="ic"><img src="${itemIconURL(s.it)}" alt=""></div><div><div class="nm" style="color:${itemColor(s.it)}">${esc(itemName(s.it))}</div><div class="st">${itemLines(s.it).slice(0, 3).join(' · ')}</div></div><button class="btn sm" data-act="buy" data-i="${i}" ${P.gold >= mBuy(s.price) ? '' : 'disabled'}><i class="coin"></i>${mBuy(s.price)}</button></div>`).join('');
     const st = stageNum(), extra = [['potion', _t('Heiltrank'), 30, ['s', 288, 336, 16, 16]], ['gem', _t('Zufälliger Splitter'), 70, ['gem', 'smaragd', 0]], ['erz', _t('5 Eisenerz'), 45, ['mat', 'erz']], ['leder', _t('5 Leder'), 45, ['mat', 'leder']], ['kristall', _t('Seelenkristall'), 110, ['mat', 'kristall']], ['horn', _t('Dämonenhorn'), 140, ['mat', 'horn']]];
     if (st >= 10) extra.push(['mithril', _t('Mithrilerz'), 180, ['mat', 'mithril']]); if (st >= 16) extra.push(['adamant', _t('Adamanterz'), 260, ['mat', 'adamant']]); if (st >= 28) extra.push(['schuppe', _t('Drachenschuppe'), 480, ['mat', 'schuppe']]);
-    body += extra.map(([k, n, p, ic]) => `<div class="row" style="cursor:default"><div class="ic"><img src="${iconURL(ic)}" alt=""></div><div><div class="nm">${n}</div></div><button class="btn sm" data-act="buyx" data-id="${k}" data-i="${p}" ${P.gold >= p && !(k === 'potion' && P.potions >= potMax()) ? '' : 'disabled'}><i class="coin"></i>${p}</button></div>`).join('');
+    body += extra.map(([k, n, p, ic]) => `<div class="row" style="cursor:default"><div class="ic"><img src="${iconURL(ic)}" alt=""></div><div><div class="nm">${n}</div></div><button class="btn sm" data-act="buyx" data-id="${k}" data-i="${mBuy(p)}" ${P.gold >= mBuy(p) && !(k === 'potion' && P.potions >= potMax()) ? '' : 'disabled'}><i class="coin"></i>${mBuy(p)}</button></div>`).join('');
   } else {
     if (mSrc === 'stash' && !stashOn()) mSrc = 'bag';
     const L = mSrc === 'stash' ? stashItems() : P.bag, all = sellAllList(mSellStash && stashOn()), g = all.reduce((a, it) => a + itemPrice(it), 0);
@@ -509,7 +511,16 @@ function setInGame() { return setFrom === 'pause' && !!(G && G.type); }
 function showSettings(from) {
   if (from) setFrom = from;
   const s = SAVE.meta.settings, ig = setInGame();
-  showOverlay(`<h2>${_t('EINSTELLUNGEN')}</h2><div class="menu" style="margin-top:12px"><button class="btn alt" data-act="music">${_t('Musik: {v}', { v: s.music !== false ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="sfx">${_t('Soundeffekte: {v}', { v: s.sfx !== false ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="bigui">${_t('Schrift: {v}', { v: s.bigui ? _t('GROSS') : _t('NORMAL') })}</button><button class="btn alt" data-act="calm">${_t('Wackeln & Blitzen: {v}', { v: s.calm ? _t('AUS') : _t('AN') })}</button>${gfxBtn()}${fsBtn()}<button class="btn alt" data-act="controls">${_t('Steuerung')}</button>${typeof hbMenuBtn === 'function' ? hbMenuBtn('settings') : ''}<button class="btn alt" data-act="news" data-id="settings">${_t('Neuigkeiten')}</button>${ig ? '' : `<button class="btn alt" data-act="langs" data-id="settings">🌐 ${LANGS[LANG]}</button>`}${UPD.on && !ig ? `<button class="btn alt" data-act="checkupd">${_t('Nach Update suchen')}</button>` : ''}<button class="btn" data-act="setback">${_t('Zurück')}</button></div><p class="sub" id="updmsg">${_t('Version {v}', { v: VERSION })}</p>`);
+  showOverlay(`<h2>${_t('EINSTELLUNGEN')}</h2><div class="menu" style="margin-top:12px"><button class="btn alt" data-act="music">${_t('Musik: {v}', { v: s.music !== false ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="sfx">${_t('Soundeffekte: {v}', { v: s.sfx !== false ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="bigui">${_t('Schrift: {v}', { v: s.bigui ? _t('GROSS') : _t('NORMAL') })}</button><button class="btn alt" data-act="calm">${_t('Wackeln & Blitzen: {v}', { v: s.calm ? _t('AUS') : _t('AN') })}</button><button class="btn alt" data-act="lootset">${_t('Beute-Filter: {v}', { v: lootSetName() })}</button>${gfxBtn()}${fsBtn()}<button class="btn alt" data-act="controls">${_t('Steuerung')}</button>${typeof hbMenuBtn === 'function' ? hbMenuBtn('settings') : ''}<button class="btn alt" data-act="news" data-id="settings">${_t('Neuigkeiten')}</button>${ig ? '' : `<button class="btn alt" data-act="langs" data-id="settings">🌐 ${LANGS[LANG]}</button>`}${UPD.on && !ig ? `<button class="btn alt" data-act="checkupd">${_t('Nach Update suchen')}</button>` : ''}<button class="btn" data-act="setback">${_t('Zurück')}</button></div><p class="sub" id="updmsg">${_t('Version {v}', { v: VERSION })}</p>`);
+}
+// Beute-Filter (6.3): Gewöhnliches und Magisches aufheben, gleich verkaufen oder liegen lassen (lootRule, js/items.js)
+const LOOTSET = { take: () => _t('AUFHEBEN'), sell: () => _t('VERKAUFEN'), leave: () => _t('LIEGEN LASSEN') };
+function lootSetName() { const L = SAVE.meta.settings.loot || {}, c = L.c || 'take', m = L.m || 'take'; if (c === 'take' && m === 'take') return _t('ALLES AUFHEBEN'); return [c !== 'take' ? RAR[0].n + ' ' + LOOTSET[c]() : '', m !== 'take' ? RAR[1].n + ' ' + LOOTSET[m]() : ''].filter(Boolean).join(' · '); }
+function showLootSet() {
+  const L = SAVE.meta.settings.loot, row = (r, k) => `<h3 style="color:${RAR[r].c}">${RAR[r].n.toLocaleUpperCase(LOCALE)}</h3><div class="opts">${['take', 'sell', 'leave'].map(v => `<button class="opt${L[k] === v ? ' sel' : ''}" data-act="lootopt" data-id="${k}:${v}" aria-pressed="${L[k] === v}">${LOOTSET[v]()}<small>${v === 'take' ? _t('in den Beutel') : v === 'sell' ? _t('gleich zu Gold') : _t('bleibt am Boden')}</small></button>`).join('')}</div>`;
+  showOverlay(`<div class="head"><h2>${_t('BEUTE-FILTER')}</h2><div class="hbtns"><button class="btn alt sm" data-act="lootback">${_t('Zurück')}</button></div></div>
+  <p class="sub" style="margin-top:0">${_t('Was soll mit einfacher Beute passieren, über die du läufst?')}</p>${row(0, 'c')}${row(1, 'm')}
+  <ul class="lootnote"><li>${_t('Was besser ist als deine Ausrüstung, hebst du immer auf.')}</li><li>${_t('Gegenstände mit Mods, Sockelsteinen oder Aufwertung bleiben verschont.')}</li><li>${_t('Verkaufen bringt sofort den Händlerpreis.')}</li><li>${_t('In den Endlosen Landen gilt „Liegen lassen“ auch. „Verkaufen“ dort nicht: Es gibt keinen Händler – die Beute kommt in den Rucksack und erst beim Entkommen heim.')}</li></ul>`);
 }
 // Sprache: jede in ihrer eigenen Schreibweise, der Wechsel lädt die Seite neu
 let langBack = 'title';
@@ -570,6 +581,9 @@ panel.addEventListener('click', ev => {
     case 'langback': if (langBack === 'settings') showSettings(); else showTitle(); break;
     case 'setlang': if (id === LANG) { b.blur(); break; } try { persist(); } catch (_) { } setLang(id); break;
     case 'calm': SAVE.meta.settings.calm = !SAVE.meta.settings.calm; persist(); showSettings(); break;
+    case 'lootset': showLootSet(); break;
+    case 'lootback': showSettings(); break;
+    case 'lootopt': { const [k, v] = String(id).split(':'); if ((k === 'c' || k === 'm') && LOOTSET[v]) { SAVE.meta.settings.loot[k] = v; persist(); sfx('click'); } showLootSet(); break; }
     case 'gfx': SAVE.meta.settings.gfx = HD ? 'px' : 'hd'; persist(); resize(); sfx('click'); if (state === 'pause') { setState('play'); showPause(); } else showSettings(); break;
     case 'fullscreen': toggleFullscreen(); break;
     case 'controls': showControls(); break;
@@ -595,6 +609,7 @@ panel.addEventListener('click', ev => {
     case 'equip': { const f = findItem(id); if (f && !f.eq) { equipItem(f.it); sfx('swing'); saveChar(); } selItem = id; openChar(); break; }
     case 'sell': { const f = findItem(id); if (f && !f.eq && sellItem(f.it)) { sfx('coin'); saveChar(); persist(); } selItem = null; openChar(); break; }
     case 'bagsort': P.bag.sort(itemSortKey); sfx('click'); saveChar(); openChar(); break;
+    case 'bestgear': { const ch = landeActive() ? [] : equipBest(); if (ch.length) { sfx('swing'); saveChar(); toast(_t('Angelegt: {list}', { list: ch.map(c => itemName(c.it) + ' (+' + Math.round(c.d * 100) + ' %)').join(', ') }), '#79c24e'); } else { sfx('deny'); toast(_t('Du trägst schon das Beste aus deinem Beutel.')); } selItem = null; openChar(); break; }
     case 'tal': { const [bi, ni] = id.split(',').map(Number); if (learnTalent(bi, ni)) { sfx('click'); saveChar(); } else sfx('deny'); openChar(); break; }
     case 'respec': if (respec()) { sfx('craft'); saveChar(); } openChar(); break;
     case 'pp': { const free = P.paragon - (P.pp.dmg + P.pp.hp + P.pp.def + P.pp.crit); if (free > 0) { P.pp[id]++; computeStats(); saveChar(); sfx('click'); } openChar(); break; }
@@ -603,7 +618,7 @@ panel.addEventListener('click', ev => {
     case 'cback': { const r = returnTo; returnTo = null; saveChar(); if (r === 'pause') { setState('play'); showPause(); } else if (r === 'wb') openWorkbench(); else openMap(); break; }
     case 'pchar': selItem = null; returnTo = 'pause'; openChar('gear', 'pause'); break;
     case 'mtab': mTab = id; openMerchant(); break;
-    case 'buy': { const s = P.map.shop.stock[i]; if (s && !s.sold && P.gold >= s.price) { P.gold -= s.price; s.sold = true; const g = addToBag(s.it); if (!g && canEquip(s.it) && itemScore(s.it) > itemScore(P.gear[s.it.slot])) { equipFromBag(P.bag.length - 1); toast(_t('{item} angelegt', { item: itemName(s.it) })); } sfx('buy'); saveChar(); } openMerchant(); break; }
+    case 'buy': { const s = P.map.shop.stock[i], pr = s ? mBuy(s.price) : 0; if (s && !s.sold && P.gold >= pr) { P.gold -= pr; s.sold = true; const g = addToBag(s.it); if (!g && canEquip(s.it) && itemScore(s.it) > itemScore(P.gear[s.it.slot])) { equipFromBag(P.bag.length - 1); toast(_t('{item} angelegt', { item: itemName(s.it) })); } sfx('buy'); saveChar(); } openMerchant(); break; }
     case 'buyx': { const p = i; if (P.gold < p) break; P.gold -= p; if (id === 'potion') P.potions = Math.min(potMax(), P.potions + 1); else if (id === 'gem') gainGem(pick(GEMORDER) + ':0'); else if (id === 'erz' || id === 'leder') gainMat(id, 5); else gainMat(id, 1); sfx('buy'); saveChar(); openMerchant(); break; }
     case 'msell': { const f = findItem(id); if (f && !f.eq && sellItem(f.it)) { sfx('coin'); saveChar(); persist(); } openMerchant(); break; }
     case 'sellall': sellAll(); break;

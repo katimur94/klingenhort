@@ -1318,7 +1318,7 @@ function landeLootHTML(e, right) {
 
 /* ---------- Rucksack ---------- */
 function lRank(rep) { let r = 0; LREP.forEach((x, i) => { if (rep >= x.at) r = i; }); return r; }
-function lPerk(k) { const r = lRank(lMeta().rep); if (k === 'pack') return (r >= 2 ? 1 : 0) + (r >= 4 ? 1 : 0); if (k === 'rabatt') return r >= 1 ? .9 : 1; if (k === 'mis') return r >= 3 ? 1 : 0; if (k === 'ch') return r >= 4 ? 1 : 0; if (k === 'key') return r >= 5 ? 1 : 0; if (k === 'stone') return r >= 1; return 0; }
+function lPerk(k) { const r = lRank(lMeta().rep); if (k === 'pack') return (r >= 2 ? 1 : 0) + (r >= 4 ? 1 : 0); if (k === 'rabatt') return (r >= 1 ? .9 : 1) * perk('buy', 1); if (k === 'mis') return r >= 3 ? 1 : 0; if (k === 'ch') return r >= 4 ? 1 : 0; if (k === 'key') return r >= 5 ? 1 : 0; if (k === 'stone') return r >= 1; return 0; }
 // Plätze im Rucksack: 20, je Sattlerei-Stufe (Versteck, 0–10) +2, dazu der Ruf bei den Kundschaftern
 function packCap() { return LPACK + 2 * (typeof sattlerLv === 'function' ? sattlerLv() : 0) + (SAVE && SAVE.meta.lande ? lPerk('pack') : 0); }
 function lCap() { return packCap(); }
@@ -1532,7 +1532,7 @@ function lExtract(ex) {
   const nR = L.regs.size, nF = lCommit(), all = pack.concat(bag), val = lSum(all), r = lDeliver(all);
   M.rep += rep; M.ext++; const best = val > M.best; if (best) M.best = val;
   if (ex && ex.k === 'beacon' && ex.cp) ex.cp.u = Date.now();
-  lStripFlags(); M.cur = null; stat('landeExt');
+  lStripFlags(); M.cur = null; stat('landeLoot', val); if (mis.length) stat('landeMis', mis.length); stat('landeExt');
   const time = L.t, kills = L.kills;
   lEnd(); computeStats(); P.hp = P.st.hp; saveChar(); persist(); if (typeof checkAch === 'function') checkAch();
   sfx('clear'); setTimeout(() => sfx('loot'), 400);
@@ -1714,7 +1714,7 @@ HOOK.collect.unshift((h, c) => {
     case 'coin': e = { t: 'gold', n: c.v }; break;
     case 'mat': e = { t: 'mat', k: c.m, n: c.n }; break;
     case 'gem': e = { t: 'gem', k: c.g, n: 1 }; break;
-    case 'loot': e = { t: 'item', it: c.it }; break;
+    case 'loot': if (typeof lootRule === 'function' && lootRule(c.it, true) === 'leave') { if (!c.lt) { c.lt = 1; txt(c.x, c.y - 14, _t('liegen gelassen'), '#a8997e'); } return true; } e = { t: 'item', it: c.it }; break;
     case 'lpart': e = { t: 'part', k: c.pk, n: c.n || 1 }; break;
     case 'legg': e = { t: 'egg', d: c.d }; break;
     case 'lmod': e = { t: 'mod', k: c.mk, n: c.n || 1 }; break;
@@ -2854,7 +2854,7 @@ function lMisScreen(npc) {
 ON.l_claim = (id, b, i) => {
   const m = LW.mis[i]; if (!m || !m.done || m.paid) return;
   if (m.t === 'mats' && !lPackPay('mat', m.k, m.n)) { sfx('deny'); return; }
-  m.paid = true; const M = lMeta(); M.rep += m.rep; M.done++;
+  m.paid = true; const M = lMeta(); M.rep += m.rep; M.done++; stat('landeMis');
   const o = LW.misNpc || LW.near || P; lBurst({ x: o.x + 14, y: o.y + 10 }, m.rew.filter(e => e.t !== 'key').concat(m.rew.filter(e => e.t === 'key'))); sfx('ach'); toast(_t('+{n} Ruf bei den Kundschaftern', { n: m.rep }), '#57c7e6'); persist();
   lResume();
 };

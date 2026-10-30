@@ -1774,7 +1774,7 @@ const PET_HEALMAT = ['schleim', 4];
 /* ---------- Brutnest: Pflege in Echtzeit (aus Zeitstempeln, auch während das Spiel zu ist) ---------- */
 const EGG_COZY = .7, EGG_BONUS = 1.5; // alle Bedürfnisse über 70 %: wächst 1,5× so schnell
 function nestEggs() { const M = petM(); return M ? M.eggs.filter(g => g.nest) : []; }
-function eggRates(g) { return PET_TIERS[g.tier].dur.map(h => 1 / (h * 3600)); }
+function eggRates(g) { const f = perk('egg', 1); return PET_TIERS[g.tier].dur.map(h => 1 / (h * 3600 * f)); }
 // Wärme, Futter und Zuwendung sinken gleichmäßig; das Ei wächst nur, solange keins davon leer ist
 function eggSim(g, now) {
   now = now || Date.now();
@@ -1839,7 +1839,7 @@ function eggHatch(i, quiet) {
   M.eggs.splice(i, 1);
   // Zucht-Eier bringen Gene, Mutation und Farbe mit; wilde Eier: wilde Gene, 1 % Mutation
   const shiny = Math.random() < .01, c0 = g.c0 != null ? g.c0 : ri(0, 5), mu = g.mu || (!g.pa && Math.random() < .01 ? petMutRoll(Math.random) : null);
-  const p = petGive(g.sp, { col: c0, shiny, nw: 1, gn: g.gn, mu, pa: g.pa, ge: g.ge }); M.hatched++;
+  const p = petGive(g.sp, { col: c0, shiny, nw: 1, gn: g.gn, mu, pa: g.pa, ge: g.ge }); M.hatched++; stat('hatch');
   if (!quiet) toast(_t('Geschlüpft: {what}', { what: shiny ? _t('Ein schillernder {name}! (1 zu 100)', { name: PET_SP[p.sp].n }) : PET_SP[p.sp].n }), '#ffd24a');
   persist(); if (petHero()) saveChar();
   return p;
@@ -2829,13 +2829,13 @@ ON.petheal = (id, b, i) => {
 // Brutnest
 ON.nestopen = id => { sfx('click'); openNest(id || 'map'); };
 ON.nestback = () => { sfx('click'); nestBack(); };
-ON.nestwarm = id => { const g = nestEgg(id); if (!g) return; eggWarm(g); petSnd('warm'); persist(); openNest(); };
-ON.nestfeed = id => { const g = nestEgg(id); if (!g) return; if (eggFeed(g)) { petSnd('feed'); saveChar(); } else sfx('deny'); openNest(); };
-ON.nestpet = id => { const g = nestEgg(id); if (!g) return; const V = eggView(g); if (V.ready) { hatchStart(id); return; } eggPet(g); PET_UI.petId = id; PET_UI.petT = Date.now(); petSnd('pet'); persist(); openNest(); };
+ON.nestwarm = id => { const g = nestEgg(id); if (!g) return; eggWarm(g); stat('eggCare'); petSnd('warm'); persist(); openNest(); };
+ON.nestfeed = id => { const g = nestEgg(id); if (!g) return; if (eggFeed(g)) { stat('eggCare'); petSnd('feed'); saveChar(); } else sfx('deny'); openNest(); };
+ON.nestpet = id => { const g = nestEgg(id); if (!g) return; const V = eggView(g); if (V.ready) { hatchStart(id); return; } eggPet(g); stat('eggCare'); PET_UI.petId = id; PET_UI.petT = Date.now(); petSnd('pet'); persist(); openNest(); };
 ON.nestall = () => {
   let w = 0, f = 0, miss = 0;
   for (const g of nestEggs()) { const V = eggView(g); if (V.ready) continue; if (g.w < .98) { eggWarm(g); w++; } if (g.f < .9) { if (eggFeed(g)) f++; else miss++; } }
-  if (w || f) { petSnd('warm'); if (f) petSnd('feed'); saveChar(); } else sfx('deny');
+  if (w || f) { stat('eggCare', w + f); petSnd('warm'); if (f) petSnd('feed'); saveChar(); } else sfx('deny');
   if (miss) toast(_t('Für {n} Eier fehlt dir Futter.', { n: miss }), '#ff8a7a');
   openNest();
 };

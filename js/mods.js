@@ -271,7 +271,7 @@ function modElSet(it) {
 function modPut(it, k) { it.mods = modsOf(it).concat([k]); modElSet(it); }
 function modInsert(it, k) {
   const why = modFitWhy(it, k); if (why) return why;
-  modAdd(k, -1); modPut(it, k); SAVE.meta.mods.ins++;
+  modAdd(k, -1); modPut(it, k); SAVE.meta.mods.ins++; stat('modIns');
   for (const id of resOfItem(it)) modDiscover(id);
   computeStats(); return '';
 }

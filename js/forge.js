@@ -182,7 +182,7 @@ function salvage(it, R) {
   if (typeof modTakeBack === 'function') R.mods = (R.mods || 0) + modTakeBack(it);
   itemTake(it);
   const xp = 4 + 2 * it.tier + 3 * Math.min(it.rar, 5) + (it.rar === 6 ? 8 : 0) + 2 * gs; R.xp += xp; R.n++;
-  SAVE.meta.smith.salv++; smithXP(xp);
+  SAVE.meta.smith.salv++; smithXP(xp); stat('salv');
   return R;
 }
 // alle einfachen Gegenstände einer Seltenheit (ohne Sockelsteine, Aufwertung, Verschmelzung, Mods) – auf Wunsch mit dem Lager
