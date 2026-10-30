@@ -57,6 +57,33 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     return { during, paid: fateAfter === (free ? 5 : 4), onWin: !!wr && wr.left <= mid && wr.right >= mid, res: !!panel.querySelector('.rollres') };
   });
   ok(roll.during && roll.paid && roll.onWin && roll.res, 'Glücksrolle: dreht, bleibt auf dem Gewinn stehen, Gewinn wird angezeigt' + (roll.during && roll.paid && roll.onWin && roll.res ? '' : ' ' + JSON.stringify(roll)));
+  // Aufträge & Ruf (6.3): Belohnungen im Rahmen, Kills zählen, Vorteile gedeckelt, Bestes anlegen, Beute-Filter
+  const auf = await page.evaluate(() => {
+    const o = {}; hideOverlay(); SAVE.meta.auf.h = {}; AUF.hid = null; P.lv = 20; computeStats();
+    const H = aufSet(), g = q => (q.rw.find(e => e.t === 'gold') || { n: 0 }).n, room = 12 + 20 * 9;   // Bonus für einen geschafften Raum auf Stufe 20
+    o.n = H.dq.length === 3 && H.wq.length === 3;
+    o.gold = H.dq.every(q => g(q) >= room * 2 && g(q) <= room * 8) && H.wq.every(q => g(q) >= g(H.dq[0]) * 3);
+    o.rep = H.dq.every(q => q.rep >= 40 && q.rep <= 80 && q.tok >= 2 && q.tok <= 3) && H.wq.every(q => q.rep >= 200 && q.tok >= 8);
+    H.dq[0] = aufMake('kill', 2, false, mulberry(3)); P.map = genMap(3); startRoom('kampf', 1); P.inv = 1e9;
+    for (let i = 0; i < 2; i++) { const e = spawnEnemy('goblin', { x: P.x + 20, y: P.y, instant: true }); hurtEnemy(e, 1e9, 0, 0, 0); }
+    o.kill = H.dq[0].ok === 1 && aufReady() >= 1; const t0 = fkTok('orden'); o.claim = aufClaim('d', 0).ok && fkTok('orden') === t0 + H.dq[0].tok && aufClaim('d', 0).err === 'none';
+    // Vorteile: auch auf dem höchsten Rang klein
+    for (const f of FKORDER) if (f !== 'kund') fkGain(f, 1e6, 0, true); computeStats();
+    o.cap = perk('buy', 1) >= .9 && perk('sell', 1) <= 1.1 && mkFee() >= .02 && perk('gather', 0) <= .3 && perk('farm', 1) <= 1.35 && perk('egg', 1) <= 1.4 && mod('xp') - hideLv('bibliothek') * .05 <= .081;
+    // Bestes anlegen nimmt nie etwas Schlechteres, Beute-Filter verschont Besseres und Besonderes
+    P.bag = [makeItem({ slot: 'weapon', base: 'sword', tier: 0, rar: 0 }), makeItem({ slot: 'weapon', base: 'staff', tier: 9, rar: 4 })]; const w = P.gear.weapon; equipBest(); o.best = P.gear.weapon === w || itemScore(P.gear.weapon) > itemScore(w);
+    SAVE.meta.settings.loot = { c: 'sell', m: 'leave' }; P.gear.helm = makeItem({ slot: 'helm', base: 'helm', tier: 5, rar: 3 });
+    const c0 = makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 0 }), m0 = makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 1 }), r0 = makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 2 }), u0 = makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 0 }); u0.up = 1;
+    o.filter = lootRule(c0) === 'sell' && lootRule(m0) === 'leave' && lootRule(r0) === 'take' && lootRule(u0) === 'take' && lootRule(c0, true) === 'take' && lootRule(m0, true) === 'leave';
+    SAVE.meta.settings.loot = { c: 'take', m: 'take' }; o.off = lootRule(c0) === 'take';
+    G = null; setState('menu'); return o;
+  });
+  ok(auf.n, 'Aufträge: 3 Tages- und 3 Wochenaufträge');
+  ok(auf.gold && auf.rep, 'Aufträge: Gold je Tagesauftrag 2–8 Raum-Boni, Woche mindestens dreimal so viel; Ruf und Ruf-Marken im Rahmen');
+  ok(auf.kill && auf.claim, 'Aufträge: Kills zählen, Abholen bringt Ruf-Marken genau einmal');
+  ok(auf.cap, 'Fraktionen: Vorteile gedeckelt (Einkauf ≤ 10 % günstiger, Verkauf ≤ 10 % mehr, Gebühr ≥ 2 %, Sammeln ≤ 30 %, Erfahrung ≤ 8 %)');
+  ok(auf.best, 'Bestes anlegen: nie etwas Schlechteres, nichts für andere Klassen');
+  ok(auf.filter && auf.off, 'Beute-Filter: Gewöhnliches verkaufen, Magisches liegen lassen, Seltenes und Aufgewertetes immer aufheben; in den Landen nie verkaufen');
   ok(!errs.length, 'keine Fehler im Spiel' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
   await b.close();
   process.exit(fails.length ? 1 : 0);

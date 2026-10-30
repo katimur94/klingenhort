@@ -7,6 +7,17 @@
 
 const CHANGELOG = [
   {
+    v: '6.3.0', d: '2026-10-30', t: 'Aufträge & Ruf', items: [
+      ['neu', 'Die Auftragstafel im Versteck: Jeden Tag drei neue Aufträge, jede Woche drei größere – von „Besiege 80 Gegner“ über „Sammle 30 Holz“ und „Ernte zwei Beete“ bis „Bring Beute aus den Endlosen Landen heim“ oder „Besiege einen der Tausend Bosse“. Sie passen zu deinem Level und zu dem, was du schon kannst.'],
+      ['neu', 'Belohnungen mit Gold, Glücksmünzen, Material und Bauteilen, manchmal ein Mod oder ein Ei. Einmal am Tag darfst du einen Auftrag gratis neu würfeln. Erfüllte Aufträge verfallen nicht.'],
+      ['neu', 'Vier Fraktionen mit Rängen: Orden des Weltentors, Kundschafter der Lande, Handelsgilde und Hüter der Wildnis. Jeder Rang bringt einen Vorteil – mehr Erfahrung, bessere Preise, mehr Ertrag beim Sammeln, Eier, die länger warm bleiben, mehr Beute von Bossen.'],
+      ['neu', 'Ruf-Marken und Quartiermeister: Jede Woche neue Tauschangebote je Fraktion – seltene Eier, Mods, seltene Rohstoffe, Leuchtfeuersteine, magische Vögel und ein Titel für deinen Helden.'],
+      ['neu', 'Bestes anlegen: Ein Knopf im Charakter legt das Beste aus deinem Beutel an – Mods zählen mit. Daneben „Schlechteres verkaufen“ zum Aufräumen.'],
+      ['neu', 'Beute-Filter in den Einstellungen: Gewöhnliches und Magisches aufheben, gleich verkaufen oder liegen lassen. Was besser ist als deine Ausrüstung, hebst du immer auf.'],
+      ['besser', 'Elwas Aufträge in den Endlosen Landen zählen jetzt als Ruf bei den Kundschaftern der Lande. Das Handbuch hat ein neues Kapitel „Aufträge und Ruf“.']
+    ]
+  },
+  {
     v: '6.2.1', d: '2026-10-26', t: 'Das Handbuch', items: [
       ['neu', 'Handbuch: Tippe im Hauptmenü auf „?“ – über 300 Einträge zu jeder Funktion, jedem Gegenstand, jedem Material, jedem Gebäude, Biom, Gegner und Begleiter, mit Inhaltsverzeichnis und Suche.'],
       ['neu', 'Zu jedem Material steht, wo du es findest und wofür du es brauchst – zum Beispiel: Wie bekomme ich Eisenholz?'],
@@ -177,10 +188,10 @@ const CHANGELOG = [
 
 // Vorschau: was in den nächsten Wochen kommt (Version, Text – siehe ROADMAP.md)
 const COMING = [
-  ['6.3', 'Aufträge & Ruf: Tages- und Wochenaufträge, Fraktionen mit Ruf-Stufen und besseren Tauschangeboten'],
   ['6.4', 'Neues Gebiet: der Sturmgipfel mit Blitz-Gegnern, eigenem Boss und Sturmsilber'],
   ['6.5', 'Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste'],
-  ['6.6', 'Begleiter-Expeditionen: Schick deine Begleiter allein in die Endlosen Lande – sie bringen Beute, Eier und Artefakte mit']
+  ['6.6', 'Begleiter-Expeditionen: Schick deine Begleiter allein in die Endlosen Lande – sie bringen Beute, Eier und Artefakte mit'],
+  ['6.7', 'Der Abgrund: ein Turm ohne Ende – wie tief kommst du? Mit Bestwert für jede Klasse']
 ];
 
 const NEWS_KIND = { neu: [_t('NEU'), '#79c24e'], besser: [_t('BESSER'), '#57a7d6'], fix: [_t('BEHOBEN'), '#e8b04a'] };

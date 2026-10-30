@@ -42,7 +42,7 @@ Ausführlich für den automatischen Lauf: [`tools/WOCHENUPDATE.md`](tools/WOCHEN
 | – | 6.0 | **Die Verlorenen Lande** | Freiwelt mit Extraktion: zufällige Beute, NPC-Händler mit Tausch, Missionen und Ruf, Rivalen, zufällige Bosse zum Weglaufen, Ausgänge. Wer stirbt, verliert alles Angelegte – nur die Tasche des Begleiters kommt mit heim. Begleiter nur noch aus Eiern mit Pflege (≈ 24 Kreaturen von wertlos bis mythisch). Einzigartige Optik für besondere Gegenstände, Auren am Helden. Schmiede einfach bedienbar. Basar mit Auktionen (offline) | riesig | ✅ 6.0 |
 | – | 6.1 | **Die Endlosen Lande** | Eine feste Welt für alle: 24 Stunden Fußmarsch bis zum Rand, 40+ Biome, Brücken und Barrieren nur mit gefundenen Werkzeugen, Leuchtfeuer als Checkpoint (Karte, Startpunkt, Ausgang). 1200 Bosse von leicht bis fast unmöglich mit Boss-Kodex und Trophäen (Rückkehr nach 3 Tagen). 5000 Artefakte in Geschichten, deren Spuren zu Schatzorten führen, mystische Begegnungen. Kreaturen: viel mehr Arten, Zucht, Mutationen, Ausrüstung, Talente, Magie. Gegenstände frei modifizieren: Runen, Glyphen, Essenzen, Kerne, Resonanzen, Umschmieden | riesig | ✅ 6.1 |
 | – | 6.2 | **Sammeln & Bauen** | Holz, Stein, Fasern, Federn und seltene Rohstoffe sammeln (Bäume fällen, Steine abbauen, ernten) in den Landen und im Versteck, Felder im Kräutergarten, Bauzeiten mit Beschleunigen gegen Gold/Glücksmünzen, mehr Stufen für alle Gebäude (Schatzkammer 15 = 400 Plätze), Sattlerei (Beutel bis 90, Rucksack bis 40, größere Begleiter-Tasche), Sammelbeutel ohne Platzgrenze, magische Vögel (Vogelhaus), Lager-Zugriff bei Händler, Basar und Werkbank | groß | ✅ 6.2 |
-| 2 | 6.3 | **Aufträge & Ruf** | Tages- und Wochenaufträge für Kampagne und Endlose Lande, Fraktionen mit Ruf-Stufen und besseren Tauschangeboten | mittel | offen |
+| 2 | 6.3 | **Aufträge & Ruf** | Tages- und Wochenaufträge für Kampagne und Endlose Lande, Fraktionen mit Ruf-Stufen und besseren Tauschangeboten | mittel | ✅ 6.3 |
 | 3 | 6.4 | **Neues Gebiet: Sturmgipfel** | Kampagnen-Gebiet 9 und Sturm-Biome in den Endlosen Landen mit Blitz-Gegnern, Boss *Sturmkönig Aerok*, Material *Sturmsilber* | groß | offen |
 | 4 | 6.5 | **Saison 1** | Saison-Helden ab Level 1, Saison-Rangliste, kostenloser Saison-Pass mit 30 Stufen | groß | offen |
 | 5 | 6.6 | **Begleiter-Expeditionen** | Begleiter allein in die Endlosen Lande schicken (läuft auch offline), bringen Beute, Eier und Artefakte mit | mittel | offen |
@@ -65,8 +65,8 @@ Schon erledigt in 4.1: Hochformat, klebende Kopf- und Fußleisten, Liste neben D
 - ✅ **Schriftgröße** in den Einstellungen (normal / groß) – 4.2
 - **Leistungs-Modus:** weniger Partikel, kein Licht-Effekt, 30 fps – für ältere Handys und Akku
 - **Einhand-Modus** im Hochformat: Auto-Angriff, wenn ein Gegner in Reichweite ist; nur Joystick und Fähigkeiten
-- **Schnell-Ausrüsten:** „Bestes anlegen“-Knopf im Charakter und „Alles Schlechtere verkaufen“
-- **Beute-Filter:** Gewöhnliche Gegenstände automatisch verkaufen oder liegen lassen
+- ✅ **Schnell-Ausrüsten:** „Bestes anlegen“-Knopf im Charakter und „Alles Schlechtere verkaufen“ – 6.3
+- ✅ **Beute-Filter:** Gewöhnliche Gegenstände automatisch verkaufen oder liegen lassen – 6.3
 - **Lange drücken für Infos** auf Fähigkeiten, Materialien und Talente statt Text zu suchen
 - **Wisch-Gesten** zwischen den Reitern (Ausrüstung → Talente → Vorrat)
 - **Farbenblind-Modus** für Seltenheitsfarben (zusätzliche Symbole)

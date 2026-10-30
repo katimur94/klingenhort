@@ -322,7 +322,7 @@ function openChar(tab, back) {
     const side = sel ? `<div class="side sheet"><button class="btn alt sm sheetx" data-act="isel" data-id="" aria-label="${_t('Schließen')}"><span class="x">×</span></button>${itemDetail(sel.it, sel.eq ? '' : `${canEquip(sel.it) ? `<button class="btn sm" data-act="equip" data-id="${sel.it.uid}">${_t('Anlegen')}</button>` : ''}<button class="btn alt sm" data-act="sell" data-id="${sel.it.uid}">${_t('Verkaufen')} <i class="coin"></i>${itemPrice(sel.it)}</button>${hookHTML('itemActions', sel.it)}`)}${sel.eq ? '' : compareHTML(sel.it)}</div>`
       : `<div class="side"><p class="sub" style="margin-top:0">${_t('Tippe einen Gegenstand an, um Details, Vergleich und Aktionen zu sehen.')}</p></div>`;
     body = `<div class="split"><div><div class="box"><div style="display:flex;gap:12px;align-items:center">${heroHTML(P, 2.4)}<div class="stats" style="flex:1"><span>${_t('SCH {n}', { n: Math.round(st.wbase * st.dmgMul) })}</span><span>${_t('LP {n}', { n: st.hp })}</span><span>${_t('VER {n}', { n: Math.round(st.def) })}</span><span>${_t('KRIT {n}', { n: pct(st.crit) })}</span><span>${_t('KRIT-SCH {n}', { n: pct(st.critdmg) })}</span><span>${_t('TEMPO {n}/s', { n: (1 / st.cd).toFixed(1) })}</span>${st.dr ? `<span>${_t('MINDERUNG {n}', { n: pct(st.dr) })}</span>` : ''}${st.dodge ? `<span>${_t('AUSWEICHEN {n}', { n: pct(st.dodge) })}</span>` : ''}${st.regen ? `<span>${_t('REGEN {n}', { n: st.regen.toFixed(1) })}</span>` : ''}${st.leech ? `<span>${_t('LEBENSRAUB {n}', { n: pct(st.leech) })}</span>` : ''}${st.gold ? `<span>${_t('GOLD +{n}', { n: pct(st.gold) })}</span>` : ''}${st.m.xp ? `<span>${_t('EP +{n}', { n: pct(st.m.xp) })}</span>` : ''}</div></div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px">${gear}</div>${landeActive() ? '' : `<button class="btn alt bestgear" data-act="bestgear">${_t('Bestes anlegen')}</button>`}
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px">${gear}</div>${landeActive() ? '' : bestRowHTML()}
       ${Object.keys(sets).map(k => `<p style="font-size:16px;color:#4ade80;margin:8px 0 0">${SETS[k].n} ${sets[k]}/3 – ${sets[k] >= 2 ? SETS[k].d2 : ''}${sets[k] >= 3 ? ' · ' + SETS[k].d3 : ''}</p>`).join('')}</div>
       <div class="box" style="margin-top:10px">${capHead(_t('BEUTEL'), P.bag.length, bagCap(), P.bag.length > 1 ? `<button class="btn alt sm" data-act="bagsort">${_t('Sortieren')}</button>` : '')}${itemGridHTML(P.bag.map(it => itemSlot(it, 'isel', sel && sel.it === it)), 'cbag')}</div></div>${side}</div>`;
   } else if (charTab === 'tal') {
@@ -352,6 +352,14 @@ function openChar(tab, back) {
   <div class="stats"><span>${C.name}</span>${typeof fkTitle === 'function' && fkTitle() ? `<span style="color:var(--gold)">${_t('„{text}“', { text: esc(fkTitle()) })}</span>` : ''}<span>${_t('LV {lv}', { lv: P.lv })}</span><span>${_t('EP {n}', { n: fmt(P.xp) + '/' + fmt(xpNext(P.lv)) })}</span><span>${DIFFS[P.diff].n}${P.hc ? ' · ' + _t('HARDCORE') : ''}</span><span>${_t('KILLS {n}', { n: fmt(P.stats.kills) })}</span></div>
   <div class="tabs" role="tablist">${tab_('gear', _t('AUSRÜSTUNG'))}${tab_('tal', _t('TALENTE') + (P.sp ? ' (' + P.sp + ')' : ''))}${tab_('vorrat', _t('VORRAT'))}${tab_('look', _t('AUSSEHEN'))}${tab_('para', _t('PARAGON'))}${HOOK.charTabs.map(t => tab_(t.k, t.label())).join('')}</div>
   ${body}`, true);
+}
+/* Schnell-Ausrüsten (6.3): „Bestes anlegen“ (equipBest, js/items.js) und „Schlechteres verkaufen“ – nur Schlichtes (plainItem), das schlechter ist als das
+   Angelegte oder das die Klasse nicht tragen kann; erst nach einem zweiten Tippen (5 s) */
+let worseArm = 0;
+function worseList() { return P.bag.filter(it => plainItem(it) && (!canEquip(it) || (P.gear[it.slot] && itemScore(it) < itemScore(P.gear[it.slot])))); }
+function bestRowHTML() {
+  const W = worseList(), g = W.reduce((a, it) => a + itemPrice(it), 0), arm = worseArm > performance.now() && W.length;
+  return `<div class="bestrow"><button class="btn alt" data-act="bestgear">${_t('Bestes anlegen')}</button><button class="btn ${arm ? 'red' : 'alt'}" data-act="sellworse" ${W.length ? '' : 'disabled'}>${arm ? _t('Sicher? {n} für {g} Gold', { n: W.length, g: fmt(g) }) : _t('Schlechteres verkaufen ({n})', { n: W.length })}</button></div>`;
 }
 /* Vergleich mit dem angelegten Gegenstand */
 function compareHTML(it) {
@@ -609,6 +617,7 @@ panel.addEventListener('click', ev => {
     case 'equip': { const f = findItem(id); if (f && !f.eq) { equipItem(f.it); sfx('swing'); saveChar(); } selItem = id; openChar(); break; }
     case 'sell': { const f = findItem(id); if (f && !f.eq && sellItem(f.it)) { sfx('coin'); saveChar(); persist(); } selItem = null; openChar(); break; }
     case 'bagsort': P.bag.sort(itemSortKey); sfx('click'); saveChar(); openChar(); break;
+    case 'sellworse': { if (landeActive()) break; const W = worseList(); if (!W.length) { sfx('deny'); break; } if (worseArm < performance.now()) { worseArm = performance.now() + 5000; sfx('click'); openChar(); break; } worseArm = 0; let g = 0; for (const it of W) g += sellItem(it); sfx('coin'); toast(_t('{n} Gegenstände verkauft: +{g} Gold', { n: W.length, g: fmt(g) }), '#ffd24a'); saveChar(); selItem = null; openChar(); break; }
     case 'bestgear': { const ch = landeActive() ? [] : equipBest(); if (ch.length) { sfx('swing'); saveChar(); toast(_t('Angelegt: {list}', { list: ch.map(c => itemName(c.it) + ' (+' + Math.round(c.d * 100) + ' %)').join(', ') }), '#79c24e'); } else { sfx('deny'); toast(_t('Du trägst schon das Beste aus deinem Beutel.')); } selItem = null; openChar(); break; }
     case 'tal': { const [bi, ni] = id.split(',').map(Number); if (learnTalent(bi, ni)) { sfx('click'); saveChar(); } else sfx('deny'); openChar(); break; }
     case 'respec': if (respec()) { sfx('craft'); saveChar(); } openChar(); break;

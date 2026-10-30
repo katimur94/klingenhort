@@ -7,7 +7,7 @@ Vier Klassen, frei gestaltbare Helden, **Begleiter, die mit dir wachsen**, sechs
 
 ### ▶ [Jetzt spielen: katimur94.github.io/klingenhort](https://katimur94.github.io/klingenhort/)
 
-Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 5.0 · jede Woche neue Inhalte
+Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 6.3 · jede Woche neue Inhalte
 
 🌐 Deutsch · English · Türkçe · Español · Italiano · Français – *the game starts in your device language*
 
@@ -85,6 +85,16 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Vers
 ## Neuigkeiten & Wochenplan
 
 Klingenhort wird jede Woche erweitert. Im Spiel zeigt **Neuigkeiten** (Titelmenü, Einstellungen oder Weltkarte → Mehr) alle Updates und was als Nächstes kommt; nach einem Update öffnet sich die Seite einmal von selbst.
+
+**Neu in 6.3 – Aufträge & Ruf**
+
+| System | Was es kann |
+|---|---|
+| **Auftragstafel** | Neue Station im Versteck (auch Karte → Mehr → „Aufträge & Ruf“): je Held 3 Tagesaufträge (neu um Mitternacht) und 3 Wochenaufträge (neu am Montag), fest ausgewürfelt je Tag und Woche. Rund 40 Arten aus dem ganzen Spiel – Gegner, Elite, Champions, Bosse, Tausend Bosse, Gegnerarten, Orte, Tages-Challenge, Lande (Entkommen mit Beutewert, Leuchtfeuer, Regionen, Artefakte, Elwas Aufträge, Vögel), Basar (kaufen, verkaufen, versteigern, ersteigern), Schmiede (aufwerten, schmieden, zerlegen, Mods), Glücksrad, Sammeln, Acker, Eier, Begleiter. Nur Machbares, Ziele wachsen mit dem Level, einmal am Tag gratis neu würfeln, Meldung beim Erfüllen, Belohnung mit Anzeige |
+| **Fraktionen & Ruf** | Orden des Weltentors (8 Ränge: Erfahrung, Boss-Beute), Kundschafter der Lande (6 Ränge = Ruf der Lande mit den bekannten Vorteilen), Handelsgilde (7 Ränge: Preise bei Händler, Bodo und Basar, Auktionsgebühr, Angebote), Hüter der Wildnis (7 Ränge: Ei-Pflege, Sammelertrag, Acker). Vorteile klein und gedeckelt, für alle Helden |
+| **Ruf-Marken & Quartiermeister** | Marken je Fraktion für jeden Auftrag; jede Woche fünf Tauschangebote je Fraktion nach Rang (Eier bis Legendär, Mods, seltene Rohstoffe, Leuchtfeuersteine, Schlüssel, magische Vögel, Glücksmünzen) und ein Titel für den Helden |
+| **Bestes anlegen** | Knopf im Charakter: je Platz das Beste aus dem Beutel (Mods zählen mit), nichts Schlechteres, Sets mit Bonus bleiben. Daneben „Schlechteres verkaufen“ mit Rückfrage |
+| **Beute-Filter** | Einstellungen: Gewöhnliches und Magisches aufheben, verkaufen oder liegen lassen; Besseres und Aufgewertetes immer aufheben. In den Landen gilt nur „Liegen lassen“ (Verkaufen gibt es dort nicht) |
 
 **6.2.1 – Das Handbuch:** „?“ im Hauptmenü (auch in Pause und Einstellungen, ohne die Welt zu verlassen; am PC F1): über 300 Einträge in 13 Kapiteln mit Inhaltsverzeichnis und Suche (ohne Groß-/Kleinschreibung und Umlaute, auch in der eigenen Sprache). Materialien mit „Wo finden“ und „Wofür“ – aus den Spieldaten berechnet, damit das Handbuch nach jedem Update stimmt.
 
@@ -309,6 +319,7 @@ Von der Weltkarte aus jederzeit erreichbar. Du läufst durch die Ruine und spric
 | Lagerfeuer | – | einmal pro Akt vollständig heilen, Gespräche, Ausbau-Übersicht |
 | Spiegel | – | Aussehen jederzeit kostenlos ändern |
 | Portal | – | zurück zur Weltkarte |
+| Auftragstafel | – | Tages- und Wochenaufträge, Ruf bei vier Fraktionen, Tauschangebote der Quartiermeister (6.3) |
 | Schmiede (Borin) | 4 | Aufwerten, Schmieden, Verschmelzen; mehr Aufwertungs-Chance; Drachenesse: bis zu 5 Verschmelzungen |
 | Alchemielabor (Mira) | 4 | Tränke brauen, größerer Vorrat (bis 14), stärkere Heilung (bis 65 %), Elixiere |
 | Juwelier (Selis) | 3 | Edelsteine, Materialien veredeln, halbe Kosten, mehr Edelstein-Funde |
@@ -506,6 +517,8 @@ js/mods.js             Mods, Resonanzen, Umschmieden, Veredeln, Extrahieren
 js/voegel.js           Magische Vögel, Vogelhaus, Sammelbeutel-Versand
 js/bauen.js            Rohstoffe sammeln, Felder, Bauzeiten und Beschleunigen
 js/handbuch.js         Handbuch: Inhaltsverzeichnis, Suche, Einträge aus den Spieldaten
+js/fraktionen.js       Fraktionen & Ruf: Ränge, Vorteile (perk), Ruf-Marken, Quartiermeister mit Tauschangeboten der Woche
+js/auftraege.js        Aufträge: Tages- und Wochenaufträge, Fortschritt über HOOK.stat/kill, Auftragstafel im Versteck
 js/lande.js            Die Endlosen Lande: feste Chunk-Welt, Biome, Barrieren, Leuchtfeuer, Rucksack, NPCs, Tod
 js/market.js           Basar: Angebote, Verkauf, Auktionen, Marktwert (Schnittstelle MARKET)
 js/lang/               Übersetzungen (en, tr, es, it, fr) – Schlüssel ist der deutsche Text

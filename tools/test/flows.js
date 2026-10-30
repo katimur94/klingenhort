@@ -54,6 +54,15 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
   await page.locator('#bAct').tap(); await page.waitForTimeout(400);
   ok((await page.evaluate(() => (panel.querySelector('h2') || {}).textContent)) === 'SCHMIEDE', 'Versteck: Schmiede geöffnet');
   await tap('[data-act="wbdone"]');
+  // Auftragstafel (6.3): Interagieren öffnet sie, Reiter Fraktionen, Zurück ins Versteck
+  await page.evaluate(() => { const p = hidePos('auftrag'); P.x = p.x; P.y = p.y + 20; }); await page.waitForTimeout(500);
+  ok(await page.locator('#bAct').isVisible(), 'Versteck: Interagieren-Knopf an der Auftragstafel');
+  await page.locator('#bAct').tap(); await page.waitForTimeout(500);
+  ok((await page.evaluate(() => (panel.querySelector('h2') || {}).textContent)) === 'AUFTRAGSTAFEL' && (await page.locator('#panel .aq').count()) >= 3, 'Versteck: Auftragstafel mit Aufträgen geöffnet');
+  await tap('[data-act="auf_tab"][data-id="ruf"]');
+  ok((await page.locator('#panel .fkrow').count()) === 4, 'Auftragstafel: vier Fraktionen');
+  await tap('[data-act="auf_back"]');
+  ok((await st()) === 'play', 'Auftragstafel: Zurück ins Versteck');
 
   await page.evaluate(() => showPause()); await tap('[data-act="ctledit"]');
   const bb = await page.locator('#bRoll').boundingBox();

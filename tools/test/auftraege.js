@@ -312,6 +312,13 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
       // Knopf im Charakter
       P.bag.push(makeItem({ slot: 'weapon', base: 'axe', tier: 7, rar: 4 })); openChar('gear', 'map'); panel.querySelector('[data-act="bestgear"]').click();
       o.btn = P.gear.weapon.base === 'axe' && /Angelegt/.test($('toast').textContent);
+      // Schlechteres verkaufen: nur Schlichtes, das schlechter ist oder nicht passt – erst beim zweiten Tippen
+      P.gear.weapon = makeItem({ slot: 'weapon', base: 'sword', tier: 2, rar: 0 }); computeStats();
+      const keep = makeItem({ slot: 'weapon', base: 'sword', tier: 0, rar: 2 }), up = makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 0 }); up.up = 3;
+      P.bag = [makeItem({ slot: 'weapon', base: 'sword', tier: 0, rar: 0 }), makeItem({ slot: 'weapon', base: 'bow', tier: 0, rar: 1 }), keep, up, makeItem({ slot: 'weapon', base: 'sword', tier: 9, rar: 0 })];
+      const g0 = P.gold, sold = P.bag.slice(0, 2).reduce((a, it) => a + itemPrice(it), 0); openChar('gear', 'map'); panel.querySelector('[data-act="sellworse"]').click();
+      const armed = P.bag.length === 5 && /Sicher/.test(panel.querySelector('[data-act="sellworse"]').textContent); panel.querySelector('[data-act="sellworse"]').click();
+      o.worse = armed && P.bag.length === 3 && P.bag.includes(keep) && P.bag.includes(up) && P.gold === g0 + sold;
       hideOverlay(); return o;
     }, [H]);
     ok(r.best, 'Bestes anlegen: bessere Waffe angelegt, schlechtere Rüstung nicht, Bogen (andere Klasse) nicht');
@@ -319,6 +326,7 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
     ok(r.mods, 'Mods zählen beim Vergleich mit (itemScore)');
     ok(r.set, 'ein Set mit aktivem Bonus wird nicht auseinandergerissen');
     ok(r.btn, 'Knopf „Bestes anlegen“ im Charakter zeigt, was sich geändert hat');
+    ok(r.worse, '„Schlechteres verkaufen“: nur Gewöhnliches/Magisches, das schlechter ist oder nicht zur Klasse passt – nach Rückfrage');
   }
 
   console.log('Beute-Filter: Kampagne und Endlose Lande');
