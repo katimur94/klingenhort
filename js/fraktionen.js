@@ -90,7 +90,11 @@ function fkCheck(still) {
   for (const f of FKORDER) { const r = fkRank(f), X = M.f[f]; if (r > X.rk) { for (let i = X.rk + 1; i <= r; i++) up.push({ f, r: i }); X.rk = r; } }
   if (!up.length) return up;
   if (P && P.st) computeStats(); persist();
-  if (!still) for (const u of up) { const t = _t('Neuer Rang bei {fk}: {rank}!', { fk: FK[u.f].n, rank: fkRanks(u.f)[u.r].n }) + ' ' + fkRanks(u.f)[u.r].d; if (typeof mkToastQ === 'function') mkToastQ({ txt: t, c: FK[u.f].c, s: 'lvl' }); else { toast(t, FK[u.f].c); sfx('lvl'); } }
+  if (!still) for (const u of up) {
+    const R = fkRanks(u.f)[u.r], t = _t('Neuer Rang bei {fk}: {rank}!', { fk: FK[u.f].n, rank: R.n }) + ' ' + R.d;
+    if (state === 'play') banner(_t('NEUER RANG'), FK[u.f].n + ': ' + R.n);
+    if (typeof mkToastQ === 'function') mkToastQ({ txt: t, c: FK[u.f].c, s: 'lvl' }); else { toast(t, FK[u.f].c); sfx('lvl'); }
+  }
   return up;
 }
 // Gilt jetzt (Zusammenfassung der Vorteile)
@@ -120,7 +124,7 @@ HOOK.perk.push((v, k) => {
 HOOK.stats.push(add => { if (!fkM()) return; const x = FK_ORDEN.xp[fkRank('orden')]; if (x) add('xp', x); });
 // Bosse (Kampagne und Lande, nicht im Übungskampf): Edelstein, Gegenstand, Glücksmünze je nach Rang im Orden
 HOOK.loot.push((e, lm) => {
-  if (!e || !e.boss || e.bPractice || !fkM() || !P || (G && G.type === 'bossarena')) return;
+  if (!e || !e.boss || e.bPractice || !fkM() || !P || (typeof bPrac === 'function' && bPrac())) return;
   const r = fkRank('orden');
   if (FK_ORDEN.gem[r]) dropGem(e.x - 8, e.y, randomGem(stageNum() + 6));
   if (FK_ORDEN.item[r] && Math.random() < FK_ORDEN.item[r]) dropLoot(e.x + 12, e.y + 4, 2, .02);
@@ -163,7 +167,7 @@ function rwName(e) {
   switch (e.t) {
     case 'gold': return _t('{n} Gold', { n: fmt(e.n) });
     case 'fate': return e.n === 1 ? _t('1 Glücksmünze') : _t('{n} Glücksmünzen', { n: e.n });
-    case 'egg': return e.sp && PET_SP[e.sp] ? PET_TIERS[e.tier].egg : PET_TIERS[e.tier].egg;
+    case 'egg': return PET_TIERS[e.tier].egg;
     case 'stone': return e.n > 1 ? _t('{n} Leuchtfeuersteine', { n: e.n }) : _t('Leuchtfeuerstein');
     case 'key': return e.n > 1 ? _t('{n} Schlüssel für die Lande', { n: e.n }) : _t('Schlüssel für die Lande');
     case 'bird': return (e.n > 1 ? e.n + '× ' : '') + BIRDS[e.k].n;

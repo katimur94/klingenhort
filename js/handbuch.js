@@ -264,6 +264,7 @@ const HBGO = {
   mods: { l: () => _t('Zu deinen Mods'), c: 'map', f: () => { selItem = null; openChar('mods', 'map'); } },
   pet: { l: () => _t('Zu deinen Begleitern'), c: 'map', f: () => { selItem = null; openChar('pet', 'map'); } },
   vorrat: { l: () => _t('Zu deinem Vorrat'), c: 'map', f: () => { selItem = null; openChar('vorrat', 'map'); } },
+  gear: { l: () => _t('Zur Ausrüstung'), c: 'map', f: () => { selItem = null; openChar('gear', 'map'); } },
   hide: { l: () => _t('Ins Versteck'), c: 'map', f: () => { saveChar(); enterHideout(); } }
 };
 // Stationen im Versteck: „st:schmiede“ – nur im Versteck
@@ -650,9 +651,16 @@ function hbStart() {
   E('start:sprachen', _t('Sprachen'), { ic: ['pa', 'buch'], kw: 'sprache language englisch english türkisch spanisch italienisch französisch', see: ['start:einst'],
     s: _t('Das Spiel gibt es in sechs Sprachen.'),
     b: () => hUl(Object.keys(LANGS).map(c => esc(LANGS[c]) + (c === LANG ? ' ✓' : ''))) + hP(_t('Die Sprache wählst du mit 🌐 im Hauptmenü oder in den Einstellungen. Der Spielstand bleibt dabei erhalten.')) });
-  E('start:einst', _t('Einstellungen'), { ic: ['pa', 'amboss'], kw: 'einstellungen musik ton schrift grafik hd pixel vollbild wackeln', see: ['start:handy', 'start:pc', 'start:sprachen'], go: ['settings'],
+  E('start:einst', _t('Einstellungen'), { ic: ['pa', 'amboss'], kw: 'einstellungen musik ton schrift grafik hd pixel vollbild wackeln beute filter', see: ['start:handy', 'start:pc', 'start:sprachen', 'start:beute'], go: ['settings'],
     s: _t('Musik, Ton, Schriftgröße, Grafik und Steuerung.'),
-    b: () => hUl([_t('Musik und Soundeffekte an oder aus.'), _t('Schrift: GROSS macht Texte in Menüs besser lesbar.'), _t('Wackeln & Blitzen: AUS beruhigt Bildschirmwackeln und Blitze.'), _t('Grafik: HD (scharf) oder Pixel (schnell) – auf langsamen Geräten stellt das Spiel selbst um.'), _t('Steuerung: Knöpfe verschieben und vergrößern, Trank, Zielhilfe, Vibration.')]) + hP(_t('Die Einstellungen erreichst du im Hauptmenü und während des Spiels über die Pause.')) });
+    b: () => hUl([_t('Musik und Soundeffekte an oder aus.'), _t('Schrift: GROSS macht Texte in Menüs besser lesbar.'), _t('Wackeln & Blitzen: AUS beruhigt Bildschirmwackeln und Blitze.'), _t('Grafik: HD (scharf) oder Pixel (schnell) – auf langsamen Geräten stellt das Spiel selbst um.'), _t('Steuerung: Knöpfe verschieben und vergrößern, Trank, Zielhilfe, Vibration.'), _t('Beute-Filter: Gewöhnliches und Magisches aufheben, gleich verkaufen oder liegen lassen.')]) + hP(_t('Die Einstellungen erreichst du im Hauptmenü und während des Spiels über die Pause.')) });
+  // 6.3: Schnell-Ausrüsten und Beute-Filter
+  E('start:bestes', _t('Bestes anlegen'), { ic: ['pa', 'held'], kw: 'bestes anlegen ausrüsten schnell automatisch ausrüstung besser beutel', see: ['it:seltenheit', 'start:beute', 'fg:mods'], go: ['gear'],
+    s: _t('Ein Knopf im Charakter legt das Beste aus deinem Beutel an.'),
+    b: () => hUl([_t('Charakter → AUSRÜSTUNG → „Bestes anlegen“: für Waffe, Rüstung und Helm je das stärkste Teil aus dem Beutel.'), _t('Verglichen wird wie beim Aufheben – Mods, Sockelsteine, Aufwertung und Zusatzwerte zählen mit.'), _t('Nie wird etwas Besseres abgelegt, und nur, was deine Klasse tragen kann. Ein Set mit aktivem Bonus bleibt angelegt.'), _t('Danach siehst du kurz, was sich geändert hat und um wie viel es besser ist. In den Endlosen Landen geht das nicht.')]) });
+  E('start:beute', _t('Beute-Filter'), { ic: ['pa', 'truhe'], kw: 'beute filter automatisch verkaufen liegen lassen gewöhnlich magisch aufheben einstellungen', see: ['start:einst', 'it:seltenheit', 'lande:taschen'], go: ['settings'],
+    s: _t('Einfache Beute gleich verkaufen oder liegen lassen – einstellbar in den Einstellungen.'),
+    b: () => hUl([_t('Einstellungen → „Beute-Filter“: für Gewöhnliches und für Magisches je Aufheben, Verkaufen oder Liegen lassen.'), _t('Verkaufen gibt sofort den Händlerpreis, als kleine goldene Zahl über deinem Helden.'), _t('Was besser ist als deine Ausrüstung, hebst du immer auf. Gegenstände mit Mods, Sockelsteinen oder Aufwertung bleiben verschont.'), _t('In den Endlosen Landen gilt „Liegen lassen“ auch. „Verkaufen“ dort nicht: Es gibt keinen Händler – die Beute kommt in den Rucksack und erst beim Entkommen heim.')]) });
   E('start:handbuch', _t('So benutzt du das Handbuch'), { ic: ['pa', 'buch'], kw: 'hilfe handbuch suche suchen fragezeichen help', see: ['faq:eisenholz'],
     s: _t('Oben suchen, links blättern, auf eine Zeile tippen.'),
     b: () => hUl([_t('Tipp oben ein Wort ein – auch Fragen gehen, zum Beispiel „Wie macht man Eisenholz?“.'), _t('Groß- und Kleinschreibung und Umlaute sind egal: „kraeuter“ findet „Kräuter“.'), _t('Zeilen mit › führen zu einer anderen Seite. Unten auf jeder Seite stehen passende Einträge.'), _t('„Zurück“ geht einen Schritt zurück, × schließt das Handbuch – dein Spiel wartet genau dort, wo du warst.'), _t('Das Handbuch findest du im Hauptmenü (?), in der Pause, in den Einstellungen, unter „Mehr“ auf der Karte und in der Bibliothek.')]) });

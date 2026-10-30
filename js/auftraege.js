@@ -27,13 +27,14 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .rwc img{width:18px;height:18px;image-rendering:pixelated;object-fit:contain}
 .rwc.rep{color:var(--c)}
 .aqa{display:flex;gap:6px}.aqa .btn{flex:1;min-height:44px}
+body.touch .panel [data-act^="auf_"],body.touch .panel .btn[data-act^="auf_"]{min-height:44px}
 .aqok{font-family:var(--f-display);font-size:7px;color:var(--moss);padding:4px 0}
 .aqh3{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 10px}.aqh3 small{font-family:var(--f-body);font-size:16px;color:var(--parch-dim);letter-spacing:0}
 .aqall{width:100%;min-height:44px;margin:4px 0 8px}
 .fkrow{grid-template-columns:44px minmax(0,1fr) auto}.fkrow.sel{box-shadow:inset 0 0 0 2px var(--c)}.fkrow .fkbar{margin-top:5px;height:10px}
 .fktok{display:inline-flex;align-items:center;gap:3px;font-family:var(--f-display);font-size:9px;color:var(--parch);white-space:nowrap}.fktok img{width:20px;height:20px;image-rendering:pixelated}
 .fkhead{display:flex;gap:10px;align-items:center;margin:4px 0 8px}.fkhead>img{width:40px;height:40px;image-rendering:pixelated;flex:none}.fkhead>div{flex:1;min-width:0}.fkhead .nm{font-size:20px;line-height:1.05;margin-bottom:5px}
-.fkrk{background:var(--stone-lo);padding:6px 8px;margin-bottom:4px;font-size:17px;line-height:1.1;opacity:.6}.fkrk b{display:flex;justify-content:space-between;gap:8px;font-family:var(--f-display);font-weight:400;font-size:7px;line-height:1.5;margin-bottom:3px}.fkrk b small{font-family:var(--f-body);font-size:15px;color:var(--parch-dim)}
+.fkrk{background:var(--stone-lo);padding:6px 8px;margin-bottom:4px;font-size:17px;line-height:1.1;opacity:.6}.fkrk b{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:0 8px;font-family:var(--f-display);font-weight:400;font-size:7px;line-height:1.5;margin-bottom:3px}.fkrk b small{font-family:var(--f-body);font-size:15px;color:var(--parch-dim)}
 .fkrk.on{opacity:1;box-shadow:inset 3px 0 0 var(--c)}.fkrk.nx{opacity:1;box-shadow:inset 0 0 0 2px var(--c)}
 .fkul{margin:0 0 6px;padding-left:20px;font-size:17px;line-height:1.15}.fkul li{margin-bottom:3px}
 .fkopts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:8px}.fkopts .opt{min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px}.fkopts .opt img{width:26px;height:26px;image-rendering:pixelated}.fkopts .opt small{margin:0;display:flex;align-items:center;gap:2px}.fkopts .opt small img{width:14px;height:14px}
@@ -225,7 +226,7 @@ HOOK.stat.push((k, n) => {
 });
 // Kills: überall; Elite, Champion, Boss, Tausend Bosse, Lande, mit Begleiter, Gegnerart (nicht Puppe, Übungskampf, Totem)
 HOOK.kill.push(e => {
-  if (!P || !e || e.ai === 'dummy' || e.bTotem || e.bPractice || !G || G.type === 'versteck' || G.type === 'bossarena') return;
+  if (!P || !e || e.ai === 'dummy' || e.bTotem || e.bPractice || !G || G.type === 'versteck') return;
   try {
     const L = typeof landeActive === 'function' && landeActive();
     aufEv('kill', 1); aufEv('type', 1, e.t);
@@ -332,7 +333,7 @@ function aufOpen(from) {
   if (!P || (typeof landeActive === 'function' && landeActive())) return;
   if (from) AUF.from = from;
   setState('menu'); showHud(false);   // auch von der Karte: sonst baut Drehen des Handys die Karte neu auf
-  AUF.rev = null; AUF.op = from === 'hide' ? performance.now() : 0;
+  AUF.rev = null; AUF.tab = 'auf'; AUF.fk = null; AUF.op = from === 'hide' ? performance.now() : 0;
   // Geister-Tipp: der Finger auf dem Interagieren-Knopf im Versteck darf nicht gleich etwas auf der Tafel antippen
   if (!AUF.guard) { AUF.guard = 1; panel.addEventListener('click', e => { if (performance.now() - AUF.op < 350 && panel.querySelector('[data-act^="auf_"]')) { e.stopImmediatePropagation(); e.preventDefault(); } }, true); }
   aufSet(); sfx('page'); aufShow();
@@ -372,7 +373,7 @@ HOOK.drawStation.push((o, x, y, r) => {
   const P_ = [[-11, -26, 7, 8, '#ffd24a'], [-2, -27, 6, 7, '#57c7e6'], [6, -25, 6, 9, '#ffb03a'], [-9, -16, 7, 5, '#79c24e'], [0, -18, 6, 6, '#efe2bf']];
   for (const [px_, py, w, hh, sc] of P_) { r(px_, py, w, hh, n ? '#fff3c0' : '#efe2bf'); r(px_ + 1, py + 2, w - 2, 1, '#a8997e'); if (hh > 5) r(px_ + 1, py + 4, w - 3, 1, '#a8997e'); r(px_ + (w >> 1), py, 1, 1, '#c8342c'); r(px_ + w - 2, py + hh - 2, 2, 2, sc); }
   r(-17, -1, 34, 2, '#3a3440');
-  if (n) { addLight(x, y - 20, 34, .55 + .1 * Math.sin(T * 4)); if (!(G && G.near && G.near.act === 'auftrag')) { const b = Math.round(Math.sin(T * 4) * 1.5); r(-2, -52 + b, 5, 8, D); r(-2, -43 + b, 5, 4, D); r(-1, -51 + b, 3, 6, '#ffd24a'); r(-1, -42 + b, 3, 2, '#ffd24a'); r(-1, -51 + b, 1, 6, '#fff3c0'); addLight(x, y - 46, 18, .6); } if (f % 4 === 0 && Math.random() < .3) part(o.x + rnd(-10, 10), o.y, rnd(10, 26), 0, 0, rnd(8, 18), '#ffe08a', .6, 1, -6, 1); }
+  if (n) { addLight(x, y - 20, 34, .55 + .1 * Math.sin(T * 4)); if (!(G && G.near && G.near.act === 'auftrag')) { const b = Math.round(Math.sin(T * 4) * 1.5), ex = -15; r(ex - 2, -50 + b, 5, 8, D); r(ex - 2, -41 + b, 5, 4, D); r(ex - 1, -49 + b, 3, 6, '#ffd24a'); r(ex - 1, -40 + b, 3, 2, '#ffd24a'); r(ex - 1, -49 + b, 1, 6, '#fff3c0'); addLight(x + ex, y - 44, 18, .6); } if (f % 4 === 0 && Math.random() < .3) part(o.x + rnd(-10, 10), o.y, rnd(10, 26), 0, 0, rnd(8, 18), '#ffe08a', .6, 1, -6, 1); }
 });
 HOOK.artIcon.push((name, b) => {
   if (name !== 'tafel') return;

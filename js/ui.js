@@ -349,7 +349,7 @@ function openChar(tab, back) {
     <button class="btn red" data-act="rebirth" ${P.lv >= 50 && P.maxAct >= 5 ? '' : 'disabled'}>${_t('Wiedergeburt')}</button>`;
   } else { const t = HOOK.charTabs.find(t => t.k === charTab); if (t) body = t.body(); }
   showOverlay(`<div class="head"><h2>${esc(P.name).toLocaleUpperCase(LOCALE)}</h2><div class="hbtns"><div class="gold"><i class="coin"></i>${fmt(P.gold)} <span style="color:#ffd24a"><i class="fc"></i>${P.fate || 0}</span></div><button class="btn alt sm" data-act="cback">${_t('Zurück')}</button></div></div>
-  <div class="stats"><span>${C.name}</span><span>${_t('LV {lv}', { lv: P.lv })}</span><span>${_t('EP {n}', { n: fmt(P.xp) + '/' + fmt(xpNext(P.lv)) })}</span><span>${DIFFS[P.diff].n}${P.hc ? ' · ' + _t('HARDCORE') : ''}</span><span>${_t('KILLS {n}', { n: fmt(P.stats.kills) })}</span></div>
+  <div class="stats"><span>${C.name}</span>${typeof fkTitle === 'function' && fkTitle() ? `<span style="color:var(--gold)">${_t('„{text}“', { text: esc(fkTitle()) })}</span>` : ''}<span>${_t('LV {lv}', { lv: P.lv })}</span><span>${_t('EP {n}', { n: fmt(P.xp) + '/' + fmt(xpNext(P.lv)) })}</span><span>${DIFFS[P.diff].n}${P.hc ? ' · ' + _t('HARDCORE') : ''}</span><span>${_t('KILLS {n}', { n: fmt(P.stats.kills) })}</span></div>
   <div class="tabs" role="tablist">${tab_('gear', _t('AUSRÜSTUNG'))}${tab_('tal', _t('TALENTE') + (P.sp ? ' (' + P.sp + ')' : ''))}${tab_('vorrat', _t('VORRAT'))}${tab_('look', _t('AUSSEHEN'))}${tab_('para', _t('PARAGON'))}${HOOK.charTabs.map(t => tab_(t.k, t.label())).join('')}</div>
   ${body}`, true);
 }
