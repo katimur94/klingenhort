@@ -121,6 +121,8 @@ function drawPlayer() {
   if (showW && behind && P.hand) { const q = wpos(P.hand); drawWeapon(spr, q.x, q.y, ang, P.hand.sc); auWq(q, ang, spr, it); }
   if (P.wall > 0) { const f = Math.floor(T * 10) % 6, sk = P.wallSk; ctx.globalAlpha = sk ? .3 + sk.r * .03 : .28; drawFxFrame('shield', f, P.x - CX, P.y - CY - 12, .8 * (sk ? sk.sc : 1), 0, false, sk && skFx('shield', sk)); ctx.globalAlpha = 1; addLight(P.x - CX, P.y - CY - 10, 40, .6); }
   const L = P.look, aura = L.aura && COSM[L.aura];
+  // Aura der Hundert (Level 100, js/aufstieg.js): fünf Funken kreisen um den Helden
+  if (aura && aura.ring) { const x = P.x - CX, y = P.y - CY; for (let k = 0; k < 5; k++) { const a = T * 1.6 + k * 1.2566, s = Math.sin(a); ctx.globalAlpha = s > 0 ? .95 : .5; ctx.fillStyle = k % 2 ? aura.c[1] : aura.c[0]; ctx.fillRect(Math.round(x + Math.cos(a) * 12), Math.round(y - 8 + s * 4 - 6 * Math.sin(T * .8 + k)), k % 2 ? 1 : 2, k % 2 ? 1 : 2); } ctx.globalAlpha = 1; }
   if (aura) { const x = P.x - CX, y = P.y - CY; ctx.globalAlpha = .18 + .06 * Math.sin(T * 4); ctx.fillStyle = aura.c[0]; ctx.beginPath(); ctx.ellipse(x, y, 11, 4.5, 0, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1; if (Math.random() < .35) part(P.x + rnd(-8, 8), P.y + rnd(-2, 2), rnd(0, 4), 0, 0, rnd(15, 35), Math.random() < .5 ? aura.c[0] : aura.c[1], rnd(.5, .9), 1, -6, 1); }
   if (L.wings === 'w_phoenix' && Math.random() < .3) part(P.x - P.turn * 7 + rnd(-4, 4), P.y, rnd(10, 22), 0, 0, rnd(10, 25), Math.random() < .5 ? '#ffd24a' : '#ff6a2a', .5, 1, -10, 1);
   const h = drawActor(P, true); if (h) P.hand = h;

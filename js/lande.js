@@ -1429,7 +1429,8 @@ function lItem(minRar, luckMul, st) {
   return it;
 }
 // Wie gefährlich ist eine Stufe für diesen Helden? (Kampagnen-Fortschritt und Level)
-function lHeroSt() { return Math.max(P.lv * 1.15, 7 * (P.maxAct || 1)) + (P.paragon || 0) * .15; }
+// über Level 50 zählt das Level langsamer (lvEff, js/items.js – Level 100 ist nur gut 20 % stärker als 50)
+function lHeroSt() { return Math.max((typeof lvEff === 'function' ? lvEff(P.lv) : P.lv) * 1.15, 7 * (P.maxAct || 1)) + (P.paragon || 0) * .15; }
 function lRate(st) { const k = st / lHeroSt(); return k < .75 ? { n: _t('leicht'), c: '#79c24e' } : k < 1.05 ? { n: _t('passend'), c: '#e8d04a' } : k < 1.35 ? { n: _t('gefährlich'), c: '#ff8a3a' } : { n: _t('tödlich'), c: '#ff4a4a' }; }
 
 /* ---------- Betreten ---------- */

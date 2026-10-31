@@ -366,17 +366,22 @@ function killEnemy(e, nx, ny) {
 }
 function gainXP(v, e) {
   v = Math.round(v * (1 + mod('xp'))); if (e) txt(e.x, e.y - 24 * e.sc, _t('+{n} EP', { n: v }), '#57a7d6');
-  if (P.lv >= 50) { P.pxp += v; while (P.pxp >= PARAGON_XP) { P.pxp -= PARAGON_XP; P.paragon++; statMax('maxPar', P.paragon); banner(_t('PARAGON {n}', { n: P.paragon }), _t('+1 Paragonpunkt')); sfx('lvl'); } return; }
-  P.xp += v;
-  while (P.xp >= xpNext(P.lv) && P.lv < 50) {
+  if (P.lv >= LVMAX) { P.pxp += v; while (P.pxp >= PARAGON_XP) { P.pxp -= PARAGON_XP; P.paragon++; statMax('maxPar', P.paragon); banner(_t('PARAGON {n}', { n: P.paragon }), _t('+1 Paragonpunkt')); sfx('lvl'); } return; }
+  P.xp += v; const lv0 = P.lv, got = [];
+  while (P.xp >= xpNext(P.lv) && P.lv < LVMAX) {
     P.xp -= xpNext(P.lv); P.lv++; P.sp++; computeStats(); P.hp = P.st.hp; P.res = P.st.resMax;
     statMax('maxLv', P.lv); if (P.hc) statMax('hcLv', P.lv);
-    banner(_t('LEVEL {lv}', { lv: P.lv }), _t('+1 Talentpunkt · Mehr Lebenspunkte')); sfx('lvl');
-    fx.push({ k: 'pillar', x: P.x, y: P.y, life: 1, max: 1 });
-    rings.push({ x: P.x, y: P.y, r: 2, max: 44, life: .5, max2: .5, col: '#e8b04a' });
-    for (let i = 0; i < 30; i++) part(P.x, P.y, rnd(0, 10), rnd(-50, 50), rnd(-30, 30), rnd(40, 120), '#ffd24a', rnd(.5, 1), 1, 120, 1);
+    if (typeof lvrGrant === 'function') got.push(...lvrGrant(P.lv));   // Belohnung für jedes neue Level, auch bei Sprüngen (js/aufstieg.js)
   }
-  if (P.lv >= 50) P.xp = 0;
+  if (P.lv === lv0) return;
+  // ein Banner für alle neuen Level: Talentpunkte und was es gab (Level 100: Paragon beginnt, Überschuss zählt dort)
+  const n = P.lv - lv0, sub = [n > 1 ? _t('+{n} Talentpunkte', { n }) : _t('+1 Talentpunkt')].concat(typeof lvrLine === 'function' ? lvrLine(got) : [_t('Mehr Lebenspunkte')]);
+  if (P.lv >= LVMAX) { P.pxp = Math.min(PARAGON_XP - 1, P.pxp + P.xp); P.xp = 0; }
+  banner(n > 1 ? _t('LEVEL {lv} (+{n})', { lv: P.lv, n }) : _t('LEVEL {lv}', { lv: P.lv }), sub.join(' · ')); sfx('lvl');
+  fx.push({ k: 'pillar', x: P.x, y: P.y, life: 1, max: 1 });
+  rings.push({ x: P.x, y: P.y, r: 2, max: 44, life: .5, max2: .5, col: '#e8b04a' });
+  for (let i = 0; i < 30; i++) part(P.x, P.y, rnd(0, 10), rnd(-50, 50), rnd(-30, 30), rnd(40, 120), '#ffd24a', rnd(.5, 1), 1, 120, 1);
+  if (typeof lvrToast === 'function') lvrToast(got);
 }
 function hurtPlayer(dmg, src) {
   if (P.inv > 0 || state !== 'play' || P.hp <= 0) return;
