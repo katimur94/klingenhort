@@ -799,6 +799,7 @@ function updPickups(dt) {
         const r = lootRule(c.it);
         if (r === 'leave') { c.got = false; if (!c.lt) { c.lt = 1; txt(c.x, c.y - 14, _t('liegen gelassen'), '#a8997e'); } continue; }
         if (r === 'sell') { const g = itemPrice(c.it); P.gold += g; stat('autoSold'); txt(P.x, P.y - 24, _t('+{n} G', { n: g }), '#e8b04a'); sfx('coin'); }
+        else if (r === 'trash') { stat('autoTrash'); dust(c.x, c.y, 5); txt(c.x, c.y - 14, _t('weggeworfen'), '#a8997e'); }   // Beute-Filter: verschwindet, kein Gold
         else pickItem(c.it);
       }
     }

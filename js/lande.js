@@ -1714,7 +1714,12 @@ HOOK.collect.unshift((h, c) => {
     case 'coin': e = { t: 'gold', n: c.v }; break;
     case 'mat': e = { t: 'mat', k: c.m, n: c.n }; break;
     case 'gem': e = { t: 'gem', k: c.g, n: 1 }; break;
-    case 'loot': if (typeof lootRule === 'function' && lootRule(c.it, true) === 'leave') { if (!c.lt) { c.lt = 1; txt(c.x, c.y - 14, _t('liegen gelassen'), '#a8997e'); } return true; } e = { t: 'item', it: c.it }; break;
+    case 'loot': {
+      const r = typeof lootRule === 'function' ? lootRule(c.it, true) : 'take';   // Beute-Filter: liegen lassen und wegwerfen gelten auch hier
+      if (r === 'leave') { if (!c.lt) { c.lt = 1; txt(c.x, c.y - 14, _t('liegen gelassen'), '#a8997e'); } return true; }
+      if (r === 'trash') { c.got = true; stat('autoTrash'); dust(c.x, c.y, 5); txt(c.x, c.y - 14, _t('weggeworfen'), '#a8997e'); return true; }
+      e = { t: 'item', it: c.it }; break;
+    }
     case 'lpart': e = { t: 'part', k: c.pk, n: c.n || 1 }; break;
     case 'legg': e = { t: 'egg', d: c.d }; break;
     case 'lmod': e = { t: 'mod', k: c.mk, n: c.n || 1 }; break;

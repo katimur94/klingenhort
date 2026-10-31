@@ -66,7 +66,7 @@ Schon erledigt in 4.1: Hochformat, klebende Kopf- und Fußleisten, Liste neben D
 - **Leistungs-Modus:** weniger Partikel, kein Licht-Effekt, 30 fps – für ältere Handys und Akku
 - **Einhand-Modus** im Hochformat: Auto-Angriff, wenn ein Gegner in Reichweite ist; nur Joystick und Fähigkeiten
 - ✅ **Schnell-Ausrüsten:** „Bestes anlegen“-Knopf im Charakter und „Alles Schlechtere verkaufen“ – 6.3
-- ✅ **Beute-Filter:** Gewöhnliche Gegenstände automatisch verkaufen oder liegen lassen – 6.3
+- ✅ **Beute-Filter:** Gewöhnliche Gegenstände automatisch verkaufen oder liegen lassen – 6.3; bis Episch, Wegwerfen und Grenze nach Marktwert – 6.3.1
 - **Lange drücken für Infos** auf Fähigkeiten, Materialien und Talente statt Text zu suchen
 - **Wisch-Gesten** zwischen den Reitern (Ausrüstung → Talente → Vorrat)
 - **Farbenblind-Modus** für Seltenheitsfarben (zusätzliche Symbole)

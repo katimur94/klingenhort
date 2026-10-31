@@ -521,14 +521,31 @@ function showSettings(from) {
   const s = SAVE.meta.settings, ig = setInGame();
   showOverlay(`<h2>${_t('EINSTELLUNGEN')}</h2><div class="menu" style="margin-top:12px"><button class="btn alt" data-act="music">${_t('Musik: {v}', { v: s.music !== false ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="sfx">${_t('Soundeffekte: {v}', { v: s.sfx !== false ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="bigui">${_t('Schrift: {v}', { v: s.bigui ? _t('GROSS') : _t('NORMAL') })}</button><button class="btn alt" data-act="calm">${_t('Wackeln & Blitzen: {v}', { v: s.calm ? _t('AUS') : _t('AN') })}</button><button class="btn alt" data-act="lootset">${_t('Beute-Filter: {v}', { v: lootSetName() })}</button>${gfxBtn()}${fsBtn()}<button class="btn alt" data-act="controls">${_t('Steuerung')}</button>${typeof hbMenuBtn === 'function' ? hbMenuBtn('settings') : ''}<button class="btn alt" data-act="news" data-id="settings">${_t('Neuigkeiten')}</button>${ig ? '' : `<button class="btn alt" data-act="langs" data-id="settings">🌐 ${LANGS[LANG]}</button>`}${UPD.on && !ig ? `<button class="btn alt" data-act="checkupd">${_t('Nach Update suchen')}</button>` : ''}<button class="btn" data-act="setback">${_t('Zurück')}</button></div><p class="sub" id="updmsg">${_t('Version {v}', { v: VERSION })}</p>`);
 }
-// Beute-Filter (6.3): Gewöhnliches und Magisches aufheben, gleich verkaufen oder liegen lassen (lootRule, js/items.js)
-const LOOTSET = { take: () => _t('AUFHEBEN'), sell: () => _t('VERKAUFEN'), leave: () => _t('LIEGEN LASSEN') };
-function lootSetName() { const L = SAVE.meta.settings.loot || {}, c = L.c || 'take', m = L.m || 'take'; if (c === 'take' && m === 'take') return _t('ALLES AUFHEBEN'); return [c !== 'take' ? RAR[0].n + ' ' + LOOTSET[c]() : '', m !== 'take' ? RAR[1].n + ' ' + LOOTSET[m]() : ''].filter(Boolean).join(' · '); }
+// Beute-Filter (6.3; 6.3.1: bis Episch, Wegwerfen, Wertgrenze): was mit Beute passiert, über die du läufst (lootRule, js/items.js)
+const LOOTSET = { take: () => _t('AUFHEBEN'), sell: () => _t('VERKAUFEN'), leave: () => _t('LIEGEN LASSEN'), trash: () => _t('WEGWERFEN') };
+const LOOTSUB = { take: () => _t('in den Beutel'), sell: () => _t('gleich zu Gold'), leave: () => _t('bleibt am Boden'), trash: () => _t('weg damit') };
+function lootSetName() {
+  const L = SAVE.meta.settings.loot || {}, p = LOOT_K.map((k, r) => L[k] && L[k] !== 'take' ? RAR[r].n + ' ' + LOOTSET[L[k]]() : '').filter(Boolean);
+  if (L.v > 0) p.unshift(_t('unter {n} G {a}', { n: fmt(L.v), a: LOOTSET[L.va] ? LOOTSET[L.va]() : LOOTSET.trash() }));
+  return !p.length ? _t('ALLES AUFHEBEN') : p.length === 1 ? p[0] : _t('{n} REGELN', { n: p.length });
+}
 function showLootSet() {
-  const L = SAVE.meta.settings.loot, row = (r, k) => `<h3 style="color:${RAR[r].c}">${RAR[r].n.toLocaleUpperCase(LOCALE)}</h3><div class="opts">${['take', 'sell', 'leave'].map(v => `<button class="opt${L[k] === v ? ' sel' : ''}" data-act="lootopt" data-id="${k}:${v}" aria-pressed="${L[k] === v}">${LOOTSET[v]()}<small>${v === 'take' ? _t('in den Beutel') : v === 'sell' ? _t('gleich zu Gold') : _t('bleibt am Boden')}</small></button>`).join('')}</div>`;
+  const L = SAVE.meta.settings.loot, lv = +L.v || 0, opt = (k, v, cur) => `<button class="opt${cur === v ? ' sel' : ''}" data-act="lootopt" data-id="${k}:${v}" aria-pressed="${cur === v}">${LOOTSET[v]()}<small>${LOOTSUB[v]()}</small></button>`;
+  const row = r => `<h3 style="color:${RAR[r].c}">${RAR[r].n.toLocaleUpperCase(LOCALE)}</h3><div class="opts lootop">${LOOT_ACT.map(v => opt(LOOT_K[r], v, L[LOOT_K[r]] || 'take')).join('')}</div>`;
+  // Marktwert der angelegten Teile als Anhaltspunkt für die Grenze
+  const gear = P && P.gear ? ['weapon', 'armor', 'helm'].filter(s => P.gear[s]).map(s => `${s === 'weapon' ? _t('Waffe') : AR[s].label} ${_t('{n} G', { n: fmt(lootVal(P.gear[s])) })}`).join(' · ') : '';
   showOverlay(`<div class="head"><h2>${_t('BEUTE-FILTER')}</h2><div class="hbtns"><button class="btn alt sm" data-act="lootback">${_t('Zurück')}</button></div></div>
-  <p class="sub" style="margin-top:0">${_t('Was soll mit einfacher Beute passieren, über die du läufst?')}</p>${row(0, 'c')}${row(1, 'm')}
-  <ul class="lootnote"><li>${_t('Was besser ist als deine Ausrüstung, hebst du immer auf.')}</li><li>${_t('Gegenstände mit Mods, Sockelsteinen oder Aufwertung bleiben verschont.')}</li><li>${_t('Verkaufen bringt sofort den Händlerpreis.')}</li><li>${_t('In den Endlosen Landen gilt „Liegen lassen“ auch. „Verkaufen“ dort nicht: Es gibt keinen Händler – die Beute kommt in den Rucksack und erst beim Entkommen heim.')}</li></ul>`);
+  <p class="sub" style="margin-top:0">${_t('Was soll mit Beute passieren, über die du läufst?')}</p>
+  <h3>${_t('NACH MARKTWERT')}</h3><div class="lootv"><button class="btn alt" data-act="lootv" data-id="-1" aria-label="${_t('Grenze senken')}"${lv > 0 ? '' : ' disabled'}>-</button><b>${lv > 0 ? _t('unter {n} Gold', { n: fmt(lv) }) : _t('AUS')}</b><button class="btn alt" data-act="lootv" data-id="1" aria-label="${_t('Grenze erhöhen')}"${lv < LOOT_V[LOOT_V.length - 1] ? '' : ' disabled'}>+</button></div>
+  ${lv > 0 ? `<div class="opts lootop">${['trash', 'sell', 'leave'].map(v => opt('va', v, L.va || 'trash')).join('')}</div>` : ''}
+  <p class="sub" style="margin-top:2px">${_t('Gilt von Gewöhnlich bis Episch überall dort, wo unten „Aufheben“ gewählt ist. Den Marktwert zeigt jeder Gegenstand.')}${gear ? ' ' + _t('Deine Ausrüstung: {list}', { list: gear }) : ''}</p>
+  <h3>${_t('NACH SELTENHEIT')}</h3>${[0, 1, 2, 3].map(row).join('')}
+  <ul class="lootnote"><li>${_t('Was besser ist als deine Ausrüstung, hebst du immer auf.')}</li><li>${_t('Legendär, Set und Mythisch hebst du immer auf – ebenso alles mit Mods, Sockelsteinen oder Aufwertung.')}</li><li>${_t('Verkaufen bringt sofort den Händlerpreis. Wegwerfen: Der Gegenstand verschwindet, sobald du darüber läufst – kein Gold, kein Platz im Beutel.')}</li><li>${_t('In den Endlosen Landen gelten „Liegen lassen“ und „Wegwerfen“ auch. „Verkaufen“ dort nicht: Es gibt keinen Händler – die Beute kommt in den Rucksack und erst beim Entkommen heim.')}</li></ul>`);
+}
+// Wertgrenze eine Stufe höher oder tiefer (auch von einem Wert zwischen den Stufen aus)
+function lootStep(d) {
+  const L = SAVE.meta.settings.loot, v = +L.v || 0; let i = LOOT_V.findIndex(x => x >= v); if (i < 0) i = LOOT_V.length;
+  i = d > 0 ? (LOOT_V[i] === v ? i + 1 : i) : i - 1; L.v = LOOT_V[clamp(i, 0, LOOT_V.length - 1)];
 }
 // Sprache: jede in ihrer eigenen Schreibweise, der Wechsel lädt die Seite neu
 let langBack = 'title';
@@ -591,7 +608,8 @@ panel.addEventListener('click', ev => {
     case 'calm': SAVE.meta.settings.calm = !SAVE.meta.settings.calm; persist(); showSettings(); break;
     case 'lootset': showLootSet(); break;
     case 'lootback': showSettings(); break;
-    case 'lootopt': { const [k, v] = String(id).split(':'); if ((k === 'c' || k === 'm') && LOOTSET[v]) { SAVE.meta.settings.loot[k] = v; persist(); sfx('click'); } showLootSet(); break; }
+    case 'lootopt': { const [k, v] = String(id).split(':'); if (LOOTSET[v] && (LOOT_K.includes(k) || (k === 'va' && v !== 'take'))) { SAVE.meta.settings.loot[k] = v; persist(); sfx('click'); } showLootSet(); break; }
+    case 'lootv': lootStep(+id); persist(); sfx('click'); showLootSet(); break;
     case 'gfx': SAVE.meta.settings.gfx = HD ? 'px' : 'hd'; persist(); resize(); sfx('click'); if (state === 'pause') { setState('play'); showPause(); } else showSettings(); break;
     case 'fullscreen': toggleFullscreen(); break;
     case 'controls': showControls(); break;

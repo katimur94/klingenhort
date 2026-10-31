@@ -146,7 +146,7 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
       for (const el of [false, true]) { const e = lSpawn('goblin', P.x + 40, P.y, { elite: el }); hurtEnemy(e, 1e9, 0, 0, 0); }
       o.lkill = H.dq[0].ok === 1 && H.dq[1].ok === 1;
       // Leuchtfeuer setzen
-      const M = SAVE.meta.lande, [x, y] = lRoadPt(2, 9); lTeleport(x * LCK + LOFF, y * LCK + LOFF); CALM(); lTick(.3); lTick(.3); M.stones = 1; LW.hurtT = -99; ON.l_cpok(); o.beacon = H.wq[1].ok === 1;
+      const M = SAVE.meta.lande, [x, y] = lRoadPt(2, 9); lTeleport(x * LCK + LOFF, y * LCK + LOFF); CALM(); lTick(.3); lTick(.3); M.stones = 1; CALM(); ON.l_cpok(); o.beacon = H.wq[1].ok === 1;   // CALM nach lTick: zufällig nahe erschienene Gegner sperren sonst das Leuchtfeuer
       // entkommen mit Beute im Wert von 500
       lTeleport(LOFF + 384, LOFF + 372); CALM(); LW.pack.push({ t: 'gold', n: 500 }); lExtract(lNear(P.x, P.y, 200).find(x => x.k === 'exit'));
       o.ext = H.wq[0].ok === 1 && H.dq[2].ok === 1 && H.dq[2].c >= 300 && !landeActive();
@@ -346,16 +346,33 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
       // Raum geschafft: liegen Gelassenes wird nicht zum Helden gezogen
       SAVE.meta.settings.loot = { c: 'leave', m: 'leave' }; const far = makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 0 }); pickups.push({ k: 'loot', it: far, x: P.x + 80, y: P.y, z: 0, vz: 0, vx: 0, vy: 0, t: 1, mag: 1 }); for (let i = 0; i < 30; i++) updPickups(.03);
       const fc = pickups.find(c => c.it === far); o.noMag = !!fc && Math.abs(fc.x - (P.x + 80)) < 2;
+      // 6.3.1: Wegwerfen und Wertgrenze
+      pickups.length = 0; SAVE.meta.settings.loot = { c: 'take', m: 'take', s: 'trash', e: 'take', v: 0, va: 'trash' };
+      const g2 = P.gold, s1 = put(makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 2 })); step(); o.trash = !P.bag.includes(s1) && !pickups.some(c => c.it === s1) && P.gold === g2 && texts.some(t => t.s === 'weggeworfen');
+      SAVE.meta.settings.loot = { c: 'take', m: 'take', s: 'take', e: 'take', v: 1e6, va: 'sell' };
+      const g3 = P.gold, cv = put(makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 1 })); step(); o.vSell = P.gold === g3 + itemPrice(cv) && !P.bag.includes(cv);
+      SAVE.meta.settings.loot.va = 'trash'; const g4 = P.gold, cv2 = put(makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 1 })); step(); o.vTrash = !P.bag.includes(cv2) && !pickups.some(c => c.it === cv2) && P.gold === g4;
+      SAVE.meta.settings.loot.v = 0; const cv3 = put(makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 1 })); step(); o.vOff = P.bag.includes(cv3);
       // Endlose Lande: liegen lassen gilt, Verkaufen nicht (Rucksack)
       G = null; lBegin(); lTeleport(LOFF + 384, LOFF + 420); CALM(); P.inv = 1e9; LW.pack = []; pickups.length = 0;
       SAVE.meta.settings.loot = { c: 'sell', m: 'leave' }; const g1 = P.gold;
       const l1 = put(makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 0 })); updPickups(.016); o.lSell = LW.pack.some(e => e.t === 'item' && e.it === l1) && P.gold === g1;
       const l2 = put(makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 1 })); updPickups(.016); updPickups(.016); o.lLeave = pickups.some(c => c.it === l2) && !LW.pack.some(e => e.it === l2);
+      SAVE.meta.settings.loot = { c: 'trash', m: 'take', s: 'take', e: 'take', v: 0, va: 'trash' };
+      const l3 = put(makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 0 })); updPickups(.016); updPickups(.016); o.lTrash = !pickups.some(c => c.it === l3) && !LW.pack.some(e => e.it === l3);
+      SAVE.meta.settings.loot = { c: 'take', m: 'take', s: 'take', e: 'take', v: 1e6, va: 'sell' }; const g5 = P.gold, l4 = put(makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 0 })); updPickups(.016); o.lVSell = LW.pack.some(e => e.it === l4) && P.gold === g5;
       lAbandon('test'); SAVE.meta.settings.loot = { c: 'take', m: 'take' };
       // Einstellungen: Knopf und eigener Bildschirm
       setState('menu'); G = null; showSettings('title'); const b = panel.querySelector('[data-act="lootset"]'); b.click(); panel.querySelector('[data-act="lootopt"][data-id="c:sell"]').click();
       o.ui = SAVE.meta.settings.loot.c === 'sell' && /BEUTE-FILTER/.test(panel.textContent) && /Endlosen Landen/.test(panel.textContent);
       panel.querySelector('[data-act="lootback"]').click(); o.uiBack = /Beute-Filter:/.test(panel.textContent) && /VERKAUFEN/.test(panel.querySelector('[data-act="lootset"]').textContent);
+      // 6.3.1: Grenze mit + und −, Wegwerfen und Verkaufen wählbar
+      panel.querySelector('[data-act="lootset"]').click(); panel.querySelector('[data-act="lootv"][data-id="1"]').click(); panel.querySelector('[data-act="lootv"][data-id="1"]').click();
+      o.uiV = SAVE.meta.settings.loot.v === 100 && /unter 100 Gold/.test(panel.textContent) && !!panel.querySelector('[data-act="lootopt"][data-id="va:sell"]') && !!panel.querySelector('[data-act="lootopt"][data-id="e:trash"]');
+      panel.querySelector('[data-act="lootopt"][data-id="va:sell"]').click(); panel.querySelector('[data-act="lootopt"][data-id="e:trash"]').click(); panel.querySelector('[data-act="lootv"][data-id="-1"]').click();
+      o.uiV2 = SAVE.meta.settings.loot.va === 'sell' && SAVE.meta.settings.loot.e === 'trash' && SAVE.meta.settings.loot.v === 50;
+      panel.querySelector('[data-act="lootv"][data-id="-1"]').click(); o.uiOff = SAVE.meta.settings.loot.v === 0 && !panel.querySelector('[data-act="lootopt"][data-id="va:sell"]') && panel.querySelector('[data-act="lootv"][data-id="-1"]').disabled;
+      panel.querySelector('[data-act="lootback"]').click(); o.uiBack2 = /2 REGELN/.test(panel.querySelector('[data-act="lootset"]').textContent);
       SAVE.meta.settings.loot = { c: 'take', m: 'take' }; hideOverlay(); return o;
     }, [H, C_]);
     ok(r.take, 'Standard: alles aufheben');
@@ -367,6 +384,10 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
     ok(r.lSell, 'Endlose Lande: „Verkaufen“ gilt nicht – in den Rucksack');
     ok(r.lLeave, 'Endlose Lande: „Liegen lassen“ gilt');
     ok(r.ui && r.uiBack, 'Einstellungen → Beute-Filter: umstellen, erklärt die Lande, Zurück zeigt die Wahl');
+    ok(r.trash, '6.3.1 Selten wegwerfen: verschwindet beim Drüberlaufen, kein Gold, nichts im Beutel');
+    ok(r.vSell && r.vTrash && r.vOff, '6.3.1 Wertgrenze: darunter verkaufen oder wegwerfen, Grenze aus = aufheben');
+    ok(r.lTrash && r.lVSell, '6.3.1 Endlose Lande: „Wegwerfen“ gilt, „Verkaufen“ unter der Grenze kommt in den Rucksack');
+    ok(r.uiV && r.uiV2 && r.uiOff && r.uiBack2, '6.3.1 Einstellungen → Beute-Filter: Grenze mit + und −, Wegwerfen und Verkaufen wählbar, Zusammenfassung am Knopf');
   }
 
   console.log('Bildschirmfotos (hoch, quer, PC), Touch-Knöpfe, Bedienung');

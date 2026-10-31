@@ -145,11 +145,20 @@ function equipBest() {
   }
   return ch;
 }
-// Beute-Filter (6.3, Einstellungen): Gewöhnliches (c) und Magisches (m) aufheben, gleich verkaufen oder liegen lassen → 'take' | 'sell' | 'leave'.
-// Nur schlichte Teile (plainItem); was besser ist als das Angelegte, hebst du immer auf. Lande: kein Verkaufen (kein Händler – kommt in den Rucksack).
+// Beute-Filter (6.3, Einstellungen; 6.3.1 mehr Auswahl): je Seltenheit Gewöhnlich (c), Magisch (m), Selten (s), Episch (e) aufheben, gleich verkaufen,
+// liegen lassen oder wegwerfen → 'take' | 'sell' | 'leave' | 'trash'. Dazu die Wertgrenze: unter v Gold Marktwert gilt va (nur wo die Seltenheit „Aufheben“ hat).
+// Nie: Legendär, Set, Mythisch, Gegenstände mit Mods, Sockelsteinen, Aufwertung, Verschmelzung – und was besser ist als das Angelegte.
+// Lande: kein Verkaufen (kein Händler – kommt in den Rucksack).
+const LOOT_K = ['c', 'm', 's', 'e'], LOOT_ACT = ['take', 'sell', 'leave', 'trash'];
+const LOOT_V = [0, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000];   // Stufen der Wertgrenze (0 = aus)
+function lootPlain(it) { return it.rar <= 3 && !it.gems.length && !it.up && !it.fz && !it.mw && !it.skin && !it.set && !it.myth && !(Array.isArray(it.mods) && it.mods.length); }
+// Marktwert wie am Gegenstand angezeigt (Basar, js/market.js), sonst grob aus dem Händlerpreis
+function lootVal(it) { return typeof itemValue === 'function' ? itemValue(it) : itemPrice(it) * 3; }
 function lootRule(it, lande) {
-  const L = SAVE && SAVE.meta.settings.loot, r = L && it && it.rar <= 1 ? L[it.rar ? 'm' : 'c'] : 'take';
-  if ((r !== 'sell' && r !== 'leave') || !plainItem(it)) return 'take';
+  const L = SAVE && SAVE.meta.settings.loot; if (!L || !it || !lootPlain(it)) return 'take';
+  let r = L[LOOT_K[it.rar]] || 'take';
+  if (r === 'take' && L.v > 0 && lootVal(it) < L.v) r = L.va || 'trash';
+  if (r === 'take' || !LOOT_ACT.includes(r)) return 'take';
   const cur = P.gear[it.slot]; if (canEquip(it) && (!cur || itemScore(it) > itemScore(cur) * 1.05)) return 'take';
   return lande && r === 'sell' ? 'take' : r;
 }

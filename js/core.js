@@ -266,8 +266,9 @@ function defaultHide() { return { b: {}, stash: [], rooms: 0, mine: 0, garden: 0
 function fixMeta(m) {
   const d = defaultMeta(); m = Object.assign(d, m || {});
   m.settings = Object.assign({ music: true, sfx: true }, m.settings || {});
-  // Beute-Filter (6.3): c = Gewöhnlich, m = Magisch → 'take' | 'sell' | 'leave'
-  const lf = m.settings.loot, lr = v => v === 'sell' || v === 'leave' ? v : 'take'; m.settings.loot = { c: lr(lf && lf.c), m: lr(lf && lf.m) };
+  // Beute-Filter (6.3, 6.3.1): c/m/s/e = Gewöhnlich bis Episch → 'take' | 'sell' | 'leave' | 'trash'; v = Wertgrenze in Gold (0 = aus), va = was darunter passiert
+  const lf = m.settings.loot && typeof m.settings.loot === 'object' ? m.settings.loot : {}, lr = v => v === 'sell' || v === 'leave' || v === 'trash' ? v : 'take';
+  m.settings.loot = { c: lr(lf.c), m: lr(lf.m), s: lr(lf.s), e: lr(lf.e), v: Math.min(1e7, Math.max(0, Math.round(+lf.v) || 0)), va: lf.va === 'sell' || lf.va === 'leave' ? lf.va : 'trash' };
   m.hide = Object.assign(defaultHide(), m.hide || {}); m.hide.b = m.hide.b || {}; if (!Array.isArray(m.hide.stash)) m.hide.stash = [];
   m.luck = Object.assign({ spins: 0, pityL: 0, pityM: 0 }, m.luck || {});
   if (!Array.isArray(m.lore)) m.lore = []; if (!Array.isArray(m.cos)) m.cos = [];

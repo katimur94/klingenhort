@@ -76,6 +76,18 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     const c0 = makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 0 }), m0 = makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 1 }), r0 = makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 2 }), u0 = makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 0 }); u0.up = 1;
     o.filter = lootRule(c0) === 'sell' && lootRule(m0) === 'leave' && lootRule(r0) === 'take' && lootRule(u0) === 'take' && lootRule(c0, true) === 'take' && lootRule(m0, true) === 'leave';
     SAVE.meta.settings.loot = { c: 'take', m: 'take' }; o.off = lootRule(c0) === 'take';
+    // 6.3.1: Selten und Episch, Wegwerfen, Wertgrenze (nur wo „Aufheben“ gilt); Legendär, Aufgewertetes und Besseres nie; kaputte Einstellung repariert
+    const e0 = makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 3 }), l0 = makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 4 }), better = makeItem({ slot: 'helm', base: 'helm', tier: 9, rar: 3 });
+    SAVE.meta.settings.loot = { c: 'take', m: 'take', s: 'trash', e: 'sell', v: 0, va: 'trash' };
+    o.rar = lootRule(r0) === 'trash' && lootRule(e0) === 'sell' && lootRule(l0) === 'take' && lootRule(r0, true) === 'trash' && lootRule(e0, true) === 'take';
+    SAVE.meta.settings.loot = { c: 'take', m: 'take', s: 'take', e: 'take', v: lootVal(c0) + 1, va: 'trash' };
+    o.val = lootRule(c0) === 'trash' && lootRule(l0) === 'take' && lootRule(u0) === 'take' && lootRule(c0, true) === 'trash';
+    SAVE.meta.settings.loot.v = lootVal(c0); o.edge = lootRule(c0) === 'take';
+    SAVE.meta.settings.loot.v = 1e7; SAVE.meta.settings.loot.va = 'sell'; o.keep = lootRule(better) === 'take' && lootRule(e0) === 'sell' && lootRule(e0, true) === 'take';
+    SAVE.meta.settings.loot = { c: 'leave', m: 'take', s: 'take', e: 'take', v: 1e7, va: 'trash' }; o.order = lootRule(c0) === 'leave';
+    const fx = fixMeta({ settings: { loot: { c: 'boom', s: 'trash', v: -5, va: 'take' } } }).settings.loot, fx2 = fixMeta({ settings: { loot: 'x' } }).settings.loot;
+    o.fix = fx.c === 'take' && fx.s === 'trash' && fx.e === 'take' && fx.v === 0 && fx.va === 'trash' && fx2.v === 0 && fx2.m === 'take' && fixMeta({ settings: { loot: { v: '2500.4' } } }).settings.loot.v === 2500;
+    SAVE.meta.settings.loot = fixMeta({}).settings.loot; o.off2 = lootRule(e0) === 'take' && lootRule(c0) === 'take';
     G = null; setState('menu'); return o;
   });
   ok(auf.n, 'Aufträge: 3 Tages- und 3 Wochenaufträge');
@@ -84,6 +96,9 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
   ok(auf.cap, 'Fraktionen: Vorteile gedeckelt (Einkauf ≤ 10 % günstiger, Verkauf ≤ 10 % mehr, Gebühr ≥ 2 %, Sammeln ≤ 30 %, Erfahrung ≤ 8 %)');
   ok(auf.best, 'Bestes anlegen: nie etwas Schlechteres, nichts für andere Klassen');
   ok(auf.filter && auf.off, 'Beute-Filter: Gewöhnliches verkaufen, Magisches liegen lassen, Seltenes und Aufgewertetes immer aufheben; in den Landen nie verkaufen');
+  ok(auf.rar && auf.order, 'Beute-Filter 6.3.1: Selten wegwerfen, Episch verkaufen (in den Landen in den Rucksack), Legendär immer aufheben; die Seltenheit geht vor der Wertgrenze');
+  ok(auf.val && auf.edge && auf.keep, 'Beute-Filter 6.3.1: unter der Wertgrenze wegwerfen oder verkaufen, genau auf der Grenze aufheben; Besseres, Legendäres und Aufgewertetes nie');
+  ok(auf.fix && auf.off2, 'Beute-Filter 6.3.1: kaputte Einstellungen werden repariert, Standard hebt alles auf');
   ok(!errs.length, 'keine Fehler im Spiel' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
   await b.close();
   process.exit(fails.length ? 1 : 0);

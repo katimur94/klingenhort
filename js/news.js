@@ -7,6 +7,13 @@
 
 const CHANGELOG = [
   {
+    v: '6.3.1', d: '2026-10-31', t: 'Beute-Filter mit mehr Auswahl', items: [
+      ['neu', 'Beute nach Marktwert: Stell im Beute-Filter eine Grenze ein (50 bis 500.000 Gold) – was weniger wert ist, wird gleich weggeworfen, verkauft oder liegen gelassen.'],
+      ['neu', 'Neue Wahl „Wegwerfen“: Der Gegenstand verschwindet, sobald du darüber läufst – kein Gold, kein Platz im Beutel. Gilt auch in den Endlosen Landen.'],
+      ['besser', 'Der Beute-Filter gilt jetzt auch für Seltenes und Episches. Legendär, Set und Mythisch hebst du weiterhin immer auf – ebenso alles, was besser ist als deine Ausrüstung.']
+    ]
+  },
+  {
     v: '6.3.0', d: '2026-10-30', t: 'Aufträge & Ruf', items: [
       ['neu', 'Die Auftragstafel im Versteck: Jeden Tag drei neue Aufträge, jede Woche drei größere – von „Besiege 80 Gegner“ über „Sammle 30 Holz“ und „Ernte zwei Beete“ bis „Bring Beute aus den Endlosen Landen heim“ oder „Besiege einen der Tausend Bosse“. Sie passen zu deinem Level und zu dem, was du schon kannst.'],
       ['neu', 'Belohnungen mit Gold, Glücksmünzen, Material und Bauteilen, manchmal ein Mod oder ein Ei. Einmal am Tag darfst du einen Auftrag gratis neu würfeln. Erfüllte Aufträge verfallen nicht.'],
