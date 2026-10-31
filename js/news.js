@@ -7,6 +7,15 @@
 
 const CHANGELOG = [
   {
+    v: '6.4.0', d: '2026-10-31', t: 'Aufstieg', items: [
+      ['neu', 'Helden steigen jetzt bis Level 100 auf. Die letzten Level sind richtig schwer – Level 100 ist eine echte Leistung. Paragon beginnt erst danach; deine bisherigen Paragon-Punkte bleiben.'],
+      ['neu', 'Meister-Talente: Jeder Ast bekommt eine neue Stufe mit Talenten ab Level 30 bis 80 und einem Schlussstein bei Level 90, 95 und 100, der eine Fähigkeit spürbar verändert. 99 Punkte je Klasse – voll erst bei Level 100. Punkte, die du bisher nicht ausgeben konntest, kannst du jetzt verteilen.'],
+      ['neu', 'Jedes Level bringt eine Belohnung: Gold, Material, Rohstoffe und Bauteile, alle 5 Level Glücksmünzen, alle 10 Level ein Episches oder Legendäres Teil oder ein Ei, dazu Umhang, Titel und Flügel bei Level 60 bis 90 und die „Aura der Hundert“ bei Level 100. Alles im neuen Reiter AUFSTIEG.'],
+      ['neu', 'Begleiter steigen bis Level 150 auf: Ab Level 101 sind sie „Aufgestiegen“ und leuchten, ihr Talentbaum wächst um eine neue Stufe bis 150, und jedes Begleiter-Level bringt eine Belohnung – mit Auren und Titeln bei 110, 125 und 150.'],
+      ['besser', 'Die Erfahrungs-Kurve ab Level 30 ist flacher: keine Wand mehr bei Level 35. Level 50 erreichst du deutlich schneller als bisher.']
+    ]
+  },
+  {
     v: '6.3.1', d: '2026-10-31', t: 'Beute-Filter mit mehr Auswahl', items: [
       ['neu', 'Beute nach Marktwert: Stell im Beute-Filter eine Grenze ein (50 bis 500.000 Gold) – was weniger wert ist, wird gleich weggeworfen, verkauft oder liegen gelassen.'],
       ['neu', 'Neue Wahl „Wegwerfen“: Der Gegenstand verschwindet, sobald du darüber läufst – kein Gold, kein Platz im Beutel. Gilt auch in den Endlosen Landen.'],

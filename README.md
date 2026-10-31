@@ -86,6 +86,15 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Vers
 
 Klingenhort wird jede Woche erweitert. Im Spiel zeigt **Neuigkeiten** (Titelmenü, Einstellungen oder Weltkarte → Mehr) alle Updates und was als Nächstes kommt; nach einem Update öffnet sich die Seite einmal von selbst.
 
+**Neu in 6.4 – Aufstieg**
+
+| System | Was es kann |
+|---|---|
+| **Level 100** | Höchstlevel 100 (`LVMAX`), Paragon erst ab 100 (bisherige Paragon-Punkte bleiben). Neue Erfahrungs-Kurve, im Spiel nachgemessen: Level 35 → 36 etwa 15 Minuten statt 20, Level 80 etwa 1 Stunde, Level 90–99 je 3–6 Stunden. Stärke aus Level 1–50 unverändert, darüber kleine Zuwächse (Level 100 ≈ 25 % stärker als 50) |
+| **Meister-Talente** | Je Ast 7 neue Talente (ab Level 30, 40, 50, 60, 70, 80) und ein Schlussstein bei Level 90/95/100, der eine Fähigkeit verändert. 99 Punkte je Klasse, voll erst bei Level 100. Umschalter Grundstufe/Meister im Reiter TALENTE |
+| **Level-Belohnungen** | Jedes Level 2–100: Gold, Material, Rohstoff, Bauteil; alle 5 Level Glücksmünzen; alle 10 ein Episches/Legendäres Teil oder ein Ei; Umhang (60), Titel (70, 90), Flügel (80), „Aura der Hundert“ und Titel (100). Reiter AUFSTIEG mit Zeitleiste. Alte Helden: kein Nachschlag für schon erreichte Level |
+| **Begleiter bis 150** | Ab Level 101 „Aufgestiegen“ mit Aura, steilere Kurve ab 100, neue Talent-Stufe mit Level-Sperren (100/110/120/135) und drei Krönungen bei 150 (Baum voll erst bei 150), Belohnung je Begleiter-Level mit Zeitleiste, Auren und Titel bei 110/125/150 |
+
 **Neu in 6.3 – Aufträge & Ruf**
 
 | System | Was es kann |
