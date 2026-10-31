@@ -7125,21 +7125,5 @@ I18N.fr = {
   "TREFFER": "COUPS",
   "ROLLE": "ROULADE",
   "Ultimative Fähigkeit": "Compétence ultime",
-  "Lade …": "Chargement …",
-  "Höchste Stufe – ein mythischer Gefährte!": "Niveau max – un compagnon mythique!",
-  "Satt und mythisch – mehr geht nicht.": "Repu et mythique – impossible de faire mieux.",
-  "Freie Punkte: {n} · 1 Punkt, dazu einer je 2 Level": "Points libres : {n} · 1 point, plus un tous les 2 niveaux",
-  "+1 Talentpunkt · Mehr Lebenspunkte": "+1 point de talent · Plus de PV",
-  "Bis Level 50 bekommst du für jedes Level einen Talentpunkt.": "Jusqu'au niveau 50, chaque niveau te rapporte un point de talent.",
-  "Jedes Level: mehr Leben und Schaden und ein Talentpunkt (Charakter → TALENTE).": "Chaque niveau : plus de vie, plus de dégâts et un point de talent (Personnage → TALENTS).",
-  "Ab Level 50 wirst du ohne Grenze stärker.": "Dès le niveau 50, tu deviens plus fort sans aucune limite.",
-  "Ab Level 50 sammelst du Paragon-Erfahrung. Jeder Paragon-Level gibt einen Punkt – ohne Obergrenze.": "Dès le niveau 50, tu gagnes de l'expérience de Parangon. Chaque niveau de Parangon donne un point – sans limite.",
-  "Ab Level 50 und Akt 5: zurück auf Level 1 und Akt 1. Ausrüstung, Materialien, Gold und Paragon bleiben – dafür dauerhaft +10 % Schaden und Leben je Wiedergeburt und eine goldene Aura.": "Dès le niveau 50 et l'acte 5 : retour au niveau 1 et à l'acte 1. L'équipement, les matériaux, l'or et le Parangon restent – en échange, +10 % de dégâts et de vie permanents par renaissance, et une aura dorée.",
-  "Drei Zweige je Klasse – jedes Level ein Punkt.": "Trois branches par classe – un point par niveau.",
-  "Jede Klasse hat drei Talent-Zweige mit je vier Talenten.": "Chaque classe a trois branches de talents, avec quatre talents chacune.",
-  "Ein Talent wird frei, wenn das darüber mindestens einen Punkt hat. Das letzte im Zweig ist besonders stark, hat aber nur einen Rang.": "Un talent se débloque quand celui du dessus a au moins un point. Le dernier de la branche est particulièrement puissant, mais n'a qu'un seul rang.",
-  "Begleiter lernen im Kampf und durch Futter – und verwandeln sich in sechs Stufen.": "Les compagnons progressent au combat et en mangeant – et se transforment en six stades.",
-  "Bis LV 100 dauert es sehr, sehr lange.": "Atteindre le LV 100 prend très, très longtemps.",
-  "1 Punkt und einer mehr je 2 Level – in drei Zweigen.": "1 point, plus un tous les 2 niveaux – dans trois branches.",
-  "Ab Level 50 und Akt 5: zurück auf Level 1 und Akt 1. Ausrüstung, Materialien, Gold und Paragon bleiben. Dauerhaft +10 % Schaden und LP pro Wiedergeburt und eine goldene Aura. Bisher: {n}.": "Dès le niveau 50 et l'acte 5 : retour au niveau 1 et à l'acte 1. Équipement, matériaux, or et Parangon sont conservés. +10 % de dégâts et de PV permanents par renaissance, et une aura dorée. Jusqu'ici : {n}."
+  "Lade …": "Chargement …"
 };

@@ -7125,21 +7125,5 @@ I18N.es = {
   "TREFFER": "GOLPES",
   "ROLLE": "RODAR",
   "Ultimative Fähigkeit": "Habilidad definitiva",
-  "Lade …": "Cargando…",
-  "Höchste Stufe – ein mythischer Gefährte!": "Nivel máximo: ¡un compañero mítico!",
-  "Satt und mythisch – mehr geht nicht.": "Forma mítica y barriga llena: ¡no se puede más!",
-  "Freie Punkte: {n} · 1 Punkt, dazu einer je 2 Level": "Puntos libres: {n} · 1 punto, más uno cada 2 niveles",
-  "+1 Talentpunkt · Mehr Lebenspunkte": "+1 punto de talento · Más vida",
-  "Bis Level 50 bekommst du für jedes Level einen Talentpunkt.": "Hasta el nivel 50 recibes un punto de talento por cada nivel.",
-  "Jedes Level: mehr Leben und Schaden und ein Talentpunkt (Charakter → TALENTE).": "Cada nivel: más vida, más daño y un punto de talento (Personaje → TALENTOS).",
-  "Ab Level 50 wirst du ohne Grenze stärker.": "Desde el nivel 50 te vuelves más fuerte sin límite.",
-  "Ab Level 50 sammelst du Paragon-Erfahrung. Jeder Paragon-Level gibt einen Punkt – ohne Obergrenze.": "A partir del nivel 50 acumulas experiencia Paragon. Cada nivel Paragon te da un punto, sin límite.",
-  "Ab Level 50 und Akt 5: zurück auf Level 1 und Akt 1. Ausrüstung, Materialien, Gold und Paragon bleiben – dafür dauerhaft +10 % Schaden und Leben je Wiedergeburt und eine goldene Aura.": "Desde el nivel 50 y el acto 5: vuelves al nivel 1 y al acto 1. Conservas equipo, materiales, oro y Paragon, y a cambio obtienes +10 % de daño y vida permanentes por cada renacimiento, además de un aura dorada.",
-  "Drei Zweige je Klasse – jedes Level ein Punkt.": "Tres ramas por clase: un punto por nivel.",
-  "Jede Klasse hat drei Talent-Zweige mit je vier Talenten.": "Cada clase tiene tres ramas de talentos con cuatro talentos cada una.",
-  "Ein Talent wird frei, wenn das darüber mindestens einen Punkt hat. Das letzte im Zweig ist besonders stark, hat aber nur einen Rang.": "Un talento se desbloquea cuando el de encima tiene al menos un punto. El último de cada rama es especialmente fuerte, pero solo tiene un rango.",
-  "Begleiter lernen im Kampf und durch Futter – und verwandeln sich in sechs Stufen.": "Los compañeros aprenden en combate y comiendo… y se transforman en seis etapas.",
-  "Bis LV 100 dauert es sehr, sehr lange.": "Llegar a LV 100 lleva muchísimo, muchísimo tiempo.",
-  "1 Punkt und einer mehr je 2 Level – in drei Zweigen.": "1 punto, y uno más cada 2 niveles, en tres ramas.",
-  "Ab Level 50 und Akt 5: zurück auf Level 1 und Akt 1. Ausrüstung, Materialien, Gold und Paragon bleiben. Dauerhaft +10 % Schaden und LP pro Wiedergeburt und eine goldene Aura. Bisher: {n}.": "Desde el nivel 50 y el acto 5: vuelves al nivel 1 y al acto 1. Conservas equipo, materiales, oro y Paragon. +10 % de daño y PV permanente por cada renacimiento, y un aura dorada. Hasta ahora: {n}."
+  "Lade …": "Cargando…"
 };

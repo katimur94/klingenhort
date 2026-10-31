@@ -7125,21 +7125,5 @@ I18N.en = {
   "TREFFER": "HITS",
   "ROLLE": "ROLL",
   "Ultimative Fähigkeit": "Ultimate skill",
-  "Lade …": "Loading …",
-  "Höchste Stufe – ein mythischer Gefährte!": "Max level – a mythic companion!",
-  "Satt und mythisch – mehr geht nicht.": "Well fed and mythic – it doesn't get any better.",
-  "Freie Punkte: {n} · 1 Punkt, dazu einer je 2 Level": "Free points: {n} · 1 point, plus one every 2 levels",
-  "+1 Talentpunkt · Mehr Lebenspunkte": "+1 talent point · More health",
-  "Bis Level 50 bekommst du für jedes Level einen Talentpunkt.": "Up to level 50 you get a talent point for every level.",
-  "Jedes Level: mehr Leben und Schaden und ein Talentpunkt (Charakter → TALENTE).": "Every level: more health and damage, plus a talent point (Character → TALENTS).",
-  "Ab Level 50 wirst du ohne Grenze stärker.": "From level 50 you keep getting stronger – with no limit.",
-  "Ab Level 50 sammelst du Paragon-Erfahrung. Jeder Paragon-Level gibt einen Punkt – ohne Obergrenze.": "From level 50 on you earn Paragon XP. Every Paragon level grants a point – no cap.",
-  "Ab Level 50 und Akt 5: zurück auf Level 1 und Akt 1. Ausrüstung, Materialien, Gold und Paragon bleiben – dafür dauerhaft +10 % Schaden und Leben je Wiedergeburt und eine goldene Aura.": "From level 50 and Act 5: back to level 1 and Act 1. Your gear, materials, gold and Paragon stay – and you get a permanent +10% damage and health per rebirth, plus a golden aura.",
-  "Drei Zweige je Klasse – jedes Level ein Punkt.": "Three branches per class – one point every level.",
-  "Jede Klasse hat drei Talent-Zweige mit je vier Talenten.": "Every class has three talent branches with four talents each.",
-  "Ein Talent wird frei, wenn das darüber mindestens einen Punkt hat. Das letzte im Zweig ist besonders stark, hat aber nur einen Rang.": "A talent unlocks once the one above it has at least one point. The last one in a branch is extra strong, but has only one rank.",
-  "Begleiter lernen im Kampf und durch Futter – und verwandeln sich in sechs Stufen.": "Companions learn in battle and from food – and transform through six stages.",
-  "Bis LV 100 dauert es sehr, sehr lange.": "Getting to LV 100 takes a very, very long time.",
-  "1 Punkt und einer mehr je 2 Level – in drei Zweigen.": "1 point, plus one more every 2 levels – across three branches.",
-  "Ab Level 50 und Akt 5: zurück auf Level 1 und Akt 1. Ausrüstung, Materialien, Gold und Paragon bleiben. Dauerhaft +10 % Schaden und LP pro Wiedergeburt und eine goldene Aura. Bisher: {n}.": "From level 50 and Act 5: back to level 1 and Act 1. You keep your gear, materials, gold and Paragon. Permanently +10% damage and HP per rebirth, plus a golden aura. So far: {n}."
+  "Lade …": "Loading …"
 };

@@ -7125,21 +7125,5 @@ I18N.tr = {
   "TREFFER": "VURUŞ",
   "ROLLE": "TAKLA",
   "Ultimative Fähigkeit": "Nihai Yetenek",
-  "Lade …": "Yükleniyor …",
-  "Höchste Stufe – ein mythischer Gefährte!": "En yüksek seviye – mitik bir yoldaş!",
-  "Satt und mythisch – mehr geht nicht.": "Tok ve mitik – daha fazlası olmaz.",
-  "Freie Punkte: {n} · 1 Punkt, dazu einer je 2 Level": "Boş puan: {n} · 1 puan, üstüne her 2 seviyede bir",
-  "+1 Talentpunkt · Mehr Lebenspunkte": "+1 Beceri Puanı · Daha fazla Can",
-  "Bis Level 50 bekommst du für jedes Level einen Talentpunkt.": "Seviye 50'ye kadar her seviyede bir Beceri Puanı kazanırsın.",
-  "Jedes Level: mehr Leben und Schaden und ein Talentpunkt (Charakter → TALENTE).": "Her seviye: daha fazla can ve hasar, bir de Beceri Puanı (Karakter → BECERİLER).",
-  "Ab Level 50 wirst du ohne Grenze stärker.": "Seviye 50'den sonra sınırsızca güçlenirsin.",
-  "Ab Level 50 sammelst du Paragon-Erfahrung. Jeder Paragon-Level gibt einen Punkt – ohne Obergrenze.": "Seviye 50'den itibaren Paragon deneyimi toplarsın. Her Paragon seviyesi bir puan verir – üst sınır yok.",
-  "Ab Level 50 und Akt 5: zurück auf Level 1 und Akt 1. Ausrüstung, Materialien, Gold und Paragon bleiben – dafür dauerhaft +10 % Schaden und Leben je Wiedergeburt und eine goldene Aura.": "Seviye 50 ve Bölüm 5'ten itibaren: seviye 1 ve Bölüm 1'e geri dönersin. Ekipman, malzeme, altın ve Paragon kalır – karşılığında her Yeniden Doğuş için kalıcı +%10 hasar ve can, bir de altın bir aura.",
-  "Drei Zweige je Klasse – jedes Level ein Punkt.": "Sınıf başına üç dal – her seviyede bir puan.",
-  "Jede Klasse hat drei Talent-Zweige mit je vier Talenten.": "Her sınıfın, her birinde dört beceri bulunan üç beceri dalı vardır.",
-  "Ein Talent wird frei, wenn das darüber mindestens einen Punkt hat. Das letzte im Zweig ist besonders stark, hat aber nur einen Rang.": "Bir beceri, üstündekine en az bir puan verilince açılır. Daldaki sonuncusu özellikle güçlüdür ama tek bir rütbesi vardır.",
-  "Begleiter lernen im Kampf und durch Futter – und verwandeln sich in sechs Stufen.": "Yoldaşlar savaşta ve yemle öğrenir – ve altı evrede dönüşür.",
-  "Bis LV 100 dauert es sehr, sehr lange.": "LV 100'e ulaşmak çok, çok uzun sürer.",
-  "1 Punkt und einer mehr je 2 Level – in drei Zweigen.": "1 puan, üstüne her 2 seviyede bir puan daha – üç dalda.",
-  "Ab Level 50 und Akt 5: zurück auf Level 1 und Akt 1. Ausrüstung, Materialien, Gold und Paragon bleiben. Dauerhaft +10 % Schaden und LP pro Wiedergeburt und eine goldene Aura. Bisher: {n}.": "Seviye 50 ve Bölüm 5'ten itibaren: Seviye 1 ve Bölüm 1'e dönüş. Ekipman, malzemeler, altın ve Paragon kalır. Her yeniden doğuşta kalıcı +%10 hasar ve Can, bir de altın aura. Şimdiye kadar: {n}."
+  "Lade …": "Yükleniyor …"
 };

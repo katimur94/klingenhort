@@ -7125,21 +7125,5 @@ I18N.it = {
   "TREFFER": "COLPI",
   "ROLLE": "SCHIVA",
   "Ultimative Fähigkeit": "Abilità suprema",
-  "Lade …": "Caricamento …",
-  "Höchste Stufe – ein mythischer Gefährte!": "Livello massimo – un compagno mitico!",
-  "Satt und mythisch – mehr geht nicht.": "Sazio e mitico – di più non si può.",
-  "Freie Punkte: {n} · 1 Punkt, dazu einer je 2 Level": "Punti liberi: {n} · 1 punto, più uno ogni 2 livelli",
-  "+1 Talentpunkt · Mehr Lebenspunkte": "+1 punto talento · Più punti salute",
-  "Bis Level 50 bekommst du für jedes Level einen Talentpunkt.": "Fino al livello 50 ricevi un punto talento per ogni livello.",
-  "Jedes Level: mehr Leben und Schaden und ein Talentpunkt (Charakter → TALENTE).": "Ogni livello: più vita, più danni e un punto talento (Personaggio → TALENTI).",
-  "Ab Level 50 wirst du ohne Grenze stärker.": "Dal livello 50 diventi più forte senza limiti.",
-  "Ab Level 50 sammelst du Paragon-Erfahrung. Jeder Paragon-Level gibt einen Punkt – ohne Obergrenze.": "Dal livello 50 accumuli esperienza Paragon. Ogni livello Paragon dà un punto – senza limite.",
-  "Ab Level 50 und Akt 5: zurück auf Level 1 und Akt 1. Ausrüstung, Materialien, Gold und Paragon bleiben – dafür dauerhaft +10 % Schaden und Leben je Wiedergeburt und eine goldene Aura.": "Dal livello 50 e dall'Atto 5: torni al livello 1 e all'Atto 1. Equipaggiamento, materiali, oro e Paragon restano – e in cambio ottieni per sempre +10% di danni e vita per ogni Rinascita e un'aura dorata.",
-  "Drei Zweige je Klasse – jedes Level ein Punkt.": "Tre rami per classe – un punto a ogni livello.",
-  "Jede Klasse hat drei Talent-Zweige mit je vier Talenten.": "Ogni classe ha tre rami di talenti con quattro talenti ciascuno.",
-  "Ein Talent wird frei, wenn das darüber mindestens einen Punkt hat. Das letzte im Zweig ist besonders stark, hat aber nur einen Rang.": "Un talento si sblocca quando quello sopra ha almeno un punto. L'ultimo del ramo è particolarmente forte, ma ha un solo rango.",
-  "Begleiter lernen im Kampf und durch Futter – und verwandeln sich in sechs Stufen.": "I compagni imparano combattendo e mangiando – e si trasformano in sei stadi.",
-  "Bis LV 100 dauert es sehr, sehr lange.": "Arrivare a LV 100 richiede tanto, tantissimo tempo.",
-  "1 Punkt und einer mehr je 2 Level – in drei Zweigen.": "1 punto, più uno ogni 2 livelli – in tre rami.",
-  "Ab Level 50 und Akt 5: zurück auf Level 1 und Akt 1. Ausrüstung, Materialien, Gold und Paragon bleiben. Dauerhaft +10 % Schaden und LP pro Wiedergeburt und eine goldene Aura. Bisher: {n}.": "Dal livello 50 e dall'Atto 5: torni al livello 1 e all'Atto 1. Equipaggiamento, materiali, oro e Paragon restano. +10% permanente a danni e PS per ogni Rinascita e un'aura dorata. Finora: {n}."
+  "Lade …": "Caricamento …"
 };
