@@ -6,9 +6,10 @@
    Gene (Kraft, Tempo, Zähigkeit, Magie, Glück), sichtbare Mutationen, Ausrüstung (Halsband, Panzer, Talisman),
    Talente (Angriff, Schutz, Sammler – Sammler gibt Beutelplätze), Zauberrunen, die der Begleiter im Kampf wirkt.
    Hängt sich über HOOK/ON (js/core.js) ins Spiel ein: Brutnest-Station im Versteck (Bild, Symbol, Bildschirm).
-   Konto: SAVE.meta.pets = { list: [{ id, sp, nm, lv, xp, col, c0, shiny, k, born, nw, bag: [Beute], hurt: Zeit,
-       gn: [Kraft, Tempo, Zähigkeit, Magie, Glück 0–100], mu: Mutation, tl: '15 Ziffern' (Talentränge), eq: { h, p, t } (Ausrüstung),
-       mg: [Rune, Rune, Rune] (Zauber), zt: letzte Zucht, pa: [Art, Art] (Eltern), ge: Generation }], act: id,
+   Konto: SAVE.meta.pets = { list: [{ id, sp, nm, lv (1–150), xp, col, c0, shiny, k, born, nw, bag: [Beute], hurt: Zeit,
+       gn: [Kraft, Tempo, Zähigkeit, Magie, Glück 0–100], mu: Mutation, tl: '30 Ziffern' (Talentränge, alte Stände 15), eq: { h, p, t } (Ausrüstung),
+       mg: [Rune, Rune, Rune] (Zauber), zt: letzte Zucht, pa: [Art, Art] (Eltern), ge: Generation,
+       lr: höchstes belohntes Level (6.4), au: Aura ab LV 101 ('' = Aufstieg, stern/himmel/ewig), ti: Titel (stern/himmel/ewig) }], act: id,
      eggs: [{ id, v: 2, sp, tier, got, need, nest, w, f, z, t, born, gn?, mu?, pa?, ge?, c0? }], hatched, first, intro, fromBoss, seen: [sp], cw, starter (alt),
      gear: [Ausrüstung im Lager], runes: { Zauber: Anzahl }, mut: [entdeckte Mutationen], bred: Zuchten }
    Ausrüstung: { id, s: 'h'|'p'|'t', r: 0–4 (Seltenheit), lv: Stufe 1–100, a: { Wert: Zahl } }
@@ -34,8 +35,11 @@ const PET_TIERS = [
 ];
 // Chancen der Seltenheiten bei Glück 0 (Kampagne); mehr Glück (Verlorene Lande, Truhen) verschiebt nach oben
 const EGG_W = [30, 34, 20, 10, 4.5, 1.3, .1];
-const PET_STAGE = [1, 10, 25, 50, 75, 100];
-const PET_STN = [_t('Baby'), _t('Jung'), _t('Stark'), _t('Erwachsen'), _t('Uralt'), _t('Mythisch')];
+/* Aufstieg (6.4): Höchststufe 150. Ab LV 101 Stufe 6 „Aufgestiegen“ – die Gestalt bleibt die mythische (petForm), dazu eine Aura.
+   Stufen-Grenzen 75/100 (Uralt, Mythisch) bleiben, wie sie waren. */
+const PET_LVMAX = 150, PET_ASC = 101;
+const PET_STAGE = [1, 10, 25, 50, 75, 100, PET_ASC];
+const PET_STN = [_t('Baby'), _t('Jung'), _t('Stark'), _t('Erwachsen'), _t('Uralt'), _t('Mythisch'), _t('Aufgestiegen')];
 const PET_EL = {
   feuer: { n: _t('Feuer'), c: '#ff8a3a', c2: '#ffd24a', rgb: '255,140,60' }, frost: { n: _t('Frost'), c: '#8ee6ff', c2: '#e8f8ff', rgb: '150,220,255' },
   blitz: { n: _t('Blitz'), c: '#9ad0ff', c2: '#fffbe0', rgb: '170,210,255' }, gift: { n: _t('Gift'), c: '#79c24e', c2: '#c8f06a', rgb: '140,220,90' },
@@ -261,15 +265,25 @@ const PET_MON = {}; for (const sp of PET_ORDER) for (const t of PET_SP[sp].mon |
 const PET_FEED = { holz: 8, stein: 8, faser: 8, samen: 10, feder: 30, eisenholz: 200, marmor: 200, obsidian: 600, sternholz: 1500 }; MONMATS.forEach((k, i) => { PET_FEED[k] = Math.round(15 * Math.pow(1.75, i)); });   // Rohstoffe (6.2): eigene Werte
 
 /* ---------- Werte ---------- */
-// EP bis zum nächsten Level ≈ 100·LV^2,6 (die ersten Level billiger): LV 10 nach etwa einer Stunde, LV 25 nach einem Spieltag, LV 100 nach Hunderten Stunden
-function petNeed(lv) { return Math.round(100 * Math.pow(lv, 2.6) * Math.min(1, Math.max(.05, Math.pow(lv / 11, 1.5)))); }
-function petStage(lv) { let s = 0; for (let i = 1; i < 6; i++) if (lv >= PET_STAGE[i]) s = i; return s; }
+/* EP bis zum nächsten Level ≈ 100·LV^2,6 (die ersten Level billiger): LV 10 nach etwa einer Stunde, LV 25 nach einem Spieltag, LV 100 nach Hunderten Stunden.
+   Ab LV 100 läuft die Kurve weiter und wird zusätzlich steiler: × (1 + 0,7·((LV−100)/50)³) – LV 101 kostet etwa so viel wie LV 100, 140–149 sehr viel.
+   Gemessen (tools/test/begleiter-aufstieg.js: echte Wellen und Kills, Begleiter-EP = halbe Gegner-EP, Futter = Materialbeute; 30 Kills/min,
+   Held auf der für das Begleiter-Level üblichen Stufe), Minuten je Level – nur Kämpfe / dazu die Hälfte des Materials verfüttert / alles verfüttert:
+     LV 50 (Stufe 50): 1020 / 255 / 145 · LV 100 (Stufe 100): 3300 / 1000 / 590 · LV 110 (Stufe 120): 3510 / 1180 / 710
+     LV 125 (Stufe 150): 4360 / 1640 / 1010 · LV 140 (Stufe 200): 5570 / 2600 / 1700 · LV 149 (Stufe 245): 6270 / 3050 / 2010
+     (Futter schwankt um ±10 % mit seltenen Funden wie Schuppen und Äther) – mit halbem Futter: LV 100 ≈ 17 h, 125 ≈ 27 h, 149 ≈ 51 h je Level */
+function petNeed(lv) { return Math.round(100 * Math.pow(lv, 2.6) * Math.min(1, Math.max(.05, Math.pow(lv / 11, 1.5))) * (lv > 100 ? 1 + .7 * Math.pow((lv - 100) / 50, 3) : 1)); }
+function petStage(lv) { let s = 0; for (let i = 1; i < PET_STAGE.length; i++) if (lv >= PET_STAGE[i]) s = i; return s; }
+// Gestalt fürs Bild: aufgestiegene Begleiter behalten die mythische Gestalt (Stufe 5)
+function petForm(lv) { return Math.min(5, petStage(lv)); }
+function petAsc(p) { return !!p && p.lv >= PET_ASC; }
 function petPasK(lv) { return clamp((lv - 25) / 75, 0, 1); }
 function petPas(p) { const S = PET_SP[p.sp], r = {}; if (p.lv < 25) return r; const k = petPasK(p.lv); for (const s in S.pas) r[s] = S.pas[s][0] + (S.pas[s][1] - S.pas[s][0]) * k; return r; }
-function petPow(lv) { return lv >= 100 ? 2 : lv >= 75 ? 1.5 : 1; }
-function petSpecCd(lv) { return lv >= 100 ? 12 : lv >= 75 ? 16 : 20; }
-// Angriffstempo: Stufe, Talente/Ausrüstung (paspd) und Tempo-Gen
-function petAtkCd(p) { const m = petMods(p); return (1.2 - petStage(p.lv) * .05) / ((1 + (m.paspd || 0)) * petGeneK(p, 1, .9, .2)); }
+// Spezialangriff: ×1,5 ab Uralt, ×2 ab Mythisch, ×2,25 aufgestiegen
+function petPow(lv) { return lv >= PET_ASC ? 2.25 : lv >= 100 ? 2 : lv >= 75 ? 1.5 : 1; }
+function petSpecCd(lv) { return lv >= PET_ASC ? 11 : lv >= 100 ? 12 : lv >= 75 ? 16 : 20; }
+// Angriffstempo: Gestalt, Talente/Ausrüstung (paspd) und Tempo-Gen
+function petAtkCd(p) { const m = petMods(p); return (1.2 - petForm(p.lv) * .05) / ((1 + (m.paspd || 0)) * petGeneK(p, 1, .9, .2)); }
 
 /* ---------- Kreaturen 2.0: Gene, Mutationen, Talente, Ausrüstung, Zauber ---------- */
 // Gene 0–100 (50 = Durchschnitt). Wirkung: Faktor = a + b · Gen/100
@@ -296,20 +310,32 @@ const PET_MUT = {
   sternen: { n: _t('Sternen-Variante'), r: 3, d: _t('Ein Stück Nachthimmel mit funkelnden Sternen.'), b: { xp: .1, pmag: .2 } }
 };
 const PET_MUTR = [null, _t('Farbmutation'), _t('Merkmal'), _t('Mutantenform')], PET_MUTC = [null, '#8ee6ff', '#79c24e', '#ff4fd8'];
-/* Talente: 3 Zweige × 5 Knoten; Knoten i braucht so viele Punkte im Zweig (PET_TALREQ); 1 Punkt + 1 je 2 Level */
+/* Talente: 3 Zweige × 5 Knoten; Knoten i braucht so viele Punkte im Zweig (PET_TALREQ); 1 Punkt + 1 je 2 Level.
+   Aufstieg (6.4): je Zweig 5 Knoten mehr, freigeschaltet über das Begleiter-Level (lv 100/110/120/135, Krönung bei 150);
+   ab LV 101 ein Punkt je Level, bei LV 150 drei (je Krönung einer) → 100 Punkte bei LV 149 = alles außer den Krönungen,
+   103 bei LV 150 = alle Knoten voll (vorher nie). Kein Level hat Punkte, die sich nirgends ausgeben lassen. */
 const PET_TAL = [
-  { n: _t('ANGRIFF'), nodes: [{ n: _t('Scharfe Zähne'), d: _t('+6 % Schaden des Begleiters'), max: 5, e: { pdmg: .06 } }, { n: _t('Flinke Pfoten'), d: _t('+5 % Angriffstempo des Begleiters'), max: 5, e: { paspd: .05 } }, { n: _t('Jagdinstinkt'), d: _t('+3 % Krit-Chance des Begleiters'), max: 5, e: { pcrit: .03 } }, { n: _t('Runenkunde'), d: _t('+12 % Zauberkraft'), max: 5, e: { pmag: .12 } }, { n: _t('Raserei'), d: _t('Spezialangriff 10 % schneller bereit'), max: 3, e: { pspec: .1 } }] },
-  { n: _t('SCHUTZ'), nodes: [{ n: _t('Wachsam'), d: _t('+3 Verteidigung für dich'), max: 5, e: { def: 3 } }, { n: _t('Lebensband'), d: _t('+2 % Lebenspunkte für dich'), max: 5, e: { hp: .02 } }, { n: _t('Dickes Fell'), d: _t('Verletzungen heilen 10 % schneller'), max: 5, e: { pwund: .1 } }, { n: _t('Schutzgeist'), d: _t('Heil- und Schildzauber 15 % stärker'), max: 5, e: { pheal: .15 } }, { n: _t('Treue bis zuletzt'), d: _t('+2 % Schadensminderung für dich'), max: 3, e: { dr: .02 } }] },
-  { n: _t('SAMMLER'), nodes: [{ n: _t('Goldnase'), d: _t('+4 % Gold'), max: 5, e: { gold: .04 } }, { n: _t('Beutemagnet'), d: _t('+15 % Reichweite des Beutemagneten'), max: 5, e: { pmagr: .15 } }, { n: _t('Große Taschen'), d: _t('+1 Platz im Beutel des Begleiters'), max: 3, e: { pbag: 1 } }, { n: _t('Schatzsucher'), d: _t('+2 % Beute'), max: 5, e: { loot: .02 } }, { n: _t('Spürnase'), d: _t('+20 % Chance auf Monster-Eier, Runen und Begleiter-Ausrüstung'), max: 3, e: { pegg: .2 } }] }
+  { n: _t('ANGRIFF'), nodes: [{ n: _t('Scharfe Zähne'), d: _t('+6 % Schaden des Begleiters'), max: 5, e: { pdmg: .06 } }, { n: _t('Flinke Pfoten'), d: _t('+5 % Angriffstempo des Begleiters'), max: 5, e: { paspd: .05 } }, { n: _t('Jagdinstinkt'), d: _t('+3 % Krit-Chance des Begleiters'), max: 5, e: { pcrit: .03 } }, { n: _t('Runenkunde'), d: _t('+12 % Zauberkraft'), max: 5, e: { pmag: .12 } }, { n: _t('Raserei'), d: _t('Spezialangriff 10 % schneller bereit'), max: 3, e: { pspec: .1 } },
+    { n: _t('Urzeitkrallen'), d: _t('+5 % Schaden des Begleiters'), max: 3, lv: 100, e: { pdmg: .05 } }, { n: _t('Sternenblick'), d: _t('+2 % Krit-Chance des Begleiters'), max: 3, lv: 110, e: { pcrit: .02 } }, { n: _t('Elementarzorn'), d: _t('+10 % Element-Wirkung (Brand, Frost)'), max: 3, lv: 120, e: { pel: .1 } }, { n: _t('Runenflut'), d: _t('Zauber 8 % schneller bereit'), max: 2, lv: 135, e: { pmcd: .08 } },
+    { n: _t('Sternenzorn'), d: _t('Krönung: Spezialangriff +50 % Schaden, +5 % Krit-Chance des Begleiters'), max: 1, lv: 150, cap: 1, e: { pspk: .5, pcrit: .05 } }] },
+  { n: _t('SCHUTZ'), nodes: [{ n: _t('Wachsam'), d: _t('+3 Verteidigung für dich'), max: 5, e: { def: 3 } }, { n: _t('Lebensband'), d: _t('+2 % Lebenspunkte für dich'), max: 5, e: { hp: .02 } }, { n: _t('Dickes Fell'), d: _t('Verletzungen heilen 10 % schneller'), max: 5, e: { pwund: .1 } }, { n: _t('Schutzgeist'), d: _t('Heil- und Schildzauber 15 % stärker'), max: 5, e: { pheal: .15 } }, { n: _t('Treue bis zuletzt'), d: _t('+2 % Schadensminderung für dich'), max: 3, e: { dr: .02 } },
+    { n: _t('Steinhaut'), d: _t('+4 Verteidigung für dich'), max: 3, lv: 100, e: { def: 4 } }, { n: _t('Lebensquell'), d: _t('+2 % Lebenspunkte für dich'), max: 3, lv: 110, e: { hp: .02 } }, { n: _t('Bannkreis'), d: _t('+1 % Schadensminderung für dich'), max: 3, lv: 120, e: { dr: .01 } }, { n: _t('Heilende Hand'), d: _t('Heil- und Schildzauber 20 % stärker'), max: 2, lv: 135, e: { pheal: .2 } },
+    { n: _t('Lebensbund'), d: _t('Krönung: Bringt dich ein Treffer unter 30 % Leben, heilt dich dein Begleiter sofort um 35 % (alle 90 s)'), max: 1, lv: 150, cap: 1, e: { pbond: 1 } }] },
+  { n: _t('SAMMLER'), nodes: [{ n: _t('Goldnase'), d: _t('+4 % Gold'), max: 5, e: { gold: .04 } }, { n: _t('Beutemagnet'), d: _t('+15 % Reichweite des Beutemagneten'), max: 5, e: { pmagr: .15 } }, { n: _t('Große Taschen'), d: _t('+1 Platz im Beutel des Begleiters'), max: 3, e: { pbag: 1 } }, { n: _t('Schatzsucher'), d: _t('+2 % Beute'), max: 5, e: { loot: .02 } }, { n: _t('Spürnase'), d: _t('+20 % Chance auf Monster-Eier, Runen und Begleiter-Ausrüstung'), max: 3, e: { pegg: .2 } },
+    { n: _t('Glückspfote'), d: _t('+3 % Gold'), max: 3, lv: 100, e: { gold: .03 } }, { n: _t('Fundriecher'), d: _t('+1,5 % Beute'), max: 3, lv: 110, e: { loot: .015 } }, { n: _t('Weiter Magnet'), d: _t('+20 % Reichweite des Beutemagneten'), max: 2, lv: 120, e: { pmagr: .2 } }, { n: _t('Eierwitterung'), d: _t('+15 % Chance auf Monster-Eier, Runen und Begleiter-Ausrüstung'), max: 3, lv: 135, e: { pegg: .15 } },
+    { n: _t('Hortwächter'), d: _t('Krönung: +2 Beutelplätze, +5 % Gold, +3 % Beute'), max: 1, lv: 150, cap: 1, e: { pbag: 2, gold: .05, loot: .03 } }] }
 ];
-const PET_TALREQ = [0, 2, 4, 7, 10], PET_TALN = 15;
-function petTalPts(lv) { return 1 + Math.floor(clamp(lv | 0, 1, 100) / 2); }
+const PET_TALREQ = [0, 2, 4, 7, 10], PET_TALN = 30, PET_TALMAX = PET_TAL.reduce((a, B) => a + B.nodes.reduce((s, N) => s + N.max, 0), 0);
+// Stelle eines Knotens in p.tl: die alten 15 Ziffern bleiben vorn (alte Spielstände), die Aufstiegs-Knoten folgen dahinter
+function petTalIdx(bi, ni) { return ni < 5 ? bi * 5 + ni : 15 + bi * 5 + ni - 5; }
+function petTalAt(i) { return i < 15 ? [Math.floor(i / 5), i % 5] : [Math.floor((i - 15) / 5), 5 + (i - 15) % 5]; }
+function petTalPts(lv) { lv = clamp(lv | 0, 1, PET_LVMAX); return 1 + Math.floor(Math.min(lv, 100) / 2) + Math.max(0, Math.min(lv, PET_LVMAX - 1) - 100) + (lv >= PET_LVMAX ? PET_TAL.length : 0); }
 function petTl(p) { const s = p && typeof p.tl === 'string' ? p.tl : '', r = []; for (let i = 0; i < PET_TALN; i++) r.push(+s[i] || 0); return r; }
 function petTalUsed(p) { return petTl(p).reduce((a, b) => a + b, 0); }
 function petTalFree(p) { return petTalPts(p.lv) - petTalUsed(p); }
 function petTalState(p, bi, ni) {
-  const tl = petTl(p), N = PET_TAL[bi].nodes[ni], r = tl[bi * 5 + ni], inB = tl.slice(bi * 5, bi * 5 + 5).reduce((a, b) => a + b, 0), lock = inB < PET_TALREQ[ni];
-  return { N, r, lock, need: PET_TALREQ[ni], can: !lock && r < N.max && petTalFree(p) > 0 };
+  const tl = petTl(p), N = PET_TAL[bi].nodes[ni], r = tl[petTalIdx(bi, ni)], inB = tl.slice(bi * 5, bi * 5 + 5).reduce((a, b) => a + b, 0), lock = N.lv ? p.lv < N.lv : inB < PET_TALREQ[ni];
+  return { N, r, lock, need: N.lv ? 0 : PET_TALREQ[ni], lv: N.lv || 0, can: !lock && r < N.max && petTalFree(p) > 0 };
 }
 /* Ausrüstung: Halsband (Angriff), Panzer (Schutz für dich), Talisman (Magie, Beute); Legendär: ein besonderer Wert */
 const PET_SLOTS = ['h', 'p', 't'];
@@ -322,7 +348,7 @@ const PET_SLOT = {
 const PET_GAFF = { pdmg: .3, pcrit: .08, paspd: .2, pel: .4, def: 14, hp: .08, dr: .04, pwund: .3, regen: 4, pmag: .4, pmcd: .2, gold: .15, loot: .06, xp: .12, pspec: .2, pheal: .4, pbag: 1 };
 const PET_GNUM = [1, 2, 2, 3, 3], PET_GEAR_MAX = 30;
 // Werte nur für den Begleiter selbst (alle anderen gehen über HOOK.stats an den Helden)
-const PET_INK = new Set(['pdmg', 'paspd', 'pcrit', 'pel', 'pmag', 'pmcd', 'pspec', 'pheal', 'pwund', 'pmagr', 'pbag', 'pegg']);
+const PET_INK = new Set(['pdmg', 'paspd', 'pcrit', 'pel', 'pmag', 'pmcd', 'pspec', 'pheal', 'pwund', 'pmagr', 'pbag', 'pegg', 'pspk', 'pbond']);
 // Neues Ausrüstungsteil: Platz s, Seltenheit r (sonst gewürfelt), Stufe lv
 function petGearNew(s, r, lv, R) {
   R = R || Math.random; const S = PET_SLOT[s]; if (!S) return null;
@@ -358,7 +384,7 @@ function petSockets(p) { return 1 + (p.lv >= 25 ? 1 : 0) + (p.lv >= 75 ? 1 : 0);
 // Summe aller Boni aus Talenten, Ausrüstung und Mutation
 function petMods(p) {
   const r = {}; if (!p) return r; const add = (k, v) => { r[k] = (r[k] || 0) + v; }, tl = petTl(p);
-  PET_TAL.forEach((B, bi) => B.nodes.forEach((N, ni) => { const n = tl[bi * 5 + ni]; if (n) for (const k in N.e) add(k, N.e[k] * n); }));
+  PET_TAL.forEach((B, bi) => B.nodes.forEach((N, ni) => { const n = tl[petTalIdx(bi, ni)]; if (n) for (const k in N.e) add(k, N.e[k] * n); }));
   if (p.eq) for (const s of PET_SLOTS) { const it = p.eq[s]; if (it && it.a) for (const k in it.a) add(k, it.a[k]); }
   const M = PET_MUT[p.mu]; if (M) for (const k in M.b) add(k, M.b[k]);
   return r;
@@ -372,8 +398,9 @@ function petMagRp(p) { return petMagR(p.lv) * (1 + (petMods(p).pmagr || 0)); }
 // Verletzungsdauer: Zähigkeit und „Dickes Fell“/Panzer verkürzen sie
 function petWundK(p) { return (1 - Math.min(.6, petMods(p).pwund || 0)) * petGeneK(p, 2, 1.15, -.3); }
 // Schaden je Treffer in Anteilen der Heldenwaffe; die Seltenheit der Art skaliert ihn (Selten = 1, Plunder 0,3, Mythisch 1,6)
-function petDmgK(lv, sp) { return (.15 + lv * .006) * (sp ? PET_TIERS[PET_SP[sp].t].mul : 1); }
-function petMagR(lv) { return lv < 10 ? 0 : 70 + (lv - 10) * 1.4; }
+// über LV 100 wächst der Schaden nur noch halb so schnell (LV 150: +20 % gegenüber LV 100)
+function petDmgK(lv, sp) { return (.15 + Math.min(lv, 100) * .006 + Math.max(0, lv - 100) * .003) * (sp ? PET_TIERS[PET_SP[sp].t].mul : 1); }
+function petMagR(lv) { return lv < 10 ? 0 : 70 + (Math.min(lv, 100) - 10) * 1.4; }
 // Konto-Daten; fehlende Felder (z. B. aus Tests oder alten Ständen) still ergänzen
 function petM() {
   const M = SAVE && SAVE.meta && SAVE.meta.pets; if (!M) return M;
@@ -1534,7 +1561,7 @@ function petStrip(sp, s, col, shiny, mu, one) {
   fr.forEach((b, i) => petPaint(g, b, pal, i * W, 0, x0, y0, W, H, i, shine));
   return PET_STRIP[key] = { c, W, H, ax: PET_CX - x0, ay: PET_GY - y0, sil: null };
 }
-function petStripOf(p) { return petStrip(p.sp, petStage(p.lv), p.col, p.shiny, p.mu); }
+function petStripOf(p) { return petStrip(p.sp, petForm(p.lv), p.col, p.shiny, p.mu); }
 // Bild-URLs für Menüs: einzelnes Bild bzw. 4 Bilder Ruhe-Animation
 function petImgURL(sp, s, col, shiny, anim, mu) {
   mu = PET_MUT[mu] ? mu : ''; const key = sp + s + ':' + (shiny && col === 6 ? 6 : col) + mu + (anim ? 'a' : 'i'); if (PET_URLS[key]) return PET_URLS[key];
@@ -1542,18 +1569,23 @@ function petImgURL(sp, s, col, shiny, anim, mu) {
   const c = mk(S.W * (anim ? 4 : 1), S.H, g => g.drawImage(S.c, 0, 0, S.W * (anim ? 4 : 1), S.H, 0, 0, S.W * (anim ? 4 : 1), S.H));
   return PET_URLS[key] = { url: c.toDataURL(), W: S.W, H: S.H };
 }
-function petURL(p, anim) { return petImgURL(p.sp, petStage(p.lv), p.col, p.shiny, anim, p.mu); }
+function petURL(p, anim) { return petImgURL(p.sp, petForm(p.lv), p.col, p.shiny, anim, p.mu); }
 function eggURL(t, cr, el) { const key = 'egg' + t + ':' + cr + ':' + (el || ''); return PET_URLS[key] || (PET_URLS[key] = eggCanvas(t, cr, el).toDataURL()); }
 // Schwarze Umrisse für noch nicht entdeckte Arten (Sammlung)
 function petSilURL(sp) { const key = 'sil' + sp; if (PET_URLS[key]) return PET_URLS[key]; const S = petStrip(sp, 0, 0, false, '', true); return PET_URLS[key] = mk(S.W, S.H, g => g.drawImage(silhouette(S.c, '#463c56'), 0, 0, S.W, S.H, 0, 0, S.W, S.H)).toDataURL(); }
 
 /* ---------- Spielstand: Begleiter und Eier prüfen (alte und getauschte Daten) ---------- */
-function petCols(p) { const r = []; for (let i = 0; i <= petStage(p.lv); i++) r.push((p.c0 + i) % 6); if (p.shiny) r.push(6); return r; }
+function petCols(p) { const r = []; for (let i = 0; i <= petForm(p.lv); i++) r.push((p.c0 + i) % 6); if (p.shiny) r.push(6); return r; }
 function petFix(o, newId) {
   if (!o || typeof o !== 'object' || !PET_SP[o.sp]) return null;
   const n = v => (typeof v === 'number' && isFinite(v) ? v : +v || 0);
-  const p = { id: !newId && typeof o.id === 'string' && o.id ? o.id.slice(0, 24) : uid(), sp: o.sp, nm: typeof o.nm === 'string' ? o.nm.replace(/[<>]/g, '').trim().slice(0, 16) : '', lv: clamp(Math.floor(n(o.lv)) || 1, 1, 100), xp: Math.max(0, Math.floor(n(o.xp))), c0: clamp(Math.floor(n(o.c0)), 0, 5), shiny: !!o.shiny, k: Math.max(0, Math.floor(n(o.k))), born: n(o.born) || Date.now() };
-  p.xp = p.lv >= 100 ? 0 : Math.min(p.xp, petNeed(p.lv) - 1);
+  const p = { id: !newId && typeof o.id === 'string' && o.id ? o.id.slice(0, 24) : uid(), sp: o.sp, nm: typeof o.nm === 'string' ? o.nm.replace(/[<>]/g, '').trim().slice(0, 16) : '', lv: clamp(Math.floor(n(o.lv)) || 1, 1, PET_LVMAX), xp: Math.max(0, Math.floor(n(o.xp))), c0: clamp(Math.floor(n(o.c0)), 0, 5), shiny: !!o.shiny, k: Math.max(0, Math.floor(n(o.k))), born: n(o.born) || Date.now() };
+  p.xp = p.lv >= PET_LVMAX ? 0 : Math.min(p.xp, petNeed(p.lv) - 1);
+  // Level-Belohnungen (6.4): neue, getauschte und alte Begleiter (ohne lr) gelten bis zum jetzigen Level als belohnt – keine Flut;
+  // ein gespeichertes lr darunter bleibt (Belohnungen, die noch ausstehen, kommen beim nächsten Laden)
+  const lr = Math.floor(n(o.lr)); p.lr = !newId && o.lr != null && lr >= 1 ? Math.min(lr, p.lv) : p.lv;
+  if (PET_MILE.some(m => m.k === o.au && p.lv >= m.lv)) p.au = o.au;
+  if (PET_MILE.some(m => m.k === o.ti && p.lv >= m.lv)) p.ti = o.ti;
   const col = o.col == null ? (p.shiny ? 6 : p.c0) : Math.floor(n(o.col)); p.col = petCols(p).includes(col) ? col : p.shiny ? 6 : p.c0;
   if (o.nw) p.nw = 1;
   p.bag = (Array.isArray(o.bag) ? o.bag : []).map(petLootFix).filter(Boolean).slice(0, 24);   // Sattlerei: Taschen bis etwa 17 Plätze
@@ -1570,9 +1602,10 @@ function petFix(o, newId) {
   return p;
 }
 function petGenesFix(a) { return Array.isArray(a) && a.length === 5 && a.every(v => isFinite(+v)) ? a.map(v => clamp(Math.round(+v), 0, 100)) : null; }
-// Talentränge prüfen: Ziffern, Höchstrang je Knoten, nicht mehr Punkte als das Level gibt (sonst von hinten kürzen)
+// Talentränge prüfen: Ziffern, Höchstrang je Knoten, Aufstiegs-Knoten erst ab ihrem Level, nicht mehr Punkte als das Level gibt (sonst von hinten kürzen)
+// Alte Stände (15 Ziffern) behalten alles – die neuen Knoten stehen dahinter auf 0
 function petTlFix(s, lv) {
-  const r = []; s = typeof s === 'string' ? s : ''; for (let i = 0; i < PET_TALN; i++) r.push(clamp(+s[i] || 0, 0, PET_TAL[Math.floor(i / 5)].nodes[i % 5].max));
+  const r = []; s = typeof s === 'string' ? s : ''; for (let i = 0; i < PET_TALN; i++) { const [bi, ni] = petTalAt(i), N = PET_TAL[bi].nodes[ni]; r.push(N.lv && (lv | 0) < N.lv ? 0 : clamp(+s[i] || 0, 0, N.max)); }
   let over = r.reduce((a, b) => a + b, 0) - petTalPts(lv); for (let i = PET_TALN - 1; i >= 0 && over > 0; i--) { const d = Math.min(r[i], over); r[i] -= d; over -= d; }
   return r.join('');
 }
@@ -1700,7 +1733,8 @@ function petExport(i, keep) {
   if (!keep && p.bag && p.bag.length) { if (!petHero()) return null; petBagEmpty(p); }
   const d = { sp: p.sp, nm: p.nm, lv: p.lv, xp: p.xp, col: p.col, c0: p.c0, shiny: !!p.shiny, k: p.k || 0, born: p.born };
   // Kreaturen 2.0: Gene, Mutation, Talente, Ausrüstung und Zauber reisen mit (einfache Daten, passen in trPlain)
-  d.gn = (p.gn || petGenesOf(p.id)).slice(); if (p.mu) d.mu = p.mu; d.tl = petTlFix(p.tl, p.lv); d.mg = (p.mg || []).slice(0, 3); if (p.zt) d.zt = p.zt; if (p.pa) d.pa = p.pa.slice(); if (p.ge) d.ge = p.ge;
+  // Aufstieg (6.4): Aura und Titel reisen mit (beim Empfänger nach Level geprüft), die Belohnungs-Marke lr nicht
+  d.gn = (p.gn || petGenesOf(p.id)).slice(); if (p.mu) d.mu = p.mu; d.tl = petTlFix(p.tl, p.lv); if (p.au) d.au = p.au; if (p.ti) d.ti = p.ti; d.mg = (p.mg || []).slice(0, 3); if (p.zt) d.zt = p.zt; if (p.pa) d.pa = p.pa.slice(); if (p.ge) d.ge = p.ge;
   d.eq = {}; for (const s of PET_SLOTS) if (p.eq && p.eq[s]) d.eq[s] = JSON.parse(JSON.stringify(p.eq[s]));
   if (!keep) { M.list.splice(i, 1); if (M.act === p.id) M.act = M.list.length ? M.list[0].id : null; if (petView === p.id) petView = null; persist(); if (P && P.st) computeStats(); }
   return d;
@@ -1716,8 +1750,8 @@ function petImport(d) {
 function petFree() { const M = petM(); return M ? PET_MAX - M.list.length : 0; }
 function eggFree() { const M = petM(); return M ? EGG_MAX - M.eggs.length : 0; }
 // Vorschau für Tausch, Basar und Beute: Text und Bild zu exportierten Daten (Eier verraten nur die Seltenheit)
-function petLabel(d) { if (!d || !PET_SP[d.sp]) return ''; if (d.egg) return PET_TIERS[PET_SP[d.sp].t].egg + (d.pa ? ' · ' + _t('aus der Zucht') : ''); const lv = clamp(d.lv | 0 || 1, 1, 100); return _t('{name} · LV {lv} · {stage}', { name: d.nm ? String(d.nm).slice(0, 16) : PET_SP[d.sp].n, lv, stage: PET_STN[petStage(lv)] }) + (d.shiny ? ' ✦' : '') + (PET_MUT[d.mu] ? ' · ' + PET_MUT[d.mu].n : ''); }
-function petIconURL(d) { if (!d || !PET_SP[d.sp]) return ''; if (d.egg) return eggURL(PET_SP[d.sp].t, 0); return petImgURL(d.sp, petStage(clamp(d.lv | 0 || 1, 1, 100)), d.col | 0, !!d.shiny, false, d.mu).url; }
+function petLabel(d) { if (!d || !PET_SP[d.sp]) return ''; if (d.egg) return PET_TIERS[PET_SP[d.sp].t].egg + (d.pa ? ' · ' + _t('aus der Zucht') : ''); const lv = clamp(d.lv | 0 || 1, 1, PET_LVMAX); return _t('{name} · LV {lv} · {stage}', { name: d.nm ? String(d.nm).slice(0, 16) : PET_SP[d.sp].n, lv, stage: PET_STN[petStage(lv)] }) + (d.shiny ? ' ✦' : '') + (PET_MUT[d.mu] ? ' · ' + PET_MUT[d.mu].n : ''); }
+function petIconURL(d) { if (!d || !PET_SP[d.sp]) return ''; if (d.egg) return eggURL(PET_SP[d.sp].t, 0); return petImgURL(d.sp, petForm(clamp(d.lv | 0 || 1, 1, PET_LVMAX)), d.col | 0, !!d.shiny, false, d.mu).url; }
 
 /* ---------- Beutel des Begleiters (rettet Beute beim Tod in den Verlorenen Landen) ---------- */
 function petBagAdd(p, e) { e = petLootFix(e); if (!p || !e || !Array.isArray(p.bag) || p.bag.length >= petBagSize(p)) return false; p.bag.push(e); persist(); return true; }
@@ -1810,24 +1844,98 @@ function eggWarm(g) { eggSim(g); g.w = 1; }
 function eggFeed(g) { eggSim(g); const F = eggFood(g); if (!F.ok) return false; if (F.k === 'gold') P.gold -= F.n; else P.mats[F.k] -= F.n; g.f = 1; return true; }
 function eggPet(g) { eggSim(g); g.z = Math.min(1, g.z + .34); }
 
+/* ---------- Level-Belohnungen (6.4): jedes Begleiter-Level von 2 bis 150 bringt etwas ----------
+   Jedes Level: Gold, Leibspeise der Art und Material für Begleiter-Ausrüstung. Alle 5 Level eine Zauberrune, ab LV 25 dazu Glücksmünzen.
+   Alle 10 Level Begleiter-Ausrüstung (Selten, Episch ab 40, Legendär ab 80), ab LV 30 dazu ein Ei (Selten, Episch ab 60, Legendär ab 90, Mythisch ab 120).
+   LV 101 (Aufstieg): Glücksmünzen. Meilensteine 110/125/150: Aura und Titel (nur für diesen Begleiter) und Glücksmünzen.
+   Vergeben über p.lr (höchstes belohntes Level): genau einmal je Level, auch bei mehreren Level auf einmal. Getauschte und alte Begleiter: lr = Level. */
+const PET_MILE = [
+  { k: 'stern', lv: 110, n: _t('Sternenstaub'), ti: _t('Sternenseele'), c: '#bfefff', rgb: '190,240,255', fate: 5 },
+  { k: 'himmel', lv: 125, n: _t('Himmelsglut'), ti: _t('Himmelsglanz'), c: '#ffd24a', rgb: '255,210,74', fate: 10 },
+  { k: 'ewig', lv: 150, n: _t('Ewiges Licht'), ti: _t('Licht der Ewigkeit'), c: '#ff9af0', rgb: '255,154,240', fate: 25 }
+];
+function petMile(k) { return PET_MILE.find(m => m.k === k) || null; }
+// Was Level l bringt (reine Rechnung, je Art wegen der Leibspeise): [{ t: 'gold'|'mat'|'fate'|'rune'|'gear'|'egg'|'aura', … }]
+function petLvRew(p, l) {
+  const r = [], S = p && PET_SP[p.sp]; l = l | 0; if (!S || l < 2 || l > PET_LVMAX) return r;
+  r.push({ t: 'gold', n: 20 * l + 4 * l * l });
+  if (MATS[S.fav]) r.push({ t: 'mat', k: S.fav, n: (PET_FEED[S.fav] || 0) >= 4000 ? 1 + Math.floor(l / 60) : 1 + Math.floor(l / 25) });
+  const s = PET_SLOTS[l % 3], gk = l < 40 ? PET_SLOT[s].cost[l % 2][0] : l < 70 ? (l % 2 ? 'mithril' : 'kristall') : (l % 2 ? 'schuppe' : 'mithril');
+  r.push({ t: 'mat', k: gk, n: l < 40 ? 2 + Math.floor(l / 10) : l < 70 ? 1 + Math.floor((l - 40) / 10) : 1 + Math.floor((l - 70) / 20) });
+  if (l % 5 === 0 && l % 10) { r.push({ t: 'rune', k: PET_SPELLS[(l / 5) % PET_SPELLS.length] }); if (l >= 25) r.push({ t: 'fate', n: 1 + Math.floor(l / 50) }); }
+  if (l % 10 === 0) { r.push({ t: 'gear', s: PET_SLOTS[(l / 10) % 3], r: l >= 80 ? 4 : l >= 40 ? 3 : 2, lv: Math.min(100, l) }); if (l >= 30) r.push({ t: 'egg', tier: Math.min(6, 2 + Math.floor(l / 30)) }); }
+  if (l === PET_ASC) r.push({ t: 'fate', n: 5 });
+  const m = PET_MILE.find(x => x.lv === l); if (m) { r.push({ t: 'aura', k: m.k }); r.push({ t: 'fate', n: m.fate }); }
+  return r;
+}
+// Einen Eintrag vergeben → was wirklich ankam (Lager voll: Gold statt Ausrüstung, Korb voll: 2 Glücksmünzen statt Ei)
+function petRewGive(p, e) {
+  const M = petM();
+  switch (e.t) {
+    case 'gold': P.gold += e.n; return e;
+    case 'mat': gainMat(e.k, e.n); return e;
+    case 'fate': gainFate(e.n); return e;
+    case 'rune': M.runes[e.k] = Math.min(99, (M.runes[e.k] || 0) + 1); return e;
+    case 'gear': { const it = petGearNew(e.s, e.r, e.lv); if (M.gear.length < PET_GEAR_MAX) { M.gear.push(it); return { t: 'gear', s: it.s, r: it.r, lv: it.lv }; } const g = petSalvage(it).gold; P.gold += g; return { t: 'gold', n: g }; }
+    case 'egg': { const g = eggGive(null, true, { tier: e.tier }); if (g) return { t: 'egg', tier: g.tier }; gainFate(2); return { t: 'fate', n: 2 }; }
+    case 'aura': p.au = e.k; p.ti = e.k; return e;
+  }
+  return null;
+}
+// Ausstehende Belohnungen bis zum jetzigen Level auszahlen (nur mit echtem Helden) → Liste der vergebenen Einträge
+function petLvPay(p) {
+  const got = []; if (!p || !petM() || !petHero()) return got;
+  p.lr = clamp(Math.floor(+p.lr) || p.lv, 1, p.lv);
+  while (p.lr < p.lv) { p.lr++; for (const e of petLvRew(p, p.lr)) { const g = petRewGive(p, e); if (g) got.push(g); } }
+  if (got.length) saveChar();
+  return got;
+}
+// Belohnungen, die noch ausstehen (z. B. Level ohne aktiven Helden), beim Laden des Helden nachreichen
+function petLvPend() { const M = petM(); if (!M || !petHero()) return; let all = []; for (const p of M.list) if (p.lr < p.lv) all = all.concat(petLvPay(p)); if (all.length) toast(_t('Begleiter-Belohnungen: {r}', { r: petRewTxt(all) }), '#ffd24a'); }
+// Kurztext: Gold, Material und Glücksmünzen zusammengezählt, dann Runen, Ausrüstung, Eier, Aura (höchstens max Teile)
+function petRewTxt(L, max) {
+  let gold = 0, fate = 0; const mats = {}, out = [];
+  for (const e of L) { if (e.t === 'gold') gold += e.n; else if (e.t === 'fate') fate += e.n; else if (e.t === 'mat') mats[e.k] = (mats[e.k] || 0) + e.n; }
+  if (gold) out.push(_t('+{n} Gold', { n: fmt(gold) }));
+  for (const k in mats) out.push(_t('{n}× {mat}', { n: mats[k], mat: MATS[k].n }));
+  if (fate) out.push(fate > 1 ? _t('+{n} Glücksmünzen', { n: fate }) : _t('+{n} Glücksmünze', { n: fate }));
+  for (const e of L) {
+    if (e.t === 'rune') out.push(_t('Rune: {n}', { n: PET_SPELL[e.k].n }));
+    else if (e.t === 'gear') out.push(_t('{item} ({r})', { item: petGearName(e), r: RAR[e.r].n }));
+    else if (e.t === 'egg') out.push(PET_TIERS[e.tier].egg);
+    else if (e.t === 'aura') out.push(_t('Aura und Titel „{n}“', { n: petMile(e.k).n }));
+  }
+  max = max || 5; return out.length > max ? out.slice(0, max).join(' · ') + ' …' : out.join(' · ');
+}
+
 /* ---------- Wachsen: EP, Level, Entwicklung, Schlüpfen ---------- */
-const PET_UNLOCK = [null, _t('Beutemagnet'), _t('Passive Kraft'), _t('Spezialangriff'), _t('Uralte Kraft'), _t('Mythische Kraft')];
+const PET_UNLOCK = [null, _t('Beutemagnet'), _t('Passive Kraft'), _t('Spezialangriff'), _t('Uralte Kraft'), _t('Mythische Kraft'), _t('Aura, stärkerer Spezialangriff und ein Talentpunkt je Level')];
 function petXP(p, v, quiet) {
-  if (!p || p.lv >= 100 || !(v > 0)) return 0;
+  if (!p || p.lv >= PET_LVMAX || !(v > 0)) return 0;
   const s0 = petStage(p.lv), l0 = p.lv; p.xp += Math.round(v);
-  while (p.lv < 100 && p.xp >= petNeed(p.lv)) { p.xp -= petNeed(p.lv); p.lv++; }
-  if (p.lv >= 100) p.xp = 0;
+  while (p.lv < PET_LVMAX && p.xp >= petNeed(p.lv)) { p.xp -= petNeed(p.lv); p.lv++; }
+  if (p.lv >= PET_LVMAX) p.xp = 0;
   if (p.lv === l0) return 0;
+  // Belohnung je Level (mehrere Level auf einmal: jedes einzeln); PET_UI.rew/big für den Futter-Hinweis
+  const rw = petLvPay(p), rt = petRewTxt(rw), mile = rw.find(e => e.t === 'aura');
   const s1 = petStage(p.lv), here = petActive() === p && PET_RT.id === p.id && state === 'play';
+  PET_UI.rew = rt; PET_UI.big = s1 > s0 || !!mile;
   if (petActive() === p && P && P.st) computeStats();
   if (s1 > s0) {
-    const t = _t('{name} ENTWICKELT SICH!', { name: petName(p).toLocaleUpperCase(LOCALE) }), sub = _t('{stage} · LV {lv} · Neu: {what} und eine neue Farbe', { stage: PET_STN[s1], lv: p.lv, what: PET_UNLOCK[s1] });
-    if (state === 'play') banner(t, sub); else toast(t + ' ' + sub, '#ffd24a');
+    const nm = petName(p).toLocaleUpperCase(LOCALE), asc = s1 === 6;
+    const t = asc ? _t('{name} STEIGT AUF!', { name: nm }) : _t('{name} ENTWICKELT SICH!', { name: nm }), sub = asc ? _t('{stage} · LV {lv} · Neu: {what}', { stage: PET_STN[s1], lv: p.lv, what: PET_UNLOCK[s1] }) : _t('{stage} · LV {lv} · Neu: {what} und eine neue Farbe', { stage: PET_STN[s1], lv: p.lv, what: PET_UNLOCK[s1] });
+    if (state === 'play') { banner(t, sub); if (rt) toast(rt, '#ffd24a'); } else toast(t + ' ' + sub + (rt ? ' · ' + rt : ''), '#ffd24a');
     sfx('myth');
     if (here) { PET_RT.fl = 1.2; rings.push({ x: PET_RT.x, y: PET_RT.y, r: 4, max: 60, life: .7, max2: .7, col: '#ffd24a' }); burst(PET_RT.x, PET_RT.y, PET_RT.z + 8, '#ffd24a', 30, 90, 1); burst(PET_RT.x, PET_RT.y, PET_RT.z + 8, PET_EL[PET_SP[p.sp].el].c, 20, 70, 1); }
+  } else if (mile) {
+    // Meilenstein 110/125/150: neue Aura und Titel
+    const m = petMile(mile.k), t = _t('NEUE AURA: {n}', { n: m.n.toLocaleUpperCase(LOCALE) }), sub = _t('{name} · LV {lv} · Titel „{t}“', { name: petName(p), lv: p.lv, t: m.ti });
+    if (state === 'play') { banner(t, sub); toast(rt, m.c); } else toast(t + ' · ' + sub + ' · ' + rt, m.c);
+    sfx('myth');
+    if (here) { PET_RT.fl = 1; rings.push({ x: PET_RT.x, y: PET_RT.y, r: 4, max: 56, life: .7, max2: .7, col: m.c }); burst(PET_RT.x, PET_RT.y, PET_RT.z + 8, m.c, 30, 90, 1); }
   } else {
     if (here) { PET_RT.fl = .35; txt(PET_RT.x, PET_RT.y - 20 - PET_RT.z, _t('LV {lv}', { lv: p.lv }), '#ffd24a', true); rings.push({ x: PET_RT.x, y: PET_RT.y, r: 3, max: 26, life: .4, max2: .4, col: '#ffd24a' }); }
-    else if (!quiet) toast(_t('{name} erreicht LV {lv}!', { name: petName(p), lv: p.lv }), '#ffd24a');
+    if (!quiet) toast(_t('{name} erreicht LV {lv}!', { name: petName(p), lv: p.lv }) + (rt ? ' ' + rt : ''), '#ffd24a');
     petSnd('chirp');
   }
   return p.lv - l0;
@@ -1997,6 +2105,7 @@ function petAttack(p, t) {
 }
 function petSpecial(p, t) {
   const S = PET_SP[p.sp], E = PET_EL[S.el], pw = petPow(p.lv), w = petW(p), mul = PET_TIERS[S.t].mul;
+  w.dmg *= 1 + (petMods(p).pspk || 0);   // Krönung „Sternenzorn“: nur der Schaden, nicht die Zahl der Geschosse
   txt(PET_RT.x, PET_RT.y - 26 - PET_RT.z, S.sn.toLocaleUpperCase(LOCALE) + '!', E.c2, true); PET_RT.fl = .4;
   switch (S.spec) {
     case 'breath': { const a0 = Math.atan2(t.y - PET_RT.y, t.x - PET_RT.x), n = Math.round(8 + 4 * pw); for (let k = 0; k < n; k++) petBolt('flame', w, .3 * pw, a0 + rnd(-.4, .4), null, { sp: rnd(140, 210), t: rnd(.38, .62), pierce: true, home: false, el: S.el }); sfx(S.el === 'frost' ? 'frost' : 'fire'); break; }
@@ -2058,19 +2167,27 @@ function petCast(p, k) {
   }
   return false;
 }
-// Schild des Begleiters fängt Schaden am Helden ab
+// Schild des Begleiters fängt Schaden am Helden ab; Krönung „Lebensbund“: fällt der Held unter 30 %, heilt der Begleiter 35 % (alle 90 s)
+const PET_BOND = { at: .3, heal: .35, cd: 90 };
 HOOK.hurt.push((d, src) => {
   try {
-    if (!(PET_RT.shield > 0) || !(PET_RT.shT > T) || !(d > 0)) return d;
-    const a = Math.min(d, PET_RT.shield); PET_RT.shield -= a; if (P) txt(P.x, P.y - 30, _t('SCHILD'), '#ffe08a'); if (PET_RT.shield <= 0) PET_RT.shT = 0;
-    return d - a;
+    if (!(d > 0)) return d;
+    if (PET_RT.shield > 0 && PET_RT.shT > T) { const a = Math.min(d, PET_RT.shield); PET_RT.shield -= a; if (P) txt(P.x, P.y - 30, _t('SCHILD'), '#ffe08a'); if (PET_RT.shield <= 0) PET_RT.shT = 0; d -= a; }
+    const p = petActive();
+    if (p && P && P.st && P.hp > 0 && PET_RT.id === p.id && petMods(p).pbond && P.hp - d < P.st.hp * PET_BOND.at && !(PET_RT.bondT > T)) {
+      const h = Math.round(P.st.hp * PET_BOND.heal); P.hp = Math.min(P.st.hp, P.hp + h); PET_RT.bondT = T + PET_BOND.cd;
+      txt(P.x, P.y - 36, _t('LEBENSBUND +{n}', { n: h }), '#79c24e', true); rings.push({ x: P.x, y: P.y, r: 4, max: 40, life: .5, max2: .5, col: '#79c24e' });
+      for (let i = 0; i < 16; i++) part(P.x + rnd(-10, 10), P.y, rnd(0, 14), 0, 0, rnd(25, 55), Math.random() < .5 ? '#79c24e' : PET_EL[PET_SP[p.sp].el].c, rnd(.5, .9), 1, -10, 1);
+      sfx('heal');
+    }
+    return d;
   } catch (e) { if (!PET_ERR.hurt) { PET_ERR.hurt = 1; console.error('Begleiter (hurt):', e); } return d; }
 });
 function petTick(dt) {
   const p = petActive(); if (!p || !P) { PET_RT.id = null; return; }
   PET_RT.lt = T;
   if (PET_RT.id !== p.id || PET_RT.g !== G) petPlace(PET_RT.id !== null && PET_RT.id !== p.id);
-  const S = PET_SP[p.sp], st = petStage(p.lv), play = state === 'play' && !!G && !!G.type, hide = play && G.type === 'versteck', fight = play && !hide && G.phase !== 'done';
+  const S = PET_SP[p.sp], st = petForm(p.lv), play = state === 'play' && !!G && !!G.type, hide = play && G.type === 'versteck', fight = play && !hide && G.phase !== 'done';
   PET_RT.fl = Math.max(0, PET_RT.fl - dt); PET_RT.atk = Math.max(0, PET_RT.atk - dt);
   PET_RT.bl -= dt; if (PET_RT.bl < 0) { PET_RT.blk = .14; PET_RT.bl = rnd(2.2, 5); } PET_RT.blk -= dt;
   // Spezial-Abläufe: Schattensprung, Gewitter
@@ -2156,6 +2273,7 @@ function petTick(dt) {
   }
   // Aura ab Uralt, Glitzern bei schillernden
   if (st >= 4 && Math.random() < (st === 5 ? .3 : .18)) part(PET_RT.x + rnd(-6, 6) - PET_RT.face * 2, PET_RT.y + rnd(-2, 2), PET_RT.z + rnd(0, 6), 0, 0, rnd(12, 28), Math.random() < .5 ? PET_EL[S.el].c : st === 5 ? '#ffd24a' : PET_EL[S.el].c2, rnd(.5, .9), 1, -5, 1);
+  if (petAsc(p)) petAuraParts(p);
   if (p.shiny && Math.random() < .08) part(PET_RT.x + rnd(-6, 6), PET_RT.y, PET_RT.z + rnd(2, 12), 0, 0, 10, '#ffffff', .4, 1, 0, 1);
   // eigene Geschosse
   for (const b of PET_BOLTS) {
@@ -2249,18 +2367,48 @@ function petFxDraw() {
     ctx.save(); ctx.globalAlpha = q * .55; ctx.translate(Math.round(f.x - CX), Math.round(f.y - CY - f.z)); ctx.scale(f.face, 1); ctx.drawImage(S.silp, 4 * S.W, 0, S.W, S.H, -S.ax, -S.ay, S.W, S.H); ctx.restore();
   }
 }
+/* Aufgestiegen (ab LV 101): Aura in Element-Farbe – Leuchten hinter dem Körper und zwei pulsierende Bodenringe;
+   Meilenstein-Auren: Sternenstaub (kreisende Sterne), Himmelsglut (goldener Heiligenschein), Ewiges Licht (Regenbogen, Schein und Sterne) */
+function petAuraCol(p, o) {
+  const m = petMile(p.au), E = PET_EL[PET_SP[p.sp].el];
+  if (m && m.k === 'ewig') { const c = petHslRgb((T * 80 + (o || 0)) % 360, .85, .7); return ['rgb(' + c + ')', c.join(',')]; }
+  return m ? [m.c, m.rgb] : [E.c, E.rgb];
+}
+function petAuraDraw(p, S, x, y, z, sw, front) {
+  const [c, rgb] = petAuraCol(p), k = p.au || '', cy = y - z - S.H * .45, pu = .5 + .5 * Math.sin(T * 3);
+  if (!front) {
+    ctx.globalCompositeOperation = 'lighter'; glow(x, cy, Math.max(S.W, S.H) * .75 + 3 * pu, rgb, .26 + .12 * pu); ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = c; ctx.lineWidth = 1; ctx.globalAlpha = .45 + .3 * pu; ctx.beginPath(); ctx.ellipse(x, y, sw * 1.7 + pu * 2, sw * .62 + pu * .7, 0, 0, 6.283); ctx.stroke();
+    ctx.globalAlpha = .22 + .1 * (1 - pu); ctx.beginPath(); ctx.ellipse(x, y, sw * 2.3 + (1 - pu) * 3, sw * .85 + (1 - pu), 0, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1;
+    return;
+  }
+  if (k === 'himmel' || k === 'ewig') {
+    const hy = Math.round(y - z - S.ay - 3 + Math.sin(T * 2)), hc = k === 'ewig' ? c : '#ffe08a';
+    ctx.globalCompositeOperation = 'lighter'; glow(x, hy, 9, k === 'ewig' ? rgb : '255,224,138', .45); ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = .95; ctx.strokeStyle = hc; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(x, hy, Math.max(4, S.W * .22), 1.6, 0, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  if (k === 'stern' || k === 'ewig') for (let i = 0; i < 4; i++) {
+    const a = T * 1.6 + i * 1.571, sx = Math.round(x + Math.cos(a) * sw * 2), sy = Math.round(cy + Math.sin(a) * sw * .7), tw = .5 + .5 * Math.sin(T * 6 + i);
+    ctx.globalAlpha = .55 + .45 * tw; ctx.fillStyle = k === 'ewig' ? petAuraCol(p, i * 90)[0] : i % 2 ? '#bfefff' : '#ffffff'; ctx.fillRect(sx, sy - 1, 1, 3); ctx.fillRect(sx - 1, sy, 3, 1);
+  }
+  ctx.globalAlpha = 1;
+}
+// aufsteigende Funken der Aura (petTick)
+function petAuraParts(p) { if (Math.random() > .22) return; const c = petAuraCol(p, rnd(0, 120))[0]; part(PET_RT.x + rnd(-8, 8), PET_RT.y + rnd(-2, 2), PET_RT.z + rnd(0, 10), rnd(-4, 4), 0, rnd(18, 34), Math.random() < .3 ? '#ffffff' : c, rnd(.6, 1.1), 1, -6, 1); }
 function drawPet() {
   const p = petActive(); if (!p || PET_RT.id !== p.id) return;
-  const S = petStripOf(p), st = petStage(p.lv), Sp = PET_SP[p.sp], E = PET_EL[Sp.el], x = Math.round(PET_RT.x - CX), y = Math.round(PET_RT.y - CY), z = Math.round(PET_RT.z), sw = Math.max(4, S.W * .3);
+  const S = petStripOf(p), st = petForm(p.lv), asc = petAsc(p), Sp = PET_SP[p.sp], E = PET_EL[Sp.el], x = Math.round(PET_RT.x - CX), y = Math.round(PET_RT.y - CY), z = Math.round(PET_RT.z), sw = Math.max(4, S.W * .3);
   ctx.globalAlpha = .3 * Math.max(.45, 1 - z / 40); ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(x, y, sw, sw * .38, 0, 0, 6.283); ctx.fill();
   if (st >= 4) { ctx.globalAlpha = .14 + .07 * Math.sin(T * 4); ctx.fillStyle = st === 5 ? '#ffd24a' : E.c; ctx.beginPath(); ctx.ellipse(x, y, sw * 1.5, sw * .55, 0, 0, 6.283); ctx.fill(); }
   ctx.globalAlpha = 1;
+  if (asc) petAuraDraw(p, S, x, y, z, sw, false);
   const fi = PET_RT.sleep || (PET_RT.blk > 0 && !PET_RT.mv) ? 8 : (PET_RT.mv ? 4 : 0) + ((Math.floor(PET_RT.ph) % 4) + 4) % 4, sq = PET_RT.atk > 0 ? Math.sin(PET_RT.atk / .22 * Math.PI) * .12 : 0;
   ctx.save(); ctx.translate(x, y - z); ctx.scale(PET_RT.face * (1 + sq), 1 - sq);
   if (p.sp === 'katze' || p.mu === 'schatten' || PET_SP[p.sp].art && PET_SP[p.sp].art[1].k === 'geist') ctx.globalAlpha = .88 + .08 * Math.sin(T * 3);
   ctx.drawImage(S.c, fi * S.W, 0, S.W, S.H, -S.ax, -S.ay, S.W, S.H);
   if (PET_RT.fl > 0) { if (!S.sil) S.sil = silhouette(S.c, '#ffffff'); ctx.globalAlpha = Math.min(1, PET_RT.fl * 1.6) * .85; ctx.drawImage(S.sil, fi * S.W, 0, S.W, S.H, -S.ax, -S.ay, S.W, S.H); }
   ctx.restore(); ctx.globalAlpha = 1;
+  if (asc) { petAuraDraw(p, S, x, y, z, sw, true); addLight(x, y - z - S.H * .4, 34, .6); }
   // Goldkäfer leuchtet wie eine Laterne, Feuer und Blitz glühen
   if (Sp.el === 'licht') addLight(x, y - z - S.H * .4, 40 + st * 6, .8 + .1 * Math.sin(T * 3));
   else if (Sp.el === 'feuer' || Sp.el === 'blitz' || st >= 4 || (G && G.dark)) addLight(x, y - z - S.H * .4, 18 + st * 4, Sp.el === 'schatten' || Sp.el === 'gift' ? .35 : .55);
@@ -2359,7 +2507,7 @@ HOOK.draw.push(petSafe('draw', list => {
   for (const b of PET_BOLTS) list.push(b);
   for (const f of PET_FX) list.push(f);
 }));
-HOOK.activate.push(petSafe('activate', () => petCwPay()));
+HOOK.activate.push(petSafe('activate', () => { petCwPay(); petLvPend(); }));
 HOOK.station.push(petSafe('openst', (h, id) => { if (h || id !== 'brutnest') return h; openNest('hide'); return true; }, false));
 // Beim Start: kurzer Hinweis, wenn im Nest etwas zu tun ist
 HOOK.boot.push(petSafe('boot', () => {
@@ -2449,6 +2597,27 @@ document.head.insertAdjacentHTML('beforeend', '<style>' +
   '.pbr{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px;align-items:center;text-align:center;margin:6px 0}.pbr>div{background:var(--night);padding:6px 4px;min-height:84px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:15px;line-height:1.05;min-width:0;overflow-wrap:anywhere}.pbr img{max-width:52px;max-height:48px;image-rendering:pixelated}.pbr>b{font-family:var(--f-display);font-weight:400;font-size:12px;color:#ff8aa8}' +
   '.pout{display:grid;gap:3px;margin:4px 0}.pout div{display:flex;justify-content:space-between;gap:8px;font-size:16px;background:var(--stone-lo);padding:4px 8px}.pout b{font-weight:400;color:var(--gold)}' +
   '.ptree .tal small{font-size:15px}.ptree .tal .req{display:block;color:#ff8a7a;font-size:14px;margin-top:2px}' +
+  /* Aufstieg (6.4): Aura in der Vorschau, Titel, Belohnungs-Zeitleiste, Aufstiegs-Talente */
+  '.petprev.asc{background:radial-gradient(ellipse at 50% 72%,var(--ac2) 0,var(--pg) 34%,var(--stone-lo) 76%)}' +
+  '.petprev .paura{position:absolute;left:11%;right:11%;bottom:3px;height:26px;border-radius:50%;box-shadow:0 0 0 2px var(--ac),0 0 16px 4px var(--ac);opacity:.7;animation:paura 2.2s ease-in-out infinite}' +
+  '.petprev .phalo{position:absolute;left:50%;width:34px;height:9px;margin-left:-17px;border-radius:50%;box-shadow:0 0 0 2px #ffe08a,0 0 10px 3px rgba(255,224,138,.8);z-index:2;animation:phalo 2s ease-in-out infinite}' +
+  '.petprev .pst{position:absolute;width:3px;height:9px;margin:-4px 0 0 -1px;background:#fff;z-index:2;animation:ptw 1.4s ease-in-out infinite}.petprev .pst:after{content:"";position:absolute;left:-3px;top:3px;width:9px;height:3px;background:inherit}' +
+  '.petprev.rb .paura,.petprev.rb .phalo,.petprev.rb .pst{animation-name:paura,prb;animation-duration:2.2s,4s;animation-timing-function:ease-in-out,linear;animation-iteration-count:infinite}.petprev.rb .pst{animation-name:ptw,prb;animation-duration:1.4s,4s}' +
+  '@keyframes paura{0%,100%{transform:scale(.9);opacity:.5}50%{transform:scale(1.04);opacity:.9}}@keyframes phalo{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}@keyframes ptw{0%,100%{opacity:.25;transform:scale(.7)}50%{opacity:1;transform:scale(1)}}@keyframes prb{from{filter:hue-rotate(0)}to{filter:hue-rotate(360deg)}}' +
+  '.ptitle{font-size:17px;margin-top:2px;text-shadow:1px 1px 0 #000}' +
+  '.paur{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:5px;margin:4px 0 0}' +
+  '.paur .opt{min-width:0;min-height:44px;margin:0;padding:6px 8px;font-size:8px;line-height:1.5;display:flex;align-items:center;gap:6px;text-align:left;background:var(--night);box-shadow:inset 0 0 0 2px var(--stone-hi);overflow-wrap:anywhere}' +
+  '.paur .opt.sel{box-shadow:inset 0 0 0 3px var(--gold);background:var(--stone-hi)}.paur .opt:disabled{opacity:.45;cursor:default}.paur .opt i{font-style:normal;font-size:16px;line-height:1;flex:none}' +
+  '.prw{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:2px 0 6px}' +
+  '.prw>span{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0 3px;background:var(--night);box-shadow:inset 0 -3px 0 var(--rc,var(--stone-hi));min-width:0}' +
+  '.prw>span b{font-family:var(--f-display);font-weight:400;font-size:7px;line-height:1.4;color:var(--parch-dim);white-space:nowrap}.prw>span img,.prw>span .pri{width:22px;height:22px;object-fit:contain;image-rendering:pixelated;display:grid;place-items:center;font-size:17px;line-height:1}' +
+  '.prw>span.ok{opacity:.65}.prw>span.ok:after{content:"✓";position:absolute;right:2px;bottom:3px;color:var(--moss);font-size:14px;line-height:1}.prw>span.nx{box-shadow:inset 0 0 0 2px var(--gold),inset 0 -3px 0 var(--rc,var(--stone-hi))}.prw>span.nx b{color:var(--gold)}' +
+  '.prwd{font-size:16px;line-height:1.15;color:var(--parch)}.prwd b{font-weight:400;color:var(--gold)}' +
+  '.prwm{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:6px 0 2px}.prwm span{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:15px;line-height:1.05;padding:5px 6px;background:var(--night);box-shadow:inset 0 0 0 2px var(--mc);color:var(--parch);overflow-wrap:anywhere}' +
+  '.prwm span b{font-family:var(--f-display);font-weight:400;font-size:7px;line-height:1.4;color:var(--mc)}.prwm span.no{opacity:.6;box-shadow:inset 0 0 0 2px var(--stone-hi)}' +
+  '.ptree .ptier{font-family:var(--f-display);font-size:7px;color:var(--gold);text-align:center;margin:8px 0 6px;letter-spacing:1px}.ptree .tal.cap{box-shadow:inset 0 0 0 2px #ff9af0}.ptree .tal.cap.max{box-shadow:inset 0 0 0 2px var(--moss)}.ptree .tal.cap.can{box-shadow:inset 0 0 0 2px var(--gold)}' +
+  '@media (max-width:599px){.ptree .branch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 6px}.ptree .branch h4,.ptree .ptier,.ptree .tal.cap{grid-column:1/-1}.ptree .tal{margin-bottom:6px}}' +
+  '@media (prefers-reduced-motion:reduce){.petprev .paura,.petprev .phalo,.petprev .pst{animation:none!important}}' +
   '</style>');
 let petView = null, petAmt = 1, petRen = false, petRel = false;
 function petViewed() { const M = petM(); return (M && (M.list.find(x => x.id === petView) || petSel() || M.list[0])) || null; }
@@ -2549,15 +2718,18 @@ const PET_BR = { a: null, b: null };
 const PET_SUBS = [['ov', _t('ÜBERSICHT')], ['gen', _t('GENE')], ['eq', _t('AUSRÜSTUNG')], ['tal', _t('TALENTE')], ['mag', _t('MAGIE')], ['zu', _t('ZUCHT')]];
 function petSubBadge(p, k) { if (k === 'tal') { const f = petTalFree(p); return f > 0 ? f : ''; } if (k === 'mag') { const M = petM(), free = petSockets(p) - (p.mg || []).slice(0, petSockets(p)).filter(Boolean).length; return free > 0 && PET_SPELLS.some(r => M.runes[r] > 0) ? '!' : ''; } if (k === 'zu') return !petBreedWhy(p) ? '♥' : ''; if (k === 'eq') { const M = petM(); return M.gear.length && PET_SLOTS.some(s => !(p.eq && p.eq[s]) && M.gear.some(it => it.s === s)) ? '!' : ''; } return ''; }
 function petHeadHTML(p, M) {
-  const S = PET_SP[p.sp], st = petStage(p.lv), E = PET_EL[S.el], act = M.act === p.id, hurt = petIsHurt(p), sc = 4, U = petURL(p, true), need = petNeed(p.lv), nx = PET_STAGE.find(l => l > p.lv), q = p.lv >= 100 ? 1 : p.xp / need;
-  const prev = `<div class="petprev${hurt ? ' hurt' : Date.now() - PET_UI.fed < 700 ? ' yum' : ''}" style="width:${Math.max(132, U.W * sc + 24)}px;height:${Math.max(120, U.H * sc + (S.fly ? 46 : 30))}px;--pg:${st >= 4 ? `rgba(${E.rgb},.45)` : 'var(--stone-hi)'}">${petSprHTML(U, sc, S.fly && !hurt)}</div>`;
-  const mu = PET_MUT[p.mu] ? `<span class="pill" style="background:${PET_MUTC[PET_MUT[p.mu].r]}">${PET_MUT[p.mu].n}</span>` : '';
-  const info = `<div class="petinfo"><div class="petnm">${esc(petName(p))}${p.shiny ? ' <span style="color:#ff9af0">✦</span>' : ''}</div>
+  const S = PET_SP[p.sp], st = petStage(p.lv), E = PET_EL[S.el], act = M.act === p.id, hurt = petIsHurt(p), sc = 4, U = petURL(p, true), need = petNeed(p.lv), nx = PET_STAGE.find(l => l > p.lv), q = p.lv >= PET_LVMAX ? 1 : p.xp / need;
+  const pw = Math.max(132, U.W * sc + 24), ph = Math.max(120, U.H * sc + (S.fly ? 46 : 30)), am = petMile(p.au), ac = am ? am.c : E.c;
+  // Aufgestiegen: Aura um die Vorschau (Bodenring, Leuchten), Himmelsglut: Heiligenschein, Sternenstaub: Sterne, Ewiges Licht: alles im Regenbogen
+  const aura = petAsc(p) && !hurt ? `<i class="paura"></i>${am && am.k !== 'stern' ? `<i class="phalo" style="bottom:${Math.min(ph - 12, (S.fly ? 30 : 14) + U.H * sc + 4)}px"></i>` : ''}${am && am.k !== 'himmel' ? [[16, 34], [84, 44], [24, 70], [78, 22]].map(([l, t], i) => `<i class="pst" style="left:${l}%;top:${t}%;animation-delay:${i * .35}s"></i>`).join('') : ''}` : '';
+  const prev = `<div class="petprev${hurt ? ' hurt' : Date.now() - PET_UI.fed < 700 ? ' yum' : ''}${aura ? ' asc' : ''}${aura && am && am.k === 'ewig' ? ' rb' : ''}" style="width:${pw}px;height:${ph}px;--pg:${st >= 4 ? `rgba(${E.rgb},.45)` : 'var(--stone-hi)'};--ac:${ac};--ac2:${ac}88">${aura}${petSprHTML(U, sc, S.fly && !hurt)}</div>`;
+  const mu = PET_MUT[p.mu] ? `<span class="pill" style="background:${PET_MUTC[PET_MUT[p.mu].r]}">${PET_MUT[p.mu].n}</span>` : '', tm = petMile(p.ti);
+  const info = `<div class="petinfo"><div class="petnm">${esc(petName(p))}${p.shiny ? ' <span style="color:#ff9af0">✦</span>' : ''}</div>${tm ? `<div class="ptitle" style="color:${tm.c}">„${tm.ti}“</div>` : ''}
     <div class="st" style="font-size:17px;margin-top:5px">${p.nm ? S.n + ' · ' : ''}${PET_STN[st]} · ${tierPill(S.t)} <span class="pel" style="background:${E.c}">${E.n}</span> ${mu}</div>
     <div class="stats" style="margin:8px 0 0"><span>${_t('LV {lv}', { lv: p.lv })}</span><span>${_t('SIEGE {n}', { n: fmt(p.k || 0) })}</span>${act && !hurt ? `<span style="color:var(--moss)">${_t('BEGLEITET DICH')}</span>` : ''}${hurt ? `<span style="color:#ff8a7a">${_t('VERLETZT')}</span>` : ''}</div>
     ${petHurtHTML(p)}
     <div class="pbar" style="--c:${E.c}"><i style="width:${(q * 100).toFixed(1)}%"></i></div>
-    <div class="st">${p.lv >= 100 ? _t('Höchste Stufe – ein mythischer Gefährte!') : _t('EP {a}/{b} bis LV {lv}', { a: fmt(p.xp), b: fmt(need), lv: p.lv + 1 })}</div>
+    <div class="st">${p.lv >= PET_LVMAX ? _t('Höchste Stufe – aufgestiegen und vollendet!') : _t('EP {a}/{b} bis LV {lv}', { a: fmt(p.xp), b: fmt(need), lv: p.lv + 1 })}</div>
     ${nx ? `<div class="pbar thin" style="--c:var(--gold)"><i style="width:${((p.lv - PET_STAGE[st]) / (nx - PET_STAGE[st]) * 100).toFixed(1)}%"></i></div><div class="st">${_t('Nächste Entwicklung: {stage} ab LV {lv}', { stage: PET_STN[petStage(nx)], lv: nx })}</div>` : ''}
     <div class="acts" style="justify-content:flex-start;margin-top:8px">${act ? `<button class="btn alt sm" data-act="petact" data-id="${p.id}">${_t('Zurücklassen')}</button>` : `<button class="btn sm" data-act="petact" data-id="${p.id}">${_t('Mitnehmen')}</button>`}<button class="btn alt sm" data-act="petren">${_t('Umbenennen')}</button>${petRel ? `<button class="btn red sm" data-act="petrelok">${_t('Wirklich freilassen?')}</button><button class="btn alt sm" data-act="petrelno">${_t('Nein')}</button>` : `<button class="btn alt sm" data-act="petrel" ${M.list.length > 1 ? '' : 'disabled'}>${_t('Freilassen')}</button>`}</div></div>`;
   const ren = petRen ? `<div class="acts" style="justify-content:flex-start;flex-wrap:nowrap;margin-top:10px"><input type="text" id="petnm" maxlength="14" value="${esc(p.nm)}" placeholder="${esc(S.n)}" style="flex:1;min-width:0"><button class="btn sm" data-act="petrenok">${_t('OK')}</button></div>` : '';
@@ -2571,7 +2743,7 @@ function petHeadHTML(p, M) {
   return `${subs}<div class="box"><div class="petcard">${prev}${info}</div>${ren}${nav}</div>`;
 }
 function petListHTML(M, p) {
-  return `<h3>${_t('DEINE BEGLEITER {n}/{max}', { n: M.list.length, max: PET_MAX })}</h3><div class="pgrid">${M.list.map(o => `<button class="${o.id === p.id ? 'sel' : ''}" style="--tc:${PET_TIERS[PET_SP[o.sp].t].c}" data-act="petsel" data-id="${o.id}" title="${esc(petName(o))}" aria-label="${esc(petName(o))}">${o.id === M.act ? '<i></i>' : petIsHurt(o) ? '<i class="cd"></i>' : ''}${o.nw ? '<u>●</u>' : ''}<img src="${petURL(o).url}" alt=""><b>${o.lv}</b></button>`).join('')}</div>`;
+  return `<h3>${_t('DEINE BEGLEITER {n}/{max}', { n: M.list.length, max: PET_MAX })}</h3><div class="pgrid">${M.list.map(o => `<button class="${o.id === p.id ? 'sel' : ''}" style="--tc:${PET_TIERS[PET_SP[o.sp].t].c}" data-act="petsel" data-id="${o.id}" title="${esc(petName(o))}" aria-label="${esc(petName(o))}">${o.id === M.act ? '<i></i>' : petIsHurt(o) ? '<i class="cd"></i>' : ''}${o.nw ? '<u>●</u>' : ''}<img src="${petURL(o).url}" alt=""><b${petAsc(o) ? ' style="color:var(--gold)"' : ''}>${o.lv}</b></button>`).join('')}</div>`;
 }
 // Übersicht: Farbe, Beutel, Fähigkeiten | Füttern, Liste, Eier, Sammlung
 function petOvHTML(p, M) {
@@ -2585,12 +2757,43 @@ function petOvHTML(p, M) {
     [25, S.pn, p.lv >= 25 ? _t('Jetzt: {now}. Bei LV 100: {max}.', { now: petPasText(pv), max: petPasText(pmax) }) : _t('{min}, wächst bis LV 100 auf {max}.', { min: petPasText(pmin), max: petPasText(pmax) })],
     [50, S.sn, S.sd + ' ' + _t('Alle {s} s.', { s: petSpecCd(Math.max(50, p.lv)) })],
     [75, _t('Uralte Kraft'), _t('Spezialangriff ×1,5 und alle 16 s, leuchtende Aura, ein Beutelplatz mehr.')],
-    [100, _t('Mythische Kraft'), _t('Spezialangriff ×2 und alle 12 s, goldene Gestalt.')]
+    [100, _t('Mythische Kraft'), _t('Spezialangriff ×2 und alle 12 s, goldene Gestalt.')],
+    [PET_ASC, _t('Aufstieg'), _t('Spezialangriff ×2,25 und alle 11 s, eine Aura, ab jetzt ein Talentpunkt je Level und die Aufstiegs-Talente.')]
   ].map(([l, n, d]) => `<div class="row${p.lv < l ? ' lock' : ''}" style="cursor:default"><div class="ic plv">${_t('LV')}<br>${l}</div><div><div class="nm">${n}</div><div class="st">${d}</div></div><span></span></div>`).join('');
-  const feed = `<h3>${_t('FÜTTERN')}</h3><p class="sub" style="margin-top:0">${p.lv >= 100 ? _t('Satt und mythisch – mehr geht nicht.') : _t('Übriges Material wird zu Erfahrung. Leibspeise: {mat} (doppelte EP).', { mat: MATS[S.fav].n })}</p>
+  const feed = `<h3>${_t('FÜTTERN')}</h3><p class="sub" style="margin-top:0">${p.lv >= PET_LVMAX ? _t('Satt und vollendet – mehr geht nicht.') : _t('Übriges Material wird zu Erfahrung. Leibspeise: {mat} (doppelte EP).', { mat: MATS[S.fav].n })}</p>
     <div class="opts">${[1, 10, 100].map(n => `<button class="opt${petAmt === n ? ' sel' : ''}" data-act="petamt" data-i="${n}">×${n}</button>`).join('')}</div>
-    <div class="grid">${MATORDER.map(k => { const n = P.mats[k] || 0, fav = k === S.fav; return `<button class="slot${fav ? ' fav' : ''}" data-act="petfeed" data-id="${k}" ${n && p.lv < 100 ? '' : 'disabled'} title="${MATS[k].n}" aria-label="${MATS[k].n}"><img src="${iconURL(['mat', k])}" alt=""><span class="u">+${fmt(PET_FEED[k] * (fav ? 2 : 1))}</span><span class="n">${n}</span></button>`; }).join('')}</div>`;
-  return `<div class="split"><div><div class="box"><h3 style="margin-top:0">${_t('FARBE')} · ${petColName(p.sp, p.col)}</h3><div class="sws">${sws}</div><p class="sub" style="margin:4px 0 0">${_t('Jede Entwicklungsstufe schaltet eine neue Farbe frei.')}</p></div>${petBagHTML(p)}<h3>${_t('FÄHIGKEITEN')}</h3>${rows}</div><div>${feed}${petListHTML(M, p)}${petNestHTML(M)}${petColHTML()}</div></div>`;
+    <div class="grid">${MATORDER.map(k => { const n = P.mats[k] || 0, fav = k === S.fav; return `<button class="slot${fav ? ' fav' : ''}" data-act="petfeed" data-id="${k}" ${n && p.lv < PET_LVMAX ? '' : 'disabled'} title="${MATS[k].n}" aria-label="${MATS[k].n}"><img src="${iconURL(['mat', k])}" alt=""><span class="u">+${fmt(PET_FEED[k] * (fav ? 2 : 1))}</span><span class="n">${n}</span></button>`; }).join('')}</div>`;
+  return `<div class="split"><div>${petRewHTML(p)}<div class="box"><h3 style="margin-top:0">${_t('FARBE')} · ${petColName(p.sp, p.col)}</h3><div class="sws">${sws}</div><p class="sub" style="margin:4px 0 0">${_t('Jede Entwicklungsstufe schaltet eine neue Farbe frei.')}</p>${petAuraHTML(p)}</div>${petBagHTML(p)}<h3>${_t('FÄHIGKEITEN')}</h3>${rows}</div><div>${feed}${petListHTML(M, p)}${petNestHTML(M)}${petColHTML()}</div></div>`;
+}
+/* Aufstieg (6.4): Belohnungs-Zeitleiste – jetziges Level und die nächsten sechs, darunter was das nächste bringt, dann die Meilensteine */
+function petRewMain(L) { for (const t of ['aura', 'egg', 'gear', 'fate', 'rune']) { const e = L.find(x => x.t === t); if (e) return e; } return L[0]; }
+function petRewIc(e) {
+  switch (e && e.t) {
+    case 'aura': { const m = petMile(e.k); return `<span class="pri" style="color:${m.c}">✦</span>`; }
+    case 'egg': return `<img src="${eggURL(e.tier, 0)}" alt="">`;
+    case 'gear': return `<img src="${petGearIconURL(e)}" alt="">`;
+    case 'fate': return '<span class="pri"><i class="fc" style="width:14px;height:14px;margin:0"></i></span>';
+    case 'rune': return `<img src="${petRuneIconURL(e.k)}" alt="">`;
+    case 'mat': return `<img src="${iconURL(['mat', e.k])}" alt="">`;
+  }
+  return `<img src="${iconURL(['pa', 'muenze'])}" alt="">`;
+}
+function petRewHTML(p) {
+  const top = p.lv >= PET_LVMAX, a = top ? PET_LVMAX - 6 : Math.max(2, p.lv), lv = [];
+  for (let l = a; l < a + 7 && l <= PET_LVMAX; l++) lv.push(l);
+  const col = L => { const e = petRewMain(L); return e.t === 'aura' ? petMile(e.k).c : e.t === 'egg' ? PET_TIERS[e.tier].c : e.t === 'gear' ? RAR[e.r].c : e.t === 'fate' ? '#ffd24a' : e.t === 'rune' ? '#b892f4' : ''; };
+  const chips = lv.map(l => { const L = petLvRew(p, l), c = col(L); return `<span class="${l <= p.lv ? 'ok' : l === p.lv + 1 ? 'nx' : ''}"${c ? ` style="--rc:${c}"` : ''} title="${esc(_t('LV {lv}', { lv: l }) + ': ' + petRewTxt(L, 12))}"><b>${l}</b>${petRewIc(petRewMain(L))}</span>`; }).join('');
+  const nx = top ? '' : `<div class="prwd">${_t('Nächstes Level {lv}: {r}', { lv: `<b>${p.lv + 1}</b>`, r: esc(petRewTxt(petLvRew(p, p.lv + 1), 12)) })}</div>`;
+  const ms = PET_MILE.map(m => `<span class="${p.lv >= m.lv ? '' : 'no'}" style="--mc:${m.c}"><b>✦ ${_t('LV {lv}', { lv: m.lv })}${p.lv >= m.lv ? ' ✓' : ''}</b>${m.n}</span>`).join('');
+  return `<div class="box"><h3 style="margin-top:0">${_t('BELOHNUNGEN')}</h3><div class="prw">${chips}</div>${top ? `<div class="prwd">${_t('Alle Belohnungen erhalten – {name} ist vollendet!', { name: esc(petName(p)) })}</div>` : nx}<div class="prwm">${ms}</div>
+    <p class="sub" style="margin:4px 0 0;font-size:15px">${_t('Jedes Level: Gold, Leibspeise und Material · alle 5: Rune, ab LV 25 mit Glücksmünzen · alle 10: Ausrüstung, ab LV 30 mit Ei')}</p></div>`;
+}
+// Aura und Titel wählen (nur aufgestiegen): Aufstieg = Element-Farbe, die Meilenstein-Auren ab LV 110/125/150
+function petAuraHTML(p) {
+  if (!petAsc(p)) return '';
+  const E = PET_EL[PET_SP[p.sp].el], au = PET_MILE.map(m => `<button class="opt${p.au === m.k ? ' sel' : ''}" data-act="petaura" data-id="${m.k}" ${p.lv >= m.lv ? '' : 'disabled'} title="${p.lv >= m.lv ? m.n : _t('{n} – ab LV {lv}', { n: m.n, lv: m.lv })}"><i style="color:${m.c}">✦</i>${p.lv >= m.lv ? m.n : _t('LV {lv}', { lv: m.lv })}</button>`).join('');
+  const ti = PET_MILE.filter(m => p.lv >= m.lv).map(m => `<button class="opt${p.ti === m.k ? ' sel' : ''}" data-act="pettitle" data-id="${m.k}">„${m.ti}“</button>`).join('');
+  return `<h3>${_t('AURA')}</h3><div class="paur"><button class="opt${!p.au ? ' sel' : ''}" data-act="petaura" data-id=""><i style="color:${E.c}">✦</i>${_t('Aufstieg')}</button>${au}</div>${ti ? `<h3>${_t('TITEL')}</h3><div class="paur"><button class="opt${!p.ti ? ' sel' : ''}" data-act="pettitle" data-id="">${_t('Kein Titel')}</button>${ti}</div>` : ''}`;
 }
 // Gene: fünf Leisten mit Note und Wirkung, Mutation, Herkunft, Mutationen-Sammlung
 function petGenHTML(p, M) {
@@ -2618,8 +2821,10 @@ function petEqHTML(p, M) {
 // Talente: drei Zweige, Punkte je Level, Zurücksetzen gegen Gold
 function petTalHTML(p) {
   const free = petTalFree(p), cost = 50 + p.lv * 15;
-  const tree = PET_TAL.map((B, bi) => `<div class="branch"><h4>${B.n}</h4>${B.nodes.map((N, ni) => { const t = petTalState(p, bi, ni); return `<button class="tal${t.lock ? ' lock' : ''}${t.can ? ' can' : ''}${t.r >= N.max ? ' max' : ''}" data-act="pettal" data-i="${bi * 5 + ni}"><span class="r">${t.r}/${N.max}</span><b>${N.n}</b><small>${N.d}${N.max > 1 ? ' ' + _t('je Rang') : ''}</small>${t.lock ? `<span class="req">${_t('Braucht {n} Punkte in {b}', { n: t.need, b: B.n })}</span>` : ''}</button>`; }).join('')}</div>`).join('');
-  return `<div class="head" style="margin-bottom:6px"><p class="sub" style="margin:0">${_t('Freie Punkte: {n} · 1 Punkt, dazu einer je 2 Level', { n: `<b style="color:var(--gold)">${free}</b>` })}</p><button class="btn alt sm" data-act="pettalreset" ${petTalUsed(p) && petHero() && P.gold >= cost ? '' : 'disabled'}>${_t('Zurücksetzen ({gold} Gold)', { gold: fmt(cost) })}</button></div><div class="tree ptree">${tree}</div><p class="sub">${_t('Sammler: „Große Taschen“ gibt deinem Begleiter mehr Beutelplätze – was im Beutel liegt, überlebt den Tod in den Landen.')}</p>`;
+  // je Zweig: die fünf alten Knoten, dann die Aufstiegs-Stufe (gesperrt bis zu ihrem Level, Krönung bei LV 150)
+  const node = (B, bi, N, ni) => { const t = petTalState(p, bi, ni); return `<button class="tal${t.lock ? ' lock' : ''}${t.can ? ' can' : ''}${t.r >= N.max ? ' max' : ''}${N.cap ? ' cap' : ''}" data-act="pettal" data-i="${petTalIdx(bi, ni)}"><span class="r">${t.r}/${N.max}</span><b>${N.n}</b><small>${N.d}${N.max > 1 ? ' ' + _t('je Rang') : ''}</small>${t.lock ? `<span class="req">${t.lv ? _t('Ab LV {lv}', { lv: t.lv }) : _t('Braucht {n} Punkte in {b}', { n: t.need, b: B.n })}</span>` : ''}</button>`; };
+  const tree = PET_TAL.map((B, bi) => `<div class="branch"><h4>${B.n}</h4>${B.nodes.slice(0, 5).map((N, ni) => node(B, bi, N, ni)).join('')}<div class="ptier">${_t('AUFSTIEG · AB LV {lv}', { lv: 100 })}</div>${B.nodes.slice(5).map((N, j) => node(B, bi, N, 5 + j)).join('')}</div>`).join('');
+  return `<div class="head" style="margin-bottom:6px"><p class="sub" style="margin:0">${_t('Freie Punkte: {n} · 1 Punkt, einer je 2 Level, ab LV 101 einer je Level, bei LV 150 drei · {u}/{max} verteilt', { n: `<b style="color:var(--gold)">${free}</b>`, u: petTalUsed(p), max: PET_TALMAX })}</p><button class="btn alt sm" data-act="pettalreset" ${petTalUsed(p) && petHero() && P.gold >= cost ? '' : 'disabled'}>${_t('Zurücksetzen ({gold} Gold)', { gold: fmt(cost) })}</button></div><div class="tree ptree">${tree}</div><p class="sub">${_t('Sammler: „Große Taschen“ gibt deinem Begleiter mehr Beutelplätze – was im Beutel liegt, überlebt den Tod in den Landen.')} ${_t('Der Baum ist erst bei LV {lv} ganz voll.', { lv: PET_LVMAX })}</p>`;
 }
 // Magie: Sockel (1, ab LV 25 zwei, ab LV 75 drei), Runen einsetzen, Runen binden
 function petMagHTML(p, M) {
@@ -2805,10 +3010,11 @@ ON.petcol = (id, b, i) => { const p = petViewed(); if (p && petCols(p).includes(
 ON.petamt = (id, b, i) => { petAmt = [1, 10, 100].includes(i) ? i : 1; sfx('click'); openChar('pet'); };
 ON.petfeed = id => {
   const p = petViewed(); if (!p || !P || !MATS[id]) return;
-  const n = Math.min(petAmt, P.mats[id] || 0); if (n <= 0 || p.lv >= 100) { sfx('deny'); return; }
-  P.mats[id] -= n; const fav = PET_SP[p.sp].fav === id, xp = PET_FEED[id] * n * (fav ? 2 : 1), s0 = petStage(p.lv), l0 = p.lv;
-  petXP(p, xp, true); PET_UI.fed = Date.now(); petSnd('feed'); saveChar();
-  if (petStage(p.lv) === s0) toast((fav ? _t('Leibspeise! {name} verschlingt {n}× {mat}: +{xp} EP', { name: petName(p), n, mat: MATS[id].n, xp: fmt(xp) }) : _t('{name} frisst {n}× {mat}: +{xp} EP', { name: petName(p), n, mat: MATS[id].n, xp: fmt(xp) })) + (p.lv > l0 ? ' · ' + _t('LV {lv}!', { lv: p.lv }) : ''), fav ? '#ff8aa8' : '#ffd24a');
+  const n = Math.min(petAmt, P.mats[id] || 0); if (n <= 0 || p.lv >= PET_LVMAX) { sfx('deny'); return; }
+  P.mats[id] -= n; const fav = PET_SP[p.sp].fav === id, xp = PET_FEED[id] * n * (fav ? 2 : 1), l0 = p.lv;
+  PET_UI.big = false; PET_UI.rew = ''; petXP(p, xp, true); PET_UI.fed = Date.now(); petSnd('feed'); saveChar();
+  // Entwicklung oder Meilenstein zeigt petXP selbst; sonst Futter, neues Level und Belohnung in einer Zeile
+  if (!PET_UI.big) toast((fav ? _t('Leibspeise! {name} verschlingt {n}× {mat}: +{xp} EP', { name: petName(p), n, mat: MATS[id].n, xp: fmt(xp) }) : _t('{name} frisst {n}× {mat}: +{xp} EP', { name: petName(p), n, mat: MATS[id].n, xp: fmt(xp) })) + (p.lv > l0 ? ' · ' + _t('LV {lv}!', { lv: p.lv }) + (PET_UI.rew ? ' ' + PET_UI.rew : '') : ''), fav ? '#ff8aa8' : '#ffd24a');
   openChar('pet');
 };
 ON.petrel = () => { petRel = true; petRen = false; openChar('pet'); };
@@ -2868,7 +3074,10 @@ ON.petgmake = s => {
   toast(_t('Gunda hat gefertigt: {n} ({r})', { n: petGearName(it), r: RAR[it.r].n }), RAR[it.r].c); openChar('pet');
 };
 // Talente
-ON.pettal = (id, b, i) => { const p = petViewed(); if (!p) return; const bi = Math.floor(i / 5), ni = i % 5; if (!PET_TAL[bi]) return; const t = petTalState(p, bi, ni); if (!t.can) { sfx('deny'); return; } const tl = petTl(p); tl[i]++; p.tl = tl.join(''); persist(); computeStats(); sfx('click'); openChar('pet'); };
+ON.pettal = (id, b, i) => { const p = petViewed(); if (!p || !(i >= 0 && i < PET_TALN)) return; const [bi, ni] = petTalAt(i | 0); if (!PET_TAL[bi] || !PET_TAL[bi].nodes[ni]) return; const t = petTalState(p, bi, ni); if (!t.can) { sfx('deny'); return; } const tl = petTl(p); tl[i | 0]++; p.tl = tl.join(''); persist(); computeStats(); sfx('click'); openChar('pet'); };
+// Aura und Titel (nur, was der Begleiter schon freigeschaltet hat)
+ON.petaura = id => { const p = petViewed(), m = petMile(id); if (!p || !petAsc(p) || (id && (!m || p.lv < m.lv))) { sfx('deny'); return; } if (id) p.au = id; else delete p.au; persist(); sfx('click'); openChar('pet'); };
+ON.pettitle = id => { const p = petViewed(), m = petMile(id); if (!p || (id && (!m || p.lv < m.lv))) { sfx('deny'); return; } if (id) p.ti = id; else delete p.ti; persist(); sfx('click'); openChar('pet'); };
 ON.pettalreset = () => { const p = petViewed(), cost = p ? 50 + p.lv * 15 : 0; if (!p || !petHero() || P.gold < cost || !petTalUsed(p)) { sfx('deny'); return; } P.gold -= cost; p.tl = petTlFix('', p.lv); saveChar(); computeStats(); sfx('page'); openChar('pet'); };
 // Magie
 ON.petmgin = k => {

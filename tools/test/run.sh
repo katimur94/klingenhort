@@ -28,6 +28,7 @@ run node tools/test/pc.js /tmp/klingenhort-test/pc
 run node tools/test/forge.js /tmp/klingenhort-test/forge
 run node tools/test/mods.js /tmp/klingenhort-test/mods
 run node tools/test/pets.js /tmp/klingenhort-test/pets
+run node tools/test/begleiter-aufstieg.js /tmp/klingenhort-test/begleiter-aufstieg
 run node tools/test/mastery.js /tmp/klingenhort-test/mastery
 run node tools/test/trade.js 390 844 /tmp/klingenhort-test/trade
 run node tools/test/auras.js /tmp/klingenhort-test/auras
