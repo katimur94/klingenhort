@@ -22,8 +22,8 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     // alte und kaputte Daten: Begleiter bekommen Beutel/Verletzung, alte Eier (Siege) behalten ihren Anteil
     const m = fixMeta({ stats: {}, pets: { list: [{ sp: 'drache', lv: 999, xp: -5, col: 9 }, { sp: 'mondkalb', lv: 3 }, 'x', { sp: 'katze', id: 'a', nm: '<b>Mi</b>', lv: 7, xp: 1e12, col: 6, hurt: now + 99 * H, bag: [{ t: 'mat', k: 'glut', n: 3 }, { t: 'mat', k: 'laser', n: 1 }, { t: 'gold', n: -5 }, 'x'] }], eggs: [{ sp: 'eule', need: 150, got: 75 }, { sp: '??' }, { sp: 'natter', need: 150, got: 400 }, { sp: 'funke', need: 150, got: 0 }, { sp: 'katze', need: 150, got: 9 }], act: 'zzz', starter: true } });
     const L = m.pets.list, E = m.pets.eggs;
-    o.fixPets = L.length === 2 && L[0].lv === 100 && L[0].xp === 0 && L[1].nm.indexOf('<') < 0 && L[1].col === 0 && L[1].xp < petNeed(7) && m.pets.act === null && L.every(p => Array.isArray(p.bag)) && L[1].bag.length === 2 && L[1].hurt <= now + 48 * H + 5000 && m.pets.seen.includes('drache') && m.pets.first === true
-      && L.every(p => p.gn.length === 5 && p.gn.every(v => v >= 0 && v <= 100) && p.tl.length === 15 && p.mg.length === 3 && typeof p.eq === 'object') && Array.isArray(m.pets.gear) && typeof m.pets.runes === 'object' && Array.isArray(m.pets.mut);
+    o.fixPets = L.length === 2 && L[0].lv === PET_LVMAX && L[0].xp === 0 && L[1].nm.indexOf('<') < 0 && L[1].col === 0 && L[1].xp < petNeed(7) && m.pets.act === null && L.every(p => Array.isArray(p.bag)) && L[1].bag.length === 2 && L[1].hurt <= now + 48 * H + 5000 && m.pets.seen.includes('drache') && m.pets.first === true
+      && L.every(p => p.gn.length === 5 && p.gn.every(v => v >= 0 && v <= 100) && p.tl.length === PET_TALN && p.mg.length === 3 && typeof p.eq === 'object') && Array.isArray(m.pets.gear) && typeof m.pets.runes === 'object' && Array.isArray(m.pets.mut);
     o.fixEggs = E.length === 4 && E.every(g => g.v === 2 && g.tier === PET_SP[g.sp].t && g.need === PET_TIERS[g.tier].care) && Math.abs(E[0].got / E[0].need - .5) < .01 && E[1].got === E[1].need && E.filter(g => g.nest).length === NEST_MAX && !E[3].nest;
     o.old = !!fixMeta({ stats: {} }).pets && fixMeta({ stats: {} }).pets.first === false;
     // EP-Kurve unverändert: schnell am Anfang, sehr lang am Ende
@@ -246,7 +246,7 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     o.eggTrade2 = ex.gn.join() === '90,90,90,90,90' && ex.mu === 'albino' && petImport(ex) && M.eggs[0].gn[0] === 90 && M.eggs[0].mu === 'albino' && petLabel(ex).includes('Zucht');
     // alter Begleiter ohne neue Felder: feste Gene aus der Kennung (gleich nach erneutem Laden)
     const old = fixMeta({ stats: {}, pets: { list: [{ id: 'alt42', sp: 'katze', lv: 33 }], act: 'alt42' } }).pets.list[0], old2 = fixMeta({ stats: {}, pets: { list: [{ id: 'alt42', sp: 'katze', lv: 33 }] } }).pets.list[0];
-    o.oldGenes = JSON.stringify(old.gn) === JSON.stringify(old2.gn) && old.tl === '000000000000000' && old.mg.every(x => x === null);
+    o.oldGenes = JSON.stringify(old.gn) === JSON.stringify(old2.gn) && /^0+$/.test(old.tl) && old.tl.length === PET_TALN && old.mg.every(x => x === null);
     // Spielstandgröße: 60 Begleiter mit voller Ausrüstung, Talenten, Zaubern, vollem Beutel, 30 Teile im Lager, 9 Zucht-Eier
     M.list = []; M.act = null; M.gear = []; M.eggs = [];
     for (let i = 0; i < PET_MAX; i++) { const sp = PET_ORDER[i % PET_ORDER.length], p = petGive(sp, { lv: 100, nm: 'Name' + i, mu: i % 3 ? null : 'kristall', pa: ['eule', 'baer'], ge: 7 }); p.eq = { h: petGearNew('h', 4, 100), p: petGearNew('p', 4, 100), t: petGearNew('t', 4, 100) }; p.tl = petTlFix('555535553555553', 100); p.mg = ['feuerball', 'heilung', 'schild']; p.zt = Date.now(); p.bag = []; for (let j = 0; j < petBagSize(p); j++) p.bag.push({ t: 'mat', k: 'stern', n: 99 }); }
