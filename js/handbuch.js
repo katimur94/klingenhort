@@ -300,7 +300,7 @@ function hbNavHTML() {
   if (HB.q.trim().length >= 2) {
     const R = hbFind(HB.q), terms = hbTerms(HB.q);
     if (!R.length) return `<p class="sub">${_t('Nichts gefunden. Versuch ein anderes Wort – zum Beispiel „Holz“, „Schmiede“ oder „Drache“.')}</p>`;
-    const show = R.slice(0, HB.more ? 120 : 24), grp = new Map();
+    const show = R.slice(0, HB.more ? 120 : 16), grp = new Map();   // 16 Zeilen füllen jeden Bildschirm, mehr auf Knopfdruck – hält jeden Tastendruck schnell
     for (const r of show) { if (!grp.has(r.e.ch)) grp.set(r.e.ch, []); grp.get(r.e.ch).push(r.e); }
     let h = `<p class="hbmore">${R.length === 1 ? _t('1 Treffer') : _t('{n} Treffer', { n: R.length })}</p>`;
     for (const [k, L] of grp) { const C = HB.chs.find(c => c.k === k) || { n: '' }; h += `<div class="hbgh">${esc(C.n).toLocaleUpperCase(LOCALE)} · ${L.length}</div>` + L.map(e => hbNavRow(e, terms, hbSnip(e, terms))).join(''); }
