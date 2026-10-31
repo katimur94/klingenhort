@@ -260,6 +260,7 @@ const HBGO = {
   code: { l: () => _t('Spielstand übertragen'), c: 'title', f: () => showCode() },
   trade: { l: () => _t('Zum Tauschen'), c: 'title map', f: x => ON.tr_open(x === 'map' ? 'send|map' : 'recv|title') },
   tal: { l: () => _t('Zu den Talenten'), c: 'map', f: () => { selItem = null; openChar('tal', 'map'); } },
+  lvr: { l: () => _t('Zu den Level-Belohnungen'), c: 'map', f: () => { selItem = null; if (typeof LVR !== 'undefined') LVR.sub = 'lvr'; openChar('para', 'map'); } },
   parts: { l: () => _t('Zu deinen Bauteilen'), c: 'map', f: () => { selItem = null; openChar('parts', 'map'); } },
   mods: { l: () => _t('Zu deinen Mods'), c: 'map', f: () => { selItem = null; openChar('mods', 'map'); } },
   pet: { l: () => _t('Zu deinen Begleitern'), c: 'map', f: () => { selItem = null; openChar('pet', 'map'); } },
@@ -623,13 +624,22 @@ function hbStart() {
   E('start:pc', _t('Steuerung am PC'), { ic: ['pa', 'held'], kw: 'pc maus tastatur tasten wasd keyboard mouse f1 esc', see: ['start:handy', 'start:einst'], go: ['controls'],
     s: _t('Maus zum Zielen, WASD zum Laufen, 1 bis 5 für Fähigkeiten und Trank.'),
     b: () => (typeof pcKeysHTML === 'function' ? pcKeysHTML().replace(/<h3>[^<]*<\/h3>/, '') : '') + hUl([_t('Angriffe und Fähigkeiten zielen auf den Mauszeiger.'), _t('F1 öffnet dieses Handbuch, Esc geht hier einen Schritt zurück, / springt in die Suche.'), _t('Im Vollbild ist alles größer: Knopf „Vollbild“ im Hauptmenü, in der Pause und in den Einstellungen.')]) });
-  E('start:level', _t('Level, Erfahrung und Talente'), { ic: ['pa', 'buch'], kw: 'level ep erfahrung xp talent talentpunkt zurücksetzen respec', see: ['cls:talente', 'start:paragon', 'bld:bibliothek'], go: ['tal'],
-    s: _t('Bis Level 50 bekommst du für jedes Level einen Talentpunkt.'),
-    b: () => hUl([_t('Erfahrung gibt es für jeden besiegten Gegner – Bosse und Elite geben viel mehr.'), _t('Jedes Level: mehr Leben und Schaden und ein Talentpunkt (Charakter → TALENTE).'), _t('Talente zurücksetzen kostet Gold: 50 + 25 je Level.'), _t('Die Bibliothek im Versteck gibt bis zu +50 % Erfahrung.')]) + hKv([[_t('HÖCHSTES LEVEL'), '50'], [_t('DANACH'), _t('Paragon')]]) });
-  E('start:paragon', _t('Paragon und Wiedergeburt'), { ic: ['pa', 'muenze'], kw: 'paragon wiedergeburt rebirth level 50 endgame', see: ['start:level'],
-    s: _t('Ab Level 50 wirst du ohne Grenze stärker.'),
-    b: () => hP(_t('Ab Level 50 sammelst du Paragon-Erfahrung. Jeder Paragon-Level gibt einen Punkt – ohne Obergrenze.')) + hUl([_t('Je Punkt: +1 % Schaden, +1 % Lebenspunkte, +1 Verteidigung oder +0,2 % Krit.'), _t('Ein Paragon-Level braucht {n} Erfahrung.', { n: hbNum(PARAGON_XP) })])
-      + hH(_t('WIEDERGEBURT')) + hP(_t('Ab Level 50 und Akt 5: zurück auf Level 1 und Akt 1. Ausrüstung, Materialien, Gold und Paragon bleiben – dafür dauerhaft +10 % Schaden und Leben je Wiedergeburt und eine goldene Aura.')) });
+  E('start:level', _t('Level, Erfahrung und Talente'), { ic: ['pa', 'buch'], kw: 'level ep erfahrung xp talent talentpunkt zurücksetzen respec 100 aufstieg', see: ['cls:talente', 'cls:mtal', 'start:lvbel', 'start:paragon', 'bld:bibliothek'], go: ['tal', 'lvr'],
+    s: _t('Bis Level {n} bekommst du für jedes Level einen Talentpunkt und eine Belohnung.', { n: LVMAX }),
+    b: () => hUl([_t('Erfahrung gibt es für jeden besiegten Gegner – Bosse und Elite geben viel mehr.'), _t('Jedes Level: mehr Leben und Schaden, ein Talentpunkt (Charakter → TALENTE) und eine Level-Belohnung (Charakter → AUFSTIEG).'), _t('Bis Level 30 geht es schnell, bis 60 zügig. Ab 80 dauert jedes Level lange, ab 90 viele Stunden – Level {n} ist eine echte Leistung.', { n: LVMAX }), _t('Über Level 50 wirst du nur noch wenig stärker – die Meister-Talente machen den Unterschied.'), _t('Talente zurücksetzen kostet Gold: 50 + 25 je Level.'), _t('Die Bibliothek im Versteck gibt bis zu +50 % Erfahrung.')])
+      + hRows([10, 30, 35, 50, 70, 80, 90, 99].map(l => ({ ic: ['pa', 'buch'], t: _t('Level {lv} → {n}', { lv: l, n: l + 1 }), d: _t('{n} Erfahrung', { n: hbNum(xpNext(l)) }) })))
+      + hKv([[_t('HÖCHSTES LEVEL'), String(LVMAX)], [_t('TALENTPUNKTE'), String(LVMAX - 1)], [_t('DANACH'), _t('Paragon')]]) });
+  E('start:lvbel', _t('Level-Belohnungen'), { ic: ['pa', 'truhe'], kw: 'level belohnung belohnungen aufstieg zeitleiste meilenstein titel kosmetik umhang flügel aura gold bauteil ei', see: ['start:level', 'cls:mtal', 'it:aussehen', 'start:paragon'], go: ['lvr'],
+    s: _t('Jedes Level von 2 bis {n} bringt sofort eine Belohnung.', { n: LVMAX }),
+    b: () => hUl([_t('Jedes Level: Gold, ein Material, ein Rohstoff und ein Bauteil – je höher das Level, desto mehr und besser.'), _t('Alle 5 Level Glücksmünzen, alle 10 Level ein epischer oder legendärer Gegenstand für deine Klasse oder ein Ei, bei Level {n} ein mythischer Gegenstand.', { n: LVMAX }), _t('Springst du mehrere Level auf einmal, bekommst du jede Belohnung.'), _t('Charakter → AUFSTIEG zeigt die Zeitleiste: was du schon hast, was als Nächstes kommt und die großen Meilensteine.')])
+      + hH(_t('MEILENSTEINE')) + hRows([60, 70, 80, 90, 100].map(L => { const E_ = typeof lvReward === 'function' ? lvReward(L).filter(e => e.t === 'cos' || e.t === 'title') : []; return { ic: ['pa', 'truhe'], t: _t('Level {lv}', { lv: L }), d: esc(E_.map(e => typeof lvrName === 'function' ? lvrName(e) : '').join(' · ')) }; }))
+      + hP(_t('Kosmetik und Titel gelten für alle deine Helden – hat schon ein anderer Held sie geholt, gibt es stattdessen 3 Glücksmünzen. Titel wählst du unter AUFSTIEG oder bei den Aufträgen.'))
+      + hNote(_t('Jedes Level gibt seine Belohnung nur einmal je Held – auch nach einer Wiedergeburt. Helden von vor dem Update bekommen für schon erreichte Level nichts nachgezahlt.')) });
+  E('start:paragon', _t('Paragon und Wiedergeburt'), { ic: ['pa', 'muenze'], kw: 'paragon wiedergeburt rebirth level 100 endgame', see: ['start:level', 'start:lvbel'],
+    s: _t('Ab Level {n} wirst du ohne Grenze stärker.', { n: LVMAX }),
+    b: () => hP(_t('Ab Level {n} sammelst du Paragon-Erfahrung. Jeder Paragon-Level gibt einen Punkt – ohne Obergrenze.', { n: LVMAX })) + hUl([_t('Je Punkt: +1 % Schaden, +1 % Lebenspunkte, +1 Verteidigung oder +0,2 % Krit.'), _t('Ein Paragon-Level braucht {n} Erfahrung.', { n: hbNum(PARAGON_XP) }), _t('Paragonpunkte von früher (damals ab Level 50) bleiben und wirken weiter. Neue gibt es ab Level {n}.', { n: LVMAX })])
+      + hH(_t('WIEDERGEBURT')) + hP(_t('Ab Level {lv} und Akt 5: zurück auf Level 1 und Akt 1. Ausrüstung, Materialien, Gold und Paragon bleiben – dafür dauerhaft +10 % Schaden und Leben je Wiedergeburt und eine goldene Aura.', { lv: REBIRTH_LV }))
+      + hP(_t('Level-Belohnungen gibt es danach erst wieder für Level, die dieser Held noch nie erreicht hat.')) });
   E('start:traenke', _t('Heiltränke und Elixiere'), { ic: ['s', 288, 336, 16, 16], kw: 'trank tränke heilen heiltrank elixier potion alchemie', see: ['bld:alchemie', 'mat:schleim', 'ver:acker'],
     s: _t('Tränke heilen sofort, Elixiere stärken dich für 3 Räume.'),
     b: () => hP(_t('Ein Heiltrank heilt einen Teil deiner Lebenspunkte und braucht danach 6 Sekunden, bis der nächste geht. Wie viele du tragen kannst und wie stark sie heilen, hängt vom Alchemielabor ab.'))
@@ -690,18 +700,23 @@ function hbClasses() {
   hbChap('cls', _t('Klassen und Fähigkeiten'), ['body', 'knight_m', 1], _t('Ritter, Magier, Assassine, Bogenschütze'));
   for (const k in CLASSES) {
     const C = CLASSES[k];
-    E('cls:' + k, C.name, { ic: ['body', C.body, 1], kw: k + ' klasse ' + C.skills.concat([C.ult]).map(s => SKILLS[s].n).join(' '), see: ['cls:talente', 'cls:meister', 'it:waffen'].concat(Object.keys(SETS).filter(s => SETS[s].cls === k).map(s => 'set:' + s)), go: ['tal'], s: esc(C.desc),
+    E('cls:' + k, C.name, { ic: ['body', C.body, 1], kw: k + ' klasse ' + C.skills.concat([C.ult]).map(s => SKILLS[s].n).join(' '), see: ['cls:talente', 'cls:mtal', 'cls:meister', 'it:waffen'].concat(Object.keys(SETS).filter(s => SETS[s].cls === k).map(s => 'set:' + s)), go: ['tal'], s: esc(C.desc),
       b: () => {
         const sk = id => { const S = SKILLS[id], M_ = typeof MASTERY !== 'undefined' ? MASTERY[id] : null; return { ic: S.icon, t: esc(S.n) + (S.ult ? ' · ' + _t('Ultimative') : ''), d: esc(S.d) + ' · ' + (S.cost ? _t('{c} {res} · {cd} s Abklingzeit', { c: S.cost, res: esc(C.res.name), cd: S.cd.toLocaleString(LOCALE) }) : _t('bei voller Wut')) + (M_ ? '<br>' + _t('Meisterschaft: {list}', { list: esc(M_.up.map((u, i) => (MROMAN[i + 1] || '') + ' ' + u[1]).join(' · ')) }) : '') }; };
         return hKv([[_t('LEBEN'), _t('{hp} + {lv} je Level', { hp: C.hp, lv: C.hpLv })], [_t('VERTEIDIGUNG'), C.def], [_t('TEMPO'), C.spd], [_t('KRAFTQUELLE'), _t('{name} ({max})', { name: esc(C.res.name), max: C.res.max })], [_t('WAFFEN'), esc(C.weapons.map(w => WT[w].label).join(', '))]])
           + hH(_t('FÄHIGKEITEN')) + hRows(C.skills.concat([C.ult]).map(sk))
-          + hH(_t('TALENTE')) + TALENTS[k].map(([bn, nodes]) => `<p><b>${esc(bn)}</b></p>` + hUl(nodes.map(n => _t('{name} (bis {max}): {d}', { name: esc(n.n), max: n.max, d: esc(n.d) })))).join('')
+          + hH(_t('TALENTE')) + TALENTS[k].map(([bn, nodes]) => `<p><b>${esc(bn)}</b></p>` + hUl(nodes.map(n => (n.cap ? '★ ' : '') + _t('{name} (bis {max}): {d}', { name: esc(n.n), max: n.max, d: esc(n.d) }) + (n.lv ? ' · ' + _t('ab Level {n}', { n: n.lv }) : '')))).join('')
           + hH(_t('RÜSTUNG DIESER KLASSE')) + hP(esc(C.names.map((n, t) => n[0] + ' / ' + n[1]).join(' · ')));
       } });
   }
-  E('cls:talente', _t('Talente'), { ic: ['pa', 'buch'], kw: 'talent talente punkte baum zweig zurücksetzen', see: ['start:level'], go: ['tal'],
-    s: _t('Drei Zweige je Klasse – jedes Level ein Punkt.'),
-    b: () => hUl([_t('Jede Klasse hat drei Talent-Zweige mit je vier Talenten.'), _t('Ein Talent wird frei, wenn das darüber mindestens einen Punkt hat. Das letzte im Zweig ist besonders stark, hat aber nur einen Rang.'), _t('Zurücksetzen geht jederzeit gegen Gold – dann kannst du neu verteilen.'), _t('Blutaltäre auf der Karte schenken einen Talentpunkt extra.')]) });
+  E('cls:talente', _t('Talente'), { ic: ['pa', 'buch'], kw: 'talent talente punkte baum zweig zurücksetzen grundstufe', see: ['start:level', 'cls:mtal'], go: ['tal'],
+    s: _t('Drei Zweige je Klasse – jedes Level ein Punkt, voll erst bei Level {n}.', { n: LVMAX }),
+    b: () => hUl([_t('Jede Klasse hat drei Talent-Zweige. Die Grundstufe hat je vier Talente (30 Punkte), danach geht jeder Zweig in der Meister-Stufe weiter.'), _t('Ein Talent wird frei, wenn das darüber mindestens einen Punkt hat. Das letzte der Grundstufe ist besonders stark, hat aber nur einen Rang.'), _t('Im Charakter wechselst du zwischen GRUNDSTUFE und MEISTER.'), _t('Zurücksetzen geht jederzeit gegen Gold – dann kannst du neu verteilen.'), _t('Blutaltäre auf der Karte schenken einen Talentpunkt extra.')])
+      + hKv([[_t('PUNKTE IM BAUM'), String(typeof talentTotal === 'function' ? talentTotal('knight') : 99)], [_t('VOLL BEI'), _t('Level {n}', { n: LVMAX })]]) });
+  E('cls:mtal', _t('Meister-Talente'), { ic: ['fx', 'sparks', 3], kw: 'meister talente meisterstufe schlussstein level 30 90 95 100 talentbaum voll', see: ['cls:talente', 'start:level', 'start:lvbel'], go: ['tal'],
+    s: _t('Ab Level 30 wächst jeder Talent-Zweig weiter – bis zum Schlussstein bei Level 90, 95 und 100.'),
+    b: () => hUl([_t('Jeder Zweig bekommt sieben Meister-Talente: ab Level 30, 40, 50, 60 und 70 je eins mit vier Rängen, ab Level 80 eins mit zwei Rängen und ganz unten einen Schlussstein.'), _t('Gesperrte Meister-Talente zeigen, ab welchem Level sie frei werden.'), _t('Die Schlusssteine (★) verändern eine Fähigkeit deutlich – im ersten Zweig ab Level 90, im zweiten ab 95, im dritten ab 100.'), _t('So hat jede Klasse 99 Punkte – einen je Level. Voll ist der Baum erst bei Level {n}.', { n: LVMAX }), _t('Helden von vor dem Update bekommen alle Punkte, die sie schon verdient haben, zum Verteilen.')])
+      + hH(_t('SCHLUSSSTEINE')) + hRows(Object.keys(CLASSES).flatMap(k => TALENTS[k].map(([bn, nodes]) => nodes.find(n => n.cap)).filter(Boolean).map(n => ({ ic: ['body', CLASSES[k].body, 1], t: _t('{name} · ab Level {lv}', { name: esc(n.n), lv: n.lv }), d: esc(CLASSES[k].name) + ' · ' + esc(n.d) })))) });
   if (typeof MASTERY !== 'undefined') E('cls:meister', _t('Meisterschaft der Fähigkeiten'), { ic: ['fx', 'ring', 8], kw: 'meisterschaft mastery rang fähigkeit stufe farbe', see: ['cls:talente'],
     s: _t('Fähigkeiten werden durch Benutzen stärker und ändern ihr Aussehen.'),
     b: () => hUl([_t('Jede Fähigkeit hat Stufe 1 bis {max}. Punkte gibt es nur im Kampf.', { max: MAST_MAX }), _t('Je Stufe: +2 % Schaden, −0,4 % Abklingzeit (höchstens −20 %), −0,5 % Kosten.'), _t('Ränge ab Stufe 10, 20, 30, 40 und 50: neue Farbe, eine Spur, ab Rang III größer, Rang VI golden – und jedes Mal eine kleine Verbesserung.')])
@@ -788,7 +803,8 @@ function hbItems() {
   E('it:aussehen', _t('Farbstoffe, Kosmetik und Aussehen'), { ic: ['pa', 'spiegel'], kw: 'farbe farbstoff kosmetik flügel aura umhang aussehen spiegel sammlung skin', see: ['bld:spiegel', 'han:tempel', 'han:tauschen'],
     s: _t('Farbstoffe färben deine Rüstung. Flügel, Auren und besondere Umhänge gibt es im Glückstempel.'),
     b: () => hH(_t('FARBSTOFFE')) + hRows(DYES.filter(D => D.c).map(D => ({ ic: '#' + D.c[0].slice(1), t: esc(D.n), d: hCost(D.cost) })))
-      + hH(_t('KOSMETIK')) + hP(_t('Flügel, Auren und besondere Umhänge gibt es im Glückstempel deines Verstecks.')) + hP(esc(Object.keys(COSM).map(k => COSM[k].n).join(', ')))
+      + hH(_t('KOSMETIK')) + hP(_t('Flügel, Auren und besondere Umhänge gibt es im Glückstempel deines Verstecks.')) + hP(esc(Object.keys(COSM).filter(k => !COSM[k].lvl).map(k => COSM[k].n).join(', ')))
+      + hP(_t('Nur über Level-Belohnungen: {list}.', { list: esc(Object.keys(COSM).filter(k => COSM[k].lvl).map(k => _t('{name} (Level {lv})', { name: COSM[k].n, lv: COSM[k].lvl })).join(', ')) }))
       + hP(_t('Der Spiegel zeigt, wer du sein willst. Änderungen sind kostenlos.')) });
 }
 

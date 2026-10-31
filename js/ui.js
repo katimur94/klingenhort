@@ -114,10 +114,10 @@ function buildSkillUI() {
 function updWeaponUI() { const it = visItem(P.gear.weapon), u = itemIconURL(it); $('atkImg').src = u; const a = $('skAImg'); if (a) a.src = u; }
 let lastRage = -1, lastNear = null;
 function updHud() {
-  setT('hudLv', (P.lv >= 50 ? 'P' + P.paragon : _t('LV {lv}', { lv: P.lv })));
+  setT('hudLv', (P.lv >= LVMAX ? 'P' + P.paragon : _t('LV {lv}', { lv: P.lv })));
   setW('hpFill', 100 * P.hp / P.st.hp); setT('hpTxt', Math.ceil(P.hp) + '/' + P.st.hp);
   setW('resFill', 100 * P.res / P.st.resMax);
-  setW('xpFill', P.lv >= 50 ? 100 * P.pxp / PARAGON_XP : 100 * P.xp / xpNext(P.lv)); setT('hudGold', fmt(P.gold));
+  setW('xpFill', P.lv >= LVMAX ? 100 * P.pxp / PARAGON_XP : 100 * P.xp / xpNext(P.lv)); setT('hudGold', fmt(P.gold));
   if (G) {
     if (G.type === 'versteck') { setT('hudAct', _t('VERSTECK · STUFE {n}', { n: hideTotal() })); setT('hudRoom', _t('AKT {act}', { act: P.act })); }
     else { setT('hudAct', G.daily ? _t('TAGES-CHALLENGE') : _t('AKT {act}', { act: P.act }) + (qualOf(P.act) ? ' · ' + _t('QUAL {q}', { q: qualOf(P.act) }) : '') + ' · ' + G.stage); setT('hudRoom', (NODE[G.type] ? NODE[G.type].n : G.type === 'rescue' ? _t('Befreiung') : G.type === 'grave' ? _t('Grab') : G.type === 'sphinx' ? _t('Sphinx') : _t('Fluch')).toLocaleUpperCase(LOCALE) + (G.waves.length > 1 ? ' ' + Math.max(1, G.wi + 1) + '/' + G.waves.length : '')); }
@@ -326,10 +326,14 @@ function openChar(tab, back) {
       ${Object.keys(sets).map(k => `<p style="font-size:16px;color:#4ade80;margin:8px 0 0">${SETS[k].n} ${sets[k]}/3 – ${sets[k] >= 2 ? SETS[k].d2 : ''}${sets[k] >= 3 ? ' · ' + SETS[k].d3 : ''}</p>`).join('')}</div>
       <div class="box" style="margin-top:10px">${capHead(_t('BEUTEL'), P.bag.length, bagCap(), P.bag.length > 1 ? `<button class="btn alt sm" data-act="bagsort">${_t('Sortieren')}</button>` : '')}${itemGridHTML(P.bag.map(it => itemSlot(it, 'isel', sel && sel.it === it)), 'cbag')}</div></div>${side}</div>`;
   } else if (charTab === 'tal') {
-    body = `<div class="head"><p class="sub" style="margin:0">${_t('Freie Punkte: {n} · 1 Punkt pro Level', { n: `<b style="color:var(--gold)">${P.sp}</b>` })}</p><button class="btn alt sm" data-act="respec" ${spentPoints() ? '' : 'disabled'}>${_t('Zurücksetzen ({gold} Gold)', { gold: respecCost() })}</button></div><div class="tree">`;
+    // Grundstufe (4 Talente je Zweig) und Meister-Stufe (6.4, ab Level 30) getrennt: auf dem Handy sonst eine sehr lange Liste
+    const tier = talTierNow(), cnt = lo => { let r = 0, m = 0; for (const [, nodes] of TALENTS[P.cls]) nodes.forEach((n, ni) => { if ((ni < 4) === lo) { r += P.talents[n.id] || 0; m += n.max; } }); return r + '/' + m; };
+    body = `<div class="head"><p class="sub" style="margin:0">${_t('Freie Punkte: {n} · 1 Punkt pro Level', { n: `<b style="color:var(--gold)">${P.sp}</b>` })} · ${_t('verteilt {n}', { n: spentPoints() + '/' + talentTotal(P.cls) })}</p><button class="btn alt sm" data-act="respec" ${spentPoints() ? '' : 'disabled'}>${_t('Zurücksetzen ({gold} Gold)', { gold: respecCost() })}</button></div>
+    <div class="taltier" role="tablist"><button class="opt${tier === 'base' ? ' sel' : ''}" role="tab" aria-selected="${tier === 'base'}" data-act="taltier" data-id="base">${_t('GRUNDSTUFE')}<small>${cnt(true)}</small></button><button class="opt${tier === 'master' ? ' sel' : ''}" role="tab" aria-selected="${tier === 'master'}" data-act="taltier" data-id="master">${_t('MEISTER')}<small>${P.lv >= 30 ? cnt(false) : _t('ab Level {n}', { n: 30 })}</small></button></div>
+    ${tier === 'master' ? `<p class="sub" style="margin:0 0 8px">${_t('Weiter nach dem letzten Grund-Talent. Gesperrtes öffnet sich mit deinem Level, ganz unten wartet ein Schlussstein – voll ist der Baum erst bei Level {n}.', { n: LVMAX })}</p>` : ''}<div class="tree">`;
     TALENTS[P.cls].forEach(([bn, nodes], bi) => {
       body += `<div class="branch"><h4>${bn.toLocaleUpperCase(LOCALE)}</h4>`;
-      nodes.forEach((n, ni) => { const s = talentState(P.cls, bi, ni); body += `<button class="tal${s.locked ? ' lock' : ''}${s.can ? ' can' : ''}${s.r >= n.max ? ' max' : ''}" data-act="tal" data-id="${bi},${ni}"><span class="r">${s.r}/${n.max}</span><b>${n.n}</b><small>${n.d}${n.max > 1 ? ' ' + _t('je Rang') : ''}</small></button>`; });
+      nodes.forEach((n, ni) => { if ((ni < 4) !== (tier === 'base')) return; const s = talentState(P.cls, bi, ni); body += `<button class="tal${s.locked ? ' lock' : ''}${s.lvLock ? ' lvl' : ''}${n.cap ? ' cap' : ''}${s.can ? ' can' : ''}${s.r >= n.max ? ' max' : ''}" data-act="tal" data-id="${bi},${ni}"><span class="r">${s.lvLock ? _t('LV {lv}', { lv: n.lv }) : s.r + '/' + n.max}</span><b>${n.n}</b><small>${n.d}${n.max > 1 ? ' ' + _t('je Rang') : ''}</small>${s.lvLock || n.cap ? `<em class="tlv">${[n.cap ? _t('SCHLUSSSTEIN') : '', s.lvLock ? _t('ab Level {n} · noch {m} Level', { n: n.lv, m: n.lv - P.lv }) : ''].filter(Boolean).join(' · ')}</em>` : ''}</button>`; });
       body += '</div>';
     });
     body += '</div>';
@@ -342,16 +346,27 @@ function openChar(tab, back) {
   } else if (charTab === 'look') {
     lkMode = 'char'; body = lookEditorHTML();
   } else if (charTab === 'para') {
-    const free = P.paragon - (P.pp.dmg + P.pp.hp + P.pp.def + P.pp.crit);
-    body = `<p class="sub">${_t('Ab Level 50 sammelst du Paragon-Erfahrung. Jeder Paragon-Level gibt einen Punkt – ohne Obergrenze.')}</p><div class="stats"><span>${_t('PARAGON {n}', { n: P.paragon })}</span><span>${_t('FREI {n}', { n: free })}</span><span>${_t('EP {n}', { n: fmt(P.pxp) + '/' + fmt(PARAGON_XP) })}</span></div>
-    ${[['dmg', _t('Schaden +1 %')], ['hp', _t('Lebenspunkte +1 %')], ['def', _t('Verteidigung +1')], ['crit', _t('Krit +0,2 %')]].map(([k, l]) => `<div class="row" style="cursor:default"><div class="ic" style="font-family:var(--f-display);font-size:9px">${P.pp[k]}</div><div><div class="nm">${l}</div></div><button class="btn sm" data-act="pp" data-id="${k}" ${free > 0 ? '' : 'disabled'}>+1</button></div>`).join('')}
-    <h3>${_t('WIEDERGEBURT')}</h3><p class="sub">${_t('Ab Level 50 und Akt 5: zurück auf Level 1 und Akt 1. Ausrüstung, Materialien, Gold und Paragon bleiben. Dauerhaft +10 % Schaden und LP pro Wiedergeburt und eine goldene Aura. Bisher: {n}.', { n: P.rebirths })}</p>
-    <button class="btn red" data-act="rebirth" ${P.lv >= 50 && P.maxAct >= 5 ? '' : 'disabled'}>${_t('Wiedergeburt')}</button>`;
+    body = typeof lvrHTML === 'function' ? lvrHTML(paraHTML) : paraHTML();   // AUFSTIEG: Level-Belohnungen (js/aufstieg.js) und Paragon
   } else { const t = HOOK.charTabs.find(t => t.k === charTab); if (t) body = t.body(); }
   showOverlay(`<div class="head"><h2>${esc(P.name).toLocaleUpperCase(LOCALE)}</h2><div class="hbtns"><div class="gold"><i class="coin"></i>${fmt(P.gold)} <span style="color:#ffd24a"><i class="fc"></i>${P.fate || 0}</span></div><button class="btn alt sm" data-act="cback">${_t('Zurück')}</button></div></div>
-  <div class="stats"><span>${C.name}</span>${typeof fkTitle === 'function' && fkTitle() ? `<span style="color:var(--gold)">${_t('„{text}“', { text: esc(fkTitle()) })}</span>` : ''}<span>${_t('LV {lv}', { lv: P.lv })}</span><span>${_t('EP {n}', { n: fmt(P.xp) + '/' + fmt(xpNext(P.lv)) })}</span><span>${DIFFS[P.diff].n}${P.hc ? ' · ' + _t('HARDCORE') : ''}</span><span>${_t('KILLS {n}', { n: fmt(P.stats.kills) })}</span></div>
-  <div class="tabs" role="tablist">${tab_('gear', _t('AUSRÜSTUNG'))}${tab_('tal', _t('TALENTE') + (P.sp ? ' (' + P.sp + ')' : ''))}${tab_('vorrat', _t('VORRAT'))}${tab_('look', _t('AUSSEHEN'))}${tab_('para', _t('PARAGON'))}${HOOK.charTabs.map(t => tab_(t.k, t.label())).join('')}</div>
+  <div class="stats"><span>${C.name}</span>${typeof fkTitle === 'function' && fkTitle() ? `<span style="color:var(--gold)">${_t('„{text}“', { text: esc(fkTitle()) })}</span>` : ''}<span>${P.lv >= LVMAX ? _t('LV {lv}', { lv: P.lv }) + ' · P' + P.paragon : _t('LV {lv}', { lv: P.lv }) + ' / ' + LVMAX}</span><span>${P.lv >= LVMAX ? _t('PARAGON-EP {n}', { n: fmt(P.pxp) + '/' + fmt(PARAGON_XP) }) : _t('EP {n}', { n: fmt(P.xp) + '/' + fmt(xpNext(P.lv)) })}</span><span>${DIFFS[P.diff].n}${P.hc ? ' · ' + _t('HARDCORE') : ''}</span><span>${_t('KILLS {n}', { n: fmt(P.stats.kills) })}</span></div>
+  <div class="tabs" role="tablist">${tab_('gear', _t('AUSRÜSTUNG'))}${tab_('tal', _t('TALENTE') + (P.sp ? ' (' + P.sp + ')' : ''))}${tab_('vorrat', _t('VORRAT'))}${tab_('look', _t('AUSSEHEN'))}${tab_('para', _t('AUFSTIEG'))}${HOOK.charTabs.map(t => tab_(t.k, t.label())).join('')}</div>
   ${body}`, true);
+}
+// Talente: welche Stufe zeigen – gewählt, sonst die Grundstufe, solange dort noch etwas zu lernen ist (ab Level 30 sonst Meister)
+let talTier = null;
+function talTierNow() {
+  if (talTier) return talTier;
+  const baseCan = TALENTS[P.cls].some((b, bi) => b[1].some((n, ni) => ni < 4 && talentState(P.cls, bi, ni).can));
+  return P.lv >= 30 && !baseCan ? 'master' : 'base';
+}
+// Paragon (ab Level 100, Punkte von früher bleiben) und Wiedergeburt (ab Level 50 und Akt 5)
+function paraHTML() {
+  const free = P.paragon - (P.pp.dmg + P.pp.hp + P.pp.def + P.pp.crit);
+  return `<p class="sub">${_t('Ab Level {n} sammelst du Paragon-Erfahrung. Jeder Paragon-Level gibt einen Punkt – ohne Obergrenze.', { n: LVMAX })}${P.paragon && P.lv < LVMAX ? ' ' + _t('Deine Paragonpunkte von früher bleiben und wirken weiter – neue gibt es ab Level {n}.', { n: LVMAX }) : ''}</p><div class="stats"><span>${_t('PARAGON {n}', { n: P.paragon })}</span><span>${_t('FREI {n}', { n: free })}</span><span>${P.lv >= LVMAX ? _t('EP {n}', { n: fmt(P.pxp) + '/' + fmt(PARAGON_XP) }) : _t('ab Level {n}', { n: LVMAX })}</span></div>
+    ${[['dmg', _t('Schaden +1 %')], ['hp', _t('Lebenspunkte +1 %')], ['def', _t('Verteidigung +1')], ['crit', _t('Krit +0,2 %')]].map(([k, l]) => `<div class="row" style="cursor:default"><div class="ic" style="font-family:var(--f-display);font-size:9px">${P.pp[k]}</div><div><div class="nm">${l}</div></div><button class="btn sm" data-act="pp" data-id="${k}" ${free > 0 ? '' : 'disabled'}>+1</button></div>`).join('')}
+    <h3>${_t('WIEDERGEBURT')}</h3><p class="sub">${_t('Ab Level {lv} und Akt 5: zurück auf Level 1 und Akt 1. Ausrüstung, Materialien, Gold und Paragon bleiben. Dauerhaft +10 % Schaden und LP pro Wiedergeburt und eine goldene Aura. Bisher: {n}.', { lv: REBIRTH_LV, n: P.rebirths })} ${_t('Level-Belohnungen gibt es je Held nur einmal – danach erst wieder ab Level {n}.', { n: Math.min(LVMAX, (P.lvr || 1) + 1) })}</p>
+    <button class="btn red" data-act="rebirth" ${P.lv >= REBIRTH_LV && P.maxAct >= 5 ? '' : 'disabled'}>${_t('Wiedergeburt')}</button>`;
 }
 /* Schnell-Ausrüsten (6.3): „Bestes anlegen“ (equipBest, js/items.js) und „Schlechteres verkaufen“ – nur Schlichtes (plainItem), das schlechter ist als das
    Angelegte oder das die Klasse nicht tragen kann; erst nach einem zweiten Tippen (5 s) */
@@ -627,7 +642,7 @@ panel.addEventListener('click', ev => {
     case 'tomapview': openMap(); break;
     case 'msel': if (mapSel === i && isTouch) { P.map.prev = Object.assign({}, P.map.pos); enterNode(i); mapSel = -1; } else { mapSel = i; mapTapped = true; sfx('click'); openMap(); } break;
     case 'enter': if (mapSel >= 0) { P.map.prev = Object.assign({}, P.map.pos); enterNode(mapSel); mapSel = -1; } break;
-    case 'char': selItem = null; openChar('gear', 'map'); break;
+    case 'char': selItem = null; talTier = null; openChar('gear', 'map'); break;
     case 'hide': saveChar(); enterHideout(); break;
     case 'title': if (G && G.daily) restoreFromDaily(); else if (G && G.type && G.type !== 'versteck') undoRoomEntry(); saveChar(); titleScene(); showTitle(); break;
     case 'ctab': charTab = id; openChar(); break;
@@ -637,13 +652,14 @@ panel.addEventListener('click', ev => {
     case 'bagsort': P.bag.sort(itemSortKey); sfx('click'); saveChar(); openChar(); break;
     case 'sellworse': { if (landeActive()) break; const W = worseList(); if (!W.length) { sfx('deny'); break; } if (worseArm < performance.now()) { worseArm = performance.now() + 5000; sfx('click'); openChar(); break; } worseArm = 0; let g = 0; for (const it of W) g += sellItem(it); sfx('coin'); toast(_t('{n} Gegenstände verkauft: +{g} Gold', { n: W.length, g: fmt(g) }), '#ffd24a'); saveChar(); selItem = null; openChar(); break; }
     case 'bestgear': { const ch = landeActive() ? [] : equipBest(); if (ch.length) { sfx('swing'); saveChar(); toast(_t('Angelegt: {list}', { list: ch.map(c => itemName(c.it) + ' (+' + Math.round(c.d * 100) + ' %)').join(', ') }), '#79c24e'); } else { sfx('deny'); toast(_t('Du trägst schon das Beste aus deinem Beutel.')); } selItem = null; openChar(); break; }
-    case 'tal': { const [bi, ni] = id.split(',').map(Number); if (learnTalent(bi, ni)) { sfx('click'); saveChar(); } else sfx('deny'); openChar(); break; }
+    case 'tal': { const [bi, ni] = id.split(',').map(Number); talTier = talTierNow(); if (learnTalent(bi, ni)) { sfx('click'); saveChar(); } else { sfx('deny'); const n = TALENTS[P.cls][bi] && TALENTS[P.cls][bi][1][ni]; if (n && n.lv && P.lv < n.lv) toast(_t('{name}: ab Level {n}', { name: n.n, n: n.lv })); } openChar(); break; }
+    case 'taltier': talTier = id === 'master' ? 'master' : 'base'; sfx('click'); openChar(); break;
     case 'respec': if (respec()) { sfx('craft'); saveChar(); } openChar(); break;
     case 'pp': { const free = P.paragon - (P.pp.dmg + P.pp.hp + P.pp.def + P.pp.crit); if (free > 0) { P.pp[id]++; computeStats(); saveChar(); sfx('click'); } openChar(); break; }
-    case 'rebirth': showOverlay(`<div class="center"><h2>${_t('WIEDERGEBURT?')}</h2><p class="sub">${_t('Level, Talente und Akt beginnen von vorn. Du behältst Ausrüstung, Gold, Materialien und Paragon und erhältst dauerhaft +10 % Schaden und LP.')}</p><div class="menu"><button class="btn red" data-act="rebirthok">${_t('Ja, wiedergeboren werden')}</button><button class="btn alt" data-act="ctab" data-id="para">${_t('Abbrechen')}</button></div></div>`); break;
+    case 'rebirth': showOverlay(`<div class="center"><h2>${_t('WIEDERGEBURT?')}</h2><p class="sub">${_t('Level, Talente und Akt beginnen von vorn. Du behältst Ausrüstung, Gold, Materialien und Paragon und erhältst dauerhaft +10 % Schaden und LP.')} ${_t('Level-Belohnungen gibt es je Held nur einmal – danach erst wieder ab Level {n}.', { n: Math.min(LVMAX, (P.lvr || 1) + 1) })}</p><div class="menu"><button class="btn red" data-act="rebirthok">${_t('Ja, wiedergeboren werden')}</button><button class="btn alt" data-act="ctab" data-id="para">${_t('Abbrechen')}</button></div></div>`); break;
     case 'rebirthok': P.rebirths++; stat('rebirths'); P.lv = 1; P.xp = 0; P.sp = 0; P.talents = {}; P.act = 1; P.map = null; P.story = {}; computeStats(); P.hp = P.st.hp; saveChar(); checkAch(); banner(_t('WIEDERGEBOREN'), '★ ' + P.rebirths); openMap(); break;
     case 'cback': { const r = returnTo; returnTo = null; saveChar(); if (r === 'pause') { setState('play'); showPause(); } else if (r === 'wb') openWorkbench(); else openMap(); break; }
-    case 'pchar': selItem = null; returnTo = 'pause'; openChar('gear', 'pause'); break;
+    case 'pchar': selItem = null; talTier = null; returnTo = 'pause'; openChar('gear', 'pause'); break;
     case 'mtab': mTab = id; openMerchant(); break;
     case 'buy': { const s = P.map.shop.stock[i], pr = s ? mBuy(s.price) : 0; if (s && !s.sold && P.gold >= pr) { P.gold -= pr; s.sold = true; const g = addToBag(s.it); if (!g && canEquip(s.it) && itemScore(s.it) > itemScore(P.gear[s.it.slot])) { equipFromBag(P.bag.length - 1); toast(_t('{item} angelegt', { item: itemName(s.it) })); } sfx('buy'); saveChar(); } openMerchant(); break; }
     case 'buyx': { const p = i; if (P.gold < p) break; P.gold -= p; if (id === 'potion') P.potions = Math.min(potMax(), P.potions + 1); else if (id === 'gem') gainGem(pick(GEMORDER) + ':0'); else if (id === 'erz' || id === 'leder') gainMat(id, 5); else gainMat(id, 1); sfx('buy'); saveChar(); openMerchant(); break; }

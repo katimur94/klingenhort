@@ -4,7 +4,8 @@
    ========================================================= */
 
 let P = null; // aktiver Charakter (gespeicherte Felder + Laufzeit-Felder)
-const PERSIST = ['id', 'name', 'cls', 'diff', 'hc', 'lv', 'xp', 'gold', 'potions', 'sp', 'talents', 'paragon', 'pxp', 'pp', 'gear', 'bag', 'mats', 'gems', 'dyes', 'dye', 'act', 'map', 'rebirths', 'buffs', 'stats', 'created', 'dead', 'maxAct', 'res', 'rage', 'look', 'fate', 'story', 'parts', 'mastery', 'birds'];
+// lvr = höchstes belohntes Level (6.4, Level-Belohnungen in js/aufstieg.js)
+const PERSIST = ['id', 'name', 'cls', 'diff', 'hc', 'lv', 'xp', 'gold', 'potions', 'sp', 'talents', 'paragon', 'pxp', 'pp', 'gear', 'bag', 'mats', 'gems', 'dyes', 'dye', 'act', 'map', 'rebirths', 'buffs', 'stats', 'created', 'dead', 'maxAct', 'res', 'rage', 'look', 'fate', 'story', 'parts', 'mastery', 'birds', 'lvr'];
 
 function newChar(cls, name, diff, hc, look) {
   const C = CLASSES[cls];
@@ -14,7 +15,7 @@ function newChar(cls, name, diff, hc, look) {
     gear: { weapon: makeItem({ slot: 'weapon', base: C.start, tier: 0, rar: 0, std: true }), armor: makeItem({ slot: 'armor', base: 'armor', tier: 0, rar: 0 }), helm: makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 0 }) },
     bag: [], mats: {}, gems: {}, dyes: ['natur'], dye: 'natur', act: 1, map: null, rebirths: 0, buffs: [],
     stats: { kills: 0, deaths: 0, rooms: 0, playtime: 0 }, created: Date.now(), dead: false, maxAct: 1, res: 100, rage: 0,
-    look: look || { body: C.body, hair: -1, skin: -1, accent: -1, cape: -1 }, fate: 0, story: {}, parts: {}, mastery: {}
+    look: look || { body: C.body, hair: -1, skin: -1, accent: -1, cape: -1 }, fate: 0, story: {}, parts: {}, mastery: {}, lvr: 1
   };
 }
 function activateChar(i) {
@@ -25,6 +26,7 @@ function activateChar(i) {
   if (!Array.isArray(P.buffs)) P.buffs = [];
   if (!Array.isArray(P.dyes)) P.dyes = ['natur'];
   P.look = lookOf(P); P.fate = P.fate || 0;
+  const old = lvFix(P); if (typeof lvrFix === 'function') lvrFix(P, old);   // Level, Talente, Erfahrung (6.4) · Level-Belohnungen (js/aufstieg.js)
   hook('activate', P);
   computeStats(); P.hp = P.st.hp; P.res = P.st.resMax;
 }
@@ -235,20 +237,56 @@ function computeStats() {
 }
 const mod = k => (P.st && P.st.m[k]) || 0;
 const mod2 = (m, k) => m[k] || 0;
-// Erfahrung bis zum nächsten Level: alle Talente (Level 31) erst nach dem Ende der Geschichte, Level 50 im tiefen Endgame
-function xpNext(l) { return Math.floor(50 * Math.pow(l, 2.2)); }
-// Stärke aus dem Level: die ersten 25 Level bringen mehr, danach weniger – Level 50 ist so stark wie bisher
-function lvPow(l) { return 1.6 * Math.min(l - 1, 24) + .42 * Math.max(0, l - 25); }
-const PARAGON_XP = 25000;
+/* ---------- Level (6.4 „Aufstieg“): bis Level 100, danach Paragon ----------
+   Erfahrung je Level: bis 30 wie bisher (50·l^2,2), danach Stützpunkte XP_AT, dazwischen geometrisch – keine Wand mehr bei 35, die letzten Level sehr schwer.
+   Gemessen im Spiel (tools/test/aufstieg.js): echte Wellen aus Kampagne und Endlosen Landen (je halb) an der Stufe, die das Spiel für dieses Level
+   „passend“ nennt (0,9 × lHeroSt; Geschichte nach dem Kampagnen-Lauf, danach Qual 1), 30 Kills je Minute, ohne EP-Boni (Bibliothek bis +50 % spart ein Drittel).
+   Minuten je Level: 10: 3,3 · 20: 8 · 30: 14,5 · 35: 14,5 (vorher 20) · 40: 16 (27) · 50: 20 · 60: 27 · 70: 35 · 80: 55 · 90: 175 (2,9 h) · 95: 260 (4,3 h)
+   · 99: 350 (5,8 h) – Level 50 nach 8 h (vorher 12 h), Level 100 nach etwa 79 h Kampf; ein Paragonpunkt danach ≈ 30 min */
+const LVMAX = 100, REBIRTH_LV = 50;
+const XP_AT = [[30, 88845], [35, 91000], [40, 100000], [50, 125000], [60, 165000], [70, 225000], [79, 290000], [80, 360000], [85, 580000], [89, 830000], [90, 1250000], [95, 1850000], [99, 2800000]];
+function xpOld(l) { return Math.floor(50 * Math.pow(l, 2.2)); }   // Kurve bis 6.3 (Umrechnung alter Spielstände)
+function xpNext(l) {
+  if (l <= 30) return xpOld(l);
+  for (let i = 1; i < XP_AT.length; i++) { const [l1, v1] = XP_AT[i]; if (l <= l1) { const [l0, v0] = XP_AT[i - 1]; return Math.round(v0 * Math.pow(v1 / v0, (l - l0) / (l1 - l0)) / 100) * 100; } }
+  return XP_AT[XP_AT.length - 1][1];
+}
+// Stärke aus dem Level: die ersten 25 Level bringen mehr, danach weniger – Level 50 ist so stark wie bisher, Level 100 nur gut 20 % stärker als 50
+function lvPow(l) { return 1.6 * Math.min(l - 1, 24) + .42 * clamp(l - 25, 0, 25) + .24 * Math.max(0, l - 50); }
+// Stufe, der ein Held dieses Levels gewachsen ist (Endlose Lande „passend“): über 50 wächst sie langsamer, wie die Stärke
+function lvEff(l) { return l <= 50 ? l : 50 + (l - 50) * .4; }
+// Paragon ab Level 100: etwa eine halbe Stunde je Punkt (Paragonpunkte von früher bleiben)
+const PARAGON_XP = 250000;
 
-/* ---------- Talente ---------- */
+/* ---------- Talente ----------
+   Grund-Talente und Meister-Stufe (6.4, node.lv = ab diesem Level): ein Talent wird frei, wenn das darüber einen Punkt hat und das Level reicht */
 function talentState(cls, bi, ni) {
   const node = TALENTS[cls][bi][1][ni], r = P.talents[node.id] || 0;
-  const prevOk = ni === 0 || (P.talents[TALENTS[cls][bi][1][ni - 1].id] || 0) >= 1;
-  return { node, r, can: prevOk && r < node.max && P.sp > 0, locked: !prevOk };
+  const prevOk = ni === 0 || (P.talents[TALENTS[cls][bi][1][ni - 1].id] || 0) >= 1, lvOk = !node.lv || P.lv >= node.lv;
+  return { node, r, can: prevOk && lvOk && r < node.max && P.sp > 0, locked: !prevOk || !lvOk, lvLock: !lvOk };
 }
 function learnTalent(bi, ni) { const s = talentState(P.cls, bi, ni); if (!s.can) return false; P.talents[s.node.id] = s.r + 1; P.sp--; computeStats(); return true; }
 function spentPoints() { let n = 0; for (const k in P.talents) n += P.talents[k]; return n; }
+// Punkte im ganzen Baum einer Klasse (99 = ein Punkt je Level bis 100)
+function talentTotal(cls) { let n = 0; for (const [, nodes] of TALENTS[cls]) for (const t of nodes) n += t.max; return n; }
+/* Held reparieren (beim Laden): nur gültige Talente mit erlaubtem Rang; zu hohe Stufe (Level reicht nicht) → Punkte zurück.
+   Freie Punkte mindestens (Level − 1) − verteilt (Blutaltar-Punkte bleiben). Alte Spielstände (ohne P.lvr): Level ≤ 100, Erfahrung anteilig auf die neue Kurve */
+function lvFix(c) {
+  c.lv = clamp(Math.floor(+c.lv) || 1, 1, LVMAX);
+  const T0 = c.talents && typeof c.talents === 'object' ? c.talents : {}, t = {}; let back = 0;
+  for (const [, nodes] of TALENTS[c.cls] || []) nodes.forEach((n, i) => {
+    const r = clamp(Math.floor(+T0[n.id]) || 0, 0, n.max), prev = i === 0 || (t[nodes[i - 1].id] || 0) >= 1;
+    if (!r) return; if ((n.lv && c.lv < n.lv) || !prev) { back += r; return; } t[n.id] = r;
+  });
+  c.talents = t; let spent = 0; for (const k in t) spent += t[k];
+  c.sp = Math.max(0, Math.floor(+c.sp) || 0) + back; c.sp = Math.max(c.sp, c.lv - 1 - spent);
+  const old = c.lvr == null || !isFinite(+c.lvr);
+  if (old) { const x = Math.max(0, +c.xp || 0); c.xp = c.lv >= LVMAX ? 0 : Math.floor(Math.min(1, x / xpOld(c.lv)) * xpNext(c.lv)); c.lvr = c.lv; }   // erreichte Level gelten als belohnt
+  c.lvr = clamp(Math.max(Math.floor(+c.lvr) || 1, c.lv), 1, LVMAX);
+  c.xp = c.lv >= LVMAX ? 0 : clamp(Math.floor(+c.xp) || 0, 0, xpNext(c.lv) - 1);
+  c.paragon = Math.max(0, Math.floor(+c.paragon) || 0); c.pxp = clamp(Math.floor(+c.pxp) || 0, 0, PARAGON_XP - 1);
+  return old;
+}
 function respecCost() { return 50 + P.lv * 25; }
 function respec() { const c = respecCost(); if (P.gold < c) return false; P.gold -= c; P.sp += spentPoints(); P.talents = {}; computeStats(); return true; }
 

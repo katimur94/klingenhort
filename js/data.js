@@ -206,75 +206,161 @@ const SKILLS = {
   au:{n:'Pfeilsturm',ult:true,icon:['fx','windbolt',2],d:'Salven aus durchschlagenden Pfeilen.'}
 };
 
-/* ---------- Talentbäume ---------- */
+/* ---------- Talentbäume ----------
+   Je Zweig 4 Grund-Talente (10 Punkte) und ab 6.4 die Meister-Stufe (23 Punkte): lv = ab diesem Level des Helden, cap = Schlussstein.
+   Meister: Level 30/40/50/60/70 (je 4 Ränge), 80 (2 Ränge), Schlussstein 90/95/100 (1 Rang) → 33 je Zweig, 99 je Klasse = 1 Punkt je Level bis 100 */
 const TALENTS = {
   knight:[
     ['Waffenmeister',[
       {id:'kw1',n:'Scharfe Klinge',max:3,e:{dmg:.06},d:'+6 % Schaden'},
       {id:'kw2',n:'Präzision',max:3,e:{crit:.03},d:'+3 % Krit-Chance'},
       {id:'kw3',n:'Vernichtender Finisher',max:3,e:{fin:.25},d:'+25 % Kombo-Finisher-Schaden'},
-      {id:'kw4',n:'Klingensturm',max:1,e:{k2Dur:.6,k2Dmg:.4},d:'Wirbelklinge +0,6 s und +40 % Schaden'}]],
+      {id:'kw4',n:'Klingensturm',max:1,e:{k2Dur:.6,k2Dmg:.4},d:'Wirbelklinge +0,6 s und +40 % Schaden'},
+      {id:'kw5',n:'Klingenschliff',max:4,lv:30,e:{dmg:.03},d:'+3 % Schaden'},
+      {id:'kw6',n:'Schwachstellen',max:4,lv:40,e:{critdmg:.08},d:'+8 % Krit-Schaden'},
+      {id:'kw7',n:'Kampfrausch',max:4,lv:50,e:{aspd:.03},d:'+3 % Angriffstempo'},
+      {id:'kw8',n:'Wirbelmeister',max:4,lv:60,e:{k2Dmg:.1},d:'Wirbelklinge +10 % Schaden'},
+      {id:'kw9',n:'Meisterhieb',max:4,lv:70,e:{fin:.1},d:'+10 % Kombo-Finisher-Schaden'},
+      {id:'kw10',n:'Klingenwind',max:2,lv:80,e:{k2Rad:.08},d:'Wirbelklinge +8 % Reichweite'},
+      {id:'kw11',n:'Klingenorkan',max:1,lv:90,cap:1,e:{k2Dur:.6,k2Dmg:.3,k2Rad:.15},d:'Wirbelklinge +0,6 s, +30 % Schaden und +15 % Reichweite'}]],
     ['Bollwerk',[
       {id:'kb1',n:'Eiserne Haut',max:3,e:{def:3},d:'+3 Verteidigung'},
       {id:'kb2',n:'Lebenskraft',max:3,e:{hp:.08},d:'+8 % Lebenspunkte'},
       {id:'kb3',n:'Regeneration',max:3,e:{regen:.6},d:'+0,6 LP pro Sekunde'},
-      {id:'kb4',n:'Spiegelschild',max:1,e:{k3Reflect:1,k3Dur:1.5},d:'Schildwall wirft Geschosse zurück, +1,5 s'}]],
+      {id:'kb4',n:'Spiegelschild',max:1,e:{k3Reflect:1,k3Dur:1.5},d:'Schildwall wirft Geschosse zurück, +1,5 s'},
+      {id:'kb5',n:'Stahlhaut',max:4,lv:30,e:{def:2},d:'+2 Verteidigung'},
+      {id:'kb6',n:'Zähigkeit',max:4,lv:40,e:{hp:.03},d:'+3 % Lebenspunkte'},
+      {id:'kb7',n:'Unerschütterlich',max:4,lv:50,e:{dr:.015},d:'1,5 % weniger Schaden'},
+      {id:'kb8',n:'Schildmeister',max:4,lv:60,e:{k3Dur:.25},d:'Schildwall +0,25 s'},
+      {id:'kb9',n:'Zweiter Atem',max:4,lv:70,e:{regen:.4},d:'+0,4 LP pro Sekunde'},
+      {id:'kb10',n:'Heilender Wall',max:2,lv:80,e:{k3Heal:.04},d:'Schildwall heilt 4 % LP'},
+      {id:'kb11',n:'Bastion',max:1,lv:95,cap:1,e:{k3Push:1,k3Dur:1,k3Heal:.06},d:'Schildwall stößt Gegner zurück, hält 1 s länger und heilt 6 % LP'}]],
     ['Kriegsherr',[
       {id:'kk1',n:'Kampfeswut',max:3,e:{rage:.15},d:'+15 % Wut-Aufbau'},
       {id:'kk2',n:'Taktiker',max:3,e:{cdr:.06},d:'−6 % Abklingzeiten'},
       {id:'kk3',n:'Ansturm',max:3,e:{k1Stun:.4,k1Dmg:.25},d:'Sturmangriff +0,4 s Betäubung, +25 % Schaden'},
-      {id:'kk4',n:'Weltenbeben',max:1,e:{uRad:.4,uDmg:.5},d:'Erdbeben +40 % Radius, +50 % Schaden'}]]
+      {id:'kk4',n:'Weltenbeben',max:1,e:{uRad:.4,uDmg:.5},d:'Erdbeben +40 % Radius, +50 % Schaden'},
+      {id:'kk5',n:'Schlachtruf',max:4,lv:30,e:{rage:.06},d:'+6 % Wut-Aufbau'},
+      {id:'kk6',n:'Feldherr',max:4,lv:40,e:{cdr:.02},d:'−2 % Abklingzeiten'},
+      {id:'kk7',n:'Sturmreiter',max:4,lv:50,e:{k1Dmg:.1},d:'Sturmangriff +10 % Schaden'},
+      {id:'kk8',n:'Erschütterung',max:4,lv:60,e:{uDmg:.1},d:'Erdbeben +10 % Schaden'},
+      {id:'kk9',n:'Eiserner Wille',max:4,lv:70,e:{leech:.004},d:'+0,4 % Lebensraub'},
+      {id:'kk10',n:'Bebende Erde',max:2,lv:80,e:{uRad:.1},d:'Erdbeben +10 % Radius'},
+      {id:'kk11',n:'Weltenbrecher',max:1,lv:100,cap:1,e:{k1Wave:1,k1Dmg:.3,uAfter:1},d:'Sturmangriff endet in einer Schockwelle und trifft 30 % härter, Erdbeben bebt nach'}]]
   ],
   mage:[
     ['Feuer',[
       {id:'mf1',n:'Glut',max:3,e:{m1Dmg:.15},d:'Feuerball +15 % Schaden'},
       {id:'mf2',n:'Flammenmeer',max:3,e:{m1Rad:.15},d:'Feuerball +15 % Radius'},
       {id:'mf3',n:'Entzünden',max:3,e:{burn:.1},d:'+10 % Chance, Gegner in Brand zu setzen'},
-      {id:'mf4',n:'Feuersturm',max:1,e:{m1Split:1},d:'Feuerball teilt sich in drei'}]],
+      {id:'mf4',n:'Feuersturm',max:1,e:{m1Split:1},d:'Feuerball teilt sich in drei'},
+      {id:'mf5',n:'Glutherz',max:4,lv:30,e:{m1Dmg:.08},d:'Feuerball +8 % Schaden'},
+      {id:'mf6',n:'Funkenflug',max:4,lv:40,e:{burn:.04},d:'+4 % Chance, Gegner in Brand zu setzen'},
+      {id:'mf7',n:'Feuerseele',max:4,lv:50,e:{dmg:.03},d:'+3 % Schaden'},
+      {id:'mf8',n:'Weite Flammen',max:4,lv:60,e:{m1Rad:.06},d:'Feuerball +6 % Radius'},
+      {id:'mf9',n:'Hitzewelle',max:4,lv:70,e:{critdmg:.07},d:'+7 % Krit-Schaden'},
+      {id:'mf10',n:'Lodernde Kraft',max:2,lv:80,e:{m1Dmg:.1},d:'Feuerball +10 % Schaden'},
+      {id:'mf11',n:'Phönixfeuer',max:1,lv:90,cap:1,e:{m1Twin:1,m1Burn:1},d:'Ein Feuerball mehr je Wurf, Getroffene brennen immer'}]],
     ['Frost',[
       {id:'mi1',n:'Eiskälte',max:3,e:{m2Dmg:.2},d:'Frostnova +20 % Schaden'},
       {id:'mi2',n:'Permafrost',max:3,e:{m2Freeze:.4},d:'Frostnova friert 0,4 s länger ein'},
       {id:'mi3',n:'Eisrüstung',max:3,e:{def:3},d:'+3 Verteidigung'},
-      {id:'mi4',n:'Frostkern',max:1,e:{chill:1},d:'Wer dich trifft, wird verlangsamt'}]],
+      {id:'mi4',n:'Frostkern',max:1,e:{chill:1},d:'Wer dich trifft, wird verlangsamt'},
+      {id:'mi5',n:'Frostpanzer',max:4,lv:30,e:{def:2},d:'+2 Verteidigung'},
+      {id:'mi6',n:'Gletscherblut',max:4,lv:40,e:{hp:.03},d:'+3 % Lebenspunkte'},
+      {id:'mi7',n:'Eisige Weite',max:4,lv:50,e:{m2Rad:.06},d:'Frostnova +6 % Radius'},
+      {id:'mi8',n:'Tiefkühlung',max:4,lv:60,e:{m2Freeze:.15},d:'Frostnova friert 0,15 s länger ein'},
+      {id:'mi9',n:'Kältebrand',max:4,lv:70,e:{m2Dmg:.1},d:'Frostnova +10 % Schaden'},
+      {id:'mi10',n:'Frostschild',max:2,lv:80,e:{dr:.02},d:'2 % weniger Schaden'},
+      {id:'mi11',n:'Ewiger Winter',max:1,lv:95,cap:1,e:{m2Armor:1,m2Rad:.2,m2Freeze:.5},d:'Frostnova gibt 3 s Frostpanzer (−30 % Schaden), +20 % Radius, friert 0,5 s länger ein'}]],
     ['Arkan',[
       {id:'ma1',n:'Arkanes Wissen',max:3,e:{dmg:.06},d:'+6 % Schaden'},
       {id:'ma2',n:'Manafluss',max:3,e:{resreg:.2},d:'+20 % Mana-Regeneration'},
       {id:'ma3',n:'Kettenreaktion',max:3,e:{m3Chain:1},d:'Kettenblitz springt 1 Mal mehr'},
-      {id:'ma4',n:'Meteoritenschwarm',max:1,e:{uCount:6},d:'Meteorhagel +6 Meteore'}]]
+      {id:'ma4',n:'Meteoritenschwarm',max:1,e:{uCount:6},d:'Meteorhagel +6 Meteore'},
+      {id:'ma5',n:'Arkane Tiefe',max:4,lv:30,e:{dmg:.03},d:'+3 % Schaden'},
+      {id:'ma6',n:'Manaquell',max:4,lv:40,e:{resreg:.08},d:'+8 % Mana-Regeneration'},
+      {id:'ma7',n:'Leitende Blitze',max:4,lv:50,e:{m3Range:.08},d:'Kettenblitz +8 % Sprungweite'},
+      {id:'ma8',n:'Zauberfluss',max:4,lv:60,e:{cdr:.02},d:'−2 % Abklingzeiten'},
+      {id:'ma9',n:'Arkane Präzision',max:4,lv:70,e:{crit:.01},d:'+1 % Krit-Chance'},
+      {id:'ma10',n:'Sternenfall',max:2,lv:80,e:{uCount:2},d:'Meteorhagel +2 Meteore'},
+      {id:'ma11',n:'Gewittergott',max:1,lv:100,cap:1,e:{m3Chain:2,m3Stun:.4,muDmg:.25},d:'Kettenblitz springt 2 Mal mehr und lähmt 0,4 s, Meteore +25 % Schaden'}]]
   ],
   rogue:[
     ['Klingen',[
       {id:'rk1',n:'Tödliche Präzision',max:3,e:{crit:.04},d:'+4 % Krit-Chance'},
       {id:'rk2',n:'Halsabschneider',max:3,e:{critdmg:.2},d:'+20 % Krit-Schaden'},
       {id:'rk3',n:'Klingentanz',max:3,e:{aspd:.08},d:'+8 % Angriffstempo'},
-      {id:'rk4',n:'Endlose Schatten',max:1,e:{r1Reset:1},d:'Schattenschritt lädt sich bei Kills neu'}]],
+      {id:'rk4',n:'Endlose Schatten',max:1,e:{r1Reset:1},d:'Schattenschritt lädt sich bei Kills neu'},
+      {id:'rk5',n:'Messerspitze',max:4,lv:30,e:{crit:.015},d:'+1,5 % Krit-Chance'},
+      {id:'rk6',n:'Blutgier',max:4,lv:40,e:{leech:.003},d:'+0,3 % Lebensraub'},
+      {id:'rk7',n:'Klingenwirbel',max:4,lv:50,e:{aspd:.03},d:'+3 % Angriffstempo'},
+      {id:'rk8',n:'Schattenhieb',max:4,lv:60,e:{r1Dmg:.1},d:'Schattenschritt +10 % Schaden'},
+      {id:'rk9',n:'Mordlust',max:4,lv:70,e:{critdmg:.08},d:'+8 % Krit-Schaden'},
+      {id:'rk10',n:'Weiter Schritt',max:2,lv:80,e:{r1Far:.1},d:'Schattenschritt +10 % Weg'},
+      {id:'rk11',n:'Tausend Klingen',max:1,lv:90,cap:1,e:{r1Wide:1,r1Dmg:.3,r1Stealth:.6},d:'Schattenschritt wird breiter, trifft 30 % härter und macht danach 0,6 s unsichtbar'}]],
     ['Gift',[
       {id:'rg1',n:'Toxine',max:3,e:{poison:.25},d:'+25 % Giftschaden'},
       {id:'rg2',n:'Wurfmesser',max:3,e:{r2Knives:2},d:'Giftklingen +2 Wurfmesser'},
       {id:'rg3',n:'Lähmendes Gift',max:3,e:{poisonSlow:.15},d:'Vergiftete Gegner −15 % Tempo'},
-      {id:'rg4',n:'Seuche',max:1,e:{plague:1},d:'Gift springt beim Tod auf Nachbarn über'}]],
+      {id:'rg4',n:'Seuche',max:1,e:{plague:1},d:'Gift springt beim Tod auf Nachbarn über'},
+      {id:'rg5',n:'Ätzend',max:4,lv:30,e:{poison:.1},d:'+10 % Giftschaden'},
+      {id:'rg6',n:'Giftmischer',max:4,lv:40,e:{r2Dmg:.1},d:'Giftklingen +10 % Schaden'},
+      {id:'rg7',n:'Zähes Leben',max:4,lv:50,e:{hp:.03},d:'+3 % Lebenspunkte'},
+      {id:'rg8',n:'Giftnebel',max:4,lv:60,e:{dmg:.03},d:'+3 % Schaden'},
+      {id:'rg9',n:'Schleichendes Gift',max:4,lv:70,e:{poison:.1},d:'+10 % Giftschaden'},
+      {id:'rg10',n:'Messerhagel',max:2,lv:80,e:{r2Knives:1},d:'Giftklingen +1 Wurfmesser'},
+      {id:'rg11',n:'Giftsturm',max:1,lv:95,cap:1,e:{r2Ring:1,r2Knives:2,poison:.3},d:'Giftklingen werfen auch einen Messerkranz rundum, +2 Messer, +30 % Giftschaden'}]],
     ['Schatten',[
       {id:'rs1',n:'Flink',max:3,e:{spd:.06},d:'+6 % Lauftempo'},
       {id:'rs2',n:'Ausweichen',max:3,e:{dodge:.05},d:'+5 % Chance, Treffern auszuweichen'},
       {id:'rs3',n:'Hinterhalt',max:3,e:{stealth:.3},d:'Rauchbombe +30 % Schaden und +0,5 s'},
-      {id:'rs4',n:'Legion',max:1,e:{uCount:2},d:'Schattenklone +2'}]]
+      {id:'rs4',n:'Legion',max:1,e:{uCount:2},d:'Schattenklone +2'},
+      {id:'rs5',n:'Leichtfuß',max:4,lv:30,e:{spd:.02},d:'+2 % Lauftempo'},
+      {id:'rs6',n:'Schemen',max:4,lv:40,e:{dodge:.015},d:'+1,5 % Chance, Treffern auszuweichen'},
+      {id:'rs7',n:'Dunkle Gabe',max:4,lv:50,e:{r3Dmg:.08},d:'Rauchbombe +8 % Hinterhalt-Schaden'},
+      {id:'rs8',n:'Nebelschleier',max:4,lv:60,e:{r3Dur:.25},d:'Rauchbombe +0,25 s'},
+      {id:'rs9',n:'Schattenpakt',max:4,lv:70,e:{ruDmg:.1},d:'Schattenklone +10 % Schaden'},
+      {id:'rs10',n:'Lange Schatten',max:2,lv:80,e:{ruDur:1},d:'Schattenklone +1 s'},
+      {id:'rs11',n:'Schattenarmee',max:1,lv:100,cap:1,e:{uCount:2,ruBoom:1},d:'Schattenklone +2, sie explodieren am Ende'}]]
   ],
   ranger:[
     ['Schütze',[
       {id:'aa1',n:'Adlerauge',max:3,e:{crit:.03},d:'+3 % Krit-Chance'},
       {id:'aa2',n:'Schnellschuss',max:3,e:{aspd:.08},d:'+8 % Angriffstempo'},
       {id:'aa3',n:'Breiter Fächer',max:3,e:{a1Count:2},d:'Fächerschuss +2 Pfeile'},
-      {id:'aa4',n:'Pfeilhagel',max:1,e:{uDmg:.5,uDur:2},d:'Pfeilsturm +50 % Schaden, 2 Salven mehr'}]],
+      {id:'aa4',n:'Pfeilhagel',max:1,e:{uDmg:.5,uDur:2},d:'Pfeilsturm +50 % Schaden, 2 Salven mehr'},
+      {id:'aa5',n:'Scharfes Auge',max:4,lv:30,e:{crit:.015},d:'+1,5 % Krit-Chance'},
+      {id:'aa6',n:'Zielsicher',max:4,lv:40,e:{critdmg:.08},d:'+8 % Krit-Schaden'},
+      {id:'aa7',n:'Flinke Sehne',max:4,lv:50,e:{aspd:.03},d:'+3 % Angriffstempo'},
+      {id:'aa8',n:'Weiter Fächer',max:4,lv:60,e:{a1Dmg:.1},d:'Fächerschuss +10 % Schaden'},
+      {id:'aa9',n:'Salvenmeister',max:4,lv:70,e:{uDmg:.1},d:'Pfeilsturm +10 % Schaden'},
+      {id:'aa10',n:'Pfeilregen',max:2,lv:80,e:{auArrows:1},d:'Pfeilsturm +2 Pfeile je Salve'},
+      {id:'aa11',n:'Sturm der Pfeile',max:1,lv:90,cap:1,e:{a1Twice:1,a1Count:3},d:'Fächerschuss: +3 Pfeile und eine zweite Salve mit halbem Schaden'}]],
     ['Fallensteller',[
       {id:'af1',n:'Sprengmeister',max:3,e:{a2Dmg:.25},d:'Sprengfalle +25 % Schaden'},
       {id:'af2',n:'Vorrat',max:3,e:{a2Max:1},d:'+1 gleichzeitige Falle'},
       {id:'af3',n:'Splitter',max:3,e:{a2Rad:.2},d:'Sprengfalle +20 % Radius'},
-      {id:'af4',n:'Kettenexplosion',max:1,e:{a2Cluster:1},d:'Fallen streuen kleine Bomben'}]],
+      {id:'af4',n:'Kettenexplosion',max:1,e:{a2Cluster:1},d:'Fallen streuen kleine Bomben'},
+      {id:'af5',n:'Schwarzpulver',max:4,lv:30,e:{a2Dmg:.1},d:'Sprengfalle +10 % Schaden'},
+      {id:'af6',n:'Großer Knall',max:4,lv:40,e:{a2Rad:.06},d:'Sprengfalle +6 % Radius'},
+      {id:'af7',n:'Fallenkunde',max:4,lv:50,e:{cdr:.02},d:'−2 % Abklingzeiten'},
+      {id:'af8',n:'Zähe Schlinge',max:4,lv:60,e:{a2Slow:.6},d:'Explosion verlangsamt 0,6 s'},
+      {id:'af9',n:'Kriegslist',max:4,lv:70,e:{dmg:.03},d:'+3 % Schaden'},
+      {id:'af10',n:'Großvorrat',max:2,lv:80,e:{a2Max:1},d:'+1 gleichzeitige Falle'},
+      {id:'af11',n:'Feuerwerk',max:1,lv:95,cap:1,e:{a2Dmg:.3,a2Rad:.2,a2Max:1},d:'Sprengfalle +30 % Schaden und +20 % Radius, eine Falle mehr'}]],
     ['Wildnis',[
       {id:'aw1',n:'Waldläufer',max:3,e:{spd:.05},d:'+5 % Lauftempo'},
       {id:'aw2',n:'Naturverbunden',max:3,e:{hp:.07},d:'+7 % Lebenspunkte'},
       {id:'aw3',n:'Geistband',max:3,e:{a3Dur:3,a3Dmg:.2},d:'Waldgeist +3 s, +20 % Schaden'},
-      {id:'aw4',n:'Zwillingsgeister',max:1,e:{a3Count:1},d:'Ein zweiter Waldgeist erscheint'}]]
+      {id:'aw4',n:'Zwillingsgeister',max:1,e:{a3Count:1},d:'Ein zweiter Waldgeist erscheint'},
+      {id:'aw5',n:'Wildleben',max:4,lv:30,e:{hp:.03},d:'+3 % Lebenspunkte'},
+      {id:'aw6',n:'Pfadfinder',max:4,lv:40,e:{spd:.02},d:'+2 % Lauftempo'},
+      {id:'aw7',n:'Erdverbunden',max:4,lv:50,e:{regen:.4},d:'+0,4 LP pro Sekunde'},
+      {id:'aw8',n:'Geisterruf',max:4,lv:60,e:{a3Dmg:.1},d:'Waldgeist +10 % Schaden'},
+      {id:'aw9',n:'Waldsegen',max:4,lv:70,e:{a3Dur:1.5},d:'Waldgeist +1,5 s'},
+      {id:'aw10',n:'Schnelle Geister',max:2,lv:80,e:{a3Fast:.1},d:'Waldgeist schießt 10 % schneller'},
+      {id:'aw11',n:'Hüter des Waldes',max:1,lv:100,cap:1,e:{a3Count:1,a3Heal:1},d:'Ein weiterer Waldgeist, Waldgeister heilen dich alle 3 s um 2 % LP'}]]
   ]
 };
 
@@ -336,7 +422,11 @@ const COSM = {
   a_gold:{n:'Goldaura',k:'aura',c:['#ffd24a','#fff3c0']},
   a_gift:{n:'Giftaura',k:'aura',c:['#79c24e','#c8f06a']},
   c_koenig:{n:'Königsumhang',k:'cape',c:['#b8242c','#6a1018'],trim:'#ffd24a'},
-  c_sterne:{n:'Sternenumhang',k:'cape',c:['#2a2a6a','#14143a'],stars:1}
+  c_sterne:{n:'Sternenumhang',k:'cape',c:['#2a2a6a','#14143a'],stars:1},
+  // Level-Belohnungen (6.4, js/aufstieg.js): lvl = nur beim Erreichen dieses Levels, nie aus dem Glückstempel; ring = kreisende Funken
+  c_aufstieg:{n:'Mantel des Aufstiegs',k:'cape',c:['#2a4a8a','#121e44'],trim:'#e8d8a0',lvl:60},
+  w_aufstieg:{n:'Schwingen des Aufstiegs',k:'wings',c:['#fff3c0','#d8a040'],lvl:80},
+  a_hundert:{n:'Aura der Hundert',k:'aura',c:['#ffe08a','#ffffff'],ring:1,lvl:100}
 };
 
 /* ---------- Materialien, Edelsteine, Rezepte ---------- */
@@ -609,6 +699,8 @@ const ACH = [
   {id:'lv10',n:'Abenteurer',d:'Erreiche Level 10',t:s=>s.maxLv>=10,r:100},
   {id:'lv25',n:'Veteran',d:'Erreiche Level 25',t:s=>s.maxLv>=25,r:400},
   {id:'lv50',n:'Held von Klingenhort',d:'Erreiche Level 50',t:s=>s.maxLv>=50,r:1500},
+  {id:'lv75',n:'Meister des Aufstiegs',d:'Erreiche Level 75',t:s=>s.maxLv>=75,r:4000},
+  {id:'lv100',n:'Legende der Hundert',d:'Erreiche Level 100',t:s=>s.maxLv>=100,r:12000},
   {id:'par10',n:'Über den Grenzen',d:'Erreiche Paragon 10',t:s=>s.maxPar>=10,r:1000},
   {id:'boss1',n:'Ogertöter',d:'Besiege Grausch',t:s=>s.boss_ogre>=1,r:150},
   {id:'boss2',n:'Geisterbanner',d:'Besiege Vexhal',t:s=>s.boss_shaman>=1,r:250},

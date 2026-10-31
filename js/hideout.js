@@ -285,7 +285,8 @@ function wheelPick() {
   SAVE.meta.luck.spins++; stat('spins');
   const W = {}; WHEEL.forEach(w => W[w.k] = w.w); return wpick(W);
 }
-function grantCosmetic() { const free = Object.keys(COSM).filter(k => !SAVE.meta.cos.includes(k)); if (!free.length) { gainFate(4); return _t('Alle Kosmetik gesammelt – 4 Glücksmünzen zurück'); } const k = pick(free); SAVE.meta.cos.push(k); statMax('cosm', SAVE.meta.cos.length); persist(); return _t('Kosmetik: {name} (im Spiegel anlegen)', { name: COSM[k].n }); }
+// Kosmetik aus dem Tempel – ohne die Level-Belohnungen (COSM[k].lvl, js/aufstieg.js)
+function grantCosmetic() { const free = Object.keys(COSM).filter(k => !COSM[k].lvl && !SAVE.meta.cos.includes(k)); if (!free.length) { gainFate(4); return _t('Alle Kosmetik gesammelt – 4 Glücksmünzen zurück'); } const k = pick(free); SAVE.meta.cos.push(k); statMax('cosm', SAVE.meta.cos.length); persist(); return _t('Kosmetik: {name} (im Spiegel anlegen)', { name: COSM[k].n }); }
 function wheelReward(k) {
   const st = stageNum(), W = WHEEL.find(w => w.k === k), res = { c: W.c, t: W.n };
   const give = it => { addToBag(it); res.it = it; if (it.rar === 4) stat('legs'); };

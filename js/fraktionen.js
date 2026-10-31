@@ -49,8 +49,8 @@ const FK = {
   }
 };
 const FKORDER = ['orden', 'kund', 'gilde', 'wild'];
-// Titel vom Quartiermeister (höchste Ränge), erscheinen am Helden im Charakter-Bildschirm
-const FK_TITLES = { orden: _t('Schild des Weltentors'), kund: _t('Pfadfinder der Lande'), gilde: _t('Freund der Gilde'), wild: _t('Freund aller Tiere') };
+// Titel vom Quartiermeister (höchste Ränge), erscheinen am Helden im Charakter-Bildschirm; lv70/lv90/lv100 = Level-Belohnungen (6.4, js/aufstieg.js)
+const FK_TITLES = { orden: _t('Schild des Weltentors'), kund: _t('Pfadfinder der Lande'), gilde: _t('Freund der Gilde'), wild: _t('Freund aller Tiere'), lv70: _t('Meister der Klingen'), lv90: _t('Unbezwingbar'), lv100: _t('Legende von Klingenhort') };
 
 /* ---------- Spielstand ---------- */
 const fkM = () => SAVE && SAVE.meta && SAVE.meta.ruf && SAVE.meta.ruf.f ? SAVE.meta.ruf : null;
