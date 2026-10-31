@@ -102,7 +102,8 @@ const save = (name, url) => { if (OUT) fs.writeFileSync(`${OUT}/${name}.png`, Bu
     const loud = sim(false), quiet = sim(true); SAVE.meta.settings.calm = false;
     o.calm = loud > 120 && quiet < loud * .75; o.loud = loud; o.quiet = quiet;   // Aura-Teilchen ×0,35, dazu ungedämpftes Rauschen (Begleiter, Spur)
     const time = () => { const t0 = performance.now(); for (let f = 0; f < 120; f++) { T += 1 / 60; render(); } return (performance.now() - t0) / 120; };
-    time(); const tMyth = time(); P.gear = { weapon: makeItem({ slot: 'weapon', base: 'sword', tier: 3, rar: 1 }), armor: makeItem({ slot: 'armor', tier: 3, rar: 1 }), helm: makeItem({ slot: 'helm', tier: 3, rar: 1 }) }; computeStats(); time(); const tPlain = time();
+    // je die schnellste von drei Messreihen (Störungen von außen treiben eine einzelne Reihe zufällig hoch)
+    time(); const tMyth = Math.min(time(), time(), time()); P.gear = { weapon: makeItem({ slot: 'weapon', base: 'sword', tier: 3, rar: 1 }), armor: makeItem({ slot: 'armor', tier: 3, rar: 1 }), helm: makeItem({ slot: 'helm', tier: 3, rar: 1 }) }; computeStats(); time(); const tPlain = Math.min(time(), time(), time());
     o.perf = [tPlain.toFixed(2), tMyth.toFixed(2)]; o.cheap = tMyth < tPlain + 1.5;
     // 11) Beute am Boden: alle Seltenheiten zeichnen, Säulen werden höher
     try { for (let rr = 0; rr <= 6; rr++) { const x = makeItem({ slot: rr % 2 ? 'armor' : 'weapon', base: rr % 2 ? 'armor' : 'axe', tier: 2, rar: rr, set: rr === 5 ? 'wald' : null, myth: rr === 6 ? (rr % 2 ? 'dornen' : 'ernter') : null }); pickups.push({ k: 'loot', it: x, x: P.x + rr * 20 - 60, y: P.y - 30, z: 0, vz: 0, vx: 0, vy: 0, t: 0 }); } render(); o.loot = BEAM.slice(1).every((B, i, a) => !i || B[0] >= a[i - 1][0]) && !BEAM[0]; } catch (e) { o.loot = 'Fehler: ' + e.message; }
