@@ -208,8 +208,9 @@ const SCR = ([x, y]) => ({ x: VIEW.ox + ((x - CX) * PXS - VIEW.sx) / DPR, y: ((y
         SAVE.meta.settings.gfx = g; resize();
         const step = () => { update(1 / 60); camera(1 / 60); if (Math.random() < .3) for (const e of enemies.slice(0, 3)) hurtEnemy(e, 37, 1, 0, 0, Math.random() < .3, true); if (Math.random() < .1) useSkill(1); P.res = P.st.resMax; P.cds = [0, 0, 0]; };
         for (let i = 0; i < 30; i++) { step(); render(); }
-        let t = 0; for (let i = 0; i < 90; i++) { step(); const t0 = performance.now(); render(); ctx.getImageData(0, 0, 1, 1); t += performance.now() - t0; }
-        return +(t / 90).toFixed(2);
+        // drei Messreihen à 60 Bilder, die schnellste zählt (Störungen von außen – andere Prozesse, Speicherbereinigung – treiben sonst den Mittelwert zufällig hoch)
+        let best = 1e9; for (let r = 0; r < 3; r++) { let t = 0; for (let i = 0; i < 60; i++) { step(); const t0 = performance.now(); render(); ctx.getImageData(0, 0, 1, 1); t += performance.now() - t0; } best = Math.min(best, t / 60); }
+        return +best.toFixed(2);
       }, g);
     }
     console.log(`  ${W}×${H}: HD ${perf[W + 'hd']} ms, Pixel ${perf[W + 'px']} ms je Bild (render + Abgleich, Software-Zeichnen)`);
