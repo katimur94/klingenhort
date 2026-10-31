@@ -121,18 +121,25 @@ function lvrShort(e) {
   return lvrName(e);
 }
 const LVR_SPECIAL = ['item', 'egg', 'cos', 'title'];
+// besondere Belohnungen: Kosmetik und Titel zuerst, höchstens drei Namen (große Sprünge: „+n weitere“)
+function lvrTop(got) {
+  const sp = got.filter(e => LVR_SPECIAL.includes(e.t)), rk = e => e.t === 'cos' || e.t === 'title' ? 0 : e.t === 'item' ? 7 - e.it.rar : 5;
+  const s = sp.slice().sort((a, b) => rk(a) - rk(b)), L = s.slice(0, 3).map(lvrShort);
+  if (s.length > 3) L.push(_t('+{n} weitere', { n: s.length - 3 }));
+  return { L, best: s[0] };
+}
 function lvrLine(got) {
-  let g = 0, m = 0, pt = 0, f = 0; const sp = [];
-  for (const e of got) { if (e.t === 'gold') g += e.n; else if (e.t === 'mat') m += e.n; else if (e.t === 'part') pt += e.n; else if (e.t === 'fate') f += e.n; else if (LVR_SPECIAL.includes(e.t)) sp.push(lvrShort(e)); }
+  let g = 0, m = 0, pt = 0, f = 0;
+  for (const e of got) { if (e.t === 'gold') g += e.n; else if (e.t === 'mat') m += e.n; else if (e.t === 'part') pt += e.n; else if (e.t === 'fate') f += e.n; }
   const L = [];
   if (g) L.push(_t('{n} Gold', { n: fmt(g) })); if (m) L.push(_t('{n} Material', { n: m })); if (pt) L.push(pt > 1 ? _t('{n} Bauteile', { n: pt }) : _t('1 Bauteil'));
   if (f) L.push(f > 1 ? _t('{n} Glücksmünzen', { n: f }) : _t('1 Glücksmünze'));
+  const sp = lvrTop(got).L;
   return L.length || sp.length ? L.concat(sp) : [_t('Mehr Lebenspunkte')];
 }
 function lvrToast(got) {
-  const sp = got.filter(e => LVR_SPECIAL.includes(e.t)); if (!sp.length) return;
-  const best = sp.find(e => e.t === 'cos' || e.t === 'title') || sp.find(e => e.t === 'item' && e.it.rar >= 4) || sp[0];
-  setTimeout(() => { toast(_t('Level-Belohnung: {list}', { list: sp.map(lvrShort).join(', ') }), lvrCol(best)); sfx('loot'); }, 900);
+  const T_ = lvrTop(got); if (!T_.best) return;
+  setTimeout(() => { toast(_t('Level-Belohnung: {list}', { list: T_.L.join(', ') }), lvrCol(T_.best)); sfx('loot'); }, 900);
 }
 
 /* ---------- Charakter → AUFSTIEG: Level-Belohnungen (Zeitleiste) und Paragon ---------- */
