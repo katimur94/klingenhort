@@ -43,16 +43,17 @@ Ausführlich für den automatischen Lauf: [`tools/WOCHENUPDATE.md`](tools/WOCHEN
 | – | 6.1 | **Die Endlosen Lande** | Eine feste Welt für alle: 24 Stunden Fußmarsch bis zum Rand, 40+ Biome, Brücken und Barrieren nur mit gefundenen Werkzeugen, Leuchtfeuer als Checkpoint (Karte, Startpunkt, Ausgang). 1200 Bosse von leicht bis fast unmöglich mit Boss-Kodex und Trophäen (Rückkehr nach 3 Tagen). 5000 Artefakte in Geschichten, deren Spuren zu Schatzorten führen, mystische Begegnungen. Kreaturen: viel mehr Arten, Zucht, Mutationen, Ausrüstung, Talente, Magie. Gegenstände frei modifizieren: Runen, Glyphen, Essenzen, Kerne, Resonanzen, Umschmieden | riesig | ✅ 6.1 |
 | – | 6.2 | **Sammeln & Bauen** | Holz, Stein, Fasern, Federn und seltene Rohstoffe sammeln (Bäume fällen, Steine abbauen, ernten) in den Landen und im Versteck, Felder im Kräutergarten, Bauzeiten mit Beschleunigen gegen Gold/Glücksmünzen, mehr Stufen für alle Gebäude (Schatzkammer 15 = 400 Plätze), Sattlerei (Beutel bis 90, Rucksack bis 40, größere Begleiter-Tasche), Sammelbeutel ohne Platzgrenze, magische Vögel (Vogelhaus), Lager-Zugriff bei Händler, Basar und Werkbank | groß | ✅ 6.2 |
 | 2 | 6.3 | **Aufträge & Ruf** | Tages- und Wochenaufträge für Kampagne und Endlose Lande, Fraktionen mit Ruf-Stufen und besseren Tauschangeboten | mittel | ✅ 6.3 |
-| 3 | 6.4 | **Neues Gebiet: Sturmgipfel** | Kampagnen-Gebiet 9 und Sturm-Biome in den Endlosen Landen mit Blitz-Gegnern, Boss *Sturmkönig Aerok*, Material *Sturmsilber* | groß | offen |
-| 4 | 6.5 | **Saison 1** | Saison-Helden ab Level 1, Saison-Rangliste, kostenloser Saison-Pass mit 30 Stufen | groß | offen |
-| 5 | 6.6 | **Begleiter-Expeditionen** | Begleiter allein in die Endlosen Lande schicken (läuft auch offline), bringen Beute, Eier und Artefakte mit | mittel | offen |
-| 6 | 6.7 | **Der Abgrund** | Endlos-Turm mit Bestwert pro Klasse | mittel | offen |
-| 7 | 6.8 | **Neue Klasse: Nekromant** | Skelette, Knochenspeer, Leichenexplosion, *Armee der Toten* | groß | offen |
-| 8 | 6.9 | **Legendäre Kräfte 2.0** | Neue legendäre und mythische Kräfte, die mit Resonanzen zusammenspielen | mittel | offen |
-| 9 | 7.0 | **Element-Reaktionen** | Dampfexplosion, Giftwolke, Frostbruch … wenn Elemente aufeinandertreffen | mittel | offen |
-| 10 | 7.1 | **Weltboss der Woche** | Riesiger Boss in den Endlosen Landen, nur diese Woche | mittel | offen |
-| 11 | 7.2 | **Versteck 2.0** | Dekorieren, Trophäenhalle für Boss-Trophäen, Zuchtgehege ausbauen, Versteck teilen | mittel | offen |
-| 12 | 7.3 | **Online: Konto, Marktplatz, Begegnungen** | Spielstand in der Cloud, echter Basar mit Auktionen zwischen Spielern, Online-Tausch, andere Spieler in den Endlosen Landen treffen, gemeinsam kämpfen oder gegeneinander. **Erst wenn offline alles perfekt ist; braucht einen Server (z. B. Supabase) – Entscheidung des Besitzers** | riesig | offen |
+| – | 6.4 | **Aufstieg** | Helden bis Level 100 (Paragon ab 100), neue Erfahrungs-Kurve ohne Wand bei 35, Meister-Talente bis Level 100 (99 Punkte je Klasse), Belohnung für jedes Level, Begleiter bis Level 150 mit neuer Talent-Stufe und Belohnungen je Level – auf Wunsch des Besitzers vorgezogen | groß | ✅ 6.4 |
+| 3 | 6.5 | **Neues Gebiet: Sturmgipfel** | Kampagnen-Gebiet 9 und Sturm-Biome in den Endlosen Landen mit Blitz-Gegnern, Boss *Sturmkönig Aerok*, Material *Sturmsilber* | groß | offen |
+| 4 | 6.6 | **Saison 1** | Saison-Helden ab Level 1, Saison-Rangliste, kostenloser Saison-Pass mit 30 Stufen | groß | offen |
+| 5 | 6.7 | **Begleiter-Expeditionen** | Begleiter allein in die Endlosen Lande schicken (läuft auch offline), bringen Beute, Eier und Artefakte mit | mittel | offen |
+| 6 | 6.8 | **Der Abgrund** | Endlos-Turm mit Bestwert pro Klasse | mittel | offen |
+| 7 | 6.9 | **Neue Klasse: Nekromant** | Skelette, Knochenspeer, Leichenexplosion, *Armee der Toten* | groß | offen |
+| 8 | 7.0 | **Legendäre Kräfte 2.0** | Neue legendäre und mythische Kräfte, die mit Resonanzen zusammenspielen | mittel | offen |
+| 9 | 7.1 | **Element-Reaktionen** | Dampfexplosion, Giftwolke, Frostbruch … wenn Elemente aufeinandertreffen | mittel | offen |
+| 10 | 7.2 | **Weltboss der Woche** | Riesiger Boss in den Endlosen Landen, nur diese Woche | mittel | offen |
+| 11 | 7.3 | **Versteck 2.0** | Dekorieren, Trophäenhalle für Boss-Trophäen, Zuchtgehege ausbauen, Versteck teilen | mittel | offen |
+| 12 | 7.4 | **Online: Konto, Marktplatz, Begegnungen** | Spielstand in der Cloud, echter Basar mit Auktionen zwischen Spielern, Online-Tausch, andere Spieler in den Endlosen Landen treffen, gemeinsam kämpfen oder gegeneinander. **Erst wenn offline alles perfekt ist; braucht einen Server (z. B. Supabase) – Entscheidung des Besitzers** | riesig | offen |
 
 > Faustregel: Wochen mit „groß“ wechseln sich mit kleinen und mittleren ab. Fällt eine Woche aus, lieber ein kleines Update als gar keins – Ereignisse und Aufträge laufen ab Woche 2 auch ohne neue Inhalte weiter.
 
