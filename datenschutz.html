@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Klingenhort – Datenschutz</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#110e17">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
+<style>
+/* Datenschutz-Seite im Stil des Spiels: Steintafel auf Nacht, Pixelschrift für Überschriften.
+   ENTWURF – vor dem Einschalten von Konto & Cloud vom Betreiber vervollständigen (Vorlage: docs/datenschutz-entwurf.md).
+   Alles in [[ … ]] ist ein Platzhalter und erscheint rot markiert. */
+:root{--night:#110e17;--stone:#241e2e;--stone-hi:#3a3047;--parch:#efe2bf;--parch-dim:#a8997e;--gold:#e8b04a;--blood:#c8463c;
+  --f-display:"Press Start 2P",ui-monospace,"Courier New",monospace;--f-body:"VT323",ui-monospace,"Courier New",monospace;color-scheme:dark}
+html{background:var(--night)}
+body{margin:0;background:var(--night);color:var(--parch);font:21px/1.2 var(--f-body);padding:16px max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+main{max-width:760px;margin:0 auto;background:var(--stone);padding:18px 18px 24px;box-shadow:0 0 0 3px var(--night),0 0 0 6px var(--parch-dim),0 0 0 9px var(--night);box-sizing:border-box;overflow-wrap:anywhere}
+h1{font:400 16px/1.5 var(--f-display);color:var(--gold);margin:0 0 6px}
+h2{font:400 10px/1.6 var(--f-display);color:var(--gold);margin:22px 0 8px;padding-bottom:6px;border-bottom:2px dashed var(--stone-hi)}
+p,li{margin:0 0 8px}ul{padding-left:22px;margin:0 0 8px}
+a{color:var(--gold);display:inline-block;min-height:44px;line-height:44px}
+.draft{background:var(--blood);color:var(--parch);font:400 9px/1.7 var(--f-display);padding:10px 12px;margin:0 0 14px}
+.ph{background:rgba(200,70,60,.25);color:#ffb0a4;padding:0 4px;box-shadow:inset 0 0 0 1px var(--blood)}
+.dim{color:var(--parch-dim);font-size:18px}
+table{border-collapse:collapse;width:100%;font-size:19px;margin:0 0 8px}
+td,th{text-align:left;vertical-align:top;padding:6px 6px;border-bottom:1px dashed var(--stone-hi)}th{color:var(--parch-dim);font-weight:400}
+</style>
+</head>
+<body>
+<main>
+<p class="draft">ENTWURF – NOCH NICHT GÜLTIG. Der Betreiber muss alle rot markierten Stellen ausfüllen und den Text prüfen (lassen).</p>
+<h1>DATENSCHUTZ</h1>
+<p class="dim">Stand: <span class="ph">[[Datum]]</span> · gilt für das Browserspiel Klingenhort (https://katimur94.github.io/klingenhort/) und das freiwillige Konto „Konto &amp; Cloud“.</p>
+
+<h2>1. VERANTWORTLICH</h2>
+<p><span class="ph">[[Vor- und Nachname]]</span><br><span class="ph">[[Straße Hausnummer]]</span><br><span class="ph">[[PLZ Ort, Land]]</span><br>E-Mail: <span class="ph">[[kontakt@beispiel.de]]</span></p>
+
+<h2>2. OHNE KONTO</h2>
+<p>Du kannst Klingenhort ohne Konto spielen. Dann bleibt dein Spielstand nur im Speicher deines Browsers (localStorage) auf deinem Gerät – wir bekommen davon nichts.</p>
+<p>Die Seite liegt bei GitHub Pages (GitHub Inc., USA). Beim Aufruf verarbeitet GitHub technisch notwendige Verbindungsdaten (z. B. IP-Adresse). Schriften werden von Google Fonts geladen (Google Ireland Ltd.); dabei wird deine IP-Adresse an Google übermittelt. <span class="ph">[[prüfen: Rechtsgrundlage Art. 6 Abs. 1 lit. f DSGVO, ggf. Schriften selbst hosten]]</span></p>
+
+<h2>3. MIT KONTO („KONTO &amp; CLOUD“)</h2>
+<p>Das Konto ist freiwillig. Es dient nur dazu, deinen Spielstand zu sichern und auf mehreren Geräten zu nutzen (Art. 6 Abs. 1 lit. b DSGVO – Nutzung des Dienstes, den du anforderst).</p>
+<table>
+<tr><th>Was</th><th>Wofür</th></tr>
+<tr><td>E-Mail-Adresse</td><td>Anmelden (Link oder Code per E-Mail, bzw. über Google)</td></tr>
+<tr><td>Anzeigename (freiwillig, 2–20 Zeichen)</td><td>Anzeige im Spiel</td></tr>
+<tr><td>Spielstand (Helden, Versteck, Erfolge, Einstellungen des Spiels)</td><td>Sicherung und Abgleich zwischen deinen Geräten</td></tr>
+<tr><td>Zeitpunkte (Konto angelegt, letzte Anmeldung, letzte Sicherung), Spielversion, Gerätebezeichnung (z. B. „Android · Chrome“)</td><td>Abgleich und Auswahl, welcher Spielstand neuer ist</td></tr>
+</table>
+<p>Bei der Anmeldung mit Google bekommen wir von Google deine E-Mail-Adresse und eine Kennung. <span class="ph">[[prüfen: welche Profildaten Google übermittelt]]</span></p>
+<p>Es gibt keine Werbung, kein Tracking und keine Weitergabe an Dritte zu Werbezwecken.</p>
+
+<h2>4. AUFTRAGSVERARBEITER</h2>
+<p>Konto und Cloud-Speicher laufen bei Supabase Inc. (970 Toa Payoh North #07-04, Singapore 318992) als Auftragsverarbeiter (Art. 28 DSGVO). Region des Projekts: <span class="ph">[[z. B. EU (Frankfurt) – eu-central-1]]</span>. Vertrag zur Auftragsverarbeitung (DPA): <span class="ph">[[abgeschlossen am …]]</span>. E-Mails zum Anmelden verschickt <span class="ph">[[Supabase bzw. eigener SMTP-Dienst: Name]]</span>.</p>
+
+<h2>5. SPEICHERDAUER UND LÖSCHEN</h2>
+<ul>
+<li>Im Spiel unter Einstellungen → Konto &amp; Cloud kannst du jederzeit den Cloud-Spielstand löschen oder dein ganzes Konto löschen. Dabei werden E-Mail-Adresse, Anzeigename und Cloud-Spielstand sofort entfernt.</li>
+<li>Der Spielstand auf deinem Gerät bleibt dabei erhalten – den löschst du, indem du die Websitedaten im Browser löschst.</li>
+<li>Konten ohne Anmeldung seit <span class="ph">[[z. B. 24 Monaten]]</span> löschen wir. <span class="ph">[[festlegen oder streichen]]</span></li>
+<li>Sicherungskopien des Anbieters werden nach <span class="ph">[[Frist laut Supabase-Tarif]]</span> überschrieben.</li>
+</ul>
+
+<h2>6. KINDER UND JUGENDLICHE</h2>
+<p>Unter 16 Jahren darfst du ein Konto nur mit Zustimmung deiner Eltern anlegen (Art. 8 DSGVO; <span class="ph">[[Altersgrenze für dein Land prüfen]]</span>). Ohne Konto kannst du immer spielen. Eltern können das Konto jederzeit über das Spiel oder per E-Mail an uns löschen lassen.</p>
+
+<h2>7. DEINE RECHTE</h2>
+<p>Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit (dein Spielstand lässt sich jederzeit als Code exportieren) und Widerspruch sowie auf Beschwerde bei einer Aufsichtsbehörde, z. B. <span class="ph">[[zuständige Landesdatenschutzbehörde]]</span>. Schreib uns dazu an <span class="ph">[[kontakt@beispiel.de]]</span>.</p>
+
+<h2>8. SPEICHER IM BROWSER</h2>
+<p>Das Spiel speichert im Browser: den Spielstand, die Sprache, die Anmeldung (Sitzungs-Token, solange du angemeldet bist), den Stand des Abgleichs und ein Backup. Das ist für das Spiel technisch nötig (§ 25 Abs. 2 TDDDG). Cookies setzen wir nicht.</p>
+
+<p class="dim" style="margin-top:20px"><a href="./">← Zurück zum Spiel</a> · <a href="#" class="ph">[[Impressum-Link]]</a></p>
+</main>
+</body>
+</html>

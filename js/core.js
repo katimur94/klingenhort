@@ -18,8 +18,9 @@ translateData(); translateStatic();
    spawn(e, o) neuer Gegner, bevor er ins Spiel kommt · enemyUpd(e, dt) jeder aktive Gegner pro Bild · loot(e, lm) nach den Drops eines Kills · itemGen(it) neuer Gegenstand
    stat(k, n) jede Zählung über stat() (Statistik-Schlüssel, Menge) – z. B. für Aufträge (js/auftraege.js)
    perk(v, k) → v Vorteile verändern Werte, abgefragt über perk(k, v): buy/sell Preisfaktor, fee Auktionsgebühr −, stock Basar-Angebote +,
-     egg Ei-Pflege hält länger ×, gather Sammelertrag +, farm Acker schneller × (Ruf der Fraktionen: js/fraktionen.js) */
-const HOOK = { meta: [], activate: [], stats: [], statsPost: [], hit: [], afterHit: [], kill: [], hurt: [], skill: [], update: [], room: [], draw: [], drawEnemy: [], pickup: [], itemLines: [], itemActions: [], skillRow: [], titleBtns: [], mapMore: [], mirror: [], charTabs: [], wbTabs: [], boot: [], station: [], drawStation: [], artIcon: [], roomUpd: [], die: [], postRender: [], collect: [], spawn: [], enemyUpd: [], loot: [], itemGen: [], stat: [], perk: [] };
+     egg Ei-Pflege hält länger ×, gather Sammelertrag +, farm Acker schneller × (Ruf der Fraktionen: js/fraktionen.js)
+   persist() nach jedem Speichern (Cloud-Sicherung, js/online.js) · setBtns(imSpiel) → HTML Knöpfe in den Einstellungen */
+const HOOK = { persist: [], setBtns: [], meta: [], activate: [], stats: [], statsPost: [], hit: [], afterHit: [], kill: [], hurt: [], skill: [], update: [], room: [], draw: [], drawEnemy: [], pickup: [], itemLines: [], itemActions: [], skillRow: [], titleBtns: [], mapMore: [], mirror: [], charTabs: [], wbTabs: [], boot: [], station: [], drawStation: [], artIcon: [], roomUpd: [], die: [], postRender: [], collect: [], spawn: [], enemyUpd: [], loot: [], itemGen: [], stat: [], perk: [] };
 const ON = {};
 function hook(n, ...a) { for (const f of HOOK[n]) f(...a); }
 function hookVal(n, v, ...a) { for (const f of HOOK[n]) v = f(v, ...a); return v; }
@@ -283,7 +284,7 @@ function loadAll() {
 }
 // Neue Spieler sehen keine „Neu“-Hinweise; wer schon Helden hat, bekommt die Neuigkeiten seit 4.0.1 gezeigt
 function markSeen() { if (!SAVE.meta.seenVer) SAVE.meta.seenVer = SAVE.chars.length ? '4.0.1' : VERSION; }
-function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (e) { } }
+function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (e) { } if (HOOK.persist.length) hook('persist'); }
 function migrateV1(o) {
   const c = newChar('knight', _t('Ritter'), 'normal', false);
   c.lv = o.lv || 1; c.xp = o.xp || 0; c.gold = o.gold || 0; c.potions = Math.min(5, o.potions || 2);
