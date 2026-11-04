@@ -14,6 +14,10 @@ Account: TikTok **@klingenhort**, gepostet über Zernio (Account-ID `6aeb1272fb0
 - **Erstes Bild zählt:** sofort Action, großer kurzer Text (max. 14 Zeichen/Zeile), sichere Zonen (unten ab y≈1500 und rechts ab x≈960 frei), Schnitte auf den Takt – siehe `tools/promo/README.md`.
 - **Themen wechseln:** Bosse, Mythisch/seltene Funde, Biome der Endlosen Lande, Begleiter, Meister-Talente, Level-Belohnungen, Versteck/Bauen, Basar, Auftragstafel, Klassen & Ultimative, „Wusstest du?“-Tipps. Ein Thema frühestens nach zwei Wochen wieder.
 - **Formate testen:** Aufhänger-Frage („Welche Klasse bist du?“), Vorher/Nachher (LV 1 → LV 100), Challenge („Schaffst du Rang 1200?“), Mini-Tutorial. Was in `log.md` gut lief, öfter machen.
+- **Humor & Memes (1–2× pro Woche):** lustige Szenen aus dem Spiel im Stil bekannter Meme-Formate – z. B. „POV: du findest endlich ein Mythisch … und es ist für die falsche Klasse“, „Ich nach 5 Minuten vs. nach 5 Stunden“, „Niemand: / Der Schatzgoblin:“, „Erwartung vs. Realität“ (Boss-Kodex Rang 1200), Begleiter-Fails, Gegnerhorde vs. Ultimative, Tod direkt vor dem Ausgang der Lande. Aktuelle Trends vorher mit einer Websuche prüfen (welche Gaming-Meme-Formate gerade laufen) und ins Spiel übertragen.
+  - **Nur Formate nachbauen, nichts übernehmen:** keine fremden Bilder, Videoausschnitte, Figuren oder Lieder (Urheberrecht), keine echten Personen oder Marken, kein Ton aus anderen Videos – Text-Overlay + unser Gameplay + eigene Chiptune.
+  - Kein Spott über Gruppen, nichts Gemeines, nichts Anzügliches, nichts Gruseliges für Kinder; Humor über das Spiel und Gamer-Alltag.
+- **Aktuell bleiben:** jedes neue Feature in der Woche nach dem Update mindestens einmal zeigen; Wochen-Ereignis (Goldrausch, Blutmond …) und Jahreszeit/Feiertage aufgreifen, wenn sie im Spiel vorkommen.
 - **Beschreibung:** Deutsch, kurz: Aufhänger · ein Satz zum Inhalt · „Gratis im Browser – Handy & PC, ohne Download 👉 katimur94.github.io/klingenhort“ · 8–10 Hashtags (#klingenhort #pixelart #indiegame #rpg #hackandslash #browsergame #gamedev #mobilegame + 1–2 themenbezogene).
 - Musik: nur unsere eigene Chiptune (tools/promo/music.py) – keine fremden Lieder.
 
