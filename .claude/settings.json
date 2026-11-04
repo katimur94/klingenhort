@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Zernio__*",
+      "SendUserFile",
+      "WebSearch",
+      "Bash(git:*)",
+      "Bash(node:*)",
+      "Bash(python3:*)",
+      "Bash(bash tools/test/run.sh:*)",
+      "Bash(bash tools/promo/encode.sh:*)",
+      "Bash(curl:*)",
+      "Bash(ffprobe:*)"
+    ]
+  }
+}
