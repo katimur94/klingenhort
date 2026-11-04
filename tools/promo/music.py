@@ -154,6 +154,46 @@ def roar(t, g=1.0):
     add(fx, t, LP(s, .25), .4 * g)
 
 
+# ---------- Comedy-Geräusche für Meme-Clips (alles selbst erzeugt, keine fremden Samples) ----------
+def boing(t, g=1.0):
+    """Feder-Boing: Ton rutscht hoch und runter"""
+    n = int(.5 * SR); tt = np.arange(n) / SR
+    f = 180 + 260 * np.abs(np.sin(tt * 22)) * np.exp(-tt / .25)
+    add(fx, t, np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-tt / .3), .45 * g)
+
+
+def scratch(t, g=1.0):
+    """Plattenkratzer: Rauschen mit schnellem Tonhöhen-Schwenk"""
+    n = int(.35 * SR); tt = np.arange(n) / SR
+    s = LP(noise(n), .3) * np.sin(2 * np.pi * np.cumsum(600 + 900 * np.sin(tt * 28)) / SR) * np.exp(-tt / .18)
+    add(fx, t, s, .5 * g)
+
+
+def thud(t, g=1.0):
+    """dumpfer Bass-Schlag (fürs „Bruh“-Gefühl) mit leichtem Hall"""
+    n = int(1.4 * SR); tt = np.arange(n) / SR
+    f = 42 + 70 * np.exp(-tt / .06)
+    s = np.tanh(2.5 * np.sin(2 * np.pi * np.cumsum(f) / SR)) * np.exp(-tt / .5)
+    add(fx, t, s, .9 * g)
+
+
+def huh(t, g=1.0):
+    """Kazoo-„Häää?“: summender Ton, der fragend nach oben geht"""
+    n = int(.6 * SR); tt = np.arange(n) / SR
+    f = 220 * (1 + .6 * (tt / .6) ** 2) * (1 + .03 * np.sin(tt * 40))
+    ph = np.cumsum(f) / SR
+    s = LP(square(1, n, .3) * 0 + np.sign(np.sin(2 * np.pi * ph)) * .5 + np.sin(4 * np.pi * ph) * .3, .2) * np.minimum(1, tt / .03) * np.exp(-np.maximum(0, tt - .45) / .05)
+    add(fx, t, s, .4 * g)
+
+
+def sadtrom(t, g=1.0):
+    """trauriges Wah-wah-waaah (drei fallende Töne, eigene Melodie)"""
+    for i, (nm, d) in enumerate([('D4', .28), ('C#4', .28), ('C4', .7)]):
+        n = int(d * SR); tt = np.arange(n) / SR; f = hz(nm) * (1 - .04 * tt / d)
+        s = LP(np.sign(np.sin(2 * np.pi * np.cumsum(f) / SR)) * (1 + .3 * np.sin(tt * 30)), .15) * np.exp(-tt / (d * .9))
+        add(fx, t + i * .3, s, .3 * g)
+
+
 def note(buf, t, f, dur, kind='sq', duty=.5, g=.2, d=None, cut=.3):
     n = int(dur * SR)
     if kind == 'sq': s = square(f, n, duty)
@@ -249,7 +289,8 @@ for f_ in cuts:
     crash(t_of_frame(f_), .7)
 if 'end' in START: impact(t_of_frame(START['end']), 1.1)
 KINDS = {'impact': lambda t: impact(t, .6), 'sparkle': lambda t: sparkle(t, 1.0), 'tick': lambda t: tick(t, 1.2), 'roar': lambda t: roar(t, 1.0),
-         'clank': lambda t: clank(t, 1.0), 'ting': lambda t: ting(t, hz('E6'), 1.0), 'whoosh': lambda t: whoosh(t + .3, .3, .8), 'kick': lambda t: kick(t, .7)}
+         'clank': lambda t: clank(t, 1.0), 'ting': lambda t: ting(t, hz('E6'), 1.0), 'whoosh': lambda t: whoosh(t + .3, .3, .8), 'kick': lambda t: kick(t, .7),
+         'boing': lambda t: boing(t), 'scratch': lambda t: scratch(t), 'thud': lambda t: thud(t), 'huh': lambda t: huh(t), 'sad': lambda t: sadtrom(t)}
 for f_, kind in TL.get('hits', []):
     if kind in KINDS: KINDS[kind](t_of_frame(f_))
 

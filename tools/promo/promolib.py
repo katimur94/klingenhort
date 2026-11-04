@@ -196,3 +196,48 @@ def contact_sheet(out_dir, every=24, cols=6, w=180):
     sheet = Image.new('RGB', (cols * (w + 6), rows * (h + 6)), 'white')
     for i, f in enumerate(files): sheet.paste(Image.open(os.path.join(fr, f)).resize((w, h)), ((i % cols) * (w + 6), (i // cols) * (h + 6)))
     sheet.save(os.path.join(out_dir, 'sheet.jpg'), quality=85); return os.path.join(out_dir, 'sheet.jpg')
+
+
+# ---------- Meme-Bausteine ----------
+def react(base, k, s, cx, cy, t0=0, size=88, fill=WHITE, tilt=8, shake=6, bubble=True):
+    """Reaktions-Text wie „HÄÄÄ?“, „BRUHHH“, „NEIN NEIN NEIN“: springt herein, wackelt, schräg, optional in einer Sprechblase"""
+    kk = k - t0
+    if kk < 0: return
+    im = text_img(s, size, fill, PS, maxw=760)
+    if bubble:
+        pad = 26; bb = Image.new('RGBA', (im.width + pad * 2, im.height + pad * 2), (0, 0, 0, 0)); d = ImageDraw.Draw(bb)
+        d.rounded_rectangle((0, 0, bb.width - 1, bb.height - 1), radius=28, fill=(17, 14, 23, 225), outline=(255, 255, 255, 255), width=5)
+        bb.alpha_composite(im, (pad, pad)); im = bb
+    ang = tilt * math.sin(kk * .9) if kk < 12 else tilt * .4 * math.sin(kk * .35)
+    im = im.rotate(ang, resample=Image.BICUBIC, expand=True)
+    dx = random.randint(-shake, shake) if kk < 8 else 0; dy = random.randint(-shake, shake) if kk < 8 else 0
+    place(base, im, cx + dx, cy + dy, pop(kk), smooth=True)
+
+
+def emoji_face(base, k, kind, cx, cy, t0=0, r=70):
+    """einfache, selbst gezeichnete Gesichter (kein Emoji-Font nötig): 'skull' 💀-artig, 'meh' 😐, 'cool' 😎, 'cry' 😭"""
+    kk = k - t0
+    if kk < 0: return
+    g = Image.new('RGBA', (r * 2 + 10, r * 2 + 10), (0, 0, 0, 0)); d = ImageDraw.Draw(g); c = r + 5
+    if kind == 'skull':
+        d.ellipse((5, 5, 2 * r + 5, 2 * r - 10), fill=(240, 236, 226, 255), outline=(20, 16, 22, 255), width=6)
+        d.rectangle((c - r * .55, 2 * r - 30, c + r * .55, 2 * r + 2), fill=(240, 236, 226, 255), outline=(20, 16, 22, 255), width=6)
+        for ex in (-.38, .38): d.ellipse((c + ex * r - 22, c - 18, c + ex * r + 22, c + 22), fill=(20, 16, 22, 255))
+    else:
+        d.ellipse((5, 5, 2 * r + 5, 2 * r + 5), fill=(255, 210, 74, 255), outline=(20, 16, 22, 255), width=6)
+        if kind == 'cool':
+            d.rectangle((c - r * .75, c - 22, c + r * .75, c + 4), fill=(20, 16, 22, 255)); d.arc((c - 34, c + 6, c + 34, c + 44), 10, 170, fill=(20, 16, 22, 255), width=7)
+        elif kind == 'cry':
+            for ex in (-.4, .4): d.arc((c + ex * r - 18, c - 22, c + ex * r + 18, c + 2), 200, 340, fill=(20, 16, 22, 255), width=7); d.rectangle((c + ex * r - 9, c, c + ex * r + 9, c + r * .9), fill=(87, 167, 214, 255))
+            d.arc((c - 30, c + 26, c + 30, c + 58), 200, 340, fill=(20, 16, 22, 255), width=7)
+        else:
+            for ex in (-.38, .38): d.ellipse((c + ex * r - 10, c - 20, c + ex * r + 10, c + 2), fill=(20, 16, 22, 255))
+            d.line((c - 30, c + 34, c + 30, c + 34), fill=(20, 16, 22, 255), width=8)
+    place(base, g, cx, cy, pop(kk), smooth=True)
+
+
+def freeze(raw, scene, i, k, sat=.25):
+    """Standbild mit entsättigten Farben und leichtem Zoom (für „…und dann:“-Momente)"""
+    im = load(os.path.join(raw, scene, '%04d.jpg' % i))
+    im = ImageEnhance.Color(im).enhance(sat)
+    return zoom(im, 1.06 + .004 * k)
