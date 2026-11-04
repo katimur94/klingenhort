@@ -70,3 +70,7 @@ Kurz und auf Deutsch:
 
 - Fehler nach dem Live-Gang entdeckt: mit `git revert` zurücknehmen, wieder auf `main` und `gh-pages` pushen, im Bericht erklären.
 - Live-Seite lädt nicht: genauso zurücknehmen.
+
+## TikTok
+
+Der Account @klingenhort läuft selbstständig nach `tools/promo/TIKTOK.md`. Vor jedem Update `tools/promo/feedback.md` lesen: gemeldete Bugs mit beheben, gute Wünsche in ROADMAP.md aufnehmen und den Status in feedback.md nachtragen. Im Bericht die Wochen-Auswertung aus `tools/promo/log.md`.
