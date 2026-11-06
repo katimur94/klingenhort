@@ -35,14 +35,14 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
       // jedes Bildchen hat eigene, sichtbare Pixel
       const sig = k => { const c = matIcon(k), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0, h = 0; for (let i = 3; i < d.length; i += 4) if (d[i]) { n++; h = (h * 31 + d[i - 3] * 7 + d[i - 2] * 3 + d[i - 1] + i) | 0; } return n > 12 ? h : 0; };
       const sigs = res.map(sig); o.icons = sigs.every(Boolean) && new Set(sigs).size === res.length;
-      o.mon = MONMATS.length === 13 && MONMATS.every(k => !MATS[k].res) && MONMATS[12] === 'aether';
+      o.mon = MONMATS.length === 14 && MONMATS.every(k => !MATS[k].res) && MONMATS[12] === 'aether' && MONMATS[13] === 'sturmsilber';   // 6.5: Sturmsilber als 14.
       o.market = res.every(k => MK_MATV[k] > 0) && typeof PET_FEED === 'undefined' || res.every(k => PET_FEED[k] > 0 && PET_FEED[k] < 2000);
       o.drops = (() => { for (let st = 1; st < 400; st += 7) { const a = MONMATS.slice(0, Math.min(MONMATS.length, 6 + Math.floor(st / 8))); if (a.some(k => MATS[k].res)) return false; } return true; })();
       return o;
     });
     ok(r.data, 'neue Rohstoffe in MATS und MATORDER: Holz, Stein, Pflanzenfaser, Feder, Samen, Eisenholz, Sternholz, Marmor, Obsidian');
     ok(r.icons, 'jeder Rohstoff hat ein eigenes Pixelbild');
-    ok(r.mon && r.drops, 'Gegner-Beute und Truhen ziehen weiter nur aus den 13 Gegner-Materialien (MONMATS)');
+    ok(r.mon && r.drops, 'Gegner-Beute und Truhen ziehen weiter nur aus den 14 Gegner-Materialien (MONMATS, seit 6.5 mit Sturmsilber)');
     ok(r.market, 'Rohstoffe haben Werte im Basar und als Begleiter-Futter');
   }
 

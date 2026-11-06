@@ -10,7 +10,7 @@ const PERSIST = ['id', 'name', 'cls', 'diff', 'hc', 'lv', 'xp', 'gold', 'potions
 function newChar(cls, name, diff, hc, look) {
   const C = CLASSES[cls];
   return {
-    id: uid(), name: name || C.name, cls, diff: diff || 'normal', hc: !!hc,
+    id: uid(), name: name || C.name, cls, diff: diff || 'normal', hc: !!hc, st9: 1,
     lv: 1, xp: 0, gold: 40, potions: 3, sp: 0, talents: {}, paragon: 0, pxp: 0, pp: { dmg: 0, hp: 0, def: 0, crit: 0 },
     gear: { weapon: makeItem({ slot: 'weapon', base: C.start, tier: 0, rar: 0, std: true }), armor: makeItem({ slot: 'armor', base: 'armor', tier: 0, rar: 0 }), helm: makeItem({ slot: 'helm', base: 'helm', tier: 0, rar: 0 }) },
     bag: [], mats: {}, gems: {}, dyes: ['natur'], dye: 'natur', act: 1, map: null, rebirths: 0, buffs: [],

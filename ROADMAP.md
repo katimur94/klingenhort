@@ -44,7 +44,7 @@ Ausführlich für den automatischen Lauf: [`tools/WOCHENUPDATE.md`](tools/WOCHEN
 | – | 6.2 | **Sammeln & Bauen** | Holz, Stein, Fasern, Federn und seltene Rohstoffe sammeln (Bäume fällen, Steine abbauen, ernten) in den Landen und im Versteck, Felder im Kräutergarten, Bauzeiten mit Beschleunigen gegen Gold/Glücksmünzen, mehr Stufen für alle Gebäude (Schatzkammer 15 = 400 Plätze), Sattlerei (Beutel bis 90, Rucksack bis 40, größere Begleiter-Tasche), Sammelbeutel ohne Platzgrenze, magische Vögel (Vogelhaus), Lager-Zugriff bei Händler, Basar und Werkbank | groß | ✅ 6.2 |
 | 2 | 6.3 | **Aufträge & Ruf** | Tages- und Wochenaufträge für Kampagne und Endlose Lande, Fraktionen mit Ruf-Stufen und besseren Tauschangeboten | mittel | ✅ 6.3 |
 | – | 6.4 | **Aufstieg** | Helden bis Level 100 (Paragon ab 100), neue Erfahrungs-Kurve ohne Wand bei 35, Meister-Talente bis Level 100 (99 Punkte je Klasse), Belohnung für jedes Level, Begleiter bis Level 150 mit neuer Talent-Stufe und Belohnungen je Level – auf Wunsch des Besitzers vorgezogen | groß | ✅ 6.4 |
-| 3 | 6.5 | **Neues Gebiet: Sturmgipfel** | Kampagnen-Gebiet 9 und Sturm-Biome in den Endlosen Landen mit Blitz-Gegnern, Boss *Sturmkönig Aerok*, Material *Sturmsilber* | groß | offen |
+| 3 | 6.5 | **Neues Gebiet: Sturmgipfel** | Kampagnen-Gebiet 9 (Gewitter mit angekündigten Blitzeinschlägen) und Blitz-Gegner in den Sturm-Biomen der Endlosen Landen, Boss *Sturmkönig Aerok*, Material *Sturmsilber* | groß | ✅ 6.5 |
 | 4 | 6.6 | **Saison 1** | Saison-Helden ab Level 1, Saison-Rangliste, kostenloser Saison-Pass mit 30 Stufen | groß | offen |
 | 5 | 6.7 | **Begleiter-Expeditionen** | Begleiter allein in die Endlosen Lande schicken (läuft auch offline), bringen Beute, Eier und Artefakte mit | mittel | offen |
 | 6 | 6.8 | **Der Abgrund** | Endlos-Turm mit Bestwert pro Klasse | mittel | offen |
@@ -72,7 +72,7 @@ Schon erledigt in 4.1: Hochformat, klebende Kopf- und Fußleisten, Liste neben D
 - **Wisch-Gesten** zwischen den Reitern (Ausrüstung → Talente → Vorrat)
 - **Farbenblind-Modus** für Seltenheitsfarben (zusätzliche Symbole)
 - ✅ **Bildschirm-Wackeln und Blitzen** abschaltbar – 4.2
-- **Haptik-Stärke** einstellbar
+- ✅ **Haptik-Stärke** einstellbar (aus, leicht, normal, stark) – 6.5
 - **Spielstand in der Cloud** (Code per Link teilen statt kopieren)
 - ✅ **Sechs Sprachen** (Englisch, Türkisch, Spanisch, Italienisch, Französisch, Deutsch) – 4.3
 - **Auto-Zerlegen:** Gewöhnliche und magische Beute automatisch in Bauteile zerlegen

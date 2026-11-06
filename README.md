@@ -7,7 +7,7 @@ Vier Klassen, frei gestaltbare Helden, **Begleiter, die mit dir wachsen**, sechs
 
 ### ▶ [Jetzt spielen: katimur94.github.io/klingenhort](https://katimur94.github.io/klingenhort/)
 
-Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 6.3 · jede Woche neue Inhalte
+Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 6.5 · jede Woche neue Inhalte
 
 🌐 Deutsch · English · Türkçe · Español · Italiano · Français – *the game starts in your device language*
 
@@ -86,6 +86,17 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Vers
 
 Klingenhort wird jede Woche erweitert. Im Spiel zeigt **Neuigkeiten** (Titelmenü, Einstellungen oder Weltkarte → Mehr) alle Updates und was als Nächstes kommt; nach einem Update öffnet sich die Seite einmal von selbst.
 
+**Neu in 6.5 – Sturmgipfel**
+
+| System | Was es kann |
+|---|---|
+| **Akt 9: Sturmgipfel** | Neues Kampagnen-Gebiet nach dem Drachenhort mit eigener Geschichte, Boden, Regen und Wetterleuchten. Die Qual beginnt jetzt mit Akt 10; Helden, die schon in der Qual waren, rücken einen Akt weiter (Qual-Stufe bleibt) |
+| **Gewitter** | Im Kampf schlagen alle 2,6–4,2 s Blitze ein (ab Stufe 60 zwei auf einmal): leuchtender Warnkreis, nach rund einer Sekunde Einschlag. Trifft den Helden und alle Gegner im Kreis (Gegner 2,4-fach) – Gegner hineinlocken lohnt sich. System in `js/sturm.js` |
+| **Sturmkönig Aerok** | Boss von Akt 9: stürmt an, ruft Sturmharpyien und lässt drei Blitze rund um dich einschlagen, unter 50 % Leben fünf und schneller |
+| **Blitz-Gegner** | Sturmharpyie (schnell, stürzt herab), Sturmrufer (Blitzkugeln), Donnerzwerg (Ansturm), Blitzgolem (gepanzert) – Element Blitz, in den Wellen ab Akt 9 und in Sturmklippen, Himmelsklippen und Splittergebirge der Endlosen Lande |
+| **Sturmsilber** | Neues, wertvollstes Gegner-Material; Beute der Blitz-Gegner und von Aerok (6 Stück) |
+| **Vibration** | Vier Stufen (aus, leicht, normal, stark) in Einstellungen → Steuerung; Blitze in der Nähe rütteln |
+
 **Neu in 6.4 – Aufstieg**
 
 | System | Was es kann |
@@ -94,6 +105,8 @@ Klingenhort wird jede Woche erweitert. Im Spiel zeigt **Neuigkeiten** (Titelmen�
 | **Meister-Talente** | Je Ast 7 neue Talente (ab Level 30, 40, 50, 60, 70, 80) und ein Schlussstein bei Level 90/95/100, der eine Fähigkeit verändert. 99 Punkte je Klasse, voll erst bei Level 100. Umschalter Grundstufe/Meister im Reiter TALENTE |
 | **Level-Belohnungen** | Jedes Level 2–100: Gold, Material, Rohstoff, Bauteil; alle 5 Level Glücksmünzen; alle 10 ein Episches/Legendäres Teil oder ein Ei; Umhang (60), Titel (70, 90), Flügel (80), „Aura der Hundert“ und Titel (100). Reiter AUFSTIEG mit Zeitleiste. Alte Helden: kein Nachschlag für schon erreichte Level |
 | **Begleiter bis 150** | Ab Level 101 „Aufgestiegen“ mit Aura, steilere Kurve ab 100, neue Talent-Stufe mit Level-Sperren (100/110/120/135) und drei Krönungen bei 150 (Baum voll erst bei 150), Belohnung je Begleiter-Level mit Zeitleiste, Auren und Titel bei 110/125/150 |
+
+**6.2.1 – Das Handbuch:** „?“ im Hauptmenü (auch in Pause und Einstellungen, ohne die Welt zu verlassen; am PC F1): über 300 Einträge in 13 Kapiteln mit Inhaltsverzeichnis und Suche (ohne Groß-/Kleinschreibung und Umlaute, auch in der eigenen Sprache). Materialien mit „Wo finden“ und „Wofür“ – aus den Spieldaten berechnet, damit das Handbuch nach jedem Update stimmt.
 
 **Neu in 6.3 – Aufträge & Ruf**
 
@@ -290,7 +303,8 @@ Der Uralte Drache Pyraxis hat das Weltenfeuer von Klingenhort gestohlen, der Ord
 | 6 | Giftsumpf | Seuchenfürst Morbus | Giftpfützen, Adamant |
 | 7 | Schattenzitadelle | Todesritter Varkas | Sternenstaub, sehr dunkel |
 | 8 | Drachenhort | Uralter Drache Pyraxis | Lava, Drachenschuppen |
-| 9+ | alle Gebiete | gestärkte Bosse | Qual-Stufen ohne Ende |
+| 9 | Sturmgipfel | Sturmkönig Aerok | Gewitter mit Blitzeinschlägen, Sturmsilber |
+| 10+ | alle Gebiete | gestärkte Bosse | Qual-Stufen ohne Ende |
 
 ---
 

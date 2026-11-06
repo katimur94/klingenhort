@@ -519,7 +519,7 @@ function hbWhere(k) {
     R.push({ id: 'en:' + e, ic: hbEnIc(e), t: esc(hbEnName(e)), d: v >= 1 ? _t('immer {n} Stück', { n: v }) : _t('{p} Chance – Elite-Gegner doppelt so oft und doppelt so viel', { p: pc1(v) }) });
   }
   if (k === 'schuppe') R.push({ id: 'en:bosse', ic: ['s', 16, 428, 32, 36], t: _t('Jeder Boss'), d: _t('1–3 Drachenschuppen – in der Drachenwoche fallen sie auch bei normalen Gegnern.') });
-  if (k === 'aether') R.push({ id: 'start:qual', ic: ['mat', 'aether'], t: _t('Gegner in der Qual'), d: _t('Ab Akt 9 lässt jeder Gegner mit 3 % Chance einen Ätherkristall fallen, Elite dreimal so oft.') });
+  if (k === 'aether') R.push({ id: 'start:qual', ic: ['mat', 'aether'], t: _t('Gegner in der Qual'), d: _t('Ab Akt 10 lässt jeder Gegner mit 3 % Chance einen Ätherkristall fallen, Elite dreimal so oft.') });
   // Erzadern: Kampagne (Gebiet je Akt) und Lande
   const ba = BIOMES.map((b, i) => b.vein === k ? _t('Akt {a}: {name}', { a: i + 1, name: esc(b.name) }) : null).filter(Boolean);
   if (ba.length) R.push({ id: 'start:kampagne', ic: ['mat', k], t: _t('Erzadern in der Kampagne'), d: _t('Hau mit Angriffen auf die Adern: 2–4 Stück. {list}', { list: ba.join(' · ') }) });
@@ -599,15 +599,18 @@ function hbStart() {
     b: () => hH(_t('SO SPIELST DU')) + hUl([_t('Auf der Weltkarte wählst du den nächsten Ort: Kampf, Elite, Händler, Schrein, Schatz und mehr.'), _t('Besiegte Gegner lassen Gold, Materialien und Ausrüstung fallen. Bessere Ausrüstung legst du im Charakter an.'), _t('Im Versteck baust du Schmiede, Labor, Schatzkammer und mehr aus – mit Gold, Materialien, Holz und Stein.'), _t('Am Ende jedes Akts wartet ein Boss. Nach 8 Akten ist die Geschichte erzählt – dann beginnt die Qual.'), _t('Ab Level 5 öffnet das Weltentor die Endlosen Lande: die beste Beute, aber auch das größte Risiko.')])
       + hP(_t('Wenn du etwas nicht weißt: Tippe auf das Fragezeichen und such danach. Hier steht alles drin.')) });
   E('start:kampagne', _t('Kampagne und Akte'), { ic: ['pa', 'ruin'], kw: 'akt akte karte geschichte boss story weltkarte erzader', see: ['start:karte', 'start:qual', 'en:bosse', 'start:tod'],
-    s: _t('8 Akte, jeder mit eigener Karte, eigenem Gebiet und einem Boss am Ende.'),
+    s: _t('9 Akte, jeder mit eigener Karte, eigenem Gebiet und einem Boss am Ende.'),
     b: () => hP(_t('Jeder Akt ist eine Karte mit sieben Reihen von Orten. Du gehst Schritt für Schritt nach oben und wählst jedes Mal einen der leuchtenden Punkte. Ganz oben wartet der Boss. Danach geht es mit dem nächsten Akt weiter – vorher kannst du ins Versteck.'))
       + hH(_t('DIE AKTE')) + hRows(ACTS.map((A, i) => { const b = BOSSES[i], B = BIOMES[i]; return { id: b ? 'en:' + b.type : null, ic: b ? hbEnIc(b.type) : null, t: _t('Akt {a}: {t}', { a: i + 1, t: esc(A.t) }), d: _t('{biome} · Boss: {boss}', { biome: esc(B ? B.name : ''), boss: esc(b ? b.name : '') }) }; }))
       + hH(_t('STUFE')) + hP(_t('Jeder Ort hat eine Stufe: Akt 1 beginnt bei Stufe 1, jeder Akt bringt 7 Stufen dazu. Je höher die Stufe, desto stärker die Gegner und desto besser die Beute.')) });
   E('start:karte', _t('Orte auf der Weltkarte'), { ic: ['pa', 'frage'], kw: 'knoten orte karte elite champion schatz händler schrein werkbank rast rätsel ereignis', see: ['start:schreine', 'han:haendler', 'fg:werkbank'],
     s: _t('Was dich an den Punkten der Karte erwartet.'),
     b: () => hRows(Object.keys(NODE).map(k => ({ ic: NODE[k].icon, t: esc(NODE[k].n), d: esc(NODE[k].d) }))) + hNote(_t('Tipp: Nebel verdeckt die Orte weiter oben. Plane deinen Weg – manchmal lohnt ein Umweg über den Händler oder die Werkbank.')) });
-  E('start:qual', _t('Qual-Stufen'), { ic: ['mat', 'aether'], kw: 'qual endgame schwer akt 9 leere', see: ['start:kampagne', 'mat:aether', 'en:tausend'],
-    s: _t('Nach Akt 8 geht es endlos weiter – jede Qual-Stufe härter und mit besserer Beute.'),
+  E('start:gewitter', _t('Gewitter im Sturmgipfel'), { ic: ['mat', 'sturmsilber'], kw: 'gewitter blitz blitze sturm sturmgipfel akt 9 aerok regen sturmsilber', see: ['start:kampagne', 'en:bosse', 'start:qual'],
+    s: _t('In Akt 9 schlagen im Kampf Blitze ein – achte auf die leuchtenden Kreise am Boden.'),
+    b: () => hUl([_t('Ein leuchtender Kreis kündigt jeden Blitz an. Nach rund einer Sekunde schlägt er ein.'), _t('Der Blitz trifft alle im Kreis – dich und die Gegner. Lock Gegner hinein, sie nehmen viel mehr Schaden.'), _t('Sturmkönig Aerok ruft selbst Blitze rund um dich, unter halbem Leben noch mehr.'), _t('Blitz-Gegner und Aerok lassen Sturmsilber fallen, das wertvollste Material der Gegner.')]) });
+  E('start:qual', _t('Qual-Stufen'), { ic: ['mat', 'aether'], kw: 'qual endgame schwer akt 10 leere', see: ['start:kampagne', 'mat:aether', 'en:tausend'],
+    s: _t('Nach Akt 9 geht es endlos weiter – jede Qual-Stufe härter und mit besserer Beute.'),
     b: () => hP(esc(QUAL_INTRO)) + hRows([1, 2, 3, 5, 8, 12].map(q => ({ ic: ['mat', 'aether'], t: _t('Qual {q} (Akt {a})', { q, a: STORY_ACTS + q }), d: _t('Gegner +{p} % stärker', { p: hbNum((Math.pow(1.3, q) - 1) * 100) }) })))
       + hP(_t('In der Qual lassen Gegner Ätherkristalle fallen, und Bosse können mythische Gegenstände tragen.')) });
   E('start:schwierig', _t('Schwierigkeit und Hardcore'), { ic: ['s', 288, 432, 16, 16], kw: 'normal albtraum hölle hardcore hc schwierigkeit tod', see: ['han:ruhm', 'start:tod'],
@@ -1061,7 +1064,7 @@ function hbBiomes() {
 const HB_AI = { melee: () => _t('Nahkampf'), archer: () => _t('Schießt aus der Ferne und hält Abstand'), lunge: () => _t('Springt dich an'), bomber: () => _t('Wirft Bomben oder Flaschen'), caster: () => _t('Zaubert Geschosse'), ghost: () => _t('Gleitet durch Wände und verschwindet'), slam: () => _t('Schlägt Schockwellen'), charge: () => _t('Stürmt auf dich los'), burrow: () => _t('Gräbt sich ein und bricht unter dir hervor'), swoop: () => _t('Kreist in der Luft und stürzt herab'), dragon: () => _t('Feueratem und Diener'), flee: () => _t('Läuft mit dem Gold weg') };
 function hbEnemies() {
   hbChap('en', _t('Gegner und Bosse'), ['sp', 'orc'], _t('Jeder Gegner, Elite, Champions, 1200 Bosse'));
-  E('en:bosse', _t('Bosse der Geschichte'), { ic: ['s', 16, 428, 32, 36], kw: 'boss bosse akt grausch vexhal morgul ignaroth frostra morbus varkas pyraxis', see: ['start:kampagne', 'en:mechaniken', 'en:tausend'],
+  E('en:bosse', _t('Bosse der Geschichte'), { ic: ['s', 16, 428, 32, 36], kw: 'boss bosse akt grausch vexhal morgul ignaroth frostra morbus varkas pyraxis aerok', see: ['start:kampagne', 'en:mechaniken', 'en:tausend'],
     s: _t('Am Ende jedes Akts wartet ein Boss.'),
     b: () => hRows(BOSSES.map((b, i) => ({ id: 'en:' + b.type, ic: hbEnIc(b.type), t: esc(b.name), d: _t('Akt {a} · {biome}', { a: i + 1, biome: esc(BIOMES[i].name) }) })))
       + hP(_t('Jeder Boss lässt 1–3 Drachenschuppen, einen Edelstein und eine Chronikseite oder Glücksmünze fallen. In der Qual kommen sie stärker zurück.')) });

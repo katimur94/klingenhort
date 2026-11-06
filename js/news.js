@@ -7,6 +7,17 @@
 
 const CHANGELOG = [
   {
+    v: '6.5.0', d: '2026-11-06', t: 'Sturmgipfel', items: [
+      ['neu', 'Akt 9: die Sturmgipfel. Über den höchsten Gipfeln tobt ein Gewitter, das nie endet – mit eigener Geschichte, Regen, Wetterleuchten und neuem Gebiet.'],
+      ['neu', 'Blitze schlagen im Kampf ein: Ein leuchtender Kreis am Boden warnt dich vor, dann trifft der Blitz alle im Kreis – dich und die Gegner. Lock sie hinein!'],
+      ['neu', 'Neuer Boss: Sturmkönig Aerok. Er stürmt mit seiner Klinge an, ruft Sturmharpyien und lässt Blitze rund um dich einschlagen – unter halbem Leben noch mehr.'],
+      ['neu', 'Vier neue Blitz-Gegner: Sturmharpyie, Sturmrufer, Donnerzwerg und Blitzgolem – im Sturmgipfel und in den Sturm-Gebieten der Endlosen Lande (Sturmklippen, Himmelsklippen, Splittergebirge).'],
+      ['neu', 'Neues Material: Sturmsilber – das wertvollste Material der Gegner. Es fällt bei den Blitz-Gegnern und bei Aerok.'],
+      ['besser', 'Die Qual beginnt jetzt mit Akt 10. Bist du schon in der Qual, rückst du einen Akt weiter – deine Qual-Stufe bleibt gleich. Den Sturmgipfel triffst du in der Qual alle neun Akte wieder.'],
+      ['besser', 'Vibration in vier Stufen: aus, leicht, normal oder stark (Einstellungen → Steuerung). Blitze in deiner Nähe lassen das Handy rütteln.']
+    ]
+  },
+  {
     v: '6.4.0', d: '2026-10-31', t: 'Aufstieg', items: [
       ['neu', 'Helden steigen jetzt bis Level 100 auf. Die letzten Level sind richtig schwer – Level 100 ist eine echte Leistung. Paragon beginnt erst danach; deine bisherigen Paragon-Punkte bleiben.'],
       ['neu', 'Meister-Talente: Jeder Ast bekommt eine neue Stufe mit Talenten ab Level 30 bis 80 und einem Schlussstein bei Level 90, 95 und 100, der eine Fähigkeit spürbar verändert. 99 Punkte je Klasse – voll erst bei Level 100. Punkte, die du bisher nicht ausgeben konntest, kannst du jetzt verteilen.'],
@@ -204,10 +215,10 @@ const CHANGELOG = [
 
 // Vorschau: was in den nächsten Wochen kommt (Version, Text – siehe ROADMAP.md)
 const COMING = [
-  ['6.5', 'Neues Gebiet: der Sturmgipfel mit Blitz-Gegnern, eigenem Boss und Sturmsilber'],
   ['6.6', 'Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste'],
   ['6.7', 'Begleiter-Expeditionen: Schick deine Begleiter allein in die Endlosen Lande – sie bringen Beute, Eier und Artefakte mit'],
-  ['6.8', 'Der Abgrund: ein Turm ohne Ende – wie tief kommst du? Mit Bestwert für jede Klasse']
+  ['6.8', 'Der Abgrund: ein Turm ohne Ende – wie tief kommst du? Mit Bestwert für jede Klasse'],
+  ['6.9', 'Neue Klasse: der Nekromant – mit Skeletten, Knochenspeer, Leichenexplosion und der Armee der Toten']
 ];
 
 const NEWS_KIND = { neu: [_t('NEU'), '#79c24e'], besser: [_t('BESSER'), '#57a7d6'], fix: [_t('BEHOBEN'), '#e8b04a'] };

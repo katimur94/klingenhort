@@ -5,7 +5,7 @@
    Neue Klassen, Gegner, Talente, Rezepte: hier ergänzen.
    ========================================================= */
 
-const VERSION = '6.4.0';
+const VERSION = '6.5.0';
 const SAVE_KEY = 'klingenhort.v3';
 const WALL = 32;
 
@@ -444,6 +444,7 @@ const MATS = {
   schuppe:{n:'Drachenschuppe',c:'#e8d04a',c2:'#9c6a24'},
   stern:{n:'Sternenstaub',c:'#b0b8ff',c2:'#4a4ad0'},
   aether:{n:'Ätherkristall',c:'#ffe8a0',c2:'#c8a04a'},
+  sturmsilber:{n:'Sturmsilber',c:'#c8e8ff',c2:'#3a6ab8'},   // 6.5: Sturmgipfel (Akt 9) und Blitz-Gegner
   // Rohstoffe (6.2, res): sammeln in den Landen und im Versteck, bauen damit (js/bauen.js) – keine Gegner-Beute
   holz:{n:'Holz',c:'#b07a48',c2:'#6a4424',res:1,w:'Bäume (Holzplatz im Versteck, Endlose Lande), Kisten, Acker'},
   stein:{n:'Stein',c:'#a8a296',c2:'#5e5a54',res:1,w:'Felsen (Holzplatz im Versteck, Endlose Lande), Erzmine'},
@@ -455,7 +456,7 @@ const MATS = {
   obsidian:{n:'Obsidian',c:'#5a4878',c2:'#140e1e',res:1,w:'dunkle Felsen und Obsidian in Glut-Gebieten, Erzmine ab Stufe 8'},
   sternholz:{n:'Sternholz',c:'#a8b8ff',c2:'#3a3a8a',res:1,w:'Sternenbäume weit draußen in den Landen, Acker (Sternblume)'}
 };
-const MATORDER = ['erz','leder','knochen','schleim','zahn','kristall','horn','glut','mithril','adamant','schuppe','stern','aether','holz','stein','faser','samen','feder','eisenholz','marmor','obsidian','sternholz'];
+const MATORDER = ['erz','leder','knochen','schleim','zahn','kristall','horn','glut','mithril','adamant','schuppe','stern','aether','holz','stein','faser','samen','feder','eisenholz','marmor','obsidian','sternholz','sturmsilber'];   // neue Materialien nur hinten anfügen
 // Gegner-Materialien in Stufen-Reihenfolge (Beute, Truhen, Händler wählen „bis Stufe n“ daraus) – ohne die Rohstoffe
 const MONMATS = MATORDER.filter(k => !MATS[k].res);
 const GEMS = {
@@ -526,6 +527,11 @@ const EN = {
   frostoger:{name:'Frostoger',sp:'ogre',tint:'rgba(140,200,255,.42)',hp:170,atk:23,spd:28,r:10,xp:34,gold:17,ai:'slam',aff:['frostig'],wpn:'big_hammer',hand:[6,-12],mass:3,cost:4.5,from:13,blood:'#8ee6ea',drop:{mithril:.4,zahn:.4},desc:'Sein Hammer lässt die Luft gefrieren.'},
   todesritter:{name:'Todesritter',sp:'knight',tint:'rgba(30,10,30,.62)',hp:150,atk:20,spd:46,r:6,xp:30,gold:18,ai:'charge',wpn:'knight_sword',hand:[4,-9],mass:2.6,cost:4.5,from:14,blood:'#6a1a28',drop:{adamant:.35,kristall:.3},desc:'Varkas\' Garde. Sie kennt keinen Schmerz.'},
   jungdrache:{name:'Jungdrache',sp:'demon',tint:'rgba(200,40,20,.38)',sc:.72,hp:240,atk:22,spd:34,r:11,xp:44,gold:24,ai:'dragon',summon:'imp',mass:4,cost:6,from:16,blood:'#ff8a3a',drop:{schuppe:.5,glut:.4},desc:'Pyraxis\' Brut. Klein – für einen Drachen.'},
+  // Sturmgipfel (6.5): nur ab Akt 9 (Stufe 57) in den Wellen, in den Endlosen Landen in den Sturm-Gebieten
+  sturmharpyie:{name:'Sturmharpyie',sp:'angel',tint:'rgba(120,210,255,.5)',hp:64,atk:15,spd:76,r:5,xp:20,gold:12,ai:'swoop',aff:['schnell'],cost:3.2,from:57,mass:1.3,blood:'#8ee6ff',drop:{sturmsilber:.12,stern:.08},desc:'Reitet auf den Böen und stürzt mit dem Blitz herab.'},
+  sturmrufer:{name:'Sturmrufer',sp:'wizard',tint:'rgba(80,150,255,.42)',hp:48,atk:16,spd:38,r:5,xp:18,gold:11,ai:'caster',wpn:'green_staff',hand:[3,-6],orb:'lightbolt',cost:2.8,from:57,blood:'#8ee6ff',drop:{sturmsilber:.15,kristall:.2},desc:'Ruft Blitze aus den Wolken – und lenkt sie auf dich.'},
+  donnerzwerg:{name:'Donnerzwerg',sp:'dwarf',tint:'rgba(60,130,230,.38)',hp:98,atk:17,spd:48,r:6,xp:21,gold:13,ai:'charge',wpn:'mace',hand:[3,-7],mass:2,cost:3.2,from:57,blood:'#b8302a',drop:{sturmsilber:.15,mithril:.25},desc:'Bergzwerge der Gipfel. Wenn sie anstürmen, donnert es.'},
+  blitzgolem:{name:'Blitzgolem',sp:'bigz',tint:'rgba(90,170,255,.52)',hp:240,atk:25,spd:23,r:10,xp:40,gold:20,ai:'slam',aff:['gepanzert'],mass:4,cost:5,from:59,blood:'#8ee6ff',drop:{sturmsilber:.35,erz:.8},desc:'Ein Fels voller Gewitter. Jeder Schlag knistert.'},
   tinyz:{name:'Kriechzombie',sp:'tinyz',hp:16,atk:5,spd:46,r:4,xp:3,gold:1,ai:'melee',reach:9,wind:.35,cd:1,cost:99,from:99,blood:'#6a8a3a',drop:{knochen:.2},desc:'Vom Nekromanten erweckt.'},
   mimic:{name:'Mimik',sp:'mimic',hp:90,atk:15,spd:62,r:6,xp:25,gold:40,ai:'lunge',cost:99,from:99,blood:'#b8302a',drop:{kristall:1},desc:'Sieht aus wie eine Truhe. Ist keine.'},
   goldmimik:{name:'Goldmimik',sp:'mimic',tint:'rgba(255,210,60,.48)',hp:130,atk:18,spd:68,r:6,xp:40,gold:140,ai:'lunge',cost:99,from:99,blood:'#e8d04a',drop:{kristall:1,mithril:1},desc:'Diese Truhe beißt – und zahlt gut.'},
@@ -536,6 +542,7 @@ const EN = {
   morbus:{name:'Seuchenfürst',sp:'doc',hp:60,atk:22,spd:38,r:6,xp:80,gold:55,ai:'bomber',flask:1,summon:'toxslime',boss:true,mass:6,blood:'#79c24e',drop:{adamant:5,schleim:6},desc:'Züchtet Pyraxis\' Brut im Giftsumpf.'},
   varkas:{name:'Todesritter',sp:'knight',glow:'#ff3a5a',hp:160,atk:26,spd:48,r:7,xp:90,gold:60,ai:'charge',wpn:'anime_sword',hand:[4,-9],summon:'skeleton',boss:true,mass:7,blood:'#6a1a28',drop:{adamant:4,stern:4},desc:'Der Verräter des Ordens.'},
   pyraxis:{name:'Uralter Drache',sp:'demon',hp:540,atk:30,spd:32,r:13,xp:120,gold:90,ai:'dragon',summon:'jungdrache',boss:true,mass:9,blood:'#ff8a3a',drop:{schuppe:6,aether:3},desc:'Der Drache, der das Weltenfeuer stahl.'},
+  aerok:{name:'Sturmkönig',sp:'knight',glow:'#8ee6ff',hp:170,atk:27,spd:52,r:7,xp:110,gold:75,ai:'charge',wpn:'anime_sword',hand:[4,-9],summon:'sturmharpyie',boss:true,mass:7,blood:'#8ee6ff',drop:{sturmsilber:6,stern:3},desc:'Herr der Gipfel. Wo er steht, schlägt der Blitz ein.'},
   dummy:{name:'Trainingspuppe',sp:'skelet',hp:500,atk:0,spd:0,r:7,xp:0,gold:0,ai:'dummy',hidden:1,cost:99,from:99,blood:'#c8a878',drop:{},desc:''}
 };
 const BOSSES = [
@@ -546,7 +553,8 @@ const BOSSES = [
   {type:'frostra',name:'Eiskönigin Frostra',sc:1.9,hpMul:12,tint:'rgba(170,230,255,.5)'},
   {type:'morbus',name:'Seuchenfürst Morbus',sc:2,hpMul:10,tint:'rgba(120,200,60,.38)'},
   {type:'varkas',name:'Todesritter Varkas',sc:2,hpMul:3.6,tint:'rgba(70,0,30,.42)'},
-  {type:'pyraxis',name:'Uralter Drache Pyraxis',sc:2.5,hpMul:1.7,tint:'rgba(210,30,10,.38)'}
+  {type:'pyraxis',name:'Uralter Drache Pyraxis',sc:2.5,hpMul:1.7,tint:'rgba(210,30,10,.38)'},
+  {type:'aerok',name:'Sturmkönig Aerok',sc:2.1,hpMul:4,tint:'rgba(90,180,255,.4)'}   // 6.5: Akt 9 Sturmgipfel
 ];
 const STORY_ACTS = BOSSES.length;   // danach beginnen die Qual-Stufen
 const CHAMPS = ['Grimmzahn der Schlächter','Vela die Flinke','Knochenbrecher Thorg','Die Graue Witwe','Kerax Blutdurst','Skarn der Unbeugsame','Morra Schattenhand','Brutus Eisenkiefer','Ilse die Verfluchte','Zagg der Hungrige'];
@@ -571,7 +579,8 @@ const BIOMES = [
   {key:'frost',name:'Frostgipfel',tint:[.86,.98,1.22],dark:.36,root:47,dust:'#c8e0f0',vein:'mithril',pool:'eis',map:['#5a7088','#4a5e74','#6a849c','#3e5064']},
   {key:'sumpf',name:'Giftsumpf',tint:[.86,.96,.72],dark:.5,root:42,dust:'#7a8a52',vein:'adamant',pool:'gift',map:['#3a4228','#2e3620','#4a5230','#262c1a']},
   {key:'schatten',name:'Schattenzitadelle',tint:[.74,.7,.98],dark:.6,root:38,dust:'#6a5a8a',vein:'stern',map:['#2a2440','#221c34','#342c4e','#1a1628']},
-  {key:'hort',name:'Drachenhort',tint:[1.16,.94,.66],dark:.32,root:44,dust:'#a88a4a',vein:'schuppe',pool:'lava',map:['#4a3a22','#3e301c','#5a4628','#2e2414']}
+  {key:'hort',name:'Drachenhort',tint:[1.16,.94,.66],dark:.32,root:44,dust:'#a88a4a',vein:'schuppe',pool:'lava',map:['#4a3a22','#3e301c','#5a4628','#2e2414']},
+  {key:'sturm',name:'Sturmgipfel',tint:[.82,.9,1.1],dark:.46,root:46,dust:'#9aa8c0',vein:'sturmsilber',pool:'wasser',map:['#46506a','#3a445c','#56627e','#2e364a']}   // 6.5: Gewitter (js/sturm.js)
 ];
 const HIDE_BIOME = {key:'versteck',name:'Versteck',tint:[1.06,1,.9],dark:.22,root:48,dust:'#8a7a6a',vein:'erz'};
 const DIFFS = {
@@ -710,8 +719,9 @@ const ACH = [
   {id:'boss6',n:'Heilmittel',d:'Besiege Seuchenfürst Morbus',t:s=>s.boss_morbus>=1,r:1100},
   {id:'boss7',n:'Verrat gesühnt',d:'Besiege Todesritter Varkas',t:s=>s.boss_varkas>=1,r:1400},
   {id:'boss8',n:'Drachentöter',d:'Besiege den Uralten Drachen Pyraxis',t:s=>s.boss_pyraxis>=1,r:2500},
+  {id:'boss9',n:'Sturmbrecher',d:'Besiege Sturmkönig Aerok',t:s=>s.boss_aerok>=1,r:2800},
   {id:'act5',n:'Über die Gipfel',d:'Erreiche Akt 5 (Frostgipfel)',t:s=>s.maxAct>=5,r:800},
-  {id:'act9',n:'In die Qual',d:'Erreiche Akt 9 (Qual 1)',t:s=>s.maxAct>=9,r:2000},
+  {id:'act9',n:'In die Qual',d:'Erreiche Akt 10 (Qual 1)',t:s=>s.maxAct>=10,r:2000},
   {id:'act12',n:'Unaufhaltsam',d:'Erreiche Akt 12',t:s=>s.maxAct>=12,r:4000},
   {id:'leg',n:'Legendär!',d:'Finde einen legendären Gegenstand',t:s=>s.legs>=1,r:200},
   {id:'myth',n:'Mythos',d:'Besitze einen mythischen Gegenstand',t:s=>s.myths>=1,r:2000},

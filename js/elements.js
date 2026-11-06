@@ -29,6 +29,7 @@ const EN_EL = {
   skeleton: 'schatten', skelarcher: 'schatten', mage: 'schatten', geist: 'schatten', skelmage: 'schatten', zombie: 'schatten', todesritter: 'schatten', schattenimp: 'schatten', varkas: 'schatten',
   imp: 'feuer', chort: 'feuer', pyro: 'feuer', glutschleim: 'feuer', lavadaemon: 'feuer', jungdrache: 'feuer', demon: 'feuer', pyraxis: 'feuer',
   icez: 'frost', eisgeist: 'frost', frostoger: 'frost', frostra: 'frost',
+  sturmharpyie: 'blitz', sturmrufer: 'blitz', donnerzwerg: 'blitz', blitzgolem: 'blitz', aerok: 'blitz',
   slime: 'gift', toxslime: 'gift', seuche: 'gift', hexe: 'gift', shaman: 'gift', morbus: 'gift',
   golem: 'blitz', zwerg: 'blitz', bomber: 'blitz',
   engel: 'licht', lizshaman: 'licht', goldgob: 'licht', goldmimik: 'licht'

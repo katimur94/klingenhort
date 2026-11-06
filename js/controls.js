@@ -6,7 +6,7 @@
    Einstellungen liegen in SAVE.meta.settings.ctl
    ========================================================= */
 
-const CTL_DEF = { scale: 1, alpha: .9, stick: 'float', stickSize: 1, pot: 'tap', haptics: true, aim: true, aimDrag: true, layout: {}, layoutP: {} };
+const CTL_DEF = { scale: 1, alpha: .9, stick: 'float', stickSize: 1, pot: 'tap', haptics: true, hapK: 1, aim: true, aimDrag: true, layout: {}, layoutP: {} };
 // Mittelpunkt je Knopf, gemessen von der Ecke (ax/ay: l/r/c, t/b) bei Größe 1
 const LAYOUT_DEF = {
   bAtk: { ax: 'r', ay: 'b', dx: 66, dy: 66, s: 88 },
@@ -55,7 +55,8 @@ function ctlCenter(L) {
   const y = L.ay === 'b' ? H - safeInset('b') - L.dy * sc : safeInset('t') + L.dy * sc;
   return { x, y, s: L.s * sc * (L.z || 1) };
 }
-function buzz(ms) { try { if (ctlSet().haptics && navigator.vibrate) navigator.vibrate(ms); } catch (_) { } }
+// Vibration: an/aus und Stärke (6.5: leicht ×0,5, normal ×1, stark ×2)
+function buzz(ms) { try { const c = ctlSet(); if (c.haptics && navigator.vibrate) navigator.vibrate(Math.max(1, Math.round(ms * (c.hapK === .5 || c.hapK === 2 ? c.hapK : 1)))); } catch (_) { } }
 
 /* ---------- Knöpfe platzieren ---------- */
 function applyLayout() {
