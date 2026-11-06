@@ -28,7 +28,8 @@ Die fertigen Videos kommen **nicht** ins Repo (zu groß für jede Woche). Nur di
 |---|---|
 | `harness.js` | Übernimmt das Spiel: vier Vorzeige-Helden (0 Ritterin, 1 Magier, 2 Assassine, 3 Bogenschützin), feste Zeitschritte, `__fight`, `__keep`, `__holdBoss`, `__vp` (Zoom), `cap()` nimmt Bilder auf, `assets()` exportiert Grafiken, `news()` den neuesten Changelog-Eintrag |
 | `promolib.py` | Texte mit Rand (`title`, `text_img`), `badge`, Effekte (`flash`, `zoom`, `glow_disc`, `rays`), `gameplay()` für Aufnahmen, `EndCard`, `render()`, `contact_sheet()` |
-| `music.py` | Soundtrack aus `timeline.json`: Rauschen und Becken an jedem Schnitt, Einschlag und Fanfare bei der Szene `end`, zusätzliche Geräusche über `hits` |
+| `music.py` | Soundtrack aus `timeline.json`: Rauschen und Becken an jedem Schnitt, Einschlag und Fanfare bei der Szene `end`, zusätzliche Geräusche über `hits` – eigene (`boing`, `thud`, `huh`, `sad`, `scratch`, `dundun`, `bumm`, `wirbel`, `failhorn` …) oder freie CC0-Töne `frei:<name>` |
+| `frei/` | Freie CC0-Töne (`ton/`, 72 Stück) und Pixel-Meme-Grafiken (`bild/`: Emotes, Gesichter, Smileys, Daumen) mit Quellen in `frei/LIZENZEN.md`; im Schnitt `meme_bild()` aus promolib |
 | `encode.sh` | MP4 (H.264 + AAC, faststart) |
 | `update/` | Vorlage für den wöchentlichen Clip (~13 s): Aufhänger → Feature → „Was ist neu“ → Endkarte |
 | `v4/` | Werbevideo zu Version 4 (22 s) – Beispiele für Waffen-Animation, Verschmelzen, Glücksrad, Helden-Editor, Bosse, Horde |

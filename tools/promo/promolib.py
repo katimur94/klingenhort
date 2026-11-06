@@ -241,3 +241,18 @@ def freeze(raw, scene, i, k, sat=.25):
     im = load(os.path.join(raw, scene, '%04d.jpg' % i))
     im = ImageEnhance.Color(im).enhance(sat)
     return zoom(im, 1.06 + .004 * k)
+
+
+# ---------- Freie Meme-Grafiken (tools/promo/frei/bild, CC0 – Liste in tools/promo/frei/LIZENZEN.md) ----------
+FREI_BILD = os.path.join(HERE, 'frei', 'bild')
+_mb = {}
+def meme_bild(base, k, name, cx, cy, t0=0, size=150, bob=True):
+    """Pixel-Emote aufploppen lassen: name = 'laugh', 'heart', 'anger', 'question' … (frei/bild/emote)
+    oder 'gesicht/doh', 'gesicht/confused' … (frei/bild/gesicht). Scharf vergrößert, wippt leicht."""
+    if k < t0: return
+    if name not in _mb:
+        p = os.path.join(FREI_BILD, name + '.png') if '/' in name else os.path.join(FREI_BILD, 'emote', name + '.png')
+        _mb[name] = load(p)
+    im = _mb[name]; sc = size / max(im.size) * pop(k - t0)
+    dy = math.sin((k - t0) * .35) * 8 if bob else 0
+    place(base, im, cx, cy + dy, sc)

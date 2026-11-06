@@ -2,6 +2,7 @@
 # Aufruf: python3 music.py <ausgabeordner>   (liest timeline.json von promolib.render, schreibt audio.wav)
 # Schnitte bekommen Rauschen und Becken, die Szene „end“ einen großen Einschlag mit Fanfare,
 # davor einen Takt Spannungsaufbau. Zusätzliche Geräusche: timeline.json "hits": [[bild, art], …]
+# Arten: eigene (impact, boing, thud, huh, sad, dundun, bumm, wirbel, failhorn …) oder 'frei:<name>' aus tools/promo/frei/ton (CC0)
 import json, os, sys, wave
 import numpy as np
 
@@ -194,6 +195,53 @@ def sadtrom(t, g=1.0):
         add(fx, t + i * .3, s, .3 * g)
 
 
+def dundun(t, g=1.0):
+    """Dramatik: dun – dun – duuun (drei tiefe Schläge, der letzte lang, eigene Tonfolge)"""
+    for i, (f0, d) in enumerate([(98, .32), (92.5, .32), (82.4, 1.1)]):
+        n = int(d * SR); tt = np.arange(n) / SR
+        s = np.tanh(2 * (square(f0, n, .4) * .5 + square(f0 * 2, n, .5) * .25)) * np.exp(-tt / (d * .7))
+        add(fx, t + i * .36, LP(s, .12), .5 * g)
+
+
+def bumm(t, g=1.0):
+    """Meme-Bumm: tiefer, langer Einschlag mit Hall (eigener Nachbau, kein Sample)"""
+    n = int(1.8 * SR); tt = np.arange(n) / SR
+    f = 38 + 110 * np.exp(-tt / .05)
+    s = np.tanh(3 * np.sin(2 * np.pi * np.cumsum(f) / SR)) * np.exp(-tt / .7) + LP(noise(n), .05) * np.exp(-tt / .08) * .6
+    add(fx, t, s, 1.0 * g)
+
+
+def wirbel(t, g=1.0, dur=1.2):
+    """Trommelwirbel: immer schnellere Schläge, endet mit Becken"""
+    k, x = 0.0, 0.0
+    while x < dur:
+        snare(t + x, .25 + .5 * x / dur); x += max(.035, .14 * (1 - x / dur))
+    crash(t + dur, .8)
+
+
+def failhorn(t, g=1.0):
+    """Fail-Horn: schräges Tröten, das absackt"""
+    n = int(.9 * SR); tt = np.arange(n) / SR
+    f = 330 * (1 - .35 * (tt / .9) ** 1.5) * (1 + .02 * np.sin(tt * 35))
+    ph = np.cumsum(f) / SR
+    s = LP(np.sign(np.sin(2 * np.pi * ph)) * .5 + np.sign(np.sin(2 * np.pi * ph * 1.5)) * .3, .18) * np.minimum(1, tt / .02) * np.exp(-np.maximum(0, tt - .7) / .08)
+    add(fx, t, s, .35 * g)
+
+
+# ---------- Freie Geräusche (tools/promo/frei/ton, CC0 – Liste in tools/promo/frei/LIZENZEN.md) ----------
+FREI = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frei', 'ton')
+
+
+def frei(t, name, g=1.0):
+    """freies Geräusch per Name (z. B. 'boing_03', 'gong_01', 'bruh_01'), auf 44,1 kHz hochgerechnet"""
+    p = os.path.join(FREI, name + '.wav')
+    if not os.path.exists(p): print('Geräusch fehlt:', name); return
+    with wave.open(p) as w:
+        a = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(float) / 32768; sr = w.getframerate()
+    if sr != SR: a = np.interp(np.arange(int(len(a) * SR / sr)) * sr / SR, np.arange(len(a)), a)
+    add(fx, t, a, .7 * g)
+
+
 def note(buf, t, f, dur, kind='sq', duty=.5, g=.2, d=None, cut=.3):
     n = int(dur * SR)
     if kind == 'sq': s = square(f, n, duty)
@@ -290,9 +338,11 @@ for f_ in cuts:
 if 'end' in START: impact(t_of_frame(START['end']), 1.1)
 KINDS = {'impact': lambda t: impact(t, .6), 'sparkle': lambda t: sparkle(t, 1.0), 'tick': lambda t: tick(t, 1.2), 'roar': lambda t: roar(t, 1.0),
          'clank': lambda t: clank(t, 1.0), 'ting': lambda t: ting(t, hz('E6'), 1.0), 'whoosh': lambda t: whoosh(t + .3, .3, .8), 'kick': lambda t: kick(t, .7),
-         'boing': lambda t: boing(t), 'scratch': lambda t: scratch(t), 'thud': lambda t: thud(t), 'huh': lambda t: huh(t), 'sad': lambda t: sadtrom(t)}
+         'boing': lambda t: boing(t), 'scratch': lambda t: scratch(t), 'thud': lambda t: thud(t), 'huh': lambda t: huh(t), 'sad': lambda t: sadtrom(t),
+         'dundun': lambda t: dundun(t), 'bumm': lambda t: bumm(t), 'wirbel': lambda t: wirbel(t), 'failhorn': lambda t: failhorn(t)}
 for f_, kind in TL.get('hits', []):
     if kind in KINDS: KINDS[kind](t_of_frame(f_))
+    elif kind.startswith('frei:'): frei(t_of_frame(f_), kind[5:])   # z. B. [120, 'frei:gong_01']
 
 # ---------- Mischen ----------
 # Pumpen: Musik weicht der Kick kurz aus
