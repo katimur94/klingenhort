@@ -9,5 +9,6 @@
 | 2026-11-05 | Boss-Challenge „Rang 1 vs. Rang 1200“ (Tausend Bosse, mit kleiner Faxe BRO???) | 6aecba872b8e11923427459d | 1 | 1 | 0 | 0 | Tages-Clip 10,2 s, echte Übungskämpfe aus dem Boss-Kodex · Stand 06.11.: 100 % bis zum Ende |
 | 2026-11-05 | Meme „Der Schatzgoblin“ (Erwartung → Reinfall, viele Faxen; auf Timurs Wunsch zusätzlich) | 6aecbcf9682e9816c1c042f9 | 1 | 1 | 0 | 0 | 10 s, Goblin verpufft echt nach 20 s · Stand 06.11.: 100 % bis zum Ende |
 | 2026-11-06 | PREMIERE Update 6.5 „Sturmgipfel“ (Trailer: Akt 9, Gewitter, Blitz-Gegner, Boss Aerok mit Faxen) | 6aedfcf08e16a123af78bbd3 | – | – | – | – | Update-Clip 16,4 s, auf Timurs Wunsch als Premiere |
+| 2026-11-06 | Meme „200 IQ vs. Realität“ (Blitz-Taktik in Akt 9, erster Clip mit freien CC0-Tönen und Pixel-Emotes) | 6aee0a64b0a4c93caba31492 | – | – | – | – | 10 s, auf Timurs Wunsch zusätzlich |
 
 Follower 06.11.: 3 (unverändert) · Gesamt-Likes 10 · Aufrufe weiter fast nur über Profil und Suche, noch nicht aus „Für dich“.
