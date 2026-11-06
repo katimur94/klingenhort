@@ -616,8 +616,8 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
     await page.waitForTimeout(700); await shot('11_barrier');
     ok(await page.evaluate(() => /Du brauchst/.test($('toast').textContent) && !!LW.hint), pre + 'Barriere: „Du brauchst: …“ und ein Pfeil zum nächsten Übergang');
     // Kampf an einem Lager (ein paar Sekunden echte Spielzeit)
-    await page.evaluate(() => { for (let r = 1; r < 6; r++) { const c = lNear(P.x, P.y, 2000).find(o => o.k === 'camp' && o.state === 'dorm'); if (c) { P.x = c.x + 60; P.y = c.y; LW.lx = P.x; LW.ly = P.y; break; } lTeleport(P.x + 1500, P.y); } keys.Space = true; });
-    await page.waitForTimeout(2500); await shot('12_fight'); await page.evaluate(() => { keys.Space = false; });
+    await page.evaluate(() => { for (let r = 1; r < 6; r++) { const c = lNear(P.x, P.y, 2000).find(o => o.k === 'camp' && o.state === 'dorm'); if (c) { P.x = c.x + 60; P.y = c.y; LW.lx = P.x; LW.ly = P.y; break; } lTeleport(P.x + 1500, P.y); } keys.Space = true; window.__encOpen = encounterOpen; encounterOpen = () => false; });   // keine zufällige Begegnung mitten im Test
+    await page.waitForTimeout(2500); await shot('12_fight'); await page.evaluate(() => { keys.Space = false; encounterOpen = window.__encOpen; });
     // Pause: Abbrechen statt Hauptmenü
     await page.evaluate(() => showPause()); await page.waitForTimeout(300);
     ok(await page.locator('[data-act="l_quit"]').count() === 1 && await inView('[data-act="l_inv"]') && !(await page.locator('[data-act="title"]').count()), pre + 'Pause: Rucksack, Karte, Leuchtfeuer und „Ausflug abbrechen“ statt Hauptmenü');
