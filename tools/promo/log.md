@@ -10,5 +10,6 @@
 | 2026-11-05 | Meme „Der Schatzgoblin“ (Erwartung → Reinfall, viele Faxen; auf Timurs Wunsch zusätzlich) | 6aecbcf9682e9816c1c042f9 | 1 | 1 | 0 | 0 | 10 s, Goblin verpufft echt nach 20 s · Stand 07.11.: 100 % bis zum Ende |
 | 2026-11-06 | PREMIERE Update 6.5 „Sturmgipfel“ (Trailer: Akt 9, Gewitter, Blitz-Gegner, Boss Aerok mit Faxen) | 6aedfcf08e16a123af78bbd3 | 0 | 0 | 0 | 0 | Update-Clip 16,4 s, auf Timurs Wunsch als Premiere · Stand 07.11.: – bis zum Ende |
 | 2026-11-06 | Meme „200 IQ vs. Realität“ (Blitz-Taktik in Akt 9, erster Clip mit freien CC0-Tönen und Pixel-Emotes) | 6aee0a64b0a4c93caba31492 | 0 | 0 | 0 | 0 | 10 s, auf Timurs Wunsch zusätzlich · Stand 07.11.: – bis zum Ende |
+| 2026-11-07 | Klassen & Ultimative „Welche Klasse bist du?“ (Frage-Format, Zahl kommentieren) | 6aef5cd96c0ba0ce55a06754 | – | – | – | – | Tages-Clip 11,2 s, freie Töne an den Schnitten |
 
 Follower 07.11.: 3 (unverändert) · Gesamt-Likes 10 · noch keine Aufrufe aus „Für dich“; Premiere und 200-IQ-Clip vom 06.11. bisher 0 Aufrufe.
