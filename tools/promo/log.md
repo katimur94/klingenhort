@@ -11,5 +11,6 @@
 | 2026-11-06 | PREMIERE Update 6.5 „Sturmgipfel“ (Trailer: Akt 9, Gewitter, Blitz-Gegner, Boss Aerok mit Faxen) | 6aedfcf08e16a123af78bbd3 | 0 | 0 | 0 | 0 | Update-Clip 16,4 s, auf Timurs Wunsch als Premiere · Stand 08.11.: – bis zum Ende |
 | 2026-11-06 | Meme „200 IQ vs. Realität“ (Blitz-Taktik in Akt 9, erster Clip mit freien CC0-Tönen und Pixel-Emotes) | 6aee0a64b0a4c93caba31492 | 0 | 0 | 0 | 0 | 10 s, auf Timurs Wunsch zusätzlich · Stand 08.11.: – bis zum Ende |
 | 2026-11-07 | Klassen & Ultimative „Welche Klasse bist du?“ (Frage-Format, Zahl kommentieren) | 6aef5cd96c0ba0ce55a06754 | 0 | 0 | 0 | 0 | Tages-Clip 11,2 s, freie Töne an den Schnitten |
+| 2026-11-08 | Biome der Endlosen Lande „6 Welten in 10 Sekunden“ (Tempo-Schnitt + Frage) | 6af0b015ff8ffe44fba02b1c | 0 | 0 | 0 | 0 | Tages-Clip 10,4 s, 6 echte Biome + Endkarte |
 
 Follower 08.11.: 3 (unverändert) · Gesamt-Likes 10 · die 3 Posts seit 06.11. (Premiere, 200 IQ, Klassen) haben noch 0 Aufrufe – zu prüfen, ob TikTok sie überhaupt ausspielt (Sichtbarkeit in der App).
