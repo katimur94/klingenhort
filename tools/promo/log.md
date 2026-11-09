@@ -12,5 +12,6 @@
 | 2026-11-06 | Meme „200 IQ vs. Realität“ (Blitz-Taktik in Akt 9, erster Clip mit freien CC0-Tönen und Pixel-Emotes) | 6aee0a64b0a4c93caba31492 | 1 | 0 | 0 | 0 | 10 s, auf Timurs Wunsch zusätzlich · Stand 08.11.: – bis zum Ende |
 | 2026-11-07 | Klassen & Ultimative „Welche Klasse bist du?“ (Frage-Format, Zahl kommentieren) | 6aef5cd96c0ba0ce55a06754 | 1 | 0 | 0 | 0 | Tages-Clip 11,2 s, freie Töne an den Schnitten |
 | 2026-11-08 | Biome der Endlosen Lande „6 Welten in 10 Sekunden“ (Tempo-Schnitt + Frage) | 6af0b015ff8ffe44fba02b1c | 1 | 0 | 0 | 0 | Tages-Clip 10,4 s, 6 echte Biome + Endkarte |
+| 2026-11-09 | Meme „5 Minuten vs. 50 Stunden – Folge 2“ (Split-Screen, Kontrast ab dem 1. Bild, erster Clip nach der Recherche) | 6af1eb9663327a07ea625f12 | 0 | 0 | 0 | 0 | 8,7 s, 2-s-Endkarte, 5 Hashtags · auf Timurs Wunsch zusätzlich |
 
 Follower 09.11.: 3 (unverändert) · Gesamt-Likes 10 · keine Kommentare · Aufrufe laut TikTok-App (Screenshot von Timur, 09.11. 13:14) – alle 10 Videos öffentlich sichtbar; Zernio zeigt für die neuesten Posts verzögert 0 Aufrufe.
