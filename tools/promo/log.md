@@ -13,5 +13,6 @@
 | 2026-11-07 | Klassen & Ultimative „Welche Klasse bist du?“ (Frage-Format, Zahl kommentieren) | 6aef5cd96c0ba0ce55a06754 | 1 | 0 | 0 | 0 | Tages-Clip 11,2 s, freie Töne an den Schnitten |
 | 2026-11-08 | Biome der Endlosen Lande „6 Welten in 10 Sekunden“ (Tempo-Schnitt + Frage) | 6af0b015ff8ffe44fba02b1c | 1 | 0 | 0 | 0 | Tages-Clip 10,4 s, 6 echte Biome + Endkarte |
 | 2026-11-09 | Meme „5 Minuten vs. 50 Stunden – Folge 2“ (Split-Screen, Kontrast ab dem 1. Bild, erster Clip nach der Recherche) | 6af1eb9663327a07ea625f12 | 0 | 0 | 0 | 0 | 8,7 s, 2-s-Endkarte, 5 Hashtags · auf Timurs Wunsch zusätzlich |
+| 2026-11-09 | Challenge „Wie viel Holz in 10 Sekunden?“ (Bäume fällen in den Endlosen Landen, oddly satisfying, echter Zähler) | 6af2b3903f63897dbcb25c95 | 0 | 0 | 0 | 0 | Tages-Clip 14,2 s, 20 Bäume/54 Holz, Klang bei jedem Baum · wegen Neustart erst nach Mitternacht gepostet |
 
 Follower 09.11.: 3 (unverändert) · Gesamt-Likes 10 · keine Kommentare · Aufrufe laut TikTok-App (Screenshot von Timur, 09.11. 13:14) – alle 10 Videos öffentlich sichtbar; Zernio zeigt für die neuesten Posts verzögert 0 Aufrufe.
