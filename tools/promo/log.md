@@ -15,5 +15,6 @@
 | 2026-11-09 | Meme „5 Minuten vs. 50 Stunden – Folge 2“ (Split-Screen, Kontrast ab dem 1. Bild, erster Clip nach der Recherche) | 6af1eb9663327a07ea625f12 | 0 | 0 | 0 | 0 | 8,7 s, 2-s-Endkarte, 5 Hashtags · auf Timurs Wunsch zusätzlich |
 | 2026-11-09 | Challenge „Wie viel Holz in 10 Sekunden?“ (Bäume fällen in den Endlosen Landen, oddly satisfying, echter Zähler) | 6af2b3903f63897dbcb25c95 | 0 | 0 | 0 | 0 | Tages-Clip 14,2 s, 20 Bäume/54 Holz, Klang bei jedem Baum · wegen Neustart erst am 10.11. um 7 Uhr gepostet |
 | 2026-11-10 | Fund-Clip „Von Grau bis Mythisch“ (6 echte Drops, je Seltenheit ein Schlag, Frage „Welche Farbe hattest du zuletzt?“) | 6af35469dcb2ef54a39f8852 | 0 | 0 | 0 | 0 | Tages-Clip 10,2 s, Lichtsäulen wie im Spiel · Zernio beim Posten erst Zeitüberschreitung/Bad Gateway, dann einmal veröffentlicht |
+| 2026-11-10 | Bosskampf „Boss mit 1 % Leben besiegt“ (Boss-Kodex Rang 375 „Brutal“, Begleiter rettet per Lebensbund; Timurs Wunsch) | 6af360c970d69ec3b56f128a | 0 | 0 | 0 | 0 | 14,2 s, Ausschnitte aus EINEM echten Kampf ohne Eingriff (Bot spielt, mehrere Kämpfe aufgenommen, der knappe Sieg gezeigt) |
 
 Follower 10.11.: 3 (unverändert) · keine Kommentare · Biome-Clip: 1 Like + 1 Speichern laut Zernio; Folge 2 und Holz-Clip noch ohne Zahlen bei Zernio (Zernio hinkt hinter der App her, Stand der älteren Posts siehe 09.11. App-Werte).
