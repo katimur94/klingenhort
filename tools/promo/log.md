@@ -17,4 +17,4 @@
 | 2026-11-10 | Fund-Clip „Von Grau bis Mythisch“ (6 echte Drops, je Seltenheit ein Schlag, Frage „Welche Farbe hattest du zuletzt?“) | 6af35469dcb2ef54a39f8852 | 0 | 0 | 0 | 0 | Tages-Clip 10,2 s, Lichtsäulen wie im Spiel · Zernio beim Posten erst Zeitüberschreitung/Bad Gateway, dann einmal veröffentlicht |
 | 2026-11-10 | Bosskampf „Boss mit 1 % Leben besiegt“ (Boss-Kodex Rang 375 „Brutal“, Begleiter rettet per Lebensbund; Timurs Wunsch) | 6af360c970d69ec3b56f128a | 0 | 0 | 0 | 0 | 14,2 s, Ausschnitte aus EINEM echten Kampf ohne Eingriff (Bot spielt, mehrere Kämpfe aufgenommen, der knappe Sieg gezeigt) |
 
-Follower 10.11.: 3 (unverändert) · keine Kommentare · Biome-Clip: 1 Like + 1 Speichern laut Zernio; Folge 2 und Holz-Clip noch ohne Zahlen bei Zernio (Zernio hinkt hinter der App her, Stand der älteren Posts siehe 09.11. App-Werte).
+Follower 11.11.: 3 (unverändert) · Gesamt-Likes 14 (+4 seit 09.11.) · 14 Videos · keine Kommentare · Zernio liefert für die 4 Posts seit 09.11. weiter 0 Aufrufe (hinkt der App hinterher; echte Zahlen nur in der TikTok-App).
