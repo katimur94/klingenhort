@@ -18,4 +18,4 @@
 | 2026-11-10 | Bosskampf „Boss mit 1 % Leben besiegt“ (Boss-Kodex Rang 375 „Brutal“, Begleiter rettet per Lebensbund; Timurs Wunsch) | 6af360c970d69ec3b56f128a | 0 | 0 | 0 | 0 | 14,2 s, Ausschnitte aus EINEM echten Kampf ohne Eingriff (Bot spielt, mehrere Kämpfe aufgenommen, der knappe Sieg gezeigt) |
 | 2026-11-11 | Tipp „Wusstest du? Rolle durch die Schockwelle“ (Mini-Tutorial falsch/richtig mit Faxen, Boss-Kodex Rang 340) | 6af4a3398508cb77fdb7a9a3 | 0 | 0 | 0 | 0 | Tages-Clip 8,9 s, echte Szenen (stehen bleiben = Treffer, Rolle = 0 Schaden), Zeitlupe |
 
-Follower 11.11.: 3 (unverändert) · Gesamt-Likes 14 (+4 seit 09.11.) · 14 Videos · keine Kommentare · Zernio liefert für die 4 Posts seit 09.11. weiter 0 Aufrufe (hinkt der App hinterher; echte Zahlen nur in der TikTok-App).
+Follower 12.11.: 3 (unverändert) · Gesamt-Likes 14 (unverändert) · 15 Videos · keine Kommentare · die 5 Posts seit 09.11. (Folge 2, Holz, Seltenheiten, Boss 1 %, Rollen-Tipp) haben laut Zernio noch 0 Likes; Aufrufe liefert Zernio für neue Posts verzögert (echte Zahlen nur in der TikTok-App).
