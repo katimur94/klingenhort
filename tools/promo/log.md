@@ -19,4 +19,4 @@
 | 2026-11-11 | Tipp „Wusstest du? Rolle durch die Schockwelle“ (Mini-Tutorial falsch/richtig mit Faxen, Boss-Kodex Rang 340) | 6af4a3398508cb77fdb7a9a3 | 0 | 0 | 0 | 0 | Tages-Clip 8,9 s, echte Szenen (stehen bleiben = Treffer, Rolle = 0 Schaden), Zeitlupe |
 | 2026-11-12 | Versteck „Stufe 0 vs. Stufe 115“ (Vorher/Nachher im Split-Screen, Ruine mit Gerüsten → alle Stationen ausgebaut) | 6af6033c5f5f464f90297207 | 0 | 0 | 0 | 0 | Tages-Clip 8,2 s, dieselbe Strecke zweimal, Frage „Wie weit ist deins?“ · wegen Neustart 1 h später gepostet |
 
-Follower 12.11.: 3 (unverändert) · Gesamt-Likes 14 (unverändert) · 15 Videos · keine Kommentare · die 5 Posts seit 09.11. (Folge 2, Holz, Seltenheiten, Boss 1 %, Rollen-Tipp) haben laut Zernio noch 0 Likes; Aufrufe liefert Zernio für neue Posts verzögert (echte Zahlen nur in der TikTok-App).
+Follower 13.11.: 3 (unverändert) · Gesamt-Likes 14 (unverändert) · 16 Videos · keine Kommentare · Aufrufe der neuen Posts nur in der TikTok-App sichtbar (Zernio hinkt hinterher).
