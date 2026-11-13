@@ -45,7 +45,7 @@ Ausführlich für den automatischen Lauf: [`tools/WOCHENUPDATE.md`](tools/WOCHEN
 | 2 | 6.3 | **Aufträge & Ruf** | Tages- und Wochenaufträge für Kampagne und Endlose Lande, Fraktionen mit Ruf-Stufen und besseren Tauschangeboten | mittel | ✅ 6.3 |
 | – | 6.4 | **Aufstieg** | Helden bis Level 100 (Paragon ab 100), neue Erfahrungs-Kurve ohne Wand bei 35, Meister-Talente bis Level 100 (99 Punkte je Klasse), Belohnung für jedes Level, Begleiter bis Level 150 mit neuer Talent-Stufe und Belohnungen je Level – auf Wunsch des Besitzers vorgezogen | groß | ✅ 6.4 |
 | 3 | 6.5 | **Neues Gebiet: Sturmgipfel** | Kampagnen-Gebiet 9 (Gewitter mit angekündigten Blitzeinschlägen) und Blitz-Gegner in den Sturm-Biomen der Endlosen Landen, Boss *Sturmkönig Aerok*, Material *Sturmsilber* | groß | ✅ 6.5 |
-| 4 | 6.6 | **Saison 1** | Saison-Helden ab Level 1, Saison-Rangliste, kostenloser Saison-Pass mit 30 Stufen | groß | offen |
+| 4 | 6.6 | **Saison 1** | Saison-Helden ab Level 1, Saison-Rangliste, kostenloser Saison-Pass mit 30 Stufen | groß | ✅ 6.6 |
 | 5 | 6.7 | **Begleiter-Expeditionen** | Begleiter allein in die Endlosen Lande schicken (läuft auch offline), bringen Beute, Eier und Artefakte mit | mittel | offen |
 | 6 | 6.8 | **Der Abgrund** | Endlos-Turm mit Bestwert pro Klasse | mittel | offen |
 | 7 | 6.9 | **Neue Klasse: Nekromant** | Skelette, Knochenspeer, Leichenexplosion, *Armee der Toten* | groß | offen |
@@ -64,7 +64,7 @@ Ausführlich für den automatischen Lauf: [`tools/WOCHENUPDATE.md`](tools/WOCHEN
 Schon erledigt in 4.1: Hochformat, klebende Kopf- und Fußleisten, Liste neben Details, größere Ziele, Neuigkeiten-Seite.
 
 - ✅ **Schriftgröße** in den Einstellungen (normal / groß) – 4.2
-- **Leistungs-Modus:** weniger Partikel, kein Licht-Effekt, 30 fps – für ältere Handys und Akku
+- **Leistungs-Modus:** ✅ weniger Partikel (Einstellungen) – 6.6; offen: kein Licht-Effekt, 30 fps – für ältere Handys und Akku
 - **Einhand-Modus** im Hochformat: Auto-Angriff, wenn ein Gegner in Reichweite ist; nur Joystick und Fähigkeiten
 - ✅ **Schnell-Ausrüsten:** „Bestes anlegen“-Knopf im Charakter und „Alles Schlechtere verkaufen“ – 6.3
 - ✅ **Beute-Filter:** Gewöhnliche Gegenstände automatisch verkaufen oder liegen lassen – 6.3; bis Episch, Wegwerfen und Grenze nach Marktwert – 6.3.1

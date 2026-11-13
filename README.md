@@ -7,7 +7,7 @@ Vier Klassen, frei gestaltbare Helden, **Begleiter, die mit dir wachsen**, sechs
 
 ### ▶ [Jetzt spielen: katimur94.github.io/klingenhort](https://katimur94.github.io/klingenhort/)
 
-Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 6.5 · jede Woche neue Inhalte
+Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 6.6 · jede Woche neue Inhalte
 
 🌐 Deutsch · English · Türkçe · Español · Italiano · Français – *the game starts in your device language*
 
@@ -85,6 +85,16 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Vers
 ## Neuigkeiten & Wochenplan
 
 Klingenhort wird jede Woche erweitert. Im Spiel zeigt **Neuigkeiten** (Titelmenü, Einstellungen oder Weltkarte → Mehr) alle Updates und was als Nächstes kommt; nach einem Update öffnet sich die Seite einmal von selbst.
+
+**Neu in 6.6 – Saison 1**
+
+| System | Was es kann |
+|---|---|
+| **Saison** | Alle sechs Wochen eine neue Saison (Saison 1 ab 09.11.2026), zu finden im Titelmenü und auf der Karte unter „Mehr“. System in `js/saison.js` |
+| **Saison-Pass** | Kostenlos, 30 Stufen, zusammen 26 250 Saison-Punkte. Punkte fürs Spielen mit jedem Helden: Gegner 1, Elite 3, Champion 6, Boss 40, Auftrag abgeholt 50, aus den Landen entkommen 60. Belohnungen wachsen mit dem Level des Helden, der abholt: Gold, Material, Bauteile, Glücksmünzen, Eier (Stufe 5 und 20), Legendär (10), Mythisch (25) |
+| **Saison-Kosmetik** | „Sturmmantel der Ersten Saison“ (Stufe 15) und „Aura der Ersten Saison“ (Stufe 30) – nur in dieser Saison, nie aus dem Glückstempel |
+| **Leistungs-Modus** | Einstellungen → „Leistungs-Modus“: nur jedes dritte Teilchen (Funken, Splitter) wird gezeichnet – für ältere Handys und den Akku |
+| **Saison-Helden** | Jeder neue Held tritt in der laufenden Saison an (bei der Erstellung abwählbar), startet bei Level 1 und sammelt 50 % mehr Punkte. Die Rangliste zeigt die eigenen Saison-Helden (das Spiel läuft offline) und die Ergebnisse früherer Saisons |
 
 **Neu in 6.5 – Sturmgipfel**
 

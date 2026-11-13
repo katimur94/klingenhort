@@ -609,6 +609,9 @@ function hbStart() {
   E('start:gewitter', _t('Gewitter im Sturmgipfel'), { ic: ['mat', 'sturmsilber'], kw: 'gewitter blitz blitze sturm sturmgipfel akt 9 aerok regen sturmsilber', see: ['start:kampagne', 'en:bosse', 'start:qual'],
     s: _t('In Akt 9 schlagen im Kampf Blitze ein – achte auf die leuchtenden Kreise am Boden.'),
     b: () => hUl([_t('Ein leuchtender Kreis kündigt jeden Blitz an. Nach rund einer Sekunde schlägt er ein.'), _t('Der Blitz trifft alle im Kreis – dich und die Gegner. Lock Gegner hinein, sie nehmen viel mehr Schaden.'), _t('Sturmkönig Aerok ruft selbst Blitze rund um dich, unter halbem Leben noch mehr.'), _t('Blitz-Gegner und Aerok lassen Sturmsilber fallen, das wertvollste Material der Gegner.')]) });
+  E('start:saison', _t('Saison & Saison-Pass'), { ic: ['pa', 'gmuenze'], kw: 'saison season pass saisonpass stufen punkte rangliste saisonheld belohnung', see: ['start:kampagne', 'start:qual'],
+    s: _t('Alle sechs Wochen beginnt eine neue Saison mit kostenlosem Saison-Pass und 30 Belohnungen.'),
+    b: () => hUl([_t('Du findest die Saison im Titelmenü und auf der Karte unter „Mehr“.'), _t('Gegner besiegen: 1 Punkt, Elite 3, Champion 6, Boss 40'), _t('Auftrag abholen: 50 Punkte'), _t('Aus den Endlosen Landen entkommen: 60 Punkte'), _t('Saison-Helden sammeln 50 % mehr Punkte.'), _t('Neue Helden sind Saison-Helden, wenn du es bei der Erstellung nicht abwählst. Sie starten bei Level 1 und stehen in deiner Saison-Rangliste.'), _t('Der Saison-Pass ist kostenlos. Die Belohnungen wachsen mit dem Level des Helden, der sie abholt. Am Ende der Saison verfällt, was du nicht abgeholt hast.')]) });
   E('start:qual', _t('Qual-Stufen'), { ic: ['mat', 'aether'], kw: 'qual endgame schwer akt 10 leere', see: ['start:kampagne', 'mat:aether', 'en:tausend'],
     s: _t('Nach Akt 9 geht es endlos weiter – jede Qual-Stufe härter und mit besserer Beute.'),
     b: () => hP(esc(QUAL_INTRO)) + hRows([1, 2, 3, 5, 8, 12].map(q => ({ ic: ['mat', 'aether'], t: _t('Qual {q} (Akt {a})', { q, a: STORY_ACTS + q }), d: _t('Gegner +{p} % stärker', { p: hbNum((Math.pow(1.3, q) - 1) * 100) }) })))
@@ -806,7 +809,7 @@ function hbItems() {
   E('it:aussehen', _t('Farbstoffe, Kosmetik und Aussehen'), { ic: ['pa', 'spiegel'], kw: 'farbe farbstoff kosmetik flügel aura umhang aussehen spiegel sammlung skin', see: ['bld:spiegel', 'han:tempel', 'han:tauschen'],
     s: _t('Farbstoffe färben deine Rüstung. Flügel, Auren und besondere Umhänge gibt es im Glückstempel.'),
     b: () => hH(_t('FARBSTOFFE')) + hRows(DYES.filter(D => D.c).map(D => ({ ic: '#' + D.c[0].slice(1), t: esc(D.n), d: hCost(D.cost) })))
-      + hH(_t('KOSMETIK')) + hP(_t('Flügel, Auren und besondere Umhänge gibt es im Glückstempel deines Verstecks.')) + hP(esc(Object.keys(COSM).filter(k => !COSM[k].lvl).map(k => COSM[k].n).join(', ')))
+      + hH(_t('KOSMETIK')) + hP(_t('Flügel, Auren und besondere Umhänge gibt es im Glückstempel deines Verstecks.')) + hP(esc(Object.keys(COSM).filter(k => !COSM[k].lvl && !COSM[k].sz).map(k => COSM[k].n).join(', ')))
       + hP(_t('Nur über Level-Belohnungen: {list}.', { list: esc(Object.keys(COSM).filter(k => COSM[k].lvl).map(k => _t('{name} (Level {lv})', { name: COSM[k].n, lv: COSM[k].lvl })).join(', ')) }))
       + hP(_t('Der Spiegel zeigt, wer du sein willst. Änderungen sind kostenlos.')) });
 }

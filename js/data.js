@@ -5,7 +5,7 @@
    Neue Klassen, Gegner, Talente, Rezepte: hier ergänzen.
    ========================================================= */
 
-const VERSION = '6.5.0';
+const VERSION = '6.6.0';
 const SAVE_KEY = 'klingenhort.v3';
 const WALL = 32;
 
@@ -426,7 +426,10 @@ const COSM = {
   // Level-Belohnungen (6.4, js/aufstieg.js): lvl = nur beim Erreichen dieses Levels, nie aus dem Glückstempel; ring = kreisende Funken
   c_aufstieg:{n:'Mantel des Aufstiegs',k:'cape',c:['#2a4a8a','#121e44'],trim:'#e8d8a0',lvl:60},
   w_aufstieg:{n:'Schwingen des Aufstiegs',k:'wings',c:['#fff3c0','#d8a040'],lvl:80},
-  a_hundert:{n:'Aura der Hundert',k:'aura',c:['#ffe08a','#ffffff'],ring:1,lvl:100}
+  a_hundert:{n:'Aura der Hundert',k:'aura',c:['#ffe08a','#ffffff'],ring:1,lvl:100},
+  // Saison-Pass (6.6, js/saison.js): sz = nur in dieser Saison (Stufe 15 und 30), nie aus dem Glückstempel
+  c_saison1:{n:'Sturmmantel der Ersten Saison',k:'cape',c:['#2a6a9a','#123048'],trim:'#8ee6ff',sz:1},
+  a_saison1:{n:'Aura der Ersten Saison',k:'aura',c:['#8ee6ff','#ffffff'],ring:1,sz:1}
 };
 
 /* ---------- Materialien, Edelsteine, Rezepte ---------- */

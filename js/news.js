@@ -7,6 +7,16 @@
 
 const CHANGELOG = [
   {
+    v: '6.6.0', d: '2026-11-13', t: 'Saison 1', items: [
+      ['neu', 'Saison 1 hat begonnen! Jede Saison dauert sechs Wochen. Du findest sie im Titelmenü und auf der Karte unter „Mehr“.'],
+      ['neu', 'Kostenloser Saison-Pass mit 30 Stufen: Sammle Saison-Punkte beim Spielen – Gegner, Bosse, Aufträge und die Endlosen Lande zählen. Jede Stufe bringt eine Belohnung: Gold, Material, Bauteile, Glücksmünzen, Eier, einen Legendären und einen Mythischen Gegenstand.'],
+      ['neu', 'Nur in dieser Saison: der „Sturmmantel der Ersten Saison“ bei Stufe 15 und die „Aura der Ersten Saison“ bei Stufe 30.'],
+      ['neu', 'Saison-Helden: Jeder neue Held tritt in der Saison an (bei der Erstellung abwählbar). Er startet bei Level 1, sammelt 50 % mehr Saison-Punkte und steht in deiner Saison-Rangliste.'],
+      ['besser', 'Auch mit deinen bisherigen Helden sammelst du Saison-Punkte – niemand muss neu anfangen.'],
+      ['besser', 'Leistungs-Modus in den Einstellungen: deutlich weniger Funken und Splitter – läuft flüssiger auf älteren Handys und schont den Akku.']
+    ]
+  },
+  {
     v: '6.5.0', d: '2026-11-06', t: 'Sturmgipfel', items: [
       ['neu', 'Akt 9: die Sturmgipfel. Über den höchsten Gipfeln tobt ein Gewitter, das nie endet – mit eigener Geschichte, Regen, Wetterleuchten und neuem Gebiet.'],
       ['neu', 'Blitze schlagen im Kampf ein: Ein leuchtender Kreis am Boden warnt dich vor, dann trifft der Blitz alle im Kreis – dich und die Gegner. Lock sie hinein!'],
@@ -215,10 +225,10 @@ const CHANGELOG = [
 
 // Vorschau: was in den nächsten Wochen kommt (Version, Text – siehe ROADMAP.md)
 const COMING = [
-  ['6.6', 'Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste'],
   ['6.7', 'Begleiter-Expeditionen: Schick deine Begleiter allein in die Endlosen Lande – sie bringen Beute, Eier und Artefakte mit'],
   ['6.8', 'Der Abgrund: ein Turm ohne Ende – wie tief kommst du? Mit Bestwert für jede Klasse'],
-  ['6.9', 'Neue Klasse: der Nekromant – mit Skeletten, Knochenspeer, Leichenexplosion und der Armee der Toten']
+  ['6.9', 'Neue Klasse: der Nekromant – mit Skeletten, Knochenspeer, Leichenexplosion und der Armee der Toten'],
+  ['7.0', 'Legendäre Kräfte 2.0: neue legendäre und mythische Kräfte, die mit Resonanzen zusammenspielen']
 ];
 
 const NEWS_KIND = { neu: [_t('NEU'), '#79c24e'], besser: [_t('BESSER'), '#57a7d6'], fix: [_t('BEHOBEN'), '#e8b04a'] };

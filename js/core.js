@@ -19,7 +19,7 @@ translateData(); translateStatic();
    stat(k, n) jede Zählung über stat() (Statistik-Schlüssel, Menge) – z. B. für Aufträge (js/auftraege.js)
    perk(v, k) → v Vorteile verändern Werte, abgefragt über perk(k, v): buy/sell Preisfaktor, fee Auktionsgebühr −, stock Basar-Angebote +,
      egg Ei-Pflege hält länger ×, gather Sammelertrag +, farm Acker schneller × (Ruf der Fraktionen: js/fraktionen.js) */
-const HOOK = { meta: [], activate: [], stats: [], statsPost: [], hit: [], afterHit: [], kill: [], hurt: [], skill: [], update: [], room: [], draw: [], drawEnemy: [], pickup: [], itemLines: [], itemActions: [], skillRow: [], titleBtns: [], mapMore: [], mirror: [], charTabs: [], wbTabs: [], boot: [], station: [], drawStation: [], artIcon: [], roomUpd: [], die: [], postRender: [], collect: [], spawn: [], enemyUpd: [], loot: [], itemGen: [], stat: [], perk: [] };
+const HOOK = { meta: [], activate: [], stats: [], statsPost: [], hit: [], afterHit: [], kill: [], hurt: [], skill: [], update: [], room: [], draw: [], drawEnemy: [], pickup: [], itemLines: [], itemActions: [], skillRow: [], titleBtns: [], mapMore: [], mirror: [], charTabs: [], wbTabs: [], boot: [], station: [], drawStation: [], artIcon: [], roomUpd: [], die: [], postRender: [], collect: [], spawn: [], enemyUpd: [], loot: [], itemGen: [], stat: [], perk: [], create: [], created: [] };
 const ON = {};
 function hook(n, ...a) { for (const f of HOOK[n]) f(...a); }
 function hookVal(n, v, ...a) { for (const f of HOOK[n]) v = f(v, ...a); return v; }

@@ -9,7 +9,8 @@ let flash = { a: 0, c: '200,40,40' };
 /* ---------- Effekte ---------- */
 function shake(m) { if (SAVE && SAVE.meta.settings.calm) return; shk.m = Math.max(shk.m, m); }
 function txt(x, y, s, col, big) { texts.push({ x, y, s, col, life: .8, big, born: T }); }
-function part(x, y, z, vx, vy, vz, col, life, s, g, glow) { parts.push({ x, y, z, vx, vy, vz, col, life, max: life, s: s || 1, g: g == null ? 220 : g, glow }); }
+let PERF_N = 0;   // Leistungs-Modus (Einstellungen): nur jedes dritte Teilchen
+function part(x, y, z, vx, vy, vz, col, life, s, g, glow) { if (SAVE && SAVE.meta.settings.perf && ++PERF_N % 3) return; parts.push({ x, y, z, vx, vy, vz, col, life, max: life, s: s || 1, g: g == null ? 220 : g, glow }); }
 function dust(x, y, n) { for (let i = 0; i < (n || 2); i++) part(x + rnd(-3, 3), y + rnd(-1, 1), 1, rnd(-15, 15), rnd(-6, 6), rnd(10, 25), bg ? bg.b.dust : '#8a8a7a', rnd(.25, .45), 1, 60); }
 function burst(x, y, z, col, n, sp, glow) { for (let i = 0; i < n; i++) { const a = rnd(0, 6.28), v = rnd(.3, 1) * (sp || 60); part(x, y, z, Math.cos(a) * v, Math.sin(a) * v * .6, rnd(30, 90), col, rnd(.3, .7), Math.random() < .3 ? 2 : 1, 220, glow); } }
 function spark(x, y, ang, col) { fx.push({ k: 'spark', x, y, ang, life: .14, max: .14, col: col || '#fff' }); }
