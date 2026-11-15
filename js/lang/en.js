@@ -7381,9 +7381,5 @@ I18N.en = {
   "TREFFER": "HITS",
   "ROLLE": "ROLL",
   "Ultimative Fähigkeit": "Ultimate skill",
-  "Lade …": "Loading …",
-  "Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste": "Season 1: free Season Pass, season heroes and their own leaderboard",
-  "Begleiter-Expeditionen: Schick deine Begleiter allein in die Endlosen Lande – sie bringen Beute, Eier und Artefakte mit": "Companion Expeditions: send your companions into the Endless Lands on their own – they bring back loot, eggs and artifacts",
-  "Der Abgrund: ein Turm ohne Ende – wie tief kommst du? Mit Bestwert für jede Klasse": "The Abyss: a tower without end – how deep can you go? With a best score for every class",
-  "Neue Klasse: der Nekromant – mit Skeletten, Knochenspeer, Leichenexplosion und der Armee der Toten": "New class: the Necromancer – with skeletons, Bone Spear, Corpse Explosion and the Army of the Dead"
+  "Lade …": "Loading …"
 };

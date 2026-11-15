@@ -7381,9 +7381,5 @@ I18N.tr = {
   "TREFFER": "VURUŞ",
   "ROLLE": "TAKLA",
   "Ultimative Fähigkeit": "Nihai Yetenek",
-  "Lade …": "Yükleniyor …",
-  "Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste": "Sezon 1: ücretsiz Sezon Bileti, sezon kahramanları ve ayrı sıralama",
-  "Begleiter-Expeditionen: Schick deine Begleiter allein in die Endlosen Lande – sie bringen Beute, Eier und Artefakte mit": "Yoldaş Keşif Seferleri: Yoldaşlarını tek başlarına Sonsuz Topraklar'a gönder – ganimet, yumurta ve eserlerle dönerler",
-  "Der Abgrund: ein Turm ohne Ende – wie tief kommst du? Mit Bestwert für jede Klasse": "Uçurum: sonu olmayan bir kule – ne kadar derine inebilirsin? Her sınıf için ayrı rekor",
-  "Neue Klasse: der Nekromant – mit Skeletten, Knochenspeer, Leichenexplosion und der Armee der Toten": "Yeni sınıf: Nekromant – iskeletler, Kemik Mızrağı, Ceset Patlaması ve Ölüler Ordusu ile"
+  "Lade …": "Yükleniyor …"
 };
