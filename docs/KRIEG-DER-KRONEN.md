@@ -1,0 +1,45 @@
+# Krieg der Kronen – die große Erweiterung (Bauplan)
+
+Wunsch des Besitzers (15.11.2026): ein Update wie ein DLC – Gebiete im Dauerkrieg (Pfeilhagel, Katapulte, Magiehagel), mehrere verfeindete Königreiche, eine Story, die man auch in 1000 Stunden nicht zu Ende bekommt, bessere Grafik, Premium-Anspruch, eigene Ideen. Arbeitsweise: jedes Kapitel kritisch prüfen, bevor es live geht.
+
+Versionsregel bleibt: jede Woche +0.1. Die Erweiterung kommt deshalb in **Kapiteln** (6.6 → 7.2). Jedes Kapitel ist für sich spielbar und fertig.
+
+## Die Welt
+Fünf Kronen streiten um den **Splitterthron** (das Weltentor hat das alte Reich zerbrochen):
+
+| Reich | Farbe | Stil | Kriegsmaschine | Besonderheit |
+|---|---|---|---|---|
+| **Aurelien** (Sonnenkrone) | Gold/Weiß | Ritter, Paladine | Katapulte, Schildwälle | starke Verteidigung, Heilung |
+| **Nordmark** (Eisenkrone) | Blau/Stahl | Axtkämpfer, Wolfsreiter | Ballisten, Rammböcke | Wucht, Frost |
+| **Sylvara** (Dornenkrone) | Grün | Waldläufer, Druiden | Pfeilhagel, Dornenranken | Fernkampf, Gift |
+| **Karth** (Aschekrone) | Rot/Schwarz | Feuermagier, Söldner | Magiehagel (Meteore) | Flächenschaden |
+| **Das Schattenkonzil** (Hohle Krone) | Violett | Assassinen, Beschwörer | Schattenrisse | Verrat, Hinterhalte – der heimliche Gegenspieler |
+
+Der Spieler ist **Söldner ohne Krone**: Er kann jedem Reich dienen, wechseln, verraten – das hat Folgen (Ruf, Kopfgeld, wer ihn angreift, welche Händler ihn bedienen).
+
+## Kernsysteme
+1. **Kriegsgebiete** (neue Raumart und Biome in den Endlosen Landen): laufende Schlacht zweier Heere, die auch ohne den Spieler kämpfen. Angekündigter Beschuss: Pfeilhagel (Schatten am Boden, dann Einschlag), Katapultsteine (großer Kreis, Krater bleibt), Magiehagel (Meteore, brennender Boden), Ballistenbolzen (Linie). Deckung (Schildwälle, Wagen, Gräben) schützt wirklich. Ziele: Linie halten, Katapult erobern/zerstören, Bannerträger schützen, Hauptmann besiegen, Tor aufbrechen.
+2. **Die Kriegskarte**: ~60 Provinzen, jede gehört einem Reich. Die Fronten verschieben sich in Echtzeit (auch offline, wie der Basar), abhängig von Stärke – und vom Spieler. Jede gewonnene Schlacht zählt. Kein Reich kann ganz verschwinden (Rückzugsfestung), damit der Krieg nie endet.
+3. **Kriegsruf & Ränge** je Reich (Söldner → Hauptmann → Marschall → Kronfeldherr), eigene Ausrüstungs-Sets, Banner, Wappen, Reittier-Kosmetik, Titel. Baut auf den Fraktionen aus 6.3 auf.
+4. **Die Chronik** (Story): geschriebene Hauptgeschichte in Akten je Reich + große Wendungen (Verrat des Konzils, der wahre Erbe, das Tor). Danach und dazwischen **Kriegsjahre**: endlose, aus der Kriegslage erzeugte Feldzüge (Belagerung, Entsatz, Überfall, Geleit, Duell der Feldherren) mit steigender Stufe. Ehrlich: 1000 Stunden *geschriebene* Geschichte gibt es nicht – die Dauer kommt aus dem lebendigen Krieg, den Entscheidungen und den fünf Blickwinkeln. Die geschriebene Chronik wächst mit jedem Kapitel.
+5. **Entscheidungen mit Folgen**: Gefangene, Verrat, Bündnisse – gespeichert, später aufgegriffen (Figuren erinnern sich).
+6. **Eigene Ideen**: Belagerungen in drei Phasen (Mauer, Hof, Thronsaal); **Feldherren** als wiederkehrende Rivalen, die aufsteigen, wenn sie dich besiegen; **Kriegsbeute** (Banner erobern → Trophäen im Versteck); **eigenes Banner** gestalten; **Söldnertrupp** (Begleiter + angeworbene Kämpfer); Wetter und Tageszeit auf dem Schlachtfeld.
+
+## Grafik (Premium-Schliff, über alle Kapitel)
+Dynamisches Licht (Fackeln, Feuer, Zauber werfen Licht), weiche Schatten unter allem, Wetter (Regen, Schnee, Asche, Nebel), Rauch und Glut, Kamera-Wucht bei Einschlägen, Schlachtfeld-Kulissen (Banner im Wind, Zelte, Palisaden, Krater, liegende Schilde), größere Figuren-Vielfalt je Reich (eigene Farben/Wappen), Porträts in Dialogen, neue Titel- und Kartenbilder. Muss auf dem Handy flüssig bleiben – Stufen über die Grafik-Einstellung.
+
+## Kapitel (je eine Woche, Reihenfolge = ROADMAP)
+- **6.6 Kapitel 1 – Die Front**: Kriegsgebiete als Raumart + 3 Kriegs-Biome in den Landen, Beschuss (Pfeil, Katapult, Magie), Deckung, zwei kämpfende Heere (Aurelien vs. Karth), 4 Schlacht-Ziele, Prolog der Chronik, Grafik: Licht, Rauch, Krater, Banner.
+- **6.7 Kapitel 2 – Fünf Kronen**: alle fünf Reiche mit Einheiten und Kriegsmaschinen, Kriegsruf/Ränge, Reichs-Sets, Seite wählen und wechseln, Chronik Akt 1 je Reich.
+- **6.8 Kapitel 3 – Die Kriegskarte**: Provinzen, wandernde Fronten (auch offline), Feldzüge, Kriegsjahre (endlos).
+- **6.9 Kapitel 4 – Belagerung**: Burgen in drei Phasen, Rammbock, Mauern, Feldherren als Rivalen.
+- **7.0 Kapitel 5 – Verrat**: das Schattenkonzil, Entscheidungen mit Folgen, Chronik Akt 2, Wetter/Tageszeit.
+- **7.1 Kapitel 6 – Dein Banner**: Söldnertrupp, eigenes Banner, Trophäen, Chronik Akt 3.
+- **7.2 Kapitel 7 – Der Splitterthron**: großes Finale der geschriebenen Chronik (mehrere Enden), danach Kriegsjahre+.
+Die bisher geplanten Themen (Saison, Begleiter-Expeditionen, Abgrund, Nekromant …) rücken dahinter.
+
+## Qualitätsregeln (kritisch bleiben)
+- Vor jedem Kapitel: unabhängige Prüfung durch einen zweiten Agenten (spielt es durch, sucht Schwächen: Lesbarkeit des Beschusses auf dem Handy, Fairness, Leistung, Langeweile nach 30 Minuten) – Mängel werden vor dem Live-Stellen behoben oder ehrlich im Bericht genannt.
+- Beschuss muss fair sein: immer angekündigt, immer ausweichbar, nie Treffer ohne Vorwarnung.
+- Leistung: 60 Bilder/s auf dem Handy mit zwei Heeren (Obergrenze der Einheiten, einfache KI für Statisten).
+- Alte Spielstände laden weiter; alle Texte in 6 Sprachen; Handbuch und Tests je Kapitel.
