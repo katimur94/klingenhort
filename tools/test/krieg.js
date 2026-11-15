@@ -271,6 +271,7 @@ const TOOLS = () => {
       const o = {}; seed(13); const st = k => SAVE.meta.stats[k] || 0;
       schlacht('linie', 'aurelien'); ruhe(); KR.zt = .05; schritte(.2); o.linieSieg = KR.aus === 1;
       schlacht('linie', 'aurelien'); krMoral(-200); o.linieNied = KR.aus === -1 && KR.grund === 'moral';
+      schlacht('linie', 'aurelien'); krMoral(-40); const w1 = KR.mwarn === 1 && /Moral bricht/.test($('toast').textContent); $('toast').textContent = ''; krMoral(-1); o.warn = w1 && $('toast').textContent === '' && !KR.aus;
       // ohne den Helden bröckelt die Linie
       schlacht('linie', 'karth'); P.stealth = 1e9; schritte(30, () => { P.inv = 9; return !KR.aus; }); o.afk = KR.aus === -1 || KR.moral < 45; o.afkM = Math.round(KR.moral); P.stealth = 0;
       schlacht('banner', 'karth'); ruhe(); const u = KR.traeger; u.x = KR.bz.x - 12; u.y = KR.bz.y; schritte(3, () => !KR.aus); o.bannerSieg = KR.aus === 1 && KR.fahnen.some(f => f.gross);
@@ -291,7 +292,7 @@ const TOOLS = () => {
       startRoom('krieg', k[0], { krSeite: 'karth' }); const z1 = KR.ziel; startRoom(G.type, G.row, G.extra); o.retry = KR.ziel === z1 && KR.side === 'karth';
       unseed(); return o;
     });
-    ok(O.linieSieg && O.linieNied && O.afk, `Linie halten: gewonnen, wenn die Zeit um ist; verloren, wenn die Moral bricht – ohne den Helden bröckelt sie (nach 30 s Moral ${O.afkM})`);
+    ok(O.linieSieg && O.linieNied && O.afk && O.warn, `Linie halten: gewonnen, wenn die Zeit um ist; verloren, wenn die Moral bricht – ohne den Helden bröckelt sie (nach 30 s Moral ${O.afkM})`);
     ok(O.bannerSieg && O.bannerNied && O.traeger, 'Bannerträger: geht von selbst, bleibt bei Feinden stehen; Banner am Ziel = Sieg, Träger gefallen = Niederlage' + (O.bannerSieg && O.bannerNied && O.traeger ? '' : ' ' + JSON.stringify(O)));
     ok(O.hptDa && O.hptSieg && O.hptNied && O.maschNied, 'Hauptmann: erscheint mit Namen und viel Leben, sein Tod = Sieg; jedes Ziel geht mit der Moral verloren');
     ok(O.flucht && O.reihe === 'linie,maschine,banner,hauptmann,linie' && O.retry, 'Nach der Entscheidung flieht der Verlierer; die Ziele wechseln der Reihe nach; Wiederholen behält Seite und Ziel');
@@ -484,8 +485,11 @@ const TOOLS = () => {
     ok(await ev(() => /KRIEGSMASCHINE NEHMEN/.test(panel.querySelector('.krziel').textContent)), 'Nächste Schlacht, nächstes Ziel: Kriegsmaschine nehmen');
     await tap('[data-act="kr_seite"][data-id="karth"]'); await page.waitForTimeout(500);
     // zum Ziel laufen (hier gesetzt), Maschine und Wachen im Bild
-    await ev(() => { P.inv = 1e9; const m = KR.zm; P.x = m.x - (KR.geo.hz ? 60 : 30); P.y = m.y + (KR.geo.hz ? 20 : 60); cam.x = clamp(P.x - VW / 2, 0, Math.max(0, AW - VW)); cam.y = clamp(P.y - 10 - VH / 2, 0, Math.max(0, AH - VH)); for (const e of enemies) if (e.kr) { e.cd = 3; } });
+    await ev(() => { P.inv = 1e9; const m = KR.zm; P.x = m.x + (KR.geo.hz ? 60 : -30); P.y = m.y + (KR.geo.hz ? 20 : 60); cam.x = clamp(P.x - VW / 2, 0, Math.max(0, AW - VW)); cam.y = clamp(P.y - 10 - VH / 2, 0, Math.max(0, AH - VH)); for (const e of enemies) if (e.kr) { e.cd = 3; } });
     await page.waitForTimeout(900); await shot('10-maschine');
+    // das Ziel liegt frei: weder unter der Anzeige oben noch unter den Knöpfen (Hochformat: Feind oben unter der Anzeige, Querformat: Feind links)
+    const frei = await ev(() => { const m = KR.zm, x = VIEW.ox + (m.x - cam.x) * SCALE, y = (m.y - 12 - cam.y) * SCALE, r = 14 * SCALE, box = [...document.querySelectorAll('#krhud, #hud > *, #touch button, #skillbar button, #lhud')].map(e => e.getBoundingClientRect()).filter(q => q.width && q.height), hit = box.filter(q => x + r > q.left && x - r < q.right && y + r > q.top && y - r < q.bottom).length; return { hit, x: Math.round(x), y: Math.round(y), in: x > r && x < innerWidth - r && y > r && y < innerHeight - r }; });
+    ok(frei.in && !frei.hit, `Die Kriegsmaschine des Feindes liegt frei im Bild (${frei.x}, ${frei.y}) – nicht unter Anzeige oder Knöpfen`);
     ok(await ev(() => /KATAPULT/.test($('krT').textContent) && !$('krZr').hidden && $('krZl').textContent === 'MASCHINE'), 'Ziel „Maschine“: Name der Maschine und ihr Leben stehen oben');
     await ev(() => { krMoral(-200); });
     await page.waitForFunction(() => state === 'menu' && /VERLOREN/.test(panel.textContent), null, { timeout: 8000 });
@@ -494,7 +498,7 @@ const TOOLS = () => {
     await tap('[data-act="kr_nochmal"]'); await page.waitForTimeout(300);
     ok(await ev(() => KR.on && !KR.aus && KR.side === 'karth' && KR.ziel === 'maschine' && state === 'play'), 'Schlacht wiederholen: gleiche Seite, gleiches Ziel');
     // Hauptmann und Bannerträger fürs Foto
-    await ev(() => { seed(7); schlacht('hauptmann', 'aurelien'); KR.ht = 0; P.inv = 1e9; const p = krPos(.5, .5); P.x = p.x; P.y = p.y; schritte(.2, () => { P.inv = 9; }); const e = KR.hpt; e.x = P.x + (KR.geo.hz ? 70 : 20); e.y = P.y - (KR.geo.hz ? 10 : 70); e.kr.mt = 0; e.kr.n = 0; cam.x = clamp(P.x - VW / 2, 0, Math.max(0, AW - VW)); cam.y = clamp(P.y - 10 - VH / 2, 0, Math.max(0, AH - VH)); unseed(); });
+    await ev(() => { seed(7); schlacht('hauptmann', 'aurelien'); KR.ht = 0; P.inv = 1e9; const p = krPos(.5, .5); P.x = p.x; P.y = p.y; schritte(.2, () => { P.inv = 9; }); const e = KR.hpt; e.x = P.x - (KR.geo.hz ? 70 : -20); e.y = P.y - (KR.geo.hz ? 10 : 70); e.kr.mt = 0; e.kr.n = 0; cam.x = clamp(P.x - VW / 2, 0, Math.max(0, AW - VW)); cam.y = clamp(P.y - 10 - VH / 2, 0, Math.max(0, AH - VH)); unseed(); });
     await page.waitForTimeout(800); await shot('12-hauptfrau');
     await ev(() => { schlacht('banner', 'karth'); P.inv = 1e9; const u = KR.traeger; P.x = u.x + 24; P.y = u.y - 10; });
     await page.waitForTimeout(1500); await shot('13-bannertraeger');

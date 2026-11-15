@@ -29,7 +29,7 @@ Der Spieler ist **Söldner ohne Krone**: Er kann jedem Reich dienen, wechseln, v
 Dynamisches Licht (Fackeln, Feuer, Zauber werfen Licht), weiche Schatten unter allem, Wetter (Regen, Schnee, Asche, Nebel), Rauch und Glut, Kamera-Wucht bei Einschlägen, Schlachtfeld-Kulissen (Banner im Wind, Zelte, Palisaden, Krater, liegende Schilde), größere Figuren-Vielfalt je Reich (eigene Farben/Wappen), Porträts in Dialogen, neue Titel- und Kartenbilder. Muss auf dem Handy flüssig bleiben – Stufen über die Grafik-Einstellung.
 
 ## Kapitel (je eine Woche, Reihenfolge = ROADMAP)
-- **6.6 Kapitel 1 – Die Front**: Kriegsgebiete als Raumart + 3 Kriegs-Biome in den Landen, Beschuss (Pfeil, Katapult, Magie), Deckung, zwei kämpfende Heere (Aurelien vs. Karth), 4 Schlacht-Ziele, Prolog der Chronik, Grafik: Licht, Rauch, Krater, Banner.
+- ✅ **6.6 Kapitel 1 – Die Front**: Kriegsgebiete als Raumart + 3 Kriegs-Biome in den Landen, Beschuss (Pfeil, Katapult, Magie), Deckung, zwei kämpfende Heere (Aurelien vs. Karth), 4 Schlacht-Ziele, Prolog der Chronik, Grafik: Licht, Rauch, Krater, Banner.
 - **6.7 Kapitel 2 – Fünf Kronen**: alle fünf Reiche mit Einheiten und Kriegsmaschinen, Kriegsruf/Ränge, Reichs-Sets, Seite wählen und wechseln, Chronik Akt 1 je Reich.
 - **6.8 Kapitel 3 – Die Kriegskarte**: Provinzen, wandernde Fronten (auch offline), Feldzüge, Kriegsjahre (endlos).
 - **6.9 Kapitel 4 – Belagerung**: Burgen in drei Phasen, Rammbock, Mauern, Feldherren als Rivalen.
@@ -43,3 +43,14 @@ Die bisher geplanten Themen (Saison, Begleiter-Expeditionen, Abgrund, Nekromant 
 - Beschuss muss fair sein: immer angekündigt, immer ausweichbar, nie Treffer ohne Vorwarnung.
 - Leistung: 60 Bilder/s auf dem Handy mit zwei Heeren (Obergrenze der Einheiten, einfache KI für Statisten).
 - Alte Spielstände laden weiter; alle Texte in 6 Sprachen; Handbuch und Tests je Kapitel.
+
+## Stand nach Kapitel 1 (6.6) – woran die nächsten Kapitel andocken
+Alles in `js/krieg.js` (Kopfkommentar = Schnittstelle), Test `tools/test/krieg.js`.
+- `REICHE` enthält alle fünf Reiche (Farben, Wappen `['pa', 'kr_w_<reich>']`, `raenge`, `masch`, `einh`); `aktiv: 0` = noch nicht an der Front. Kapitel 2: Einheiten in `EN` (`ai: 'krieg'`, `kr: [reich, rolle]`, `body`/`dye`), `einh`/`hpt`/`masch` füllen, `aktiv: 1` – Seitenwahl, Chronik und Handbuch lesen aus den Daten.
+- Soldaten-KI `krAI` kennt die Rollen `nah`, `fern`, `magier`, `hauptmann`, `banner`; neue Rollen (Reiter, Heiler) dort ergänzen. Sonderangriffe der Hauptleute: `krSonderStart`.
+- Beschuss: `krShot(art, x, y, { team })` mit `pfeil`, `katapult`, `magie`, `ring`, `bahn`; neue Arten (Ballistenbolzen = `bahn` ohne Läufer, Schattenriss) in `krShot`, `krImpact`, `krDrawShot`. Regel bleibt: nie unter `KR_WARN_MIN`, Treffer nur in der gezeichneten Fläche (`krIn`).
+- Spielstand `SAVE.meta.krieg` (`krFix`): `r[reich] = { ruf, mk, sg, nl }`, `ch` ist frei für Chronik-Entscheidungen, `seite` = zuletzt gewählt. Ränge: `KR_RAENGE` (Schwellen stehen, Vorteile fehlen noch).
+- Schlacht-Ziele: `KR_ZIELE`/`KR_ZIEL`, Ablauf in `krStart`/`krUpd`/`krEnd`. Feld-Geometrie `krPos(u, v)` (u = eigenes Ende … Feind).
+- Lande: `KR_LANDE` (Biom → Beschuss-Arten), Kulissen `krLandeDeko`.
+
+Ehrlich offen nach Kapitel 1: ein einziges Feld-Layout (nur leicht gewürfelt) und vier Ziele – nach vielen Schlachten wiederholt es sich; das Schlachtfeld steckt noch im Mauer-Rahmen der Kampagnen-Räume; Verbündete kennen keine Formation; Kriegskasse mit nur drei Angeboten; keine eigenen Klänge für Katapult und Meteor; HD-Grafik auf Geräten ohne Grafikkarte teuer (Pixel-Modus ist auf Handys Standard).

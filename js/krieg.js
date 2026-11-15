@@ -181,13 +181,15 @@ ON.kr_zurueck = () => { undoRoomEntry(); saveChar(); openMap(); };
 
 /* ---------- Laufende Schlacht ---------- */
 const KR = { on: false, row: 0, side: null, foe: null, ziel: null, geo: null, al: [], list: [], machs: [], shots: [], fires: [], bolts: [], rauch: [], cover: [], graben: [], fahnen: [], feuer: [], decals: [], log: [], moral: 60, t: 0, zt: 0, aus: 0, endT: 0, fx: 0, lt: 6, nF: 0, nA: 0 };
-function krReset() { KR.on = false; KR.al = []; KR.list = []; KR.machs = []; KR.shots = []; KR.fires = []; KR.bolts = []; KR.rauch = []; KR.cover = []; KR.graben = []; KR.fahnen = []; KR.feuer = []; KR.decals = []; KR.aus = 0; KR.endT = 0; KR.traeger = null; KR.hpt = null; KR.zm = null; KR.caps = 0; KR.gef = 0; KR.t = 0; KR.ban = 0; KR.lohn = null; $('krhud').hidden = true; KRH.on = false; }
+function krReset() { KR.on = false; KR.al = []; KR.list = []; KR.machs = []; KR.shots = []; KR.fires = []; KR.bolts = []; KR.rauch = []; KR.cover = []; KR.graben = []; KR.fahnen = []; KR.feuer = []; KR.decals = []; KR.aus = 0; KR.endT = 0; KR.traeger = null; KR.hpt = null; KR.zm = null; KR.caps = 0; KR.gef = 0; KR.t = 0; KR.ban = 0; KR.mwarn = 0; KR.lohn = null; $('krhud').hidden = true; KRH.on = false; }
 // Güte der Effekte: HD mehr, Pixel-Modus (Handy) weniger, „Ruhiges Bild“ halbiert
 function krQ() { return (HD ? 1 : .6) * (SAVE && SAVE.meta.settings.calm ? .5 : 1); }
 function krVis(x, y, m) { m = m || 20; return x > cam.x - m && x < cam.x + VW + m && y > cam.y - m && y < cam.y + VH + m; }
 function krDmgBase() { return 11 * scaleOf(stageNum()).am; }
-// Feld: u = 0 eigenes Ende … 1 Ende des Feindes (lange Seite der Arena), v = quer
-function krGeo() { const hz = AW > AH; return KR.geo = { hz, a0: hz ? BD.x0 + 18 : BD.y1 - 12, a1: hz ? BD.x1 - 18 : BD.y0 + 16, b0: hz ? BD.y0 + 14 : BD.x0 + 18, b1: hz ? BD.y1 - 12 : BD.x1 - 18 }; }
+// Feld: u = 0 eigenes Ende … 1 Ende des Feindes (lange Seite der Arena), v = quer.
+// Hochformat: Feind oben – aber unterhalb der Anzeige (46 px Luft), das eigene Ende etwas über den Knöpfen.
+// Querformat: Feind links, denn rechts liegen die Angriffs-Knöpfe; oben Luft für die Anzeige.
+function krGeo() { const hz = AW > AH; return KR.geo = hz ? { hz, a0: BD.x1 - 18, a1: BD.x0 + 18, b0: BD.y0 + 30, b1: BD.y1 - 12 } : { hz, a0: BD.y1 - 34, a1: BD.y0 + 46, b0: BD.x0 + 18, b1: BD.x1 - 18 }; }
 function krPos(u, v) { const g = KR.geo, a = lerp(g.a0, g.a1, u), b = lerp(g.b0, g.b1, v); return g.hz ? { x: a, y: b } : { x: b, y: a }; }
 function krU(x, y) { const g = KR.geo; return ((g.hz ? x : y) - g.a0) / (g.a1 - g.a0); }
 
@@ -233,7 +235,7 @@ function krMalKrater(g, x, y, r) {
   g.fillStyle = 'rgba(20,14,12,.6)'; for (let k = 0; k < 6; k++) { const a = k * 1.05 + r; g.fillRect(Math.round(x + Math.cos(a) * r * 1.05), Math.round(y + Math.sin(a) * r * .62), 2, 1); }
 }
 function krMalBrand(g, x, y, r) { g.fillStyle = 'rgba(10,6,6,.42)'; g.beginPath(); g.ellipse(x, y, r, r * .6, 0, 0, 7); g.fill(); g.fillStyle = 'rgba(120,40,16,.3)'; g.beginPath(); g.ellipse(x, y, r * .5, r * .3, 0, 0, 7); g.fill(); }
-function krMalPfeil(g, x, y, s) { x = Math.round(x); y = Math.round(y); g.fillStyle = '#2a2028'; g.fillRect(x, y - 5, 1, 6); g.fillStyle = '#c8b88a'; g.fillRect(x, y - 5, 1, 4); g.fillStyle = s ? '#d8433a' : '#efe2bf'; g.fillRect(x - 1, y - 6, 3, 1); g.fillRect(x, y - 7, 1, 1); }
+function krMalPfeil(g, x, y, s) { x = Math.round(x); y = Math.round(y); g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(x, y, 3, 1); g.fillStyle = '#c8b88a'; g.fillRect(x, y - 2, 1, 2); g.fillRect(x + 1, y - 4, 1, 2); g.fillRect(x + 2, y - 6, 1, 2); g.fillStyle = s ? '#d8433a' : '#efe2bf'; g.fillRect(x + 2, y - 8, 2, 2); g.fillStyle = '#2a2028'; g.fillRect(x, y, 1, 1); }
 function krMalSchild(g, x, y, c) { x = Math.round(x); y = Math.round(y); g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(x - 3, y + 2, 8, 1); g.fillStyle = '#3a3028'; g.fillRect(x - 3, y - 2, 7, 5); g.fillStyle = c; g.fillRect(x - 2, y - 2, 3, 4); g.fillRect(x + 2, y - 1, 2, 3); g.fillStyle = '#1a1420'; g.fillRect(x + 1, y - 2, 1, 5); }
 function krDecal(art, x, y, r) {
   if (bg && bg.c && !bg.draw) { const g = bg.c.getContext('2d'); if (art === 'krater') krMalKrater(g, x, y, r); else if (art === 'brand') krMalBrand(g, x, y, r); else krMalPfeil(g, x, y, r); return; }
@@ -253,10 +255,11 @@ function krFeld() {
   for (let i = 0; i < 9; i++) ell(krPos(.3 + R() * .4, .08 + R() * .84), 26 + R() * 26, 30 + R() * 40, 'rgba(58,44,30,.2)');
   for (let i = 0; i < 6; i++) { const p = krPos(.34 + R() * .34, .08 + R() * .84); krMalKrater(g, p.x, p.y, 9 + R() * 9); }
   for (let i = 0; i < 5; i++) { const p = krPos(.25 + R() * .5, .06 + R() * .88); krMalBrand(g, p.x, p.y, 8 + R() * 8); }
-  for (let i = 0; i < 22; i++) { const p = krPos(.2 + R() * .62, .05 + R() * .9); krMalPfeil(g, p.x, p.y, R() < .5); }
+  for (let i = 0; i < 16; i++) { const p = krPos(.2 + R() * .62, .05 + R() * .9); krMalPfeil(g, p.x, p.y, R() < .5); }
   for (let i = 0; i < 7; i++) { const p = krPos(.3 + R() * .42, .06 + R() * .88); krMalSchild(g, p.x, p.y, R() < .5 ? S.c : F.c); }
   // Gräben: zwei Stücke quer vor der eigenen Linie – wer darin steht, ist gedeckt
-  for (const [v0, v1] of [[.04, .4], [.6, .96]]) {
+  const lk = .36 + R() * .08, wv = R() * .1, wu = R() * .08;   // jede Schlacht etwas anders: Lücke im Graben, Wälle, Wagen
+  for (const [v0, v1] of [[.04, lk], [lk + .2, .96]]) {
     const a = krPos(.4, v0), b = krPos(.4, v1), th = 15, rc = geo.hz ? { x0: a.x - th / 2, x1: a.x + th / 2, y0: Math.min(a.y, b.y), y1: Math.max(a.y, b.y) } : { x0: Math.min(a.x, b.x), x1: Math.max(a.x, b.x), y0: a.y - th / 2, y1: a.y + th / 2 };
     KR.graben.push(rc);
     g.fillStyle = '#120c0c'; g.fillRect(rc.x0, rc.y0, rc.x1 - rc.x0, rc.y1 - rc.y0); g.fillStyle = '#2a1e18'; g.fillRect(rc.x0 + 1, rc.y0 + 2, rc.x1 - rc.x0 - 2, rc.y1 - rc.y0 - 4);
@@ -264,13 +267,13 @@ function krFeld() {
     g.fillStyle = '#3a2c22'; if (!geo.hz) g.fillRect(rc.x0, rc.y1 - 1, rc.x1 - rc.x0, 2);
     // Pfähle am Rand zum Feind
     g.fillStyle = WOOD[1]; const n = Math.floor(((geo.hz ? rc.y1 - rc.y0 : rc.x1 - rc.x0)) / 12);
-    for (let i = 0; i <= n; i++) { if (geo.hz) g.fillRect(rc.x1 + 1, rc.y0 + 2 + i * 12, 4, 2); else g.fillRect(rc.x0 + 2 + i * 12, rc.y0 - 5, 2, 5); }
+    for (let i = 0; i <= n; i++) { if (geo.hz) g.fillRect(rc.x0 - 5, rc.y0 + 2 + i * 12, 4, 2); else g.fillRect(rc.x0 + 2 + i * 12, rc.y0 - 5, 2, 5); }
   }
   // Deckung: Schildwall der eigenen Seite, Wagen im Niemandsland (alle fest, halten Pfeile auf)
   const fest = (x, y, r, draw) => obs.push({ k: 'col', x, y, r, solid: true, draw: draw || krLeer });
   const wall = (u, v) => { const p = krPos(u, v), hz = geo.hz, spr = krWall(KR.side, hz); for (const d of [-11, 0, 11]) fest(p.x + (hz ? 0 : d), p.y + (hz ? d : 0), 6, d === 0 ? (o, x, y) => { ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x - spr.width / 2 + 1, y + (hz ? 17 : 3), spr.width - 2, 2); ctx.drawImage(spr, x - spr.width / 2, y - (hz ? 21 : 12)); } : null); KR.cover.push({ x: p.x, y: p.y, hw: 20, dp: 24 }); };
   const wagen = (u, v) => { const p = krPos(u, v), spr = krWagen(); fest(p.x - 7, p.y, 7); fest(p.x + 7, p.y, 7, (o, x, y) => { ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x - 20, y + 4, 26, 2); ctx.drawImage(spr, x - 21, y - 13); }); KR.cover.push({ x: p.x, y: p.y, hw: 15, dp: 24 }); };
-  wall(.27, .26); wall(.27, .74); wagen(.56, .2); wagen(.63, .8);
+  wall(.27, .2 + wv); wall(.27, .7 + wv); wagen(.52 + wu, .16 + wv); wagen(.6 + wu, .86 - wv);
   // Lager an beiden Enden: Zelte, Palisaden, Banner, Feuer
   const deko = (u, v, spr, oy, r) => { const p = krPos(u, v); fest(p.x, p.y, r || 8, (o, x, y) => { ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y + 1, spr.width * .45, 3, 0, 0, 7); ctx.fill(); ctx.drawImage(spr, x - (spr.width >> 1), y - spr.height + oy); }); };
   deko(.0, .2, krZelt(KR.side), 4, 10); deko(1, .8, krZelt(KR.foe), 4, 10);
@@ -343,7 +346,11 @@ function krFall(t, nx, ny) {
   // Lande: das Lager des Soldaten merkt sich, dass er fort ist (kommt später wieder)
   if (!KR.on && t.lw && typeof lDespawn === 'function') { try { t.dead = false; lDespawn(t); } catch (e) { t.dead = true; } }
 }
-function krMoral(d) { if (!KR.on || KR.aus) return; KR.moral = clamp(KR.moral + d, 0, 100); if (KR.moral <= 0) krEnd(false, 'moral'); }
+function krMoral(d) {
+  if (!KR.on || KR.aus) return; KR.moral = clamp(KR.moral + d, 0, 100);
+  if (KR.moral < 25 && !KR.mwarn) { KR.mwarn = 1; toast(_t('Die Moral bricht! Besiege Feinde, dann fasst dein Heer wieder Mut.'), '#ff8a7a'); sfx('deny'); } else if (KR.moral > 40) KR.mwarn = 0;
+  if (KR.moral <= 0) krEnd(false, 'moral');
+}
 HOOK.kill.push(e => {
   if (!e || !e.def) return;
   if (e.kr) { stat('krSold'); if (KR.on && !KR.aus) { KR.gef++; krMoral(2.5); if (e === KR.hpt) { stat('krHaupt'); krEnd(true); } } }
@@ -716,6 +723,14 @@ function krGround() {
   for (const d of KR.decals) { const x = d.x - CX, y = d.y - CY; if (x < -40 || x > VW + 40 || y < -30 || y > VH + 30) continue; if (d.art === 'krater') krMalKrater(ctx, x, y, d.r); else if (d.art === 'brand') krMalBrand(ctx, x, y, d.r); else krMalPfeil(ctx, x, y, d.r); }
   // Ziel des Bannerträgers
   if (KR.on && KR.traeger && !KR.aus) { const x = KR.bz.x - CX, y = KR.bz.y - CY, c = REICHE[KR.side].c; ctx.globalAlpha = .5 + .3 * Math.sin(T * 4); ctx.strokeStyle = c; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.ellipse(x, y, 16, 9, 0, 0, 6.283); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1; ctx.lineWidth = 1; }
+  if (KR.on && G && G.type === 'krieg') {
+    const c = REICHE[KR.side].c;
+    // „Linie halten“: hier darf der Feind nicht durch
+    if (KR.ziel === 'linie' && !KR.aus) { const a = krPos(.3, 0), b = krPos(.3, 1); ctx.globalAlpha = .3 + .1 * Math.sin(T * 3); ctx.strokeStyle = c; ctx.lineWidth = 1; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(a.x - CX, a.y - CY); ctx.lineTo(b.x - CX, b.y - CY); ctx.stroke(); ctx.setLineDash([]); }
+    // Ring in der Farbe deiner Seite: du findest dich im Getümmel wieder
+    if (state === 'play') { ctx.globalAlpha = .6; ctx.strokeStyle = c; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(P.x - CX, P.y - CY, 9, 4.5, 0, 0, 6.283); ctx.stroke(); }
+    ctx.globalAlpha = 1; ctx.lineWidth = 1;
+  }
   for (const s of KR.shots) krDrawShot(s);
   // brennender Boden: Glut-Fläche, Flammen malt krTop
   for (const f of KR.fires) { const x = f.x - CX, y = f.y - CY, a = clamp(f.life / .6, 0, 1); if (x < -40 || x > VW + 40 || y < -40 || y > VH + 40) continue; ctx.globalAlpha = .34 * a; ctx.fillStyle = '#ff5a1e'; ctx.beginPath(); ctx.ellipse(x, y, f.r, f.r * .6, 0, 0, 6.283); ctx.fill(); ctx.globalAlpha = .7 * a; ctx.strokeStyle = '#ffb03a'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(x, y, f.r, f.r * .6, 0, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1; }
