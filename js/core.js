@@ -174,6 +174,9 @@ function matIcon(id) {
       case 'obsidian': px(g, 5, 1, 2, 10, b); px(g, 3, 3, 6, 7, b); px(g, 4, 2, 4, 8, a); px(g, 5, 3, 1, 5, '#a890d0'); px(g, 7, 5, 1, 3, '#ff8a3a'); px(g, 4, 9, 4, 1, b); break;
       case 'faser': for (const x of [3, 5, 7, 9]) { px(g, x, 2 + (x % 3), 1, 8 - (x % 3), b); px(g, x, 2 + (x % 3), 1, 3, a); } px(g, 2, 7, 9, 2, '#a8864a'); px(g, 2, 7, 9, 1, '#d8b878'); break;
       case 'samen': for (const [x, y] of [[3, 4], [7, 3], [5, 7], [8, 7], [2, 8]]) { px(g, x, y, 2, 3, b); px(g, x, y, 2, 2, a); px(g, x, y, 1, 1, '#fff0c0'); } break;
+      // Kriegsbeute (6.6): Barren mit Kerbe, gefaltetes Tuch mit Saum
+      case 'kriegseisen': px(g, 1, 6, 10, 4, b); px(g, 2, 4, 8, 5, a); px(g, 3, 4, 6, 1, '#e8ecf4'); px(g, 5, 6, 2, 2, b); px(g, 2, 9, 8, 1, '#2a2e3a'); px(g, 9, 5, 1, 2, '#ff8a3a'); break;
+      case 'bannerstoff': px(g, 2, 2, 8, 8, b); px(g, 2, 2, 7, 6, a); px(g, 2, 2, 7, 1, '#ff7a6a'); px(g, 4, 4, 3, 2, '#ffd24a'); px(g, 2, 8, 2, 2, a); px(g, 6, 8, 2, 2, a); px(g, 9, 3, 1, 6, '#5a1418'); break;
       case 'feder': for (let i = 0; i < 9; i++) { const x = 2 + i, y = 10 - i; px(g, x, y - 2, 1, 3, i > 1 ? a : b); if (i > 2) px(g, x + 1, y - 1, 1, 1, b); } px(g, 1, 10, 2, 1, b); px(g, 9, 1, 1, 1, '#fff'); break;
     }
   });

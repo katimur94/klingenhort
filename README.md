@@ -7,7 +7,7 @@ Vier Klassen, frei gestaltbare Helden, **Begleiter, die mit dir wachsen**, sechs
 
 ### ▶ [Jetzt spielen: katimur94.github.io/klingenhort](https://katimur94.github.io/klingenhort/)
 
-Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 6.5 · jede Woche neue Inhalte
+Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 6.6 · jede Woche neue Inhalte
 
 🌐 Deutsch · English · Türkçe · Español · Italiano · Français – *the game starts in your device language*
 
@@ -85,6 +85,24 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Vers
 ## Neuigkeiten & Wochenplan
 
 Klingenhort wird jede Woche erweitert. Im Spiel zeigt **Neuigkeiten** (Titelmenü, Einstellungen oder Weltkarte → Mehr) alle Updates und was als Nächstes kommt; nach einem Update öffnet sich die Seite einmal von selbst.
+
+**Neu in 6.6 – Krieg der Kronen 1: Die Front**
+
+Erstes von sieben Kapiteln der großen Erweiterung (Bauplan: [`docs/KRIEG-DER-KRONEN.md`](docs/KRIEG-DER-KRONEN.md)). System in `js/krieg.js`, Test `tools/test/krieg.js`.
+
+| System | Was es kann |
+|---|---|
+| **Kriegsgebiete** | Neue Raumart auf der Weltkarte ab Akt 3 (gekreuzte Banner, ein bis zwei je Karte – eigener Zufall, kein anderer Ort verschiebt sich). Vor der Schlacht wählst du die Seite: Aurelien (+30 % Gold) oder Karth (+2 Kriegseisen) |
+| **Zwei Heere** | Aurelien (Schildträger, Sonnenritter, Kronschützen) gegen Karth (Aschesöldner, Brandklingen, Flammenrufer). Verbündete kämpfen mit dir, Feinde greifen dich und sie an; eine einfache KI für alle. Höchstens 22 Soldaten zugleich, Verstärkung von beiden Enden. Was Soldaten unter sich austragen, bringt weder Erfahrung noch Beute |
+| **Beschuss** | Pfeilhagel (1,3 s Ankündigung), Katapult (1,7 s, Krater, Rückstoß), Magiehagel (Meteore, 1,2 s+, Boden brennt 4,6 s) aus sichtbaren Kriegsmaschinen am Feldrand. Nie weniger als 0,8 s Vorwarnung, Treffer nur in der gezeichneten Fläche. Feindliche Maschinen lassen sich zerstören oder erobern (3,2 s daneben stehen, kein Feind in der Nähe) |
+| **Deckung** | Schildwall, Wagen (fest, halten Pfeile auf) und Gräben: Pfeilhagel trifft dort gar nicht, Katapult und Meteor halb. Schild-Zeichen über dem Helden |
+| **Schlacht-Ziele** | Im Wechsel: Linie halten (70 s), Kriegsmaschine nehmen, Bannerträger schützen, Hauptmann besiegen (Leoric: Schildstoß entlang einer Bahn, Pfeilhagel-Ruf · Sareth: Flammenring, Meteore). Moral 0 = Niederlage – wiederholen oder Rückzug |
+| **Kriegsbeute & Kriegsruf** | Gold, Kriegseisen, Bannerstoff, Marken und Kriegsruf je Reich (`SAVE.meta.krieg`). Kriegskasse in der Chronik der Kronen tauscht Marken gegen Gold, Edelsteine und Glücksmünzen |
+| **Die fünf Reiche** | `REICHE` enthält schon Aurelien, Nordmark, Sylvara, Karth und das Schattenkonzil (Farben, Wappen, Ränge) – drei davon noch nicht an der Front |
+| **Chronik – Prolog** | Sieben Szenen zum Splitterthron und den fünf Kronen, beim ersten Kriegsgebiet; nachlesen unter Karte → Mehr → Chronik der Kronen |
+| **Endlose Lande** | Drei Kriegs-Biome (hinten angefügt): Schildgraben (Ringe 2–4), Verbrannte Mark (4–7), Aschefront (7–10) mit Soldaten beider Reiche, angekündigtem Beschuss und Kulissen aus der Welt-Saat |
+| **Grafik** | Licht von Lagerfeuern, Meteoren und Glutwerfern, Rauchschwaden und Funken, bleibende Krater und Brandflecken, Banner im Wind, Zelte, Palisaden, Pfeile und Schilde im Boden; Stufen über die Grafik-Einstellung, „Ruhiges Bild“ dämpft Wucht und Funken |
+| **Drumherum** | Aufträge „Gewinne eine Schlacht“ / „Besiege Soldaten der Kronen“, fünf Erfolge, Handbuch-Kapitel „Krieg der Kronen“ |
 
 **Neu in 6.5 – Sturmgipfel**
 

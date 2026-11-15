@@ -81,6 +81,9 @@ const AUFDEF = {
   node: { f: 'orden', ev: 'node', d: lv => 4 + (lv >= 20 ? 2 : 0), w: () => 25, t: q => _t('Schaffe {n} Orte auf der Weltkarte', { n: q.n }) },
   akt: { f: 'orden', ev: 'act', d: () => 0, w: () => 1, g: 1.5, t: () => _t('Bezwinge einen Akt-Boss der Kampagne') },
   daily: { f: 'orden', ev: 'daily', d: () => 1, w: () => 0, t: () => _t('Schaffe die Tages-Challenge') },
+  // Krieg der Kronen (6.6, js/krieg.js): Schlachten in Kriegsgebieten ab Akt 3, Soldaten der Kronen auch in den Kriegs-Biomen der Lande
+  krsieg: { f: 'orden', ev: 'krsieg', ok: () => typeof kriegOffen === 'function' && kriegOffen(), d: () => 1, w: () => 3, g: 1.3, t: q => q.n === 1 ? _t('Gewinne eine Schlacht in einem Kriegsgebiet') : _t('Gewinne {n} Schlachten in Kriegsgebieten', { n: q.n }) },
+  krsold: { f: 'orden', ev: 'krsold', ok: () => typeof kriegOffen === 'function' && kriegOffen(), d: lv => 8 + Math.floor(lv / 10), w: lv => aufNice(40 + lv), t: q => _t('Besiege {n} Soldaten der Kronen', { n: q.n }) },
   // Kundschafter der Lande (ab LV 5)
   lkill: { f: 'kund', ev: 'lkill', ok: aufLand, d: lv => aufNice(25 + lv * 1.5), w: lv => aufNice(150 + lv * 5), t: q => _t('Besiege {n} Gegner in den Endlosen Landen', { n: q.n }) },
   lelite: { f: 'kund', ev: 'lelite', ok: aufLand, d: lv => 3 + Math.floor(lv / 8), w: lv => 15 + Math.floor(lv / 2), t: q => _t('Besiege {n} Elite-Gegner in den Endlosen Landen', { n: q.n }) },
@@ -215,7 +218,7 @@ function aufEv(k, n, x) {
   }
 }
 // stat()-Schlüssel → Ereignis (g_<Rohstoff> und boss_<Art> eigens)
-const AUF_STAT = { nodes: 'node', dailies: 'daily', spins: 'spin', harvest: 'harvest', sown: 'sow', arte: 'arte', landeExt: 'ext', landeLoot: 'extv', landeCps: 'beacon', landeRegs: 'region', landeMis: 'mis', builds: 'build', upTry: 'up', salv: 'salv', forged: 'forge', mwMade: 'forge', modIns: 'mod', mkBuy: 'mkbuy', mkWon: 'mkwon', mkSell: 'mksell', mkSold: 'mksell', mkAuc: 'mkauc', eggCare: 'care', hatch: 'hatch', birdsSent: 'bird', goldTotal: 'gold' };
+const AUF_STAT = { nodes: 'node', dailies: 'daily', spins: 'spin', harvest: 'harvest', sown: 'sow', arte: 'arte', landeExt: 'ext', landeLoot: 'extv', landeCps: 'beacon', landeRegs: 'region', landeMis: 'mis', builds: 'build', upTry: 'up', salv: 'salv', forged: 'forge', mwMade: 'forge', modIns: 'mod', mkBuy: 'mkbuy', mkWon: 'mkwon', mkSell: 'mksell', mkSold: 'mksell', mkAuc: 'mkauc', eggCare: 'care', hatch: 'hatch', birdsSent: 'bird', goldTotal: 'gold', krWin: 'krsieg', krSold: 'krsold' };
 HOOK.stat.push((k, n) => {
   if (!P || typeof k !== 'string') return;
   try {

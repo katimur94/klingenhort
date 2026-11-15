@@ -7,6 +7,19 @@
 
 const CHANGELOG = [
   {
+    v: '6.6.0', d: '2026-11-15', t: 'Krieg der Kronen 1 – Die Front', items: [
+      ['neu', 'Kriegsgebiete: Ab Akt 3 liegen auf der Weltkarte Schlachtfelder (gekreuzte Banner). Zwei Heere kämpfen dort wirklich gegeneinander – Aurelien in Gold und Weiß gegen Karth in Rot und Schwarz. Du bist Söldner und wählst vor jeder Schlacht deine Seite.'],
+      ['neu', 'Beschuss von den Kriegsmaschinen am Feldrand: Pfeilhagel, Katapultsteine (Krater bleibt, wirft dich zurück) und Magiehagel aus Meteoren (der Boden brennt weiter). Jeder Einschlag wird am Boden angekündigt – raus aus der Fläche, bevor sie sich füllt.'],
+      ['neu', 'Deckung: Hinter Schildwall und Wagen und im Graben trifft dich Pfeilhagel gar nicht, Katapult und Meteore nur halb. Ein kleiner Schild über deinem Helden zeigt, dass du gedeckt bist.'],
+      ['neu', 'Vier Schlacht-Ziele im Wechsel: Linie halten, die Kriegsmaschine des Feindes erobern oder zerstören, den Bannerträger schützen, den feindlichen Hauptmann besiegen. Bricht die Moral deines Heeres, ist die Schlacht verloren.'],
+      ['neu', 'Kriegsbeute: Kriegseisen, Bannerstoff, Marken und Kriegsruf beim Reich, für das du gekämpft hast. Marken tauschst du in der Kriegskasse (Karte → Mehr → Chronik der Kronen).'],
+      ['neu', 'Chronik der Kronen – Prolog: Wie der Splitterthron zersprang, fünf Kronen daraus wurden und zwei Werber um deine Klinge streiten. Beginnt bei deinem ersten Kriegsgebiet, nachlesen kannst du ihn in der Chronik.'],
+      ['neu', 'Drei Kriegs-Biome in den Endlosen Landen: Schildgraben, Verbrannte Mark und Aschefront. Dort bekämpfen sich Soldaten beider Reiche – und beide greifen dich an. Beschuss fällt auch dort nur mit Ankündigung.'],
+      ['neu', 'Neue Aufträge an der Auftragstafel („Gewinne eine Schlacht“, „Besiege Soldaten der Kronen“), fünf Erfolge und ein Handbuch-Kapitel „Krieg der Kronen“.'],
+      ['besser', 'Schlachtfelder sehen anders aus als alles bisher: Lagerfeuer und Meteore werfen Licht, Rauch und Funken steigen auf, Krater und Brandflecken bleiben liegen, Banner wehen im Wind – dazu Zelte, Palisaden, Pfeile im Boden. Auf dem Handy bleibt es flüssig; „Ruhiges Bild“ dämpft Wackeln, Blitzen und Funken wie gewohnt.']
+    ]
+  },
+  {
     v: '6.5.0', d: '2026-11-06', t: 'Sturmgipfel', items: [
       ['neu', 'Akt 9: die Sturmgipfel. Über den höchsten Gipfeln tobt ein Gewitter, das nie endet – mit eigener Geschichte, Regen, Wetterleuchten und neuem Gebiet.'],
       ['neu', 'Blitze schlagen im Kampf ein: Ein leuchtender Kreis am Boden warnt dich vor, dann trifft der Blitz alle im Kreis – dich und die Gegner. Lock sie hinein!'],
@@ -215,10 +228,10 @@ const CHANGELOG = [
 
 // Vorschau: was in den nächsten Wochen kommt (Version, Text – siehe ROADMAP.md)
 const COMING = [
-  ['6.6', 'Saison 1: kostenloser Saison-Pass, Saison-Helden und eigene Rangliste'],
-  ['6.7', 'Begleiter-Expeditionen: Schick deine Begleiter allein in die Endlosen Lande – sie bringen Beute, Eier und Artefakte mit'],
-  ['6.8', 'Der Abgrund: ein Turm ohne Ende – wie tief kommst du? Mit Bestwert für jede Klasse'],
-  ['6.9', 'Neue Klasse: der Nekromant – mit Skeletten, Knochenspeer, Leichenexplosion und der Armee der Toten']
+  ['6.7', 'Krieg der Kronen 2 – Fünf Kronen: alle fünf Reiche mit eigenen Einheiten und Kriegsmaschinen, Kriegsruf mit Rängen, Seite wählen und wechseln, Chronik Akt 1'],
+  ['6.8', 'Krieg der Kronen 3 – Die Kriegskarte: Provinzen, Fronten, die auch wandern, während du nicht spielst, Feldzüge und endlose Kriegsjahre'],
+  ['6.9', 'Krieg der Kronen 4 – Belagerung: Burgen in drei Phasen, Rammbock und Mauern, Feldherren als wiederkehrende Rivalen'],
+  ['7.0', 'Krieg der Kronen 5 – Verrat: das Schattenkonzil, Entscheidungen mit Folgen, Chronik Akt 2, Wetter und Tageszeit auf dem Schlachtfeld']
 ];
 
 const NEWS_KIND = { neu: [_t('NEU'), '#79c24e'], besser: [_t('BESSER'), '#57a7d6'], fix: [_t('BEHOBEN'), '#e8b04a'] };

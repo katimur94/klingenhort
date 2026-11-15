@@ -86,6 +86,7 @@ function freeSpot(r, avoidCenter) {
   return null;
 }
 function placeProps(type, stage, R) {
+  if (type === 'krieg') return;   // Schlachtfeld: eigene Kulissen und Deckung (js/krieg.js)
   const pk = bg.b.pool;
   if (pk && type !== 'schatz') { const n = 1 + Math.floor(R() * (pk === 'lava' ? 2 : 3)); for (let i = 0; i < n; i++) { const s = freeSpot(26, true); if (s) addPool(pk, s.x, s.y, 14 + R() * 14, 6 + R() * 6); } }
   if (R() < .12) { const s = freeSpot(10, true); if (s) obs.push({ k: 'quelle', x: s.x, y: s.y, r: 7, solid: true, used: false }); }
@@ -282,7 +283,9 @@ function genMap(act) {
     a.forEach((n, i) => { const pos = (i + .5) / a.length * b.length - .5; const j = clamp(Math.round(pos), 0, b.length - 1); n.links.push(j); if (R() < .45) { const j2 = clamp(j + (pos > j ? 1 : -1), 0, b.length - 1); if (j2 !== j) n.links.push(j2); } });
     b.forEach((n, j) => { if (!a.some(m => m.links.includes(j))) { const i = clamp(Math.round((j + .5) / b.length * a.length - .5), 0, a.length - 1); a[i].links.push(j); } });
   }
-  return { act, rows, pos: { r: -1, i: -1 } };
+  const M = { act, rows, pos: { r: -1, i: -1 } };
+  if (typeof kriegMap === 'function') kriegMap(M);   // 6.6: Kriegsgebiete ab Akt 3 – eigener Zufall, verschiebt keine anderen Orte
+  return M;
 }
 function availableNodes() {
   const M = P.map; if (M.pos.r < 0) return M.rows[0].map((n, i) => i);
@@ -300,6 +303,7 @@ function enterNode(i) {
     case 'event': openEvent(); break;
     case 'rast': P.hp = Math.min(P.st.hp, P.hp + P.st.hp * .4); openRest(); break;
     case 'raetsel': openRiddle(); break;
+    case 'krieg': kriegEnter(r); break;   // Seite wählen, dann Schlacht (js/krieg.js)
     case 'boss': { const A = ACTS[(P.act - 1) % ACTS.length], B = bossOf(P.act); setState('menu'); dialog(qualOf(P.act) ? [['erz', _t('{name} erhebt sich erneut – verzerrt von der Leere.', { name: B.name })]] : [['erz', _t('Vor dir: {name}.', { name: B.name })], [{ n: B.name, sp: EN[B.type].sp, c: '#ff6a5a' }, A.b]], () => startRoom('boss', r)); break; }
     default: startRoom(n.t, r);
   }

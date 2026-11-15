@@ -5,7 +5,7 @@
    Neue Klassen, Gegner, Talente, Rezepte: hier ergänzen.
    ========================================================= */
 
-const VERSION = '6.5.0';
+const VERSION = '6.6.0';
 const SAVE_KEY = 'klingenhort.v3';
 const WALL = 32;
 
@@ -454,9 +454,12 @@ const MATS = {
   eisenholz:{n:'Eisenholz',c:'#7a8494',c2:'#2e343e',res:1,w:'Bäume tiefer in den Landen (alte und dunkle Wälder), Acker'},
   marmor:{n:'Marmor',c:'#eee8dc',c2:'#a8a090',res:1,w:'helle Felsen und Säulen in den Landen, Erzmine ab Stufe 6'},
   obsidian:{n:'Obsidian',c:'#5a4878',c2:'#140e1e',res:1,w:'dunkle Felsen und Obsidian in Glut-Gebieten, Erzmine ab Stufe 8'},
-  sternholz:{n:'Sternholz',c:'#a8b8ff',c2:'#3a3a8a',res:1,w:'Sternenbäume weit draußen in den Landen, Acker (Sternblume)'}
+  sternholz:{n:'Sternholz',c:'#a8b8ff',c2:'#3a3a8a',res:1,w:'Sternenbäume weit draußen in den Landen, Acker (Sternblume)'},
+  // Kriegsbeute (6.6, js/krieg.js): von Soldaten der Kronen und als Lohn nach einer Schlacht – liegt wie Rohstoffe im Vorrat (res), kein Marktwert nach Stufe
+  kriegseisen:{n:'Kriegseisen',c:'#b8bcc8',c2:'#4a4e5c',res:1,w:'Soldaten der Kronen, Kriegsmaschinen, Lohn nach einer Schlacht im Kriegsgebiet'},
+  bannerstoff:{n:'Bannerstoff',c:'#d8433a',c2:'#7a1e22',res:1,w:'Soldaten der Kronen, Lohn nach einer gewonnenen Schlacht im Kriegsgebiet'}
 };
-const MATORDER = ['erz','leder','knochen','schleim','zahn','kristall','horn','glut','mithril','adamant','schuppe','stern','aether','holz','stein','faser','samen','feder','eisenholz','marmor','obsidian','sternholz','sturmsilber'];   // neue Materialien nur hinten anfügen
+const MATORDER = ['erz','leder','knochen','schleim','zahn','kristall','horn','glut','mithril','adamant','schuppe','stern','aether','holz','stein','faser','samen','feder','eisenholz','marmor','obsidian','sternholz','sturmsilber','kriegseisen','bannerstoff'];   // neue Materialien nur hinten anfügen
 // Gegner-Materialien in Stufen-Reihenfolge (Beute, Truhen, Händler wählen „bis Stufe n“ daraus) – ohne die Rohstoffe
 const MONMATS = MATORDER.filter(k => !MATS[k].res);
 const GEMS = {
@@ -543,6 +546,16 @@ const EN = {
   varkas:{name:'Todesritter',sp:'knight',glow:'#ff3a5a',hp:160,atk:26,spd:48,r:7,xp:90,gold:60,ai:'charge',wpn:'anime_sword',hand:[4,-9],summon:'skeleton',boss:true,mass:7,blood:'#6a1a28',drop:{adamant:4,stern:4},desc:'Der Verräter des Ordens.'},
   pyraxis:{name:'Uralter Drache',sp:'demon',hp:540,atk:30,spd:32,r:13,xp:120,gold:90,ai:'dragon',summon:'jungdrache',boss:true,mass:9,blood:'#ff8a3a',drop:{schuppe:6,aether:3},desc:'Der Drache, der das Weltenfeuer stahl.'},
   aerok:{name:'Sturmkönig',sp:'knight',glow:'#8ee6ff',hp:170,atk:27,spd:52,r:7,xp:110,gold:75,ai:'charge',wpn:'anime_sword',hand:[4,-9],summon:'sturmharpyie',boss:true,mass:7,blood:'#8ee6ff',drop:{sturmsilber:6,stern:3},desc:'Herr der Gipfel. Wo er steht, schlägt der Blitz ein.'},
+  // 6.6 Krieg der Kronen (js/krieg.js): Soldaten der Reiche. KI 'krieg' – sie bekämpfen einander und dich. kr = [Reich, Rolle], body/dye = Aussehen (charStrip), nie in Wellen (cost 99)
+  kr_a_schild:{name:'Schildträger von Aurelien',sp:'knight',tint:'rgba(255,214,90,.42)',body:'knight_m',dye:'gold',hp:58,atk:9,spd:44,r:5,xp:11,gold:6,ai:'krieg',kr:['aurelien','nah'],reach:15,wind:.46,cd:1.25,wpn:'knight_sword',hand:[4,-9],cost:99,from:15,blood:'#b8302a',drop:{kriegseisen:.22,bannerstoff:.08},desc:'Hält die Linie hinter seinem Schild. Langsam, aber zäh.'},
+  kr_a_ritter:{name:'Sonnenritter',sp:'knightf',tint:'rgba(255,250,235,.45)',body:'knight_f',dye:'weiss',hp:44,atk:12,spd:60,r:5,xp:12,gold:7,ai:'krieg',kr:['aurelien','nah'],reach:16,wind:.4,cd:1,wpn:'lavish_sword',hand:[4,-9],cost:99,from:15,blood:'#b8302a',drop:{kriegseisen:.22,bannerstoff:.1},desc:'Stürmt in Weiß und Gold voran. Schlägt schnell und hart.'},
+  kr_a_schuetze:{name:'Kronschütze',sp:'elf',tint:'rgba(255,214,90,.42)',body:'elf_m',dye:'gold',hp:30,atk:9,spd:50,r:5,xp:11,gold:6,ai:'krieg',kr:['aurelien','fern'],wind:.6,cd:1.9,wpn:'bow',hand:[3,-5],cost:99,from:15,blood:'#b8302a',drop:{kriegseisen:.16,bannerstoff:.1},desc:'Schießt über die eigenen Reihen hinweg. Ein Schildwall hält seine Pfeile auf.'},
+  kr_k_soeldner:{name:'Aschesöldner',sp:'dwarf',tint:'rgba(200,42,42,.42)',body:'dwarf_m',dye:'blut',hp:52,atk:11,spd:52,r:5,xp:11,gold:8,ai:'krieg',kr:['karth','nah'],reach:15,wind:.44,cd:1.15,wpn:'axe',hand:[4,-8],cost:99,from:15,blood:'#b8302a',drop:{kriegseisen:.26,bannerstoff:.06},desc:'Kämpft für Eisen, nicht für Ehre. Gibt keinen Schritt umsonst her.'},
+  kr_k_klinge:{name:'Brandklinge',sp:'lizard',tint:'rgba(40,30,50,.5)',body:'lizard_m',dye:'schatten',hp:38,atk:13,spd:68,r:5,xp:12,gold:7,ai:'krieg',kr:['karth','nah'],reach:15,wind:.36,cd:.95,wpn:'machete',hand:[4,-9],cost:99,from:15,blood:'#4a8a2a',drop:{kriegseisen:.22,bannerstoff:.08},desc:'Schnell, schwarz gerüstet und immer dort, wo die Linie dünn ist.'},
+  kr_k_pyro:{name:'Flammenrufer von Karth',sp:'wizard',tint:'rgba(200,42,42,.42)',body:'wizard_m',dye:'blut',hp:28,atk:11,spd:44,r:5,xp:13,gold:8,ai:'krieg',kr:['karth','magier'],wind:.65,cd:2.2,wpn:'red_staff',hand:[4,-9],cost:99,from:15,blood:'#b8302a',drop:{kriegseisen:.14,bannerstoff:.12,glut:.1},desc:'Wirft Feuer aus der zweiten Reihe. Fällt schnell, wenn man ihn erreicht.'},
+  kr_a_hauptmann:{name:'Hauptmann der Sonnenkrone',sp:'knight',tint:'rgba(255,250,235,.45)',body:'knight_m',dye:'weiss',hp:150,atk:15,spd:58,r:6,sc:1.25,mass:4,xp:60,gold:45,ai:'krieg',kr:['aurelien','hauptmann'],reach:18,wind:.5,cd:1.1,wpn:'golden_sword',hand:[4,-9],cost:99,from:15,blood:'#b8302a',drop:{kriegseisen:3,bannerstoff:2},desc:'Führt Aureliens Reihen. Kündigt seinen Schildstoß mit einer Bahn am Boden an und ruft Pfeilhagel herbei.'},
+  kr_k_hauptmann:{name:'Hauptfrau der Aschekrone',sp:'wizf',tint:'rgba(255,122,42,.42)',body:'wizard_f',dye:'lava',hp:130,atk:16,spd:50,r:6,sc:1.25,mass:4,xp:60,gold:45,ai:'krieg',kr:['karth','hauptmann'],wind:.6,cd:1.6,wpn:'red_staff',hand:[4,-9],cost:99,from:15,blood:'#b8302a',drop:{kriegseisen:3,bannerstoff:2},desc:'Befehligt Karths Söldner. Legt einen Flammenring um sich und lässt Meteore auf dich regnen.'},
+  kr_maschine:{name:'Kriegsmaschine',sp:'ogre',hp:170,atk:0,spd:0,r:11,mass:60,xp:30,gold:25,ai:'krmach',hidden:1,cost:99,from:99,blood:'#8a5a32',drop:{kriegseisen:2,holz:2},desc:''},
   dummy:{name:'Trainingspuppe',sp:'skelet',hp:500,atk:0,spd:0,r:7,xp:0,gold:0,ai:'dummy',hidden:1,cost:99,from:99,blood:'#c8a878',drop:{},desc:''}
 };
 const BOSSES = [
@@ -602,7 +615,8 @@ const NODE = {
   rast:{n:'Rastplatz',icon:['pa','feuer'],c:'#ffb03a',d:'Ein sicheres Lagerfeuer. Heilt 40 % und erzählt Geschichten.'},
   raetsel:{n:'Rätselkammer',icon:['pa','frage'],c:'#57c7e6',d:'Eine steinerne Sphinx stellt dir ein Rätsel.'},
   event:{n:'Ereignis',icon:['s',288,352,16,16],c:'#efe2bf',d:'Etwas Unerwartetes wartet.'},
-  boss:{n:'Boss',icon:['s',16,428,32,36],c:'#c8463c',d:'Der Herrscher dieses Gebiets.'}
+  boss:{n:'Boss',icon:['s',16,428,32,36],c:'#c8463c',d:'Der Herrscher dieses Gebiets.'},
+  krieg:{n:'Kriegsgebiet',icon:['pa','kr_banner'],c:'#ff7a4a',d:'Zwei Heere, Beschuss von beiden Seiten. Wähle eine Seite und erfülle das Schlacht-Ziel.'}   // 6.6, ab Akt 3 (js/krieg.js)
 };
 const SHRINES = [
   {id:'wut',n:'Schrein der Wut',bn:'Wut',d:'+35 % Schaden für 3 Räume',buff:{dmg:.35},rooms:3},
@@ -745,7 +759,13 @@ const ACH = [
   {id:'daily',n:'Tagwerk',d:'Schließe eine Tages-Herausforderung ab',t:s=>s.dailies>=1,r:200},
   {id:'reborn',n:'Wiedergeboren',d:'Wähle die Wiedergeburt',t:s=>s.rebirths>=1,r:1000},
   {id:'hc20',n:'Ohne Netz',d:'Erreiche Level 20 im Hardcore-Modus',t:s=>s.hcLv>=20,r:1000},
-  {id:'allcls',n:'Vielseitig',d:'Bringe alle vier Klassen auf Level 10',t:s=>s.clsLv10>=4,r:800}
+  {id:'allcls',n:'Vielseitig',d:'Bringe alle vier Klassen auf Level 10',t:s=>s.clsLv10>=4,r:800},
+  // 6.6 Krieg der Kronen
+  {id:'kr1',n:'Söldner ohne Krone',d:'Gewinne deine erste Schlacht in einem Kriegsgebiet',t:s=>s.krWin>=1,r:200},
+  {id:'kr10',n:'Veteran der Front',d:'Gewinne 10 Schlachten',t:s=>s.krWin>=10,r:800},
+  {id:'krmach',n:'Beutegeschütz',d:'Erobere eine feindliche Kriegsmaschine',t:s=>s.krCap>=1,r:400},
+  {id:'krhaupt',n:'Hauptmannsjäger',d:'Besiege 3 feindliche Hauptleute',t:s=>s.krHaupt>=3,r:600},
+  {id:'krbeide',n:'Diener zweier Herren',d:'Gewinne je eine Schlacht für Aurelien und für Karth',t:s=>s.krW_aurelien>=1&&s.krW_karth>=1,r:500}
 ];
 
 function pct(v){return _t('{n} %',{n:Math.round(v*100)})}

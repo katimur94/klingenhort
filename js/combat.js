@@ -355,7 +355,7 @@ function killEnemy(e, nx, ny) {
   if (e.t === 'goldgob') { dropCoins(e.x, e.y, e.gold + 80 * stageNum(), true); dropGem(e.x, e.y, randomGem(stageNum() + 5)); dropLoot(e.x, e.y, 2); toast(_t('Schatzgoblin erwischt!'), '#e8d04a'); }
   P.rage = Math.min(100, P.rage + 8 * (1 + P.st.rage));
   const [fx0, fy0, fw, fh] = frameRect(e.sp, 'idle', 0);
-  corpses.push({ sp: e.sp, fr: [fx0, fy0, fw, fh], x: e.x, y: e.y, z: e.z, vz: e.boss ? 60 : 110, vx: (nx || 0) * 80, vy: (ny || 0) * 40, rot: 0, vr: (nx || 1) * rnd(6, 12), turn: e.turn, sc: e.sc, life: e.boss ? 1.4 : .55, max: e.boss ? 1.4 : .55, blood: e.def.blood, boss: e.boss, tint: e.tint });
+  corpses.push({ sp: e.sp, fr: [fx0, fy0, fw, fh], x: e.x, y: e.y, z: e.z, vz: e.boss ? 60 : 110, vx: (nx || 0) * 80, vy: (ny || 0) * 40, rot: 0, vr: (nx || 1) * rnd(6, 12), turn: e.turn, sc: e.sc, life: e.boss ? 1.4 : .55, max: e.boss ? 1.4 : .55, blood: e.def.blood, boss: e.boss, tint: e.tint, strip: e.strip });
   decal(e.x, e.y, e.def.blood || '#6a1a18', e.boss ? 40 : 10);
   sfx('die'); shake(e.boss ? 10 : 2);
   if (e.def.split) for (let i = 0; i < 2; i++) spawnEnemy('minislime', { x: e.x + rnd(-6, 6), y: e.y + rnd(-4, 4), instant: true });

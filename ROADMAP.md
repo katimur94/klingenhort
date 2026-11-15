@@ -45,7 +45,7 @@ Ausführlich für den automatischen Lauf: [`tools/WOCHENUPDATE.md`](tools/WOCHEN
 | 2 | 6.3 | **Aufträge & Ruf** | Tages- und Wochenaufträge für Kampagne und Endlose Lande, Fraktionen mit Ruf-Stufen und besseren Tauschangeboten | mittel | ✅ 6.3 |
 | – | 6.4 | **Aufstieg** | Helden bis Level 100 (Paragon ab 100), neue Erfahrungs-Kurve ohne Wand bei 35, Meister-Talente bis Level 100 (99 Punkte je Klasse), Belohnung für jedes Level, Begleiter bis Level 150 mit neuer Talent-Stufe und Belohnungen je Level – auf Wunsch des Besitzers vorgezogen | groß | ✅ 6.4 |
 | 3 | 6.5 | **Neues Gebiet: Sturmgipfel** | Kampagnen-Gebiet 9 (Gewitter mit angekündigten Blitzeinschlägen) und Blitz-Gegner in den Sturm-Biomen der Endlosen Landen, Boss *Sturmkönig Aerok*, Material *Sturmsilber* | groß | ✅ 6.5 |
-| – | 6.6 | **Krieg der Kronen 1 – Die Front** | Kriegsgebiete mit laufender Schlacht, Pfeil-, Katapult- und Magiehagel, Deckung, zwei Heere, Schlacht-Ziele, Prolog der Chronik, neues Licht und Rauch. Bauplan: docs/KRIEG-DER-KRONEN.md | riesig | offen |
+| – | 6.6 | **Krieg der Kronen 1 – Die Front** | Kriegsgebiete mit laufender Schlacht, Pfeil-, Katapult- und Magiehagel, Deckung, zwei Heere, Schlacht-Ziele, Prolog der Chronik, neues Licht und Rauch. Bauplan: docs/KRIEG-DER-KRONEN.md | riesig | ✅ 6.6 |
 | – | 6.7 | **Krieg der Kronen 2 – Fünf Kronen** | Fünf Reiche mit Einheiten und Kriegsmaschinen, Kriegsruf und Ränge, Seite wählen, Chronik Akt 1 | riesig | offen |
 | – | 6.8 | **Krieg der Kronen 3 – Die Kriegskarte** | Provinzen, wandernde Fronten (auch offline), Feldzüge, endlose Kriegsjahre | riesig | offen |
 | – | 6.9 | **Krieg der Kronen 4 – Belagerung** | Burgen in drei Phasen, Feldherren als Rivalen | groß | offen |

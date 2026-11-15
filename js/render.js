@@ -58,12 +58,16 @@ function drawActor(e, isP) {
     auraSprite(SG, ox, oy, m, 1);
   } else {
     const anim = e.moving || e.st === 'act' ? 'run' : 'idle', spd = anim === 'run' ? 10 : 6;
+    // e.strip: umgefärbte Figur (charStrip) statt Atlas – Soldaten der Reiche (js/krieg.js)
+    if (e.strip) { const st = e.strip; fw = st.w; fh = st.h; const f = e.flash > 0 && st.hasHit ? 8 : (anim === 'run' ? 4 : 0) + Math.floor(T * spd + e.seed) % 4; SG.drawImage(st.c, f * fw, 0, fw, fh, 32 - fw / 2, 60 - fh, fw, fh); }
+    else {
     let r = frameRect(e.sp, anim, Math.floor(T * spd + e.seed));
     if (e.sp === 'mimic') r = frameRect('mimic', 'idle', e.st === 'wind' || e.st === 'act' ? 2 : Math.floor(T * 4 + e.seed) % 3);
     if (SP[e.sp].hit && e.flash > 0) r = [SP[e.sp].hit[0], SP[e.sp].hit[1], SP[e.sp].w, SP[e.sp].h];
     if (e.freeze > 0) r = frameRect(e.sp, 'idle', 0);
     fw = r[2]; fh = r[3];
     SG.drawImage(SHEET, r[0], r[1], fw, fh, 32 - fw / 2, 60 - fh, fw, fh);
+    }
   }
   const windEnd = !isP && e.st === 'wind' && e.stT < .16;
   const tint = e.flash > 0 ? '#ffffff' : windEnd ? 'rgba(255,60,40,.55)' : e.freeze > 0 ? 'rgba(140,210,255,.6)' : e.burn > 0 ? `rgba(255,120,30,${.25 + .15 * Math.sin(T * 20)})` : e.poison > 0 ? 'rgba(120,220,90,.3)' : e.chill > 0 ? 'rgba(160,220,255,.3)' : (e.tint || (e.elite ? 'rgba(255,190,60,.32)' : null));
@@ -160,6 +164,7 @@ function drawLoot(c, x, y, z) {
 }
 function drawEnemy(e) {
   if (e.ai === 'dummy') { drawDummy(e); return; }
+  if (e.draw) { e.draw(e); return; }   // eigene Zeichnung (Kriegsmaschinen, js/krieg.js)
   const sx = rpx(e.x - CX), sy = rpx(e.y - CY);
   if (e.under > 0) { ctx.fillStyle = '#4a3a2e'; ctx.beginPath(); ctx.ellipse(sx, sy, 7, 3, 0, 0, 6.283); ctx.fill(); ctx.fillStyle = '#6a5642'; ctx.fillRect(sx - 3 + Math.round(Math.sin(T * 20) * 2), sy - 3, 2, 2); ctx.fillRect(sx + 2, sy - 2 + Math.round(Math.cos(T * 18)), 2, 2); return; }
   const h = drawActor(e, false);
@@ -187,6 +192,7 @@ function drawEnemy(e) {
 }
 function drawObs(o) {
   const x = Math.round(o.x - CX), y = Math.round(o.y - CY);
+  if (o.draw) { o.draw(o, x, y); return; }   // eigene Zeichnung (Deckung und Kulissen, js/krieg.js)
   if (o.k === 'station') { drawStation(o); return; }
   if (o.k === 'npc') { drawNpc(o); return; }
   if (o.k === 'gat') { gatherDrawObs(o); return; }   // Holzplatz im Versteck (js/bauen.js)
@@ -218,7 +224,7 @@ function drawCorpse(c) {
   const [fx0, fy0, fw, fh] = c.fr, a = clamp(c.life / c.max, 0, 1);
   ctx.save(); ctx.translate(rpx(c.x - CX), rpx(c.y - CY - c.z)); ctx.globalAlpha = Math.min(1, a * 1.6);
   ctx.translate(0, -fh * c.sc / 2); ctx.rotate(c.rot * .3); ctx.scale(c.turn * c.sc, c.sc * (1 - (1 - a) * .3));
-  SG.clearRect(0, 0, 64, 64); SG.drawImage(SHEET, fx0, fy0, fw, fh, 32 - fw / 2, 60 - fh, fw, fh);
+  SG.clearRect(0, 0, 64, 64); if (c.strip) SG.drawImage(c.strip.c, 0, 0, c.strip.w, c.strip.h, 32 - fw / 2, 60 - fh, fw, fh); else SG.drawImage(SHEET, fx0, fy0, fw, fh, 32 - fw / 2, 60 - fh, fw, fh);
   if (c.life > c.max - .08 || c.tint) { SG.globalCompositeOperation = 'source-atop'; SG.fillStyle = c.life > c.max - .08 ? '#fff' : c.tint; SG.fillRect(0, 0, 64, 64); SG.globalCompositeOperation = 'source-over'; }
   ctx.drawImage(SCR, -32, -60 + fh / 2); ctx.restore();
 }
