@@ -20,4 +20,4 @@
 | 2026-11-12 | Versteck „Stufe 0 vs. Stufe 115“ (Vorher/Nachher im Split-Screen, Ruine mit Gerüsten → alle Stationen ausgebaut) | 6af6033c5f5f464f90297207 | 0 | 0 | 0 | 0 | Tages-Clip 8,2 s, dieselbe Strecke zweimal, Frage „Wie weit ist deins?“ · wegen Neustart 1 h später gepostet |
 | 2026-11-14 | Meme „POV: Endlich eine Truhe … und sie hat Zähne“ (Goldmimik, Erwartung → Reinfall → Rache, mit Faxen) | 6af8975918d0d9f12d3cfcff | 0 | 0 | 0 | 0 | Tages-Clip 8,1 s, echte Mimik-Truhe, +781 Gold aus dem Log |
 
-Follower 14.11.: 3 (unverändert) · Gesamt-Likes 14 (unverändert) · 16 Videos · keine Kommentare · am 13.11. kein Post (Update-Clip 6.6 wartet, bis das Update live ist).
+Follower 15.11.: 3 (Stand 14.11., Zernio hat heute noch nicht aktualisiert) · Gesamt-Likes 14 · keine Kommentare · Update-Clip 6.6 wartet weiter, bis das Update live ist.
