@@ -2,7 +2,9 @@
 # Aufruf: python3 music.py <ausgabeordner>   (liest timeline.json von promolib.render, schreibt audio.wav)
 # Schnitte bekommen Rauschen und Becken, die Szene „end“ einen großen Einschlag mit Fanfare,
 # davor einen Takt Spannungsaufbau. Zusätzliche Geräusche: timeline.json "hits": [[bild, art], …]
-# Arten: eigene (impact, boing, thud, huh, sad, dundun, bumm, wirbel, failhorn …) oder 'frei:<name>' aus tools/promo/frei/ton (CC0)
+# Arten: eigene (impact, boing, thud, huh, sad, dundun, bumm, wirbel, failhorn, pauke, horn, meteor, pfeile …) oder 'frei:<name>' aus tools/promo/frei/ton (CC0)
+# timeline.json "style": "krieg" = dunkle Trailer-Fassung mit Kriegstrommeln (Abschnitte in "sections": krieg, kronen, bald, end, titel – Bildnummern);
+# ohne "style" bleibt alles wie bisher.
 import json, os, sys, wave
 import numpy as np
 
@@ -228,6 +230,55 @@ def failhorn(t, g=1.0):
     add(fx, t, s, .35 * g)
 
 
+# ---------- Kriegstrommeln und Trailer-Geräusche (Stil „krieg“, auch einzeln als hits nutzbar) ----------
+def pauke(t, g=1.0):
+    """große Kriegstrommel: tiefer Schlag mit Fell-Klatschen und langem Ausklang"""
+    n = int(1.1 * SR); tt = np.arange(n) / SR
+    f = 46 + 60 * np.exp(-tt / .035)
+    s = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-tt / .34) + LP(noise(n), .12) * np.exp(-tt / .03) * .7 + LP(noise(n), .02) * np.exp(-tt / .3) * .8
+    add(drm, t, np.tanh(s * 1.8), .85 * g)
+
+
+def tom(t, f0=90, g=1.0):
+    n = int(.4 * SR); tt = np.arange(n) / SR
+    f = f0 * (1 + .5 * np.exp(-tt / .03))
+    s = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-tt / .12) + LP(noise(n), .2) * np.exp(-tt / .012) * .5
+    add(drm, t, s, .5 * g)
+
+
+def horn(t, nm='A3', dur=1.2, g=1.0, buf=None):
+    """Kriegshorn: weicher Rechteck-Ton mit Quinte, schwillt an"""
+    n = int(dur * SR); tt = np.arange(n) / SR; f = hz(nm) * (1 - .03 * np.exp(-tt / .08))
+    s = LP(square(f, n, .5) + .5 * square(f * 1.5, n, .4) + .4 * square(f / 2, n, .5), .07)
+    e = np.minimum(1, tt / .09) * np.minimum(1, (dur - tt) / .25)
+    add(fx if buf is None else buf, t, s * e, .28 * g)
+
+
+def meteor(t, g=1.0):
+    """Einschlag eines Meteors: kurzes Heulen, dann Krachen mit Feuer-Rauschen"""
+    whoosh(t, .28, .7 * g)
+    n = int(1.0 * SR); tt = np.arange(n) / SR
+    f = 34 + 100 * np.exp(-tt / .05)
+    s = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-tt / .3) + LP(noise(n), .25) * np.exp(-tt / .09) * 1.1 + LP(noise(n), .5) * np.exp(-tt / .35) * .25
+    add(fx, t, np.tanh(s * 2), .7 * g)
+
+
+def pfeile(t, g=1.0):
+    """Pfeilhagel: viele kurze Einschläge dicht hintereinander"""
+    for i in range(12):
+        n = int(.05 * SR); tt = np.arange(n) / SR
+        s = (noise(n) - LP(noise(n), .2)) * np.exp(-tt / .008) + np.sin(2 * np.pi * (300 + 40 * i) * tt) * np.exp(-tt / .015) * .5
+        add(fx, t - .12 + i * .028 + rng.uniform(0, .012), s, .32 * g)
+
+
+def pad(t, names, dur, g=1.0):
+    """dunkle Fläche: leicht verstimmte Rechteckwellen, stark gefiltert"""
+    n = int(dur * SR); tt = np.arange(n) / SR; e = np.minimum(1, tt / .15) * np.minimum(1, (dur - tt) / .3)
+    for nm in names:
+        s = LP(square(hz(nm), n, .5) + square(hz(nm) * 1.006, n, .45), .05)
+        add(mus, t, s * e, .045 * g)
+
+
 # ---------- Freie Geräusche (tools/promo/frei/ton, CC0 – Liste in tools/promo/frei/LIZENZEN.md) ----------
 FREI = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frei', 'ton')
 
@@ -263,6 +314,8 @@ MEL2 = [['A5', 'A5', 'C6', None, 'E6', None, 'D6', 'C6'],
         ['E6', None, 'D6', None, 'C6', None, 'G5', None],
         ['B5', None, 'D6', None, 'G6', 'F#6', 'D6', 'B5']]
 START = dict(TL['starts'])
+KRIEG = TL.get('style') == 'krieg'
+SEC = TL.get('sections', {})
 # Endkarte (Szene „end“); ohne Endkarte läuft die Musik bis zum Schluss durch
 END_BEAT = START['end'] / 12 if 'end' in START else 10 ** 6
 BUILD_FROM = END_BEAT - 4             # Ein Takt Spannungsaufbau davor
@@ -271,7 +324,7 @@ TOTAL_BEATS = int(DUR / BEAT + .5)
 MEL_FROM = (TL['starts'][1][1] / 12) if len(TL['starts']) > 1 else 0
 
 e8 = BEAT / 2
-for beat in range(TOTAL_BEATS):
+for beat in range(0 if KRIEG else TOTAL_BEATS):
     t = beat * BEAT
     bar = beat // 4
     ch, tones = CH[bar % 4]
@@ -305,6 +358,70 @@ for beat in range(TOTAL_BEATS):
             nm = mel[(beat % 4) * 2 + i]
             if nm: note(mus, t + i * e8, hz(nm), e8 * .95, 'sq', .5, g=.085, d=.22, cut=.2)
 
+# ---------- Stil „krieg“: Kaltstart (Bordun) → Schlacht (Kriegstrommeln, Horn-Thema) → Kronen (je Takt ein Akkord) → Aufbau → Endkarte ----------
+if KRIEG:
+    fK, fR, fB, fE = SEC.get('krieg', 120), SEC.get('kronen', 600), SEC.get('bald', 840), SEC.get('end', START.get('end', TL['total']))
+    tK, tR, tB, tE = (f / FPS for f in (fK, fR, fB, fE))
+    AK = {'Am': (['A2', 'E3', 'A3', 'C4'], 'A1'), 'F': (['F2', 'C3', 'F3', 'A3'], 'F1'), 'G': (['G2', 'D3', 'G3', 'B3'], 'G1'), 'E': (['E2', 'B2', 'E3', 'G#3'], 'E1'),
+          'Dm': (['D2', 'A2', 'D3', 'F3'], 'D1'), 'C': (['C3', 'G3', 'C4', 'E4'], 'C2')}
+    # Kaltstart: tiefer Bordun schwillt an; beim Titel ein Horn-Akkord mit Pauke; Trommeln führen in die Schlacht
+    n = int(tK * SR); tt = np.arange(n) / SR
+    add(mus, 0, LP(square(hz('A1'), n, .5) + square(hz('A1') * 1.01, n, .4) + tri(hz('E2'), n) * .6, .03) * np.minimum(1, tt / 1.2) * (1 + .15 * np.sin(tt * 9)), .2)
+    tT = SEC.get('titel', fK // 2) / FPS
+    for nm in ('A2', 'E3', 'A3'): horn(tT, nm, tK - tT + .2, 1.1, mus)
+    pauke(tT, 1.1); pauke(0.05, .5); pauke(.45, .35)
+    for i, q in enumerate((3, 2, 1.5, 1, .5)): tom(tK - q * BEAT, 70 + i * 8, .5 + i * .12)
+    # Schlacht: zehn Takte
+    PROG = ['Am', 'Am', 'F', 'G', 'Am', 'Am', 'F', 'E', 'Dm', 'E']
+    THEMA = [[('A4', 0, 2), ('C5', 2, 1), ('E5', 3, 1)], [('E5', 0, 1.5), ('D5', 1.5, .5), ('C5', 2, 2)], [('A4', 0, 2), ('C5', 2, 1), ('F5', 3, 1)], [('G5', 0, 1.5), ('F5', 1.5, .5), ('D5', 2, 2)],
+             [('A5', 0, 2), ('G5', 2, 1), ('E5', 3, 1)], [('E5', 0, 1), ('G5', 1, 1), ('A5', 2, 2)], [('C6', 0, 2), ('A5', 2, 1), ('F5', 3, 1)], [('E5', 0, 1), ('G#5', 1, 1), ('B5', 2, 2)],
+             [('D5', 0, 1), ('F5', 1, 1), ('A5', 2, 2)], [('G#5', 0, 2), ('B5', 2, 1), ('E6', 3, 1)]]
+    nb = int(round((tR - tK) / (4 * BEAT)))
+    for b in range(nb):
+        t0 = tK + b * 4 * BEAT; tones, bass = AK[PROG[b % len(PROG)]]; voll = b >= 2
+        for i in range(8):   # Achtel
+            t = t0 + i * e8
+            if i in (0, 4): pauke(t, 1.0 if i == 0 else .8)
+            if i in (2, 3, 6): tom(t, 82 if i < 6 else 100, .7)
+            if i == 7: tom(t, 118, .8)
+            if i == 4 and voll: snare(t, .9)
+            hat(t, .35 + .25 * (i % 2))
+            note(mus, t, hz(bass) * 2, e8 * .9, 'tri', g=.4, d=.18); note(mus, t, hz(bass) * 4, e8 * .8, 'sq', .25, g=.07, cut=.14)
+            for j in range(2):   # Sechzehntel-Ostinato
+                f = hz(tones[(i * 2 + j) % 3 + 1]) * 2
+                note(mus, t + j * e8 / 2, f, e8 / 2 * .8, 'sq', .25, g=.055 if voll else .04, d=.05, cut=.25)
+        pad(t0, tones, 4 * BEAT, .9)
+        for nm, b0, ln in THEMA[b % len(THEMA)]:
+            g = .11 if voll else .075
+            note(mus, t0 + b0 * BEAT, hz(nm), ln * BEAT * .96, 'sq', .5, g=g, d=ln * BEAT * .9, cut=.14)
+            note(mus, t0 + b0 * BEAT, hz(nm) / 2, ln * BEAT * .96, 'sq', .35, g=g * .6, d=ln * BEAT * .9, cut=.1)
+    # Kronen: je Karte ein Takt – Akkordfläche, Horn-Ruf (Grundton, Quinte, Oktave), leiser Marsch
+    KRO = ['Am', 'Dm', 'F', 'C', 'E']
+    nk = int(round((tB - tR) / (4 * BEAT)))
+    for b in range(nk):
+        t0 = tR + b * 4 * BEAT; tones, bass = AK[KRO[b % len(KRO)]]
+        pad(t0, tones, 4 * BEAT, 1.5); note(mus, t0, hz(bass) * 2, 4 * BEAT, 'tri', g=.5, d=1.6)
+        horn(t0, tones[0], 1.0 * BEAT, 1.0, mus); horn(t0 + BEAT, tones[1], 1.0 * BEAT, 1.0, mus); horn(t0 + 2 * BEAT, tones[2], 2.0 * BEAT, 1.15, mus)
+        for i in (4, 5, 6, 7): tom(t0 + i * e8, 76 + (i - 4) * 6, .35 + .08 * (i - 4))
+        tom(t0 + 7.5 * e8, 100, .5)
+    # Vorgeschmack: der Puls kommt zurück und wird Takt für Takt dichter (der letzte Takt gehört dem Wirbel vor der Endkarte)
+    BAL = ['Am', 'F', 'C', 'Dm', 'E']
+    nv = int(round((tE - tB) / (4 * BEAT)))
+    for b in range(nv):
+        t0 = tB + b * 4 * BEAT; tones, bass = AK[BAL[b % len(BAL)]]; dicht = b / max(1, nv - 1)
+        pad(t0, tones, 4 * BEAT, 1.2)
+        for i in range(8):
+            t = t0 + i * e8
+            if i == 4 and b < nv - 1: pauke(t, .6 + .3 * dicht)
+            if i % 2 == 1 or dicht > .4: tom(t, 80 + (i % 4) * 8, .3 + .4 * dicht)
+            note(mus, t, hz(bass) * 2, e8 * .9, 'tri', g=.42 + .1 * dicht, d=.16)
+            f = hz(tones[i % 3 + 1]) * (2 if b < 2 else 4)
+            note(mus, t, f, e8 * .9, 'sq', .25, g=.06 + .03 * dicht, d=.1, cut=.22)
+        horn(t0, tones[2], 2 * BEAT, .8 + .3 * dicht, mus)
+    # Endkarte: Pauken unter der Fanfare
+    for b in range(3):
+        pauke(tE + b * 4 * BEAT, 1.0); tom(tE + (b * 4 + 2) * BEAT, 80, .7); tom(tE + (b * 4 + 3) * BEAT, 96, .6); tom(tE + (b * 4 + 3.5) * BEAT, 110, .6)
+
 # Spannungsaufbau vor der Endkarte: Snare-Wirbel und Riser
 t0 = BUILD_FROM * BEAT if 'end' in START else -100
 steps = 32
@@ -331,15 +448,16 @@ for b0, (ch, tones) in [(0, CH[0]), (4, CH[1]), (6, CH[3]), (8, CH[0])]:
 
 # ---------- Effekte an den Schnitten ----------
 cuts = [st for nm, st in TL['starts'] if st > 0]
-impact(0, .9)
+if not KRIEG: impact(0, .9)
 for f_ in cuts:
-    whoosh(t_of_frame(f_), .3, .8)
-    crash(t_of_frame(f_), .7)
+    whoosh(t_of_frame(f_), .3, .55 if KRIEG else .8)
+    crash(t_of_frame(f_), .4 if KRIEG else .7)
 if 'end' in START: impact(t_of_frame(START['end']), 1.1)
 KINDS = {'impact': lambda t: impact(t, .6), 'sparkle': lambda t: sparkle(t, 1.0), 'tick': lambda t: tick(t, 1.2), 'roar': lambda t: roar(t, 1.0),
          'clank': lambda t: clank(t, 1.0), 'ting': lambda t: ting(t, hz('E6'), 1.0), 'whoosh': lambda t: whoosh(t + .3, .3, .8), 'kick': lambda t: kick(t, .7),
          'boing': lambda t: boing(t), 'scratch': lambda t: scratch(t), 'thud': lambda t: thud(t), 'huh': lambda t: huh(t), 'sad': lambda t: sadtrom(t),
-         'dundun': lambda t: dundun(t), 'bumm': lambda t: bumm(t), 'wirbel': lambda t: wirbel(t), 'failhorn': lambda t: failhorn(t)}
+         'dundun': lambda t: dundun(t), 'bumm': lambda t: bumm(t), 'wirbel': lambda t: wirbel(t), 'failhorn': lambda t: failhorn(t),
+         'pauke': lambda t: pauke(t), 'horn': lambda t: horn(t, 'A3', 1.0, 1.6), 'meteor': lambda t: meteor(t), 'pfeile': lambda t: pfeile(t)}
 for f_, kind in TL.get('hits', []):
     if kind in KINDS: KINDS[kind](t_of_frame(f_))
     elif kind.startswith('frei:'): frei(t_of_frame(f_), kind[5:])   # z. B. [120, 'frei:gong_01']
@@ -347,7 +465,7 @@ for f_, kind in TL.get('hits', []):
 # ---------- Mischen ----------
 # Pumpen: Musik weicht der Kick kurz aus
 duck = np.ones(N)
-for beat in range(TOTAL_BEATS):
+for beat in range(0 if KRIEG else TOTAL_BEATS):
     if beat >= END_BEAT: break
     i = int(beat * BEAT * SR); n = int(.22 * SR)
     tt = np.arange(min(n, N - i)) / SR
@@ -355,7 +473,8 @@ for beat in range(TOTAL_BEATS):
 mix = mus * duck * 1.0 + drm * .85 + fx * .9
 mix = mix[:int(DUR * SR)]
 fade = int(.6 * SR); mix[-fade:] *= np.linspace(1, 0, fade)
-mix = np.tanh(mix * 1.3) / np.tanh(1.3)
+DRV = .95 if KRIEG else 1.3   # Stil „krieg“: weniger Sättigung, die Trommeln brauchen Luft
+mix = np.tanh(mix * DRV) / np.tanh(DRV)
 mix *= .89 / np.max(np.abs(mix))
 st = np.stack([mix, mix], 1)
 # leichte Stereobreite: Effekte minimal versetzt
