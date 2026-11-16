@@ -20,5 +20,6 @@
 | 2026-11-12 | Versteck „Stufe 0 vs. Stufe 115“ (Vorher/Nachher im Split-Screen, Ruine mit Gerüsten → alle Stationen ausgebaut) | 6af6033c5f5f464f90297207 | 0 | 0 | 0 | 0 | Tages-Clip 8,2 s, dieselbe Strecke zweimal, Frage „Wie weit ist deins?“ · wegen Neustart 1 h später gepostet |
 | 2026-11-14 | Meme „POV: Endlich eine Truhe … und sie hat Zähne“ (Goldmimik, Erwartung → Reinfall → Rache, mit Faxen) | 6af8975918d0d9f12d3cfcff | 0 | 0 | 0 | 0 | Tages-Clip 8,1 s, echte Mimik-Truhe, +781 Gold aus dem Log |
 | 2026-11-15 | Tipp „Falsche Klinge vs. richtige Klinge“ (Elemente im Split-Screen: Feuer-Klinge resistent, Frost-Klinge Schwachpunkt) | 6af9ea463592f6515db62c56 | 0 | 0 | 0 | 0 | Tages-Clip 9,7 s, Schadens-Zähler aus dem Log (3283 gegen 9089) |
+| 2026-11-16 | Tipp „Pfeilhagel: stehen bleiben oder Deckung?“ (Krieg der Kronen 6.6, falsch/richtig mit Faxen, Schildwall „GEDECKT“) | 6afb3b57862b4e0a00a8a5c0 | 0 | 0 | 0 | 0 | Tages-Clip 9,5 s, echte Schlacht, kein Schaden hinter dem Schildwall |
 
 Follower 16.11.: 3 (unverändert) · Gesamt-Likes 14 (unverändert) · 19 Videos · keine Kommentare.
