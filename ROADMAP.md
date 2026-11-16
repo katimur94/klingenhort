@@ -46,13 +46,13 @@ Ausführlich für den automatischen Lauf: [`tools/WOCHENUPDATE.md`](tools/WOCHEN
 | – | 6.4 | **Aufstieg** | Helden bis Level 100 (Paragon ab 100), neue Erfahrungs-Kurve ohne Wand bei 35, Meister-Talente bis Level 100 (99 Punkte je Klasse), Belohnung für jedes Level, Begleiter bis Level 150 mit neuer Talent-Stufe und Belohnungen je Level – auf Wunsch des Besitzers vorgezogen | groß | ✅ 6.4 |
 | 3 | 6.5 | **Neues Gebiet: Sturmgipfel** | Kampagnen-Gebiet 9 (Gewitter mit angekündigten Blitzeinschlägen) und Blitz-Gegner in den Sturm-Biomen der Endlosen Landen, Boss *Sturmkönig Aerok*, Material *Sturmsilber* | groß | ✅ 6.5 |
 | – | 6.6 | **Krieg der Kronen 1 – Die Front** | Kriegsgebiete mit laufender Schlacht, Pfeil-, Katapult- und Magiehagel, Deckung, zwei Heere, Schlacht-Ziele, Prolog der Chronik, neues Licht und Rauch. Bauplan: docs/KRIEG-DER-KRONEN.md | riesig | ✅ 6.6 |
-| – | 6.7 | **Krieg der Kronen 2 – Fünf Kronen** | Fünf Reiche mit Einheiten und Kriegsmaschinen, Kriegsruf und Ränge, Seite wählen, Chronik Akt 1 | riesig | offen |
-| – | 6.8 | **Krieg der Kronen 3 – Die Kriegskarte** | Provinzen, wandernde Fronten (auch offline), Feldzüge, endlose Kriegsjahre | riesig | offen |
-| – | 6.9 | **Krieg der Kronen 4 – Belagerung** | Burgen in drei Phasen, Feldherren als Rivalen | groß | offen |
-| – | 7.0 | **Krieg der Kronen 5 – Verrat** | Schattenkonzil, Entscheidungen mit Folgen, Chronik Akt 2, Wetter | groß | offen |
-| – | 7.1 | **Krieg der Kronen 6 – Dein Banner** | Söldnertrupp, eigenes Banner, Trophäen, Chronik Akt 3 | groß | offen |
-| – | 7.2 | **Krieg der Kronen 7 – Der Splitterthron** | Finale der Chronik mit mehreren Enden, Kriegsjahre+ | groß | offen |
-| 4 | 7.3 | **Saison 1** | Saison-Helden ab Level 1, Saison-Rangliste, kostenloser Saison-Pass mit 30 Stufen | groß | fertig gebaut und getestet auf Branch `saison-1` (als 6.7.0 vorbereitet), noch nicht live |
+| 4 | 6.7 | **Saison 1** | Saison-Helden ab Level 1, Saison-Rangliste (eigene Helden, offline), kostenloser Saison-Pass mit 30 Stufen, Saison-Kosmetik – vorgezogen, weil fertig | groß | ✅ 6.7 |
+| – | 6.8 | **Krieg der Kronen 2 – Fünf Kronen** | Fünf Reiche mit Einheiten und Kriegsmaschinen, Kriegsruf und Ränge, Seite wählen, Chronik Akt 1 | riesig | offen |
+| – | 6.9 | **Krieg der Kronen 3 – Die Kriegskarte** | Provinzen, wandernde Fronten (auch offline), Feldzüge, endlose Kriegsjahre | riesig | offen |
+| – | 7.0 | **Krieg der Kronen 4 – Belagerung** | Burgen in drei Phasen, Feldherren als Rivalen | groß | offen |
+| – | 7.1 | **Krieg der Kronen 5 – Verrat** | Schattenkonzil, Entscheidungen mit Folgen, Chronik Akt 2, Wetter | groß | offen |
+| – | 7.2 | **Krieg der Kronen 6 – Dein Banner** | Söldnertrupp, eigenes Banner, Trophäen, Chronik Akt 3 | groß | offen |
+| – | 7.3 | **Krieg der Kronen 7 – Der Splitterthron** | Finale der Chronik mit mehreren Enden, Kriegsjahre+ | groß | offen |
 | 5 | 7.4 | **Begleiter-Expeditionen** | Begleiter allein in die Endlosen Lande schicken (läuft auch offline), bringen Beute, Eier und Artefakte mit | mittel | offen |
 | 6 | 7.5 | **Der Abgrund** | Endlos-Turm mit Bestwert pro Klasse | mittel | offen |
 | 7 | 7.6 | **Neue Klasse: Nekromant** | Skelette, Knochenspeer, Leichenexplosion, *Armee der Toten* | groß | offen |

@@ -2,7 +2,7 @@
 
 Wunsch des Besitzers (15.11.2026): ein Update wie ein DLC – Gebiete im Dauerkrieg (Pfeilhagel, Katapulte, Magiehagel), mehrere verfeindete Königreiche, eine Story, die man auch in 1000 Stunden nicht zu Ende bekommt, bessere Grafik, Premium-Anspruch, eigene Ideen. Arbeitsweise: jedes Kapitel kritisch prüfen, bevor es live geht.
 
-Versionsregel bleibt: jede Woche +0.1. Die Erweiterung kommt deshalb in **Kapiteln** (6.6 → 7.2). Jedes Kapitel ist für sich spielbar und fertig.
+Versionsregel bleibt: jede Woche +0.1. Die Erweiterung kommt deshalb in **Kapiteln** (6.6, dann 6.8 → 7.3; 6.7 ist „Saison 1“). Jedes Kapitel ist für sich spielbar und fertig.
 
 ## Die Welt
 Fünf Kronen streiten um den **Splitterthron** (das Weltentor hat das alte Reich zerbrochen):
@@ -30,12 +30,12 @@ Dynamisches Licht (Fackeln, Feuer, Zauber werfen Licht), weiche Schatten unter a
 
 ## Kapitel (je eine Woche, Reihenfolge = ROADMAP)
 - ✅ **6.6 Kapitel 1 – Die Front**: Kriegsgebiete als Raumart + 3 Kriegs-Biome in den Landen, Beschuss (Pfeil, Katapult, Magie), Deckung, zwei kämpfende Heere (Aurelien vs. Karth), 4 Schlacht-Ziele, Prolog der Chronik, Grafik: Licht, Rauch, Krater, Banner.
-- **6.7 Kapitel 2 – Fünf Kronen**: alle fünf Reiche mit Einheiten und Kriegsmaschinen, Kriegsruf/Ränge, Reichs-Sets, Seite wählen und wechseln, Chronik Akt 1 je Reich.
-- **6.8 Kapitel 3 – Die Kriegskarte**: Provinzen, wandernde Fronten (auch offline), Feldzüge, Kriegsjahre (endlos).
-- **6.9 Kapitel 4 – Belagerung**: Burgen in drei Phasen, Rammbock, Mauern, Feldherren als Rivalen.
-- **7.0 Kapitel 5 – Verrat**: das Schattenkonzil, Entscheidungen mit Folgen, Chronik Akt 2, Wetter/Tageszeit.
-- **7.1 Kapitel 6 – Dein Banner**: Söldnertrupp, eigenes Banner, Trophäen, Chronik Akt 3.
-- **7.2 Kapitel 7 – Der Splitterthron**: großes Finale der geschriebenen Chronik (mehrere Enden), danach Kriegsjahre+.
+- **6.8 Kapitel 2 – Fünf Kronen**: alle fünf Reiche mit Einheiten und Kriegsmaschinen, Kriegsruf/Ränge, Reichs-Sets, Seite wählen und wechseln, Chronik Akt 1 je Reich.
+- **6.9 Kapitel 3 – Die Kriegskarte**: Provinzen, wandernde Fronten (auch offline), Feldzüge, Kriegsjahre (endlos).
+- **7.0 Kapitel 4 – Belagerung**: Burgen in drei Phasen, Rammbock, Mauern, Feldherren als Rivalen.
+- **7.1 Kapitel 5 – Verrat**: das Schattenkonzil, Entscheidungen mit Folgen, Chronik Akt 2, Wetter/Tageszeit.
+- **7.2 Kapitel 6 – Dein Banner**: Söldnertrupp, eigenes Banner, Trophäen, Chronik Akt 3.
+- **7.3 Kapitel 7 – Der Splitterthron**: großes Finale der geschriebenen Chronik (mehrere Enden), danach Kriegsjahre+.
 Die bisher geplanten Themen (Saison, Begleiter-Expeditionen, Abgrund, Nekromant …) rücken dahinter.
 
 ## Qualitätsregeln (kritisch bleiben)

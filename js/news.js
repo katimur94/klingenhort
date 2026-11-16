@@ -238,10 +238,10 @@ const CHANGELOG = [
 
 // Vorschau: was in den nächsten Wochen kommt (Version, Text – siehe ROADMAP.md)
 const COMING = [
-  ['6.7', 'Krieg der Kronen 2 – Fünf Kronen: alle fünf Reiche mit eigenen Einheiten und Kriegsmaschinen, Kriegsruf mit Rängen, Seite wählen und wechseln, Chronik Akt 1'],
-  ['6.8', 'Krieg der Kronen 3 – Die Kriegskarte: Provinzen, Fronten, die auch wandern, während du nicht spielst, Feldzüge und endlose Kriegsjahre'],
-  ['6.9', 'Krieg der Kronen 4 – Belagerung: Burgen in drei Phasen, Rammbock und Mauern, Feldherren als wiederkehrende Rivalen'],
-  ['7.0', 'Krieg der Kronen 5 – Verrat: das Schattenkonzil, Entscheidungen mit Folgen, Chronik Akt 2, Wetter und Tageszeit auf dem Schlachtfeld']
+  ['6.8', 'Krieg der Kronen 2 – Fünf Kronen: alle fünf Reiche mit eigenen Einheiten und Kriegsmaschinen, Kriegsruf mit Rängen, Seite wählen und wechseln, Chronik Akt 1'],
+  ['6.9', 'Krieg der Kronen 3 – Die Kriegskarte: Provinzen, Fronten, die auch wandern, während du nicht spielst, Feldzüge und endlose Kriegsjahre'],
+  ['7.0', 'Krieg der Kronen 4 – Belagerung: Burgen in drei Phasen, Rammbock und Mauern, Feldherren als wiederkehrende Rivalen'],
+  ['7.1', 'Krieg der Kronen 5 – Verrat: das Schattenkonzil, Entscheidungen mit Folgen, Chronik Akt 2, Wetter und Tageszeit auf dem Schlachtfeld']
 ];
 
 const NEWS_KIND = { neu: [_t('NEU'), '#79c24e'], besser: [_t('BESSER'), '#57a7d6'], fix: [_t('BEHOBEN'), '#e8b04a'] };

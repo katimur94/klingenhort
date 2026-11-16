@@ -1,11 +1,11 @@
-# Schnitt Update-Clip 6.6 „Saison 1“ (1080×1920, 30 fps, ~13 s)
+# Schnitt Update-Clip 6.7 „Saison 1“ (1080×1920, 30 fps, ~13 s)
 # hook (Saison-Heldin im Kampf, PREMIERE-Stil) → punkte (Kills = Saison-Punkte, Balken aus dem Spiel-Log, echte Stufen-Meldung)
 # → pass (Saison-Pass, „Alle abholen“) → kosm (Sturmmantel + Aura, nur in Saison 1) → Endkarte
-# Aufruf: PROMO_OUT=/tmp/klingenhort-clip-6.6 python3 storyboard.py
+# Aufruf: PROMO_OUT=/tmp/klingenhort-clip-6.7 python3 storyboard.py
 import json, os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 from promolib import *
-OUT = os.environ.get('PROMO_OUT', '/tmp/klingenhort-clip-6.6')
+OUT = os.environ.get('PROMO_OUT', '/tmp/klingenhort-clip-6.7')
 RAW = os.path.join(OUT, 'raw')
 LOG = json.load(open(os.path.join(RAW, 'punkte', 'log.json')))
 INFO = json.load(open(os.path.join(RAW, 'pass', 'info.json')))
@@ -17,7 +17,7 @@ def title(b, k, s, size, fill, cy, t0=0):
 
 def hook(k):
     b = gameplay(RAW, 'hook', k, k, punch=False, drift=.06)
-    place(b, badge('UPDATE 6.6', 40, bg=(140, 220, 255)), W / 2, 300, 1 if k < 1 else pop(k))
+    place(b, badge('UPDATE 6.7', 40, bg=(140, 220, 255)), W / 2, 300, 1 if k < 1 else pop(k))
     title(b, k + 12, 'SAISON 1', 120, SZ, 430)
     title(b, k + 12, 'IST DA!', 80, WHITE, 550)
     if k >= 20: react(b, k, '6 WOCHEN · 30 BELOHNUNGEN', 540, 1300, t0=20, size=34, fill=GOLD)

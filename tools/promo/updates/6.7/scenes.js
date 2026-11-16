@@ -1,10 +1,10 @@
-// Aufnahmen für den TikTok-Clip zu 6.6 „Saison 1“ (~13 s):
+// Aufnahmen für den TikTok-Clip zu 6.7 „Saison 1“ (~13 s):
 // hook (Saison-Heldin mit Sturmmantel und Aura der Ersten Saison im Kampf) → punkte (Kills geben Saison-Punkte, echte Meldung „Saison-Stufe erreicht“,
 // Punktestand je Bild in raw/punkte/log.json) → pass (Saison-Pass, bei Bild 30 „Alle abholen“) → kosm (Mantel und Aura aus der Nähe)
-// Aufruf (Spiel muss lokal laufen): PROMO_OUT=/tmp/klingenhort-clip-6.6 BASE=http://localhost:8766/ node scenes.js [szene,…]
+// Aufruf (Spiel muss lokal laufen): PROMO_OUT=/tmp/klingenhort-clip-6.7 BASE=http://localhost:8766/ node scenes.js [szene,…]
 const path = require('path'), fs = require('fs');
 const H = require(path.join(__dirname, '..', '..', 'harness'));
-const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.6';
+const OUT = process.env.PROMO_OUT || '/tmp/klingenhort-clip-6.7';
 const BASE = process.env.BASE || 'http://localhost:8766/';
 (async () => {
   const R = await H.open({ out: OUT + '/raw', seed: 66, base: BASE });
