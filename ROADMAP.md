@@ -52,7 +52,7 @@ Ausführlich für den automatischen Lauf: [`tools/WOCHENUPDATE.md`](tools/WOCHEN
 | – | 7.0 | **Krieg der Kronen 5 – Verrat** | Schattenkonzil, Entscheidungen mit Folgen, Chronik Akt 2, Wetter | groß | offen |
 | – | 7.1 | **Krieg der Kronen 6 – Dein Banner** | Söldnertrupp, eigenes Banner, Trophäen, Chronik Akt 3 | groß | offen |
 | – | 7.2 | **Krieg der Kronen 7 – Der Splitterthron** | Finale der Chronik mit mehreren Enden, Kriegsjahre+ | groß | offen |
-| 4 | 7.3 | **Saison 1** | Saison-Helden ab Level 1, Saison-Rangliste, kostenloser Saison-Pass mit 30 Stufen | groß | offen |
+| 4 | 7.3 | **Saison 1** | Saison-Helden ab Level 1, Saison-Rangliste, kostenloser Saison-Pass mit 30 Stufen | groß | fertig gebaut und getestet auf Branch `saison-1` (als 6.7.0 vorbereitet), noch nicht live |
 | 5 | 7.4 | **Begleiter-Expeditionen** | Begleiter allein in die Endlosen Lande schicken (läuft auch offline), bringen Beute, Eier und Artefakte mit | mittel | offen |
 | 6 | 7.5 | **Der Abgrund** | Endlos-Turm mit Bestwert pro Klasse | mittel | offen |
 | 7 | 7.6 | **Neue Klasse: Nekromant** | Skelette, Knochenspeer, Leichenexplosion, *Armee der Toten* | groß | offen |
@@ -71,7 +71,7 @@ Ausführlich für den automatischen Lauf: [`tools/WOCHENUPDATE.md`](tools/WOCHEN
 Schon erledigt in 4.1: Hochformat, klebende Kopf- und Fußleisten, Liste neben Details, größere Ziele, Neuigkeiten-Seite.
 
 - ✅ **Schriftgröße** in den Einstellungen (normal / groß) – 4.2
-- **Leistungs-Modus:** weniger Partikel, kein Licht-Effekt, 30 fps – für ältere Handys und Akku
+- **Leistungs-Modus:** ✅ weniger Partikel (Einstellungen) – mit Saison 1; offen: kein Licht-Effekt, 30 fps – für ältere Handys und Akku
 - **Einhand-Modus** im Hochformat: Auto-Angriff, wenn ein Gegner in Reichweite ist; nur Joystick und Fähigkeiten
 - ✅ **Schnell-Ausrüsten:** „Bestes anlegen“-Knopf im Charakter und „Alles Schlechtere verkaufen“ – 6.3
 - ✅ **Beute-Filter:** Gewöhnliche Gegenstände automatisch verkaufen oder liegen lassen – 6.3; bis Episch, Wegwerfen und Grenze nach Marktwert – 6.3.1

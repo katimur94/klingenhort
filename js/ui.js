@@ -169,7 +169,7 @@ function showTitle() {
   let chars = '';
   SAVE.chars.forEach((c, i) => {
     const C = CLASSES[c.cls];
-    chars += `<div class="cardrow">${heroHTML(c, 1.4)}<div><div style="font-size:21px">${esc(c.name)} ${c.hc ? '<span class="pill hc">HC</span>' : ''}</div><div style="font-size:16px;color:var(--parch-dim)">${C.name} · ${_t('LV {lv}', { lv: c.lv })}${c.paragon ? ' · P' + c.paragon : ''} · ${_t('Akt {act}', { act: c.act })}${qualOf(c.act) ? ' (' + _t('Qual {q}', { q: qualOf(c.act) }) + ')' : ''} · ${DIFFS[c.diff].n}${c.rebirths ? ' · ★' + c.rebirths : ''}</div></div><div class="acts">${confirmDel === i ? `<button class="btn red sm" data-act="delok" data-i="${i}">${_t('Löschen!')}</button><button class="btn alt sm" data-act="delno">${_t('Nein')}</button>` : `<button class="btn sm" data-act="play" data-i="${i}">${_t('Spielen')}</button><button class="btn alt sm" data-act="delchar" data-i="${i}" aria-label="${_t('Löschen')}"><span class="x">×</span></button>`}</div></div>`;
+    chars += `<div class="cardrow">${heroHTML(c, 1.4)}<div><div style="font-size:21px">${esc(c.name)} ${c.hc ? '<span class="pill hc">HC</span>' : ''}${c.sz && typeof szNo === 'function' && c.sz === szNo() ? ' <span class="pill sz">S' + c.sz + '</span>' : ''}</div><div style="font-size:16px;color:var(--parch-dim)">${C.name} · ${_t('LV {lv}', { lv: c.lv })}${c.paragon ? ' · P' + c.paragon : ''} · ${_t('Akt {act}', { act: c.act })}${qualOf(c.act) ? ' (' + _t('Qual {q}', { q: qualOf(c.act) }) + ')' : ''} · ${DIFFS[c.diff].n}${c.rebirths ? ' · ★' + c.rebirths : ''}</div></div><div class="acts">${confirmDel === i ? `<button class="btn red sm" data-act="delok" data-i="${i}">${_t('Löschen!')}</button><button class="btn alt sm" data-act="delno">${_t('Nein')}</button>` : `<button class="btn sm" data-act="play" data-i="${i}">${_t('Spielen')}</button><button class="btn alt sm" data-act="delchar" data-i="${i}" aria-label="${_t('Löschen')}"><span class="x">×</span></button>`}</div></div>`;
   });
   const N = CHANGELOG[0], fresh = newsUnseen();
   // oben rechts: „?“ öffnet das Handbuch (js/handbuch.js), daneben die Sprachwahl
@@ -233,6 +233,7 @@ function showCreate() {
   <h3>${_t('NAME')}</h3><input type="text" id="cname" maxlength="16" placeholder="${C.name}" value="${esc(CS.name)}">
   <h3>${_t('SCHWIERIGKEIT')}</h3><div class="opts">${df}</div>
   <div class="opts"><button class="opt${CS.hc ? ' sel' : ''}" data-act="chc">${_t('HARDCORE {v}', { v: CS.hc ? _t('AN') : _t('AUS') })}<small>${_t('Ein Tod löscht den Helden. Dafür Ruhm in der Ruhmeshalle.')}</small></button></div>
+  ${hookHTML('create')}
   <div class="menu foot"><button class="btn" data-act="cstart">${_t('Abenteuer beginnen')}</button></div>`, true);
 }
 function openMirror() { lkMode = 'mirror'; stationShell('spiegel', `<p class="sub">${_t('Der Spiegel zeigt, wer du sein willst. Änderungen sind kostenlos.')}</p>${lookEditorHTML()}${hookHTML('mirror')}`, true); }
@@ -534,7 +535,7 @@ function setInGame() { return setFrom === 'pause' && !!(G && G.type); }
 function showSettings(from) {
   if (from) setFrom = from;
   const s = SAVE.meta.settings, ig = setInGame();
-  showOverlay(`<h2>${_t('EINSTELLUNGEN')}</h2><div class="menu" style="margin-top:12px"><button class="btn alt" data-act="music">${_t('Musik: {v}', { v: s.music !== false ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="sfx">${_t('Soundeffekte: {v}', { v: s.sfx !== false ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="bigui">${_t('Schrift: {v}', { v: s.bigui ? _t('GROSS') : _t('NORMAL') })}</button><button class="btn alt" data-act="calm">${_t('Wackeln & Blitzen: {v}', { v: s.calm ? _t('AUS') : _t('AN') })}</button><button class="btn alt" data-act="lootset">${_t('Beute-Filter: {v}', { v: lootSetName() })}</button>${gfxBtn()}${fsBtn()}<button class="btn alt" data-act="controls">${_t('Steuerung')}</button>${typeof hbMenuBtn === 'function' ? hbMenuBtn('settings') : ''}<button class="btn alt" data-act="news" data-id="settings">${_t('Neuigkeiten')}</button>${ig ? '' : `<button class="btn alt" data-act="langs" data-id="settings">🌐 ${LANGS[LANG]}</button>`}${UPD.on && !ig ? `<button class="btn alt" data-act="checkupd">${_t('Nach Update suchen')}</button>` : ''}<button class="btn" data-act="setback">${_t('Zurück')}</button></div><p class="sub" id="updmsg">${_t('Version {v}', { v: VERSION })}</p>`);
+  showOverlay(`<h2>${_t('EINSTELLUNGEN')}</h2><div class="menu" style="margin-top:12px"><button class="btn alt" data-act="music">${_t('Musik: {v}', { v: s.music !== false ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="sfx">${_t('Soundeffekte: {v}', { v: s.sfx !== false ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="bigui">${_t('Schrift: {v}', { v: s.bigui ? _t('GROSS') : _t('NORMAL') })}</button><button class="btn alt" data-act="calm">${_t('Wackeln & Blitzen: {v}', { v: s.calm ? _t('AUS') : _t('AN') })}</button><button class="btn alt" data-act="perf">${_t('Leistungs-Modus: {v}', { v: s.perf ? _t('AN') : _t('AUS') })}</button><button class="btn alt" data-act="lootset">${_t('Beute-Filter: {v}', { v: lootSetName() })}</button>${gfxBtn()}${fsBtn()}<button class="btn alt" data-act="controls">${_t('Steuerung')}</button>${typeof hbMenuBtn === 'function' ? hbMenuBtn('settings') : ''}<button class="btn alt" data-act="news" data-id="settings">${_t('Neuigkeiten')}</button>${ig ? '' : `<button class="btn alt" data-act="langs" data-id="settings">🌐 ${LANGS[LANG]}</button>`}${UPD.on && !ig ? `<button class="btn alt" data-act="checkupd">${_t('Nach Update suchen')}</button>` : ''}<button class="btn" data-act="setback">${_t('Zurück')}</button></div><p class="sub" id="updmsg">${_t('Version {v}', { v: VERSION })}</p>`);
 }
 // Beute-Filter (6.3; 6.3.1: bis Episch, Wegwerfen, Wertgrenze): was mit Beute passiert, über die du läufst (lootRule, js/items.js)
 const LOOTSET = { take: () => _t('AUFHEBEN'), sell: () => _t('VERKAUFEN'), leave: () => _t('LIEGEN LASSEN'), trash: () => _t('WEGWERFEN') };
@@ -600,7 +601,7 @@ panel.addEventListener('click', ev => {
     case 'cdiff': CS.diff = id; CS.name = ($('cname') || {}).value || ''; showCreate(); break;
     case 'chc': CS.hc = !CS.hc; CS.name = ($('cname') || {}).value || ''; showCreate(); break;
     case 'lk': { if (lkMode === 'create') CS.name = ($('cname') || {}).value || ''; lookAction(id); if (lkMode === 'create') showCreate(); else if (lkMode === 'mirror') openMirror(); else openChar('look'); break; }
-    case 'cstart': { const nm = (($('cname') || {}).value || '').trim() || CLASSES[CS.cls].name; const c = newChar(CS.cls, nm, CS.diff, CS.hc, Object.assign({}, CS.look)); c.mats = { erz: 4, leder: 3 }; SAVE.chars.push(c); activateChar(SAVE.chars.length - 1); saveChar(); sfx('lvl'); goFullscreen(); setState('menu'); dialog(PROLOG, openMap, 'Klingenhort'); break; }
+    case 'cstart': { const nm = (($('cname') || {}).value || '').trim() || CLASSES[CS.cls].name; const c = newChar(CS.cls, nm, CS.diff, CS.hc, Object.assign({}, CS.look)); c.mats = { erz: 4, leder: 3 }; hook('created', c); SAVE.chars.push(c); activateChar(SAVE.chars.length - 1); saveChar(); sfx('lvl'); goFullscreen(); setState('menu'); dialog(PROLOG, openMap, 'Klingenhort'); break; }
     case 'dlgnext': if (DLG) DLG.next(); break;
     case 'dlgskip': if (DLG) DLG.skip(); break;
     case 'play': { confirmDel = -1; activateChar(i); goFullscreen(); const M = P.map; if (M && M.pos.r >= 0 && !M.rows[M.pos.r][M.pos.i].done) { if (UI_NODES.includes(M.rows[M.pos.r][M.pos.i].t)) { resumeNode(); break; } undoRoomEntry(); saveChar(); } openMap(); break; }
@@ -621,6 +622,7 @@ panel.addEventListener('click', ev => {
     case 'langback': if (langBack === 'settings') showSettings(); else showTitle(); break;
     case 'setlang': if (id === LANG) { b.blur(); break; } try { persist(); } catch (_) { } setLang(id); break;
     case 'calm': SAVE.meta.settings.calm = !SAVE.meta.settings.calm; persist(); showSettings(); break;
+    case 'perf': SAVE.meta.settings.perf = !SAVE.meta.settings.perf; persist(); if (SAVE.meta.settings.perf) toast(_t('Leistungs-Modus: weniger Funken und Splitter – flüssiger auf älteren Handys, schont den Akku.'), '#8ee6ff'); showSettings(); break;
     case 'lootset': showLootSet(); break;
     case 'lootback': showSettings(); break;
     case 'lootopt': { const [k, v] = String(id).split(':'); if (LOOTSET[v] && (LOOT_K.includes(k) || (k === 'va' && v !== 'take'))) { SAVE.meta.settings.loot[k] = v; persist(); sfx('click'); } showLootSet(); break; }

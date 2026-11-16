@@ -7,6 +7,16 @@
 
 const CHANGELOG = [
   {
+    v: '6.7.0', d: '2026-11-16', t: 'Saison 1', items: [
+      ['neu', 'Saison 1 hat begonnen! Jede Saison dauert sechs Wochen. Du findest sie im Titelmenü und auf der Karte unter „Mehr“.'],
+      ['neu', 'Kostenloser Saison-Pass mit 30 Stufen: Sammle Saison-Punkte beim Spielen – Gegner, Bosse, Aufträge und die Endlosen Lande zählen. Jede Stufe bringt eine Belohnung: Gold, Material, Bauteile, Glücksmünzen, Eier, einen Legendären und einen Mythischen Gegenstand.'],
+      ['neu', 'Nur in dieser Saison: der „Sturmmantel der Ersten Saison“ bei Stufe 15 und die „Aura der Ersten Saison“ bei Stufe 30.'],
+      ['neu', 'Saison-Helden: Jeder neue Held tritt in der Saison an (bei der Erstellung abwählbar). Er startet bei Level 1, sammelt 50 % mehr Saison-Punkte und steht in deiner Saison-Rangliste.'],
+      ['besser', 'Auch mit deinen bisherigen Helden sammelst du Saison-Punkte – niemand muss neu anfangen.'],
+      ['besser', 'Leistungs-Modus in den Einstellungen: deutlich weniger Funken und Splitter – läuft flüssiger auf älteren Handys und schont den Akku.']
+    ]
+  },
+  {
     v: '6.6.0', d: '2026-11-15', t: 'Krieg der Kronen 1 – Die Front', items: [
       ['neu', 'Kriegsgebiete: Ab Akt 3 liegen auf der Weltkarte Schlachtfelder (gekreuzte Banner). Zwei Heere kämpfen dort wirklich gegeneinander – Aurelien in Gold und Weiß gegen Karth in Rot und Schwarz. Du bist Söldner und wählst vor jeder Schlacht deine Seite.'],
       ['neu', 'Beschuss von den Kriegsmaschinen am Feldrand: Pfeilhagel, Katapultsteine (Krater bleibt, wirft dich zurück) und Magiehagel aus Meteoren (der Boden brennt weiter). Jeder Einschlag wird am Boden angekündigt – raus aus der Fläche, bevor sie sich füllt.'],
