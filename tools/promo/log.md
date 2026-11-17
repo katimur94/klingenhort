@@ -22,5 +22,6 @@
 | 2026-11-15 | Tipp „Falsche Klinge vs. richtige Klinge“ (Elemente im Split-Screen: Feuer-Klinge resistent, Frost-Klinge Schwachpunkt) | 6af9ea463592f6515db62c56 | 0 | 0 | 0 | 0 | Tages-Clip 9,7 s, Schadens-Zähler aus dem Log (3283 gegen 9089) |
 | 2026-11-16 | Tipp „Pfeilhagel: stehen bleiben oder Deckung?“ (Krieg der Kronen 6.6, falsch/richtig mit Faxen, Schildwall „GEDECKT“) | 6afb3b57862b4e0a00a8a5c0 | 0 | 0 | 0 | 0 | Tages-Clip 9,5 s, echte Schlacht, kein Schaden hinter dem Schildwall |
 | 2026-11-17 | Update 6.7 „Saison 1“ (Saison-Pass, Saison-Punkte, Sturmmantel + Aura, mit Faxen) | 6afbe052562ba88da18606d9 | 0 | 0 | 0 | 0 | Update-Clip 12 s, nach dem Live-Gang von 6.7 gepostet |
+| 2026-11-17 | Begleiter „60 Stunden gepflegt – was kommt raus?“ (mythisches Ei schlüpft im Brutnest: Sternenwal, Frage „Dein bestes Ei?“) | 6afc8c34f413860c64038317 | 0 | 0 | 0 | 0 | Tages-Clip 9,2 s, echte Schlüpf-Animation, Pflegezeit für die Aufnahme übersprungen |
 
 Follower 17.11.: 3 (unverändert) · Gesamt-Likes 14 (unverändert) · 22 Videos · keine Kommentare.
