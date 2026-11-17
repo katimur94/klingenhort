@@ -23,4 +23,4 @@
 | 2026-11-16 | Tipp „Pfeilhagel: stehen bleiben oder Deckung?“ (Krieg der Kronen 6.6, falsch/richtig mit Faxen, Schildwall „GEDECKT“) | 6afb3b57862b4e0a00a8a5c0 | 0 | 0 | 0 | 0 | Tages-Clip 9,5 s, echte Schlacht, kein Schaden hinter dem Schildwall |
 | 2026-11-17 | Update 6.7 „Saison 1“ (Saison-Pass, Saison-Punkte, Sturmmantel + Aura, mit Faxen) | 6afbe052562ba88da18606d9 | 0 | 0 | 0 | 0 | Update-Clip 12 s, nach dem Live-Gang von 6.7 gepostet |
 
-Follower 16.11.: 3 (unverändert) · Gesamt-Likes 14 (unverändert) · 19 Videos · keine Kommentare.
+Follower 17.11.: 3 (unverändert) · Gesamt-Likes 14 (unverändert) · 22 Videos · keine Kommentare.
