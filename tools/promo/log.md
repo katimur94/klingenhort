@@ -24,4 +24,4 @@
 | 2026-11-17 | Update 6.7 „Saison 1“ (Saison-Pass, Saison-Punkte, Sturmmantel + Aura, mit Faxen) | 6afbe052562ba88da18606d9 | 0 | 0 | 0 | 0 | Update-Clip 12 s, nach dem Live-Gang von 6.7 gepostet |
 | 2026-11-17 | Begleiter „60 Stunden gepflegt – was kommt raus?“ (mythisches Ei schlüpft im Brutnest: Sternenwal, Frage „Dein bestes Ei?“) | 6afc8c34f413860c64038317 | 0 | 0 | 0 | 0 | Tages-Clip 9,2 s, echte Schlüpf-Animation, Pflegezeit für die Aufnahme übersprungen |
 
-Follower 17.11.: 3 (unverändert) · Gesamt-Likes 14 (unverändert) · 22 Videos · keine Kommentare.
+Follower 18.11.: 3 (unverändert) · Gesamt-Likes 14 (unverändert) · 23 Videos · keine Kommentare · Aufrufe laut Zernio unverändert (Top-Post: 5 Min vs. 50 Std, 11 Aufrufe).
