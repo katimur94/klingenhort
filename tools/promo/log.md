@@ -23,5 +23,6 @@
 | 2026-11-16 | Tipp „Pfeilhagel: stehen bleiben oder Deckung?“ (Krieg der Kronen 6.6, falsch/richtig mit Faxen, Schildwall „GEDECKT“) | 6afb3b57862b4e0a00a8a5c0 | 0 | 0 | 0 | 0 | Tages-Clip 9,5 s, echte Schlacht, kein Schaden hinter dem Schildwall |
 | 2026-11-17 | Update 6.7 „Saison 1“ (Saison-Pass, Saison-Punkte, Sturmmantel + Aura, mit Faxen) | 6afbe052562ba88da18606d9 | 0 | 0 | 0 | 0 | Update-Clip 12 s, nach dem Live-Gang von 6.7 gepostet |
 | 2026-11-17 | Begleiter „60 Stunden gepflegt – was kommt raus?“ (mythisches Ei schlüpft im Brutnest: Sternenwal, Frage „Dein bestes Ei?“) | 6afc8c34f413860c64038317 | 0 | 0 | 0 | 0 | Tages-Clip 9,2 s, echte Schlüpf-Animation, Pflegezeit für die Aufnahme übersprungen |
+| 2026-11-18 | Meme „Ich allein gegen ein ganzes Heer? … No way“ (Krieg der Kronen, Enthüllung per Herauszoomen: eigenes Heer stürmt, Katapult schlägt ein) | 6afdddc4401cb7572a24a593 | 0 | 0 | 0 | 0 | Tages-Clip 8,5 s, eine durchgehende Aufnahme, „No way“-Reveal-Format nach Websuche |
 
 Follower 18.11.: 3 (unverändert) · Gesamt-Likes 14 (unverändert) · 23 Videos · keine Kommentare · Aufrufe laut Zernio unverändert (Top-Post: 5 Min vs. 50 Std, 11 Aufrufe).
