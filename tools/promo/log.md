@@ -25,4 +25,4 @@
 | 2026-11-17 | Begleiter „60 Stunden gepflegt – was kommt raus?“ (mythisches Ei schlüpft im Brutnest: Sternenwal, Frage „Dein bestes Ei?“) | 6afc8c34f413860c64038317 | 0 | 0 | 0 | 0 | Tages-Clip 9,2 s, echte Schlüpf-Animation, Pflegezeit für die Aufnahme übersprungen |
 | 2026-11-18 | Meme „Ich allein gegen ein ganzes Heer? … No way“ (Krieg der Kronen, Enthüllung per Herauszoomen: eigenes Heer stürmt, Katapult schlägt ein) | 6afdddc4401cb7572a24a593 | 0 | 0 | 0 | 0 | Tages-Clip 8,5 s, eine durchgehende Aufnahme, „No way“-Reveal-Format nach Websuche |
 
-Follower 18.11.: 3 (unverändert) · Gesamt-Likes 14 (unverändert) · 23 Videos · keine Kommentare · Aufrufe laut Zernio unverändert (Top-Post: 5 Min vs. 50 Std, 11 Aufrufe).
+Follower 19.11.: 3 (unverändert) · Gesamt-Likes 14 (unverändert) · Videos laut Zernio 23 (Post vom 18.11. noch nicht mitgezählt) · keine Kommentare · Aufrufe unverändert (Top-Post: 5 Min vs. 50 Std, 11 Aufrufe).
