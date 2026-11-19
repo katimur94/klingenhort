@@ -24,5 +24,6 @@
 | 2026-11-17 | Update 6.7 „Saison 1“ (Saison-Pass, Saison-Punkte, Sturmmantel + Aura, mit Faxen) | 6afbe052562ba88da18606d9 | 0 | 0 | 0 | 0 | Update-Clip 12 s, nach dem Live-Gang von 6.7 gepostet |
 | 2026-11-17 | Begleiter „60 Stunden gepflegt – was kommt raus?“ (mythisches Ei schlüpft im Brutnest: Sternenwal, Frage „Dein bestes Ei?“) | 6afc8c34f413860c64038317 | 0 | 0 | 0 | 0 | Tages-Clip 9,2 s, echte Schlüpf-Animation, Pflegezeit für die Aufnahme übersprungen |
 | 2026-11-18 | Meme „Ich allein gegen ein ganzes Heer? … No way“ (Krieg der Kronen, Enthüllung per Herauszoomen: eigenes Heer stürmt, Katapult schlägt ein) | 6afdddc4401cb7572a24a593 | 0 | 0 | 0 | 0 | Tages-Clip 8,5 s, eine durchgehende Aufnahme, „No way“-Reveal-Format nach Websuche |
+| 2026-11-19 | Tipp „Normaler Held vs. Saison-Held“ (Saison 1, Split-Screen: +1 vs. +2 Saison-Punkte je Kill, Zähler aus dem Spiel-Log) | 6aff3200e88ad12e21865064 | 0 | 0 | 0 | 0 | Tages-Clip 10,1 s, zwei echte Kämpfe (nicht identisch, daher Punkte UND Kills gezeigt: 29 Kills = 29 Punkte vs. 23 Kills = 46 Punkte) |
 
 Follower 19.11.: 3 (unverändert) · Gesamt-Likes 14 (unverändert) · Videos laut Zernio 23 (Post vom 18.11. noch nicht mitgezählt) · keine Kommentare · Aufrufe unverändert (Top-Post: 5 Min vs. 50 Std, 11 Aufrufe).
