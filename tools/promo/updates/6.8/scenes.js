@@ -22,7 +22,7 @@ const BASE = process.env.BASE || 'http://localhost:8766/';
       __vp(zoom); startRoom('krieg', 3, { krSeite: seite, krFeind: feind, krZiel: ziel, krProbe: 1 }); window.__kinds = null; __off();
       for (let i = 0; i < (pre || 0); i++) { __hold(); __step(1); }
     };
-    window.__hold = () => { P.inv = 1; P.hp = P.st.hp; P.res = P.st.resMax; KR.moral = Math.max(KR.moral, 64); if (KR.ziel === 'linie') KR.zt = Math.max(KR.zt, 48); if (KR.ziel === 'hauptmann') KR.ht = Math.max(KR.ht, 1); };
+    window.__hold = () => { P.inv = 1; P.hp = P.st.hp; P.res = P.st.resMax; KR.moral = Math.max(KR.moral, 64); if (KR.ziel === 'linie') KR.zt = Math.max(KR.zt, 48); };
     window.__still = () => { for (const m of KR.machs) m.cd = 99; };
     window.__go = (x, y) => { P.x = x; P.y = y; P.vx = P.vy = 0; __snap(); };
     window.__mach = (art, own) => KR.machs.find(m => m.art === art && (m.team === KR.side) === !!own);

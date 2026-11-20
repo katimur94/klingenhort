@@ -40,14 +40,14 @@ def eryn(k):
     if k >= 34: meme_bild(b, k, 'laugh', 860, 1250, t0=34, size=140)
     return b
 def wahl(k):
-    b = shot('wahl', min(k, 29), 1.12, -60)
+    b = shot('wahl', min(k, 29), 1.0)
     d = Image.new('RGBA', (W, 260), (12, 9, 18, 235)); b.paste(d, (0, 1430), d)
     title(b, k, 'WELCHE SEITE', 76, GOLD, 1510)
     title(b, k, 'WAEHLST DU?', 76, WHITE, 1610, 4)
     if k >= 12: meme_bild(b, k, 'question', 900, 1240, t0=12, size=150)
     return b
 def akt(k):
-    b = shot('akt', min(k, 39), 1.25, -80)
+    b = shot('akt', min(k, 39), 1.0)
     d = Image.new('RGBA', (W, 230), (12, 9, 18, 235)); b.paste(d, (0, 250), d)
     title(b, k, 'CHRONIK AKT 1', 72, GOLD, 320)
     title(b, k, 'WER IST DER GAST IN VIOLETT?', 40, VIO, 420, 4)
