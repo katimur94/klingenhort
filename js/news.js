@@ -7,6 +7,17 @@
 
 const CHANGELOG = [
   {
+    v: '6.8.0', d: '2026-11-20', t: 'Krieg der Kronen 2 – Fünf Kronen', items: [
+      ['neu', 'Zwei neue Reiche ziehen in den Krieg: die Nordmark (Eisenkrone) mit Axtkämpfern, Schildmaiden, Eisjägern und Schildbrecherin Ragna – und Sylvara (Dornenkrone) mit Dornenwächtern, Waldläuferinnen, Druiden und Waldmeisterin Eryn.'],
+      ['neu', 'Neue Kriegsmaschine: die Balliste der Nordmark schießt schwere Bolzen entlang einer Linie am Boden – angekündigt wie jeder Beschuss.'],
+      ['neu', 'Jedes Kriegsgebiet ist jetzt eine Front zwischen zwei Reichen. Du wählst eine der beiden Seiten – wer gegen ein Reich gewinnt, verliert dort etwas Kriegsruf.'],
+      ['neu', 'Ränge bringen Vorteile: als Hauptmann mehr Gold und Kriegsruf, als Marschall zähere Soldaten, als Kronfeldherr feuert deine Kriegsmaschine öfter.'],
+      ['neu', 'Chronik Akt 1: Jedes Reich erzählt seine Geschichte in drei Kapiteln – sie öffnen sich nach 1, 3 und 6 Siegen für dieses Reich. Und irgendwo zwischen den Fronten taucht etwas Violettes auf …'],
+      ['besser', 'Die Kriegskasse von Nordmark und Sylvara tauscht Saphire und Smaragde.'],
+      ['besser', 'Leistungs-Modus: schaltet jetzt auch den Licht-und-Schatten-Effekt ab – noch flüssiger auf älteren Handys.']
+    ]
+  },
+  {
     v: '6.7.0', d: '2026-11-16', t: 'Saison 1', items: [
       ['neu', 'Saison 1 hat begonnen! Jede Saison dauert sechs Wochen. Du findest sie im Titelmenü und auf der Karte unter „Mehr“.'],
       ['neu', 'Kostenloser Saison-Pass mit 30 Stufen: Sammle Saison-Punkte beim Spielen – Gegner, Bosse, Aufträge und die Endlosen Lande zählen. Jede Stufe bringt eine Belohnung: Gold, Material, Bauteile, Glücksmünzen, Eier, einen Legendären und einen Mythischen Gegenstand.'],
@@ -238,10 +249,10 @@ const CHANGELOG = [
 
 // Vorschau: was in den nächsten Wochen kommt (Version, Text – siehe ROADMAP.md)
 const COMING = [
-  ['6.8', 'Krieg der Kronen 2 – Fünf Kronen: alle fünf Reiche mit eigenen Einheiten und Kriegsmaschinen, Kriegsruf mit Rängen, Seite wählen und wechseln, Chronik Akt 1'],
   ['6.9', 'Krieg der Kronen 3 – Die Kriegskarte: Provinzen, Fronten, die auch wandern, während du nicht spielst, Feldzüge und endlose Kriegsjahre'],
   ['7.0', 'Krieg der Kronen 4 – Belagerung: Burgen in drei Phasen, Rammbock und Mauern, Feldherren als wiederkehrende Rivalen'],
-  ['7.1', 'Krieg der Kronen 5 – Verrat: das Schattenkonzil, Entscheidungen mit Folgen, Chronik Akt 2, Wetter und Tageszeit auf dem Schlachtfeld']
+  ['7.1', 'Krieg der Kronen 5 – Verrat: das Schattenkonzil, Entscheidungen mit Folgen, Chronik Akt 2, Wetter und Tageszeit auf dem Schlachtfeld'],
+  ['7.2', 'Krieg der Kronen 6 – Dein Banner: ein eigener Söldnertrupp, dein eigenes Banner, Trophäen und Chronik Akt 3']
 ];
 
 const NEWS_KIND = { neu: [_t('NEU'), '#79c24e'], besser: [_t('BESSER'), '#57a7d6'], fix: [_t('BEHOBEN'), '#e8b04a'] };

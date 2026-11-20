@@ -7,7 +7,7 @@ Vier Klassen, frei gestaltbare Helden, **Begleiter, die mit dir wachsen**, sechs
 
 ### ▶ [Jetzt spielen: katimur94.github.io/klingenhort](https://katimur94.github.io/klingenhort/)
 
-Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 6.7 · jede Woche neue Inhalte
+Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 6.8 · jede Woche neue Inhalte
 
 🌐 Deutsch · English · Türkçe · Español · Italiano · Français – *the game starts in your device language*
 
@@ -85,6 +85,18 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Vers
 ## Neuigkeiten & Wochenplan
 
 Klingenhort wird jede Woche erweitert. Im Spiel zeigt **Neuigkeiten** (Titelmenü, Einstellungen oder Weltkarte → Mehr) alle Updates und was als Nächstes kommt; nach einem Update öffnet sich die Seite einmal von selbst.
+
+**Neu in 6.8 – Krieg der Kronen 2: Fünf Kronen**
+
+| System | Was es kann |
+|---|---|
+| **Nordmark** (Eisenkrone) | Axtkämpfer, Schildmaiden, Eisjäger, Schildbrecherin Ragna (Sturm entlang einer Bahn, lässt die Balliste zielen). Maschinen: Balliste und Katapult. Lohn: +25 % Kriegsruf, Kriegskasse mit Saphiren |
+| **Sylvara** (Dornenkrone) | Dornenwächter, Waldläuferinnen, Druiden, Waldmeisterin Eryn (kämpft aus der Ferne, Pfeilhagel und Dornenring). Maschinen: zwei Pfeilwerfer. Lohn: +2 Bannerstoff, Kriegskasse mit Smaragden |
+| **Balliste** | Neuer Beschuss: Bolzen entlang einer Linie am Boden, angekündigt wie jeder Beschuss (mindestens 0,8 s), Treffer nur im gezeichneten Streifen; hinter Deckung halber Schaden |
+| **Fronten** | Jedes Kriegsgebiet ist eine Front zwischen zwei der vier Reiche (fest je Held, Akt und Reihe). Du wählst eine Seite; wer gegen ein Reich gewinnt, verliert dort 5 Kriegsruf (nie unter null) |
+| **Rang-Vorteile** | Hauptmann (150): +10 % Gold und Kriegsruf je Sieg · Marschall (600): Soldaten +20 % Leben · Kronfeldherr (1500): eigene Kriegsmaschine feuert öfter – jeweils beim Reich, für das du kämpfst |
+| **Chronik Akt 1** | Drei Kapitel je Reich (nach 1, 3 und 6 Siegen für dieses Reich), im Ergebnis direkt lesbar und in der Chronik der Kronen nachzulesen. Das Schattenkonzil kündigt sich an |
+| **Leistungs-Modus** | Schaltet jetzt auch die Licht-und-Schatten-Ebene ab |
 
 **Neu in 6.7 – Saison 1**
 

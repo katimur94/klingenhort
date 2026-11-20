@@ -334,7 +334,8 @@ function render() {
   }
   addLight(P.x - CX, P.y - CY - 12, (P.leap ? 90 : 84) * (G && G.dark ? .55 : 1), 1);
   for (const f of fx) { if (f.k === 'boom') addLight(f.x - CX, f.y - CY, f.r * 2.2 * (f.life / f.max) + 20, 1); if (f.k === 'pillar') addLight(f.x - CX, f.y - CY - 20, 60, f.life); if (f.k === 'zap') for (const [zx, zy] of f.pts) addLight(zx - CX, zy - CY, 30, f.life / f.max); if (f.k === 'anim' && f.add) addLight(f.x - CX, f.y - CY, 30 * f.sc, f.life / f.max); }
-  const dk = Math.max(bg.b.dark, (G && G.dark) || 0) * (state === 'title' ? .8 : 1);
+  // Leistungs-Modus: keine Licht-und-Schatten-Ebene (spart einen Durchgang über den ganzen Bildschirm)
+  const dk = SAVE && SAVE.meta.settings.perf ? 0 : Math.max(bg.b.dark, (G && G.dark) || 0) * (state === 'title' ? .8 : 1);
   // HD: die Vignette liegt mit in der Licht-Ebene – ein Durchgang über den ganzen Bildschirm statt zwei (Pixel-Modus: wie bisher getrennt)
   const vigIn = HD && dk > 0 && !!vig;
   if (dk > 0) {

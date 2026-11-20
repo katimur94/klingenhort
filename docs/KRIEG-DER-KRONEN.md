@@ -30,7 +30,7 @@ Dynamisches Licht (Fackeln, Feuer, Zauber werfen Licht), weiche Schatten unter a
 
 ## Kapitel (je eine Woche, Reihenfolge = ROADMAP)
 - ✅ **6.6 Kapitel 1 – Die Front**: Kriegsgebiete als Raumart + 3 Kriegs-Biome in den Landen, Beschuss (Pfeil, Katapult, Magie), Deckung, zwei kämpfende Heere (Aurelien vs. Karth), 4 Schlacht-Ziele, Prolog der Chronik, Grafik: Licht, Rauch, Krater, Banner.
-- **6.8 Kapitel 2 – Fünf Kronen**: alle fünf Reiche mit Einheiten und Kriegsmaschinen, Kriegsruf/Ränge, Reichs-Sets, Seite wählen und wechseln, Chronik Akt 1 je Reich.
+- ✅ **6.8 Kapitel 2 – Fünf Kronen**: Nordmark und Sylvara an der Front (Einheiten, Hauptleute Ragna und Eryn, Balliste als neuer Beschuss 'bolzen'), Fronten je Kriegsgebiet (`KR_FRONT`, `krFront`), Seite wählen und wechseln (Kriegsruf-Verlust beim Gegner, `KR_VERRAT`), Rang-Vorteile (`KR_VORTEIL`), Chronik Akt 1 je Reich (`KR_AKT1`, gelesen in `ch`). Noch offen aus dem Plan: Reichs-Sets (Ausrüstung je Reich) – kommen mit Kapitel 6 „Dein Banner“; das Schattenkonzil kämpft ab 7.1.
 - **6.9 Kapitel 3 – Die Kriegskarte**: Provinzen, wandernde Fronten (auch offline), Feldzüge, Kriegsjahre (endlos).
 - **7.0 Kapitel 4 – Belagerung**: Burgen in drei Phasen, Rammbock, Mauern, Feldherren als Rivalen.
 - **7.1 Kapitel 5 – Verrat**: das Schattenkonzil, Entscheidungen mit Folgen, Chronik Akt 2, Wetter/Tageszeit.
@@ -54,3 +54,9 @@ Alles in `js/krieg.js` (Kopfkommentar = Schnittstelle), Test `tools/test/krieg.j
 - Lande: `KR_LANDE` (Biom → Beschuss-Arten), Kulissen `krLandeDeko`.
 
 Ehrlich offen nach Kapitel 1: ein einziges Feld-Layout (nur leicht gewürfelt) und vier Ziele – nach vielen Schlachten wiederholt es sich; das Schlachtfeld steckt noch im Mauer-Rahmen der Kampagnen-Räume; Verbündete kennen keine Formation; Kriegskasse mit nur drei Angeboten; keine eigenen Klänge für Katapult und Meteor; HD-Grafik auf Geräten ohne Grafikkarte teuer (Pixel-Modus ist auf Handys Standard).
+
+## Stand nach Kapitel 2 (6.8)
+- `REICHE`: vier aktiv (aurelien, nordmark, sylvara, karth), `konzil` bleibt `aktiv: 0` bis 7.1 (Schattenriss = neue Beschuss-Art dort).
+- Gegner einer Schlacht: `G.extra.krFeind` (aus der Front), sonst Erzfeind `KR_RIVAL`. Die Kriegskarte (6.9) ersetzt `krFront` durch echte Provinzen.
+- Chronik: `KR_AKT1[reich] = [{ ab: Siege, t, L }]`; Akt 2 (7.1) hängt sich genauso an, Entscheidungen in `krM().ch`.
+- Ehrlich offen: Lager in den Kriegs-Biomen der Lande zeigen weiter nur Aurelien und Karth; Druiden werfen Feuer (eigene Giftgeschosse fehlen noch).

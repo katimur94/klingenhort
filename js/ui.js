@@ -622,7 +622,7 @@ panel.addEventListener('click', ev => {
     case 'langback': if (langBack === 'settings') showSettings(); else showTitle(); break;
     case 'setlang': if (id === LANG) { b.blur(); break; } try { persist(); } catch (_) { } setLang(id); break;
     case 'calm': SAVE.meta.settings.calm = !SAVE.meta.settings.calm; persist(); showSettings(); break;
-    case 'perf': SAVE.meta.settings.perf = !SAVE.meta.settings.perf; persist(); if (SAVE.meta.settings.perf) toast(_t('Leistungs-Modus: weniger Funken und Splitter – flüssiger auf älteren Handys, schont den Akku.'), '#8ee6ff'); showSettings(); break;
+    case 'perf': SAVE.meta.settings.perf = !SAVE.meta.settings.perf; persist(); if (SAVE.meta.settings.perf) toast(_t('Leistungs-Modus: weniger Funken und Splitter, kein Licht-und-Schatten-Effekt – flüssiger auf älteren Handys, schont den Akku.'), '#8ee6ff'); showSettings(); break;
     case 'lootset': showLootSet(); break;
     case 'lootback': showSettings(); break;
     case 'lootopt': { const [k, v] = String(id).split(':'); if (LOOTSET[v] && (LOOT_K.includes(k) || (k === 'va' && v !== 'take'))) { SAVE.meta.settings.loot[k] = v; persist(); sfx('click'); } showLootSet(); break; }

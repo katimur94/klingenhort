@@ -518,8 +518,11 @@ const CALM = () => { LW.huntT = 1e9; LW.rivT = 1e9; for (const e of enemies) e.d
       const CALM = eval('(' + CALM_ + ')'), M = SAVE.meta.lande, o = {}, all = (1 << LANDE_TOOLS.length) - 1; if (landeActive()) ON.l_quitok();
       let R = null; for (let r = 1060; r < 1250 && !R; r += 2) for (let a = 0; a < 6.283 && !R; a += .02) { const c = lCell(Math.round(Math.cos(a) * r), Math.round(Math.sin(a) * r)); if (c.biome === 'traumwald' && lRegAtC(c.sx, c.sy) === c) R = c; }
       if (!R) return o;
-      lBegin(); M.tools = all & ~(1 << 16); lTeleport(R.sx * LCK + LOFF, R.sy * LCK + LOFF); CALM(); P.inv = 1e9; P.hp = P.st.hp; for (let i = 0; i < 10; i++) { CALM(); LW.tick = 0; lTick(.2); } o.dream = P.hp < P.st.hp && bg.b.dark > .25 && lBioAt(P.x, P.y) === 'traumwald';
-      M.tools = all; P.hp = P.st.hp; for (let i = 0; i < 10; i++) { CALM(); LW.tick = 0; lTick(.2); } o.lantern = P.hp === P.st.hp;
+      lBegin(); M.tools = all & ~(1 << 16); lTeleport(R.sx * LCK + LOFF, R.sy * LCK + LOFF); CALM(); P.inv = 1e9; P.hp = P.st.hp; P.st.regen = 0;
+      // im Spiel bleiben (eine zufällige Begegnung oder Meldung darf den Takt der Gefahr nicht anhalten) und den tiefsten Stand merken
+      const tick = () => { let mn = P.hp; for (let i = 0; i < 10; i++) { CALM(); if (state !== 'play') { hideOverlay(); setState('play'); } LW.tick = 0; lTick(.2); mn = Math.min(mn, P.hp); } return mn; };
+      o.dream = tick() < P.st.hp && bg.b.dark > .25 && lBioAt(P.x, P.y) === 'traumwald'; o.dz = [state, LW.hazT, bg.b.dark, lBioAt(P.x, P.y)];
+      M.tools = all; P.hp = P.st.hp; o.lantern = tick() === P.st.hp;
       M.tools = 0; ON.l_quitok(); return o;
     }, [CALM.toString()]);
     ok(tz.dream && tz.lantern, 'Gefahr der Tiefe: Traumnebel im Traumwald zehrt und verdunkelt ohne Schattenlaterne II, mit ihr nicht' + (tz.dream && tz.lantern ? '' : ' ' + JSON.stringify(tz)));

@@ -1,4 +1,6 @@
 // Krieg der Kronen 1 – Die Front (6.6): Kriegsgebiete, zwei Heere, Beschuss, Deckung, Schlacht-Ziele, Chronik.
+// Kapitel 2 – Fünf Kronen (6.8): Nordmark und Sylvara an der Front, Fronten je Kriegsgebiet, Balliste (Bolzen), Kriegsruf-Verlust beim Gegner,
+// Vorteile der Ränge, Chronik Akt 1 (Kapitel nach Siegen), Hauptleute der neuen Reiche.
 // Prüft die Regeln: Daten der fünf Reiche, Kriegsgebiete auf der Karte (ab Akt 3, verschieben nichts), Spielstand (Standard, Reparatur, alter Stand),
 // Aufbau der Schlacht, Obergrenze der Soldaten, Heere kämpfen ohne den Helden, Fairness des Beschusses (nie Schaden ohne mindestens
 // KR_WARN_MIN Sekunden Ankündigung, Treffer nur in der gezeichneten Fläche), Deckung, Maschinen (zerstören, erobern, bewacht),
@@ -52,7 +54,7 @@ const TOOLS = () => {
       reiche: REICH_ORDER.join(), aktiv: KR_AKTIV.join(),
       felder: REICH_ORDER.every(k => { const R = REICHE[k]; return R.n && R.krone && /^#/.test(R.c) && Array.isArray(R.einh) && Array.isArray(R.masch) && R.raenge.length === 4 && R.mk && typeof R.who() === 'string' && !!iconURL(['pa', 'kr_w_' + k]); }),
       node: !!NODE.krieg && iconURL(NODE.krieg.icon).length > 100,
-      en: ['kr_a_schild', 'kr_a_ritter', 'kr_a_schuetze', 'kr_k_soeldner', 'kr_k_klinge', 'kr_k_pyro', 'kr_a_hauptmann', 'kr_k_hauptmann'].every(k => EN[k] && EN[k].ai === 'krieg' && EN[k].cost >= 99 && REICHE[EN[k].kr[0]] && BODIES[EN[k].body] && BODIES[EN[k].body].sp === EN[k].sp && DYES.some(d => d.id === EN[k].dye) && EN[k].desc),
+      en: ['kr_a_schild', 'kr_a_ritter', 'kr_a_schuetze', 'kr_k_soeldner', 'kr_k_klinge', 'kr_k_pyro', 'kr_a_hauptmann', 'kr_k_hauptmann', 'kr_n_axt', 'kr_n_schild', 'kr_n_jaeger', 'kr_n_hauptmann', 'kr_s_laeufer', 'kr_s_dorn', 'kr_s_druide', 'kr_s_hauptmann'].every(k => EN[k] && EN[k].ai === 'krieg' && EN[k].cost >= 99 && REICHE[EN[k].kr[0]] && BODIES[EN[k].body] && BODIES[EN[k].body].sp === EN[k].sp && DYES.some(d => d.id === EN[k].dye) && EN[k].desc),
       welle: poolFor(300).filter(k => EN[k].kr || EN[k].ai === 'krmach').length + Object.values(BIOME_EN).flat().filter(k => EN[k].kr).length,
       einh: KR_AKTIV.every(k => REICHE[k].einh.length >= 3 && REICHE[k].einh.every(t => EN[t] && EN[t].kr[0] === k) && EN[REICHE[k].hpt].kr[1] === 'hauptmann' && REICHE[k].masch.every(m => KR_MASCH[m])),
       mats: ['kriegseisen', 'bannerstoff'].every(k => MATS[k] && MATORDER.includes(k) && !MONMATS.includes(k) && matCanvas(k).width === 12) && MATORDER.indexOf('kriegseisen') > MATORDER.indexOf('sturmsilber'),
@@ -60,7 +62,7 @@ const TOOLS = () => {
       achT: ACH.find(a => a.id === 'krbeide').t({ krW_aurelien: 1, krW_karth: 1 }) && !ACH.find(a => a.id === 'krbeide').t({ krW_aurelien: 3 }) && ACH.find(a => a.id === 'kr10').t({ krWin: 10 }) && !ACH.find(a => a.id === 'kr1').t({}),
       ziele: KR_ZIELE.length === 4 && KR_ZIELE.every(z => KR_ZIEL[z] && KR_ZIEL[z].n && KR_ZIEL[z].d), warn: KR_WARN_MIN, cap: KR_CAP
     }));
-    ok(D.reiche === 'aurelien,nordmark,sylvara,karth,konzil' && D.aktiv === 'aurelien,karth' && D.felder, 'Fünf Reiche als Daten (Name, Krone, Farbe, Ränge, Wappen), zwei davon an der Front: Aurelien und Karth');
+    ok(D.reiche === 'aurelien,nordmark,sylvara,karth,konzil' && D.aktiv === 'aurelien,nordmark,sylvara,karth' && D.felder, 'Fünf Reiche als Daten (Name, Krone, Farbe, Ränge, Wappen), vier an der Front: Aurelien, Nordmark, Sylvara, Karth');
     ok(D.node && D.en && D.einh && !D.welle, 'Kriegsgebiet als Ort der Karte; Soldaten beider Reiche (KI „krieg“, eigenes Aussehen) – nie in normalen Wellen');
     ok(D.mats && D.ach && D.achT && D.ziele, 'Kriegseisen und Bannerstoff (hinten angefügt, kein Gegner-Material nach Stufe), fünf Erfolge, vier Ziele');
     ok(D.warn >= .7 && D.cap <= 24, `Vorwarnung mindestens ${D.warn} s, höchstens ${D.cap} Soldaten auf dem Feld`);
@@ -94,7 +96,7 @@ const TOOLS = () => {
     const F = await ev(HERO_ => {
       const o = {}, a = fixMeta({}).krieg;
       o.def = a.v === 1 && REICH_ORDER.every(k => a.r[k].ruf === 0 && a.r[k].mk === 0) && a.n === 0 && a.pro === 0 && a.seite === '' && typeof a.kasse.b === 'object';
-      const b = fixMeta({ krieg: { r: { aurelien: { ruf: 'x', mk: -4, sg: 2.7 }, karth: null, fremd: { ruf: 5 } }, n: -3, sg: 'a', pro: 'ja', seite: 'nordmark', kasse: { w: 'q', b: { 'karth:gold': 2, '<x>:y': 9, 'aurelien:nix': 1 } }, ch: { ok1: 3, '<bad>': 1 } } }).krieg;
+      const b = fixMeta({ krieg: { r: { aurelien: { ruf: 'x', mk: -4, sg: 2.7 }, karth: null, fremd: { ruf: 5 } }, n: -3, sg: 'a', pro: 'ja', seite: 'konzil', kasse: { w: 'q', b: { 'karth:gold': 2, '<x>:y': 9, 'aurelien:nix': 1 } }, ch: { ok1: 3, '<bad>': 1 } } }).krieg;
       o.fix = b.r.aurelien.ruf === 0 && b.r.aurelien.mk === 0 && b.r.aurelien.sg === 2 && b.r.karth.ruf === 0 && !b.r.fremd && b.n === 0 && b.sg === 0 && b.pro === 1 && b.seite === '' && b.kasse.w === 0 && b.kasse.b['karth:gold'] === 2 && Object.keys(b.kasse.b).length === 1 && b.ch.ok1 === 3 && Object.keys(b.ch).length === 1;
       const c = fixMeta({ krieg: 'kaputt' }).krieg, d = fixMeta({ krieg: { r: { karth: { ruf: 420, mk: 7, sg: 3, nl: 1 } }, n: 9, sg: 3, pro: 1, seite: 'karth' } }).krieg;
       o.fix2 = c.v === 1 && c.r.karth.ruf === 0 && d.r.karth.ruf === 420 && d.r.karth.mk === 7 && d.n === 9 && d.seite === 'karth';
@@ -118,7 +120,7 @@ const TOOLS = () => {
       }
       return r;
     });
-    ok(A.length === 8 && A.every(a => a.on && a.al >= 6 && a.alOk && a.fo >= 6 && a.foOk), 'Schlacht steht für beide Seiten und alle vier Ziele: je sechs Verbündete (nicht angreifbar) und sechs Feinde zum Auftakt');
+    ok(A.length === 16 && A.every(a => a.on && a.al >= 6 && a.alOk && a.fo >= 6 && a.foOk), 'Schlacht steht für alle vier Reiche und alle vier Ziele: je sechs Verbündete (nicht angreifbar) und sechs Feinde zum Auftakt');
     ok(A.every(a => a.ma === 3 && a.maE === 2 && a.maOwn === 1 && a.cov === 4 && a.gr === 2 && a.fest >= 10 && !a.deko && a.extra && a.feld), 'Drei Kriegsmaschinen (eine eigene, zwei feindliche), Schildwälle, Wagen, zwei Gräben; keine Fallen, Truhen oder Pfützen; Ziel vorbereitet' + (A.every(a => a.extra) ? '' : ' ' + JSON.stringify(A.filter(a => !a.extra).map(a => a.z + '/' + a.s))));
 
     // Obergrenze: nie mehr als KR_CAP Soldaten – auch mit Verstärkung und Hauptmann
@@ -320,13 +322,63 @@ const TOOLS = () => {
     ok(L.nied.ruf === 5 && L.nied.nl === 1 && L.nied.gold === 0 && L.nied.offen && L.nied.schirm && L.nochmal && L.rueckzug, 'Niederlage: 5 Kriegsruf, kein Gold; wiederholen (gleiche Seite, gleiches Ziel) oder Rückzug (Ort erledigt)');
     ok(L.save, 'Kriegsruf, Marken und Siege sind gespeichert');
 
+    // Kapitel 2 – Fünf Kronen: Fronten, neue Reiche, Balliste, Kriegsruf-Verlust, Rang-Vorteile, Chronik Akt 1
+    await ev(HERO);
+    const K2 = await ev(() => {
+      const o = {}; seed(12); const st = k => SAVE.meta.stats[k] || 0;
+      // Fronten: nur Reiche an der Front, nie zweimal dasselbe; jedes Reich kommt vor; fest je Held/Akt/Reihe
+      o.fronten = KR_FRONT.every(f => f.length === 2 && f[0] !== f[1] && f.every(k => KR_AKTIV.includes(k))) && KR_AKTIV.every(k => KR_FRONT.some(f => f.includes(k)));
+      const seen = new Set(); for (let c = 0; c < 30; c++) { P.created = 5000 + c * 1013; for (const act of [3, 4, 5, 6]) { P.act = act; for (const r of [2, 4]) { const f = krFront(r); seen.add(f.join()); if (krFront(r).join() !== f.join()) o.wackelt = 1; } } }
+      o.vielfalt = seen.size; P.act = 3;
+      // Seitenwahl an einer Front Nordmark gegen Sylvara: zwei Karten, gewählt wird gegen den anderen
+      const kf = window.krFront; window.krFront = () => ['nordmark', 'sylvara']; P.map = genMap(3); const k0 = vorKrieg(); krWahl(k0[0]); window.krFront = kf;
+      o.wahl = [...panel.querySelectorAll('.krside [data-act="kr_seite"]')].map(b => b.dataset.id).join();
+      ON.kr_seite('sylvara'); o.seite = KR.on && KR.side === 'sylvara' && KR.foe === 'nordmark' && G.extra.krFeind === 'nordmark';
+      o.masch = KR.machs.map(m => m.art + ':' + (m.team === KR.side ? 'e' : 'f')).join();
+      // Schlacht für die Nordmark: Gegner Sylvara (Erzfeind), eigene Balliste, Soldaten mit Reichs-Aussehen
+      schlacht('linie', 'nordmark'); o.nord = KR.side === 'nordmark' && KR.foe === 'sylvara' && KR.machs.some(m => m.art === 'ballista' && m.team === 'nordmark') && KR.al.every(u => u.kr.team === 'nordmark' && EN[u.t].kr[0] === 'nordmark') && enemies.filter(e => e.kr && !e.mach).every(e => e.def.kr[0] === 'sylvara');
+      // Balliste: Streifen am Boden, mindestens KR_WARN_MIN angekündigt; im Streifen Treffer, daneben nichts
+      ruhe(); P.st.dodge = 0; const L = mitschrift(), p = krPos(.5, .5); P.x = p.x; P.y = p.y; P.hp = P.st.hp = 1e7;
+      let s = krShot('ballista', P.x, P.y, { team: KR.foe, sx: P.x - 120, sy: P.y }); o.bolzen = !!s && s.k === 'bolzen' && s.max >= KR_WARN_MIN && krIn(s, P.x, P.y) && !krIn(s, P.x, P.y + 14);
+      const t0 = T; schritte(s.max + .2, () => { P.inv = 0; P.x = p.x; P.y = p.y; }); o.bolzenHit = L.length === 1 && L[0].t - t0 >= KR_WARN_MIN - .02 && L[0].q === 'beschuss';
+      L.length = 0; s = krShot('ballista', P.x, P.y - 16, { team: KR.foe, sx: P.x - 120, sy: P.y - 16 }); schritte(s.max + .2, () => { P.inv = 0; P.x = p.x; P.y = p.y; }); o.bolzenDaneben = L.length === 0;
+      // Kriegsruf-Verlust bei dem Reich, gegen das du gewinnst (nie unter null)
+      krM().r.sylvara.ruf = 3; schlacht('linie', 'nordmark'); krEnd(true); o.verrat1 = krM().r.sylvara.ruf === 0 && KR.lohn.verrat === 3;
+      krM().r.sylvara.ruf = 100; schlacht('linie', 'nordmark'); krEnd(true); o.verrat2 = krM().r.sylvara.ruf === 100 - KR_VERRAT && KR.lohn.verrat === KR_VERRAT;
+      // Lohn Nordmark: +25 % Kriegsruf · Rang Hauptmann: +10 % · Marschall: Soldaten mit 20 % mehr Leben
+      krM().r.nordmark.ruf = 0; schlacht('linie', 'nordmark'); KR.moral = 50; const r0 = krRuf('nordmark'); krEnd(true); o.rufN = krRuf('nordmark') - r0;
+      krM().r.nordmark.ruf = 200; schlacht('linie', 'nordmark'); KR.moral = 50; const r1 = krRuf('nordmark'); krEnd(true); o.rufH = krRuf('nordmark') - r1;
+      krM().r.nordmark.ruf = 0; schlacht('linie', 'nordmark'); const hp0 = KR.al.length ? KR.al[0].maxHp / EN[KR.al[0].t].hp : 0;
+      krM().r.nordmark.ruf = 700; schlacht('linie', 'nordmark'); const hp1 = KR.al.length ? KR.al[0].maxHp / EN[KR.al[0].t].hp : 0; o.leben = +(hp1 / hp0).toFixed(2);
+      // Sylvara zahlt Bannerstoff
+      schlacht('linie', 'sylvara'); const b0 = P.mats.bannerstoff || 0; krEnd(true); o.stoff = (P.mats.bannerstoff || 0) - b0;
+      // Chronik Akt 1: Kapitel nach 1, 3, 6 Siegen für dieses Reich
+      o.akt = KR_AKTIV.every(k => KR_AKT1[k].length === 3 && KR_AKT1[k].map(c => c.ab).join() === '1,3,6' && KR_AKT1[k].every(c => c.t() && c.L().length >= 2 && c.L().every(l => typeof l[1] === 'string' && l[1].length > 20)));
+      krM().r.karth.sg = 0; schlacht('linie', 'karth'); krEnd(true); o.neu = KR.lohn.akt === 0;
+      schritte(3.2, () => { P.inv = 9; }); o.schirm = /NEUES KAPITEL/.test(panel.textContent) && !!panel.querySelector('[data-act="kr_akt"][data-id="karth:0:res"]');
+      krM().r.karth.sg = 1; schlacht('linie', 'karth'); krEnd(true); o.keins = KR.lohn.akt === -1;
+      // Hauptleute der neuen Reiche: Sonderangriffe immer angekündigt
+      const sonder = seite => { schlacht('hauptmann', seite); ruhe(); const p = krPos(.5, .5); P.x = p.x; P.y = p.y; const e = krFoe(REICHE[KR.foe].hpt, p.x + 70, p.y), arten = []; for (let n = 0; n < 2; n++) { KR.shots.length = 0; e.kr.mt = 0; e.kr.tt = 0; e.kr.sp = null; e.st = 'move'; e.cd = 99; schritte(.1, () => { P.inv = 9; }); arten.push(KR.shots.filter(x => !x.own).map(x => x.k + (x.max >= KR_WARN_MIN ? '' : '!')).join('+')); } return arten.join(' / '); };
+      o.ragna = sonder('sylvara'); o.eryn = sonder('nordmark'); o.fern = krFernH(EN.kr_s_hauptmann) && !krFernH(EN.kr_n_hauptmann);
+      unseed(); return o;
+    });
+    ok(K2.ragna === 'bahn / bolzen' && K2.eryn === 'pfeil / ring' && K2.fern, `Hauptleute: Schildbrecherin Ragna (${K2.ragna}), Waldmeisterin Eryn (${K2.eryn}, kämpft aus der Ferne) – alles mit Ankündigung`);
+    ok(K2.fronten && !K2.wackelt && K2.vielfalt >= 4, `Fronten: je Kriegsgebiet zwei Reiche, fest für Held, Akt und Reihe – ${K2.vielfalt} verschiedene Fronten kommen vor`);
+    ok(K2.wahl === 'nordmark,sylvara' && K2.seite, 'Seitenwahl zeigt die beiden Reiche der Front; gewählt wird gegen das andere');
+    ok(K2.nord && K2.masch === 'pfeil:e,ballista:f,katapult:f', `Für Sylvara: eigener Pfeilwerfer, die Nordmark schießt mit Balliste und Katapult (${K2.masch}); für die Nordmark: eigene Balliste, Gegner Sylvara`);
+    ok(K2.bolzen && K2.bolzenHit && K2.bolzenDaneben, 'Balliste: Bolzen als Streifen am Boden angekündigt (mindestens die Mindest-Vorwarnung); im Streifen Treffer, knapp daneben nichts');
+    ok(K2.verrat1 && K2.verrat2, `Wer gegen ein Reich gewinnt, verliert dort ${5} Kriegsruf – nie unter null`);
+    ok(K2.rufN === 31 && K2.rufH === 34 && K2.leben === 1.2 && K2.stoff >= 3, `Lohn und Ränge: Nordmark +25 % Kriegsruf (${K2.rufN}), als Hauptmann +10 % (${K2.rufH}); Marschall: Soldaten ×${K2.leben} Leben; Sylvara +2 Bannerstoff (${K2.stoff})`);
+    ok(K2.akt && K2.neu && K2.schirm && K2.keins, 'Chronik Akt 1: drei Kapitel je Reich (nach 1, 3, 6 Siegen); der Sieg, der eins öffnet, zeigt es im Ergebnis zum Lesen');
+
     // Kriegskasse und Aufträge
     const Q = await ev(() => {
-      const o = {}, R = krM().r.aurelien; R.mk = 5; const g0 = P.gold; kriegChronik('map'); o.offen = /CHRONIK DER KRONEN/.test(panel.textContent) && panel.querySelectorAll('[data-act="kr_kasse"]').length === 6 && /noch nicht an der Front/.test(panel.textContent);
+      const o = {}, R = krM().r.aurelien; R.mk = 5; const g0 = P.gold; kriegChronik('map'); o.offen = /CHRONIK DER KRONEN/.test(panel.textContent) && panel.querySelectorAll('[data-act="kr_kasse"]').length === 12 && /noch nicht an der Front/.test(panel.textContent);
       ON.kr_kasse('aurelien:gold'); o.kauf = R.mk === 2 && P.gold > g0; const g1 = P.gold; ON.kr_kasse('aurelien:gold'); o.arm = R.mk === 2 && P.gold === g1;
       R.mk = 99; for (let i = 0; i < 5; i++) ON.kr_kasse('aurelien:gold'); o.grenze = R.mk === 99 - 6 && krM().kasse.b['aurelien:gold'] === 3;
       P.mats.kriegseisen = 3; const gems = JSON.stringify(P.gems); ON.kr_kasse('aurelien:stein'); o.ohneMat = JSON.stringify(P.gems) === gems; P.mats.kriegseisen = 4; ON.kr_kasse('aurelien:stein'); o.mitMat = JSON.stringify(P.gems) !== gems && P.mats.kriegseisen === 0;
-      ON.kr_kasse('nordmark:gold'); o.fern = krM().r.nordmark.mk === 0;
+      ON.kr_kasse('konzil:gold'); o.fern = krM().r.konzil.mk === 0;
+      krM().r.nordmark.mk = 9; P.mats.kriegseisen = 4; const gs = JSON.stringify(P.gems); ON.kr_kasse('nordmark:stein'); o.saphir = JSON.stringify(P.gems) !== gs && /saphir/.test(JSON.stringify(P.gems));
       // Aufträge: nur wenn Kriegsgebiete offen sind; Fortschritt über Siege und besiegte Soldaten
       const av = Object.keys(aufAvail(false)), aw = Object.keys(aufAvail(true)); o.auf = av.includes('krsieg') && av.includes('krsold') && aw.includes('krsieg');
       const H = aufSet(), mkq = (k, n) => ({ k, f: 'orden', n, c: 0, ok: 0, pd: 0, rw: [{ t: 'gold', n: 10 }], rep: 40, tok: 2 });
@@ -335,7 +387,7 @@ const TOOLS = () => {
       const c = newChar('mage', 'Frisch', 'normal', false); SAVE.chars.push(c); const kr = krM().n; krM().n = 0; activateChar(1); o.zu = !kriegOffen() && !Object.keys(aufAvail(false)).includes('krsieg'); krM().n = kr; activateChar(0);
       return o;
     });
-    ok(Q.offen && Q.kauf && Q.arm && Q.grenze && Q.ohneMat && Q.mitMat && Q.fern, 'Kriegskasse: Marken und Kriegsbeute gegen Gold und Edelsteine, begrenzt je Woche, nichts ohne genug Marken oder Material, ferne Reiche tauschen nicht');
+    ok(Q.offen && Q.kauf && Q.arm && Q.grenze && Q.ohneMat && Q.mitMat && Q.fern && Q.saphir, 'Kriegskasse (Nordmark tauscht Saphire): Marken und Kriegsbeute gegen Gold und Edelsteine, begrenzt je Woche, nichts ohne genug Marken oder Material, ferne Reiche tauschen nicht');
     ok(Q.auf && Q.q1 && Q.q2 && Q.zu, 'Aufträge „Gewinne eine Schlacht“ und „Besiege Soldaten der Kronen“ – nur für Helden ab Akt 3 (' + Q.text + ')');
 
     // Endlose Lande: drei Kriegs-Biome, Soldaten beider Reiche, angekündigter Beschuss
@@ -426,6 +478,7 @@ const TOOLS = () => {
     const waehle = async sel => { if (!(await ev(() => !!panel.querySelector('[data-act="enter"]') && /Kriegsgebiet/.test(panel.querySelector('.mapinfo').textContent)))) await tap(sel); };   // ein einziger Weg: der Ort ist schon gewählt
     await waehle(node);
     ok(await ev(() => /Kriegsgebiet/.test(panel.querySelector('.mapinfo').textContent) && /Zwei Heere/.test(panel.querySelector('.mapinfo').textContent)), 'Karte: Info zum Ort erklärt das Kriegsgebiet');
+    await ev(() => { window.krFront = () => ['aurelien', 'karth']; });   // getippter Ablauf: Front Aurelien gegen Karth
     await tap('[data-act="enter"]');
     // Prolog beim ersten Mal: sieben Szenen mit Sprechern
     const pro = []; for (let i = 0; i < 9; i++) { const t = await ev(() => panel.querySelector('.dlg') ? { b: (panel.querySelector('.dlg b') || {}).textContent || '', p: panel.querySelector('.dlg p').textContent, img: !!panel.querySelector('.dlg img'), h: (panel.querySelector('h2') || {}).textContent || '' } : null); if (!t) break; pro.push(t); if (i === 2) await shot('2-prolog'); await tap('[data-act="dlgnext"]'); }
@@ -468,8 +521,13 @@ const TOOLS = () => {
     ok(await ev(() => !!panel.querySelector('[data-act="kr_chronik"]') && /Chronik der Kronen/.test(panel.querySelector('[data-act="kr_chronik"]').textContent)), 'Karte → Mehr: Eintrag „Chronik der Kronen“');
     const lm = await layout(); ok(!lm.length, '„Mehr“ passt mit dem neuen Eintrag aufs Bild' + (lm.length ? ': ' + lm.join('; ') : ''));
     await tap('[data-act="kr_chronik"]');
-    const chr = await ev(() => ({ t: /CHRONIK DER KRONEN/.test(panel.textContent), reiche: panel.querySelectorAll('.krrow').length, fern: panel.querySelectorAll('.krrow.aus').length, lesen: !!panel.querySelector('[data-act="kr_prolog"]'), ruf: /SÖLDNER · 25/.test(panel.textContent) }));
-    ok(chr.t && chr.reiche === 5 && chr.fern === 3 && chr.lesen && chr.ruf, 'Chronik: fünf Reiche (drei noch nicht an der Front), Kriegsruf und Rang, Prolog zum Nachlesen');
+    const chr = await ev(() => ({ t: /CHRONIK DER KRONEN/.test(panel.textContent), reiche: panel.querySelectorAll('.krrow:not(.krakt)').length, fern: panel.querySelectorAll('.krrow.aus').length, akt: panel.querySelectorAll('.krakt').length, akt1: !!panel.querySelector('[data-act="kr_akt"][data-id="aurelien:0"]'), lesen: !!panel.querySelector('[data-act="kr_prolog"]'), ruf: /SÖLDNER · 25/.test(panel.textContent) }));
+    ok(chr.t && chr.reiche === 5 && chr.fern === 1 && chr.akt === 4 && chr.akt1 && chr.lesen && chr.ruf, 'Chronik: fünf Reiche (das Schattenkonzil noch nicht an der Front), Akt 1 je Reich (erstes Kapitel Aureliens offen), Kriegsruf und Rang, Prolog zum Nachlesen');
+    await tap('[data-act="kr_akt"][data-id="aurelien:0"]');
+    const ak = await ev(() => ({ dlg: !!panel.querySelector('.dlg'), h: (panel.querySelector('h2') || {}).textContent || '', b: (panel.querySelector('.dlg b') || {}).textContent || '' }));
+    ok(ak.dlg && /Akt 1/.test(ak.h) && /Isaure/.test(ak.b), 'Akt 1 · Aurelien, Kapitel 1 lässt sich lesen (Marschallin Isaure spricht)');
+    await shot('5b-akt1'); await tap('[data-act="dlgnext"]'); await tap('[data-act="dlgnext"]');
+    ok(await ev(() => /CHRONIK DER KRONEN/.test(panel.textContent) && krM().ch.a1_aurelien_0 === 1), 'Nach dem Kapitel zurück in der Chronik, als gelesen gemerkt');
     const lc = await layout(); ok(!lc.length, 'Chronik passt aufs Bild' + (lc.length ? ': ' + lc.join('; ') : ''));
     await shot('9-chronik');
     await ev(() => { panel.scrollTop = 9999; }); await page.waitForTimeout(150); await shot('9b-chronik-unten');

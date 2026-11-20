@@ -1,6 +1,6 @@
 'use strict';
 /* =========================================================
-   KLINGENHORT – Krieg der Kronen, Kapitel 1 „Die Front“ (6.6). Bauplan: docs/KRIEG-DER-KRONEN.md
+   KLINGENHORT – Krieg der Kronen, Kapitel 1 „Die Front“ (6.6) und Kapitel 2 „Fünf Kronen“ (6.8). Bauplan: docs/KRIEG-DER-KRONEN.md
    Hängt sich über HOOK/ON (js/core.js) ein.
    - Kriegsgebiet: Raumart 'krieg' auf der Weltkarte ab Akt 3 (kriegMap) und drei Kriegs-Biome in den Endlosen Landen (KR_LANDE, js/lande.js).
    - Zwei Heere kämpfen wirklich: Soldaten sind Gegner mit KI 'krieg' (EN.kr_*, js/data.js) – feindliche stehen in enemies (alle Waffen und
@@ -11,9 +11,12 @@
    - Deckung (krCover): hinter Schildwall und Wagen und im Graben – Pfeile treffen nicht, Katapult und Meteor nur halb.
    - Kriegsmaschinen am Feldrand: feindliche lassen sich zerstören oder erobern (daneben stehen, kein Feind in der Nähe).
    - Vier Schlacht-Ziele im Wechsel (KR_ZIELE): Linie halten, Maschine nehmen, Bannerträger schützen, Hauptmann besiegen. Moral 0 = verloren.
-   - Reiche als Daten (REICHE): alle fünf aus dem Bauplan, drei davon noch nicht an der Front (aktiv: 0) – Kapitel 2 ergänzt Einheiten und Ränge.
+   - Reiche als Daten (REICHE): alle fünf aus dem Bauplan; vier stehen an der Front (6.8: Nordmark und Sylvara dazu), das Schattenkonzil noch nicht.
+   - Fronten (6.8): jedes Kriegsgebiet ist eine Front zwischen zwei Reichen (KR_FRONT, krFront) – du wählst eine der beiden Seiten. Wer gegen ein Reich
+     gewinnt, verliert dort KR_VERRAT Kriegsruf. Ränge bringen Vorteile (KR_VORTEIL), die Chronik hat Akt 1 je Reich (KR_AKT1, Kapitel nach Siegen).
+   - Balliste (6.8): Bolzen entlang einer angekündigten Linie (Beschuss-Art 'bolzen', wie die Sturmbahn ohne Läufer).
    Spielstand: SAVE.meta.krieg = { v, r: { Reich: { ruf (Kriegsruf), mk (Marken), sg (Siege), nl (Niederlagen) } }, n: Schlachten begonnen, sg: Siege,
-     pro: Prolog gesehen, seite: zuletzt gewählt, kasse: { w: Woche, b: { 'reich:id': gekauft } }, ch: {} (Chronik, spätere Kapitel) }
+     pro: Prolog gesehen, seite: zuletzt gewählt, kasse: { w: Woche, b: { 'reich:id': gekauft } }, ch: { 'a1_<reich>_<i>': 1 = Kapitel gelesen } }
    Karte: P.map.kr = 1 (Kriegsgebiete eingetragen), Knoten t: 'krieg'. Raum: startRoom('krieg', reihe, { krSeite, krZiel })
    Schnittstelle: REICHE, REICH_ORDER, KR (laufende Schlacht), kriegOffen(), kriegMap(M, saat), kriegEnter(reihe), krShot(art, x, y, o), krCover(x, y),
      krRuf(reich), krRang(reich), krGain(reich, ruf, marken), krEnd(sieg, grund), kriegChronik(von)
@@ -29,8 +32,12 @@ const REICHE = {
   aurelien: { n: _t('Aurelien'), krone: _t('Sonnenkrone'), c: '#ffd24a', c2: '#f4efe0', dk: '#a0701a', aktiv: 1, sp: 'knightf', who: () => _t('Marschallin Isaure'), stil: _t('Ritter und Paladine, Schildwälle, Katapulte'),
     einh: ['kr_a_schild', 'kr_a_ritter', 'kr_a_schuetze', 'kr_a_schild'], hpt: 'kr_a_hauptmann', hptN: _t('Hauptmann Leoric'), hptK: 'Leoric', masch: ['katapult', 'pfeil'], mk: _t('Sonnenmarken'),
     ruft: _t('Halte mit uns die Linie, Söldner. Aurelien vergisst keinen, der unter der Sonne stand.'), lohn: _t('+30 % Gold für den Sieg'), heer: _t('Schildträger, Sonnenritter, Kronschützen – und ein eigenes Katapult') },
-  nordmark: { n: _t('Nordmark'), krone: _t('Eisenkrone'), c: '#6aa0d8', c2: '#c8d0e0', dk: '#2e4a7a', aktiv: 0, sp: 'dwarf', who: () => _t('Jarl Hroald'), stil: _t('Axtkämpfer und Wolfsreiter, Ballisten, Rammböcke'), einh: [], masch: ['ballista'], mk: _t('Eisenmarken') },
-  sylvara: { n: _t('Sylvara'), krone: _t('Dornenkrone'), c: '#6ac24e', c2: '#d8e8a8', dk: '#2a5a26', aktiv: 0, sp: 'elff', who: () => _t('Dornenkönigin Ilvaine'), stil: _t('Waldläufer und Druiden, Pfeilhagel, Dornenranken'), einh: [], masch: ['pfeil'], mk: _t('Dornenmarken') },
+  nordmark: { n: _t('Nordmark'), krone: _t('Eisenkrone'), c: '#6aa0d8', c2: '#c8d0e0', dk: '#2e4a7a', aktiv: 1, sp: 'dwarf', who: () => _t('Jarl Hroald'), stil: _t('Axtkämpfer und Schildmaiden, Ballisten, Katapulte'),
+    einh: ['kr_n_axt', 'kr_n_schild', 'kr_n_jaeger', 'kr_n_axt'], hpt: 'kr_n_hauptmann', hptN: _t('Schildbrecherin Ragna'), hptK: 'Ragna', masch: ['ballista', 'katapult'], mk: _t('Eisenmarken'),
+    ruft: _t('In der Nordmark zählt ein Wort mehr als Gold. Gib uns deins, und wir geben dir unseres.'), lohn: _t('+25 % Kriegsruf für den Sieg'), heer: _t('Axtkämpfer, Schildmaiden, Eisjäger – und eine eigene Balliste') },
+  sylvara: { n: _t('Sylvara'), krone: _t('Dornenkrone'), c: '#6ac24e', c2: '#d8e8a8', dk: '#2a5a26', aktiv: 1, sp: 'elff', who: () => _t('Dornenkönigin Ilvaine'), stil: _t('Waldläufer und Druiden, Pfeilhagel'),
+    einh: ['kr_s_dorn', 'kr_s_laeufer', 'kr_s_druide', 'kr_s_laeufer'], hpt: 'kr_s_hauptmann', hptN: _t('Waldmeisterin Eryn'), hptK: 'Eryn', masch: ['pfeil', 'pfeil'], mk: _t('Dornenmarken'),
+    ruft: _t('Der Wald sieht, wer über seine Wurzeln läuft. Lauf für uns, und er vergisst dich nicht.'), lohn: _t('+2 Bannerstoff für den Sieg'), heer: _t('Dornenwächter, Waldläuferinnen, Druiden – und ein eigener Pfeilwerfer') },
   karth: { n: _t('Karth'), krone: _t('Aschekrone'), c: '#ff5a3a', c2: '#2a2028', dk: '#7a1e18', aktiv: 1, sp: 'wizard', who: () => _t('Aschefürst Varn'), stil: _t('Feuermagier und Söldner, Meteore'),
     einh: ['kr_k_soeldner', 'kr_k_klinge', 'kr_k_pyro', 'kr_k_soeldner'], hpt: 'kr_k_hauptmann', hptN: _t('Hauptfrau Sareth'), hptK: 'Sareth', masch: ['magie', 'pfeil'], mk: _t('Aschemarken'),
     ruft: _t('Karth fragt nicht, wem du gestern gedient hast. Nur, ob du heute triffst.'), lohn: _t('+2 Kriegseisen für den Sieg'), heer: _t('Aschesöldner, Brandklingen, Flammenrufer – und ein eigener Glutwerfer') },
@@ -38,13 +45,22 @@ const REICHE = {
 };
 const REICH_ORDER = ['aurelien', 'nordmark', 'sylvara', 'karth', 'konzil'];
 const KR_RAENGE = [[0, _t('Söldner')], [150, _t('Hauptmann')], [600, _t('Marschall')], [1500, _t('Kronfeldherr')]];
+// Vorteile der Ränge (gelten zusammen ab dem Rang, beim Reich, für das du kämpfst)
+const KR_VORTEIL = [null, () => _t('+10 % Gold und Kriegsruf für jeden Sieg'), () => _t('Deine Soldaten haben 20 % mehr Leben'), () => _t('Deine Kriegsmaschine feuert öfter')];
+const KR_VERRAT = 5;   // so viel Kriegsruf verlierst du bei dem Reich, gegen das du gewinnst
 for (const k of REICH_ORDER) { REICHE[k].key = k; REICHE[k].raenge = KR_RAENGE; }
 const KR_AKTIV = REICH_ORDER.filter(k => REICHE[k].aktiv);
-const krGegner = s => KR_AKTIV.find(k => k !== s);
+// Fronten: jedes Kriegsgebiet steht zwischen zwei Reichen · Erzfeind: wenn keine Front vorgegeben ist
+const KR_FRONT = [['aurelien', 'karth'], ['nordmark', 'sylvara'], ['aurelien', 'nordmark'], ['karth', 'sylvara'], ['aurelien', 'sylvara'], ['nordmark', 'karth']];
+const KR_RIVAL = { aurelien: 'karth', karth: 'aurelien', nordmark: 'sylvara', sylvara: 'nordmark' };
+const krGegner = s => KR_RIVAL[s] || KR_AKTIV.find(k => k !== s);
+// Front des Kriegsgebiets in Reihe row (fest je Held, Akt und Reihe)
+function krFront(row) { return KR_FRONT[((P ? P.act : 3) * 2 + (row >= 3 ? 1 : 0) + (P ? Math.floor(P.created / 1000) % 7 : 0)) % KR_FRONT.length]; }
 const KR_MASCH = {
   katapult: { n: _t('Katapult'), d: _t('Schleudert Steine: großer Kreis, Krater, wirft dich zurück.'), cd: [6.5, 9] },
   pfeil: { n: _t('Pfeilwerfer'), d: _t('Pfeilhagel: viele kleine Schatten in einer Fläche. Deckung hält ihn ganz auf.'), cd: [5, 7.5] },
-  magie: { n: _t('Glutwerfer'), d: _t('Magiehagel: Meteore, danach brennt der Boden ein paar Sekunden.'), cd: [6.5, 9] }
+  magie: { n: _t('Glutwerfer'), d: _t('Magiehagel: Meteore, danach brennt der Boden ein paar Sekunden.'), cd: [6.5, 9] },
+  ballista: { n: _t('Balliste'), d: _t('Schießt schwere Bolzen entlang einer Linie am Boden. Raus aus dem Streifen!'), cd: [5.5, 8] }
 };
 const KR_ZIEL = {
   linie: { n: _t('Linie halten'), d: _t('Halte 70 Sekunden durch. Feinde, die durchbrechen, drücken die Moral.') },
@@ -57,12 +73,15 @@ const KR_LANDE = { kr_schildgraben: ['pfeil', 'pfeil', 'katapult'], kr_brandmark
 // Kriegskasse: Tausch gegen Marken des Reichs und Kriegsbeute, je Woche begrenzt
 const KR_KASSE = [
   { id: 'gold', mk: 3, max: 3, e: () => ({ t: 'gold', n: 150 + (P ? P.lv : 1) * 40 }) },
-  { id: 'stein', mk: 5, m: { kriegseisen: 4 }, max: 2, e: r => ({ t: 'gem', k: (r === 'karth' ? 'rubin' : 'topas') + ':' + (P && P.lv >= 35 ? 3 : P && P.lv >= 15 ? 2 : 1), n: 1 }) },
+  { id: 'stein', mk: 5, m: { kriegseisen: 4 }, max: 2, e: r => ({ t: 'gem', k: ({ karth: 'rubin', nordmark: 'saphir', sylvara: 'smaragd' }[r] || 'topas') + ':' + (P && P.lv >= 35 ? 3 : P && P.lv >= 15 ? 2 : 1), n: 1 }) },
   { id: 'glueck', mk: 8, m: { bannerstoff: 3 }, max: 2, e: () => ({ t: 'fate', n: 2 }) }
 ];
 if (typeof LMATV !== 'undefined') { LMATV.kriegseisen = 30; LMATV.bannerstoff = 45; }
 if (typeof MK_MATV !== 'undefined') { MK_MATV.kriegseisen = 35; MK_MATV.bannerstoff = 50; }
-if (typeof EN_EL !== 'undefined') { EN_EL.kr_k_pyro = 'feuer'; EN_EL.kr_k_hauptmann = 'feuer'; }
+if (typeof EN_EL !== 'undefined') { EN_EL.kr_k_pyro = 'feuer'; EN_EL.kr_k_hauptmann = 'feuer'; EN_EL.kr_n_jaeger = 'frost'; EN_EL.kr_n_hauptmann = 'frost'; EN_EL.kr_s_druide = 'gift'; EN_EL.kr_s_hauptmann = 'gift'; }
+// Hauptleute, die aus der Ferne kämpfen · wer Feuer wirft statt Pfeile
+const krFernH = D => D.kr[1] === 'hauptmann' && (D.kr[0] === 'karth' || D.kr[0] === 'sylvara');
+const krFeuer = (k, D) => k.rolle === 'magier' || (k.rolle === 'hauptmann' && D.kr[0] === 'karth');
 
 document.head.insertAdjacentHTML('beforeend', `<style>
 #krhud{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 52px);width:min(250px,calc(100vw / var(--ui) - 150px));min-width:150px;zoom:var(--ui);pointer-events:none;z-index:5;font-family:var(--f-display);text-shadow:1px 1px 0 #000,0 0 3px #000;text-align:center}
@@ -155,6 +174,36 @@ function krProlog() {
   ];
 }
 
+/* ---------- Chronik Akt 1: drei Kapitel je Reich, freigeschaltet durch Siege für dieses Reich (ab) ---------- */
+const KR_WHO = {
+  isaure: () => ({ n: _t('Marschallin Isaure'), sp: 'knightf', c: REICHE.aurelien.c }), varn: () => ({ n: _t('Aschefürst Varn'), sp: 'wizard', c: REICHE.karth.c }),
+  nessa: () => ({ n: _t('Zahlmeisterin Nessa von Karth'), sp: 'wizf', c: REICHE.karth.c }), hroald: () => ({ n: _t('Jarl Hroald'), sp: 'dwarf', c: REICHE.nordmark.c }),
+  ragna: () => ({ n: _t('Schildbrecherin Ragna'), sp: 'dwarff', c: REICHE.nordmark.c }), ilvaine: () => ({ n: _t('Dornenkönigin Ilvaine'), sp: 'elff', c: REICHE.sylvara.c }),
+  eryn: () => ({ n: _t('Waldmeisterin Eryn'), sp: 'elff', c: REICHE.sylvara.c })
+};
+const KR_AKT1 = {
+  aurelien: [
+    { ab: 1, t: () => _t('Einundvierzig Tage'), L: () => [[KR_WHO.isaure(), _t('Einundvierzig Tage. Der Herold hatte recht – du hast uns einen geschenkt. Aurelien zählt solche Tage. Und die, die sie bringen.')], ['erz', _t('Hinter dem Schildgraben liegt das Feldlager der Sonnenkrone: Zelte, Gebete, Verbände. Und zu viele leere Feldbetten.')]] },
+    { ab: 3, t: () => _t('Der wahre Erbe?'), L: () => [[KR_WHO.isaure(), _t('Man sagt, der letzte König hatte keinen Erben. Aurelien sagt etwas anderes. Ich glaube es – meistens. In langen Nächten weniger.')], ['borin', _t('Eine Krone, die beweisen muss, dass sie die richtige ist, {name}, hat meistens schon verloren. Kämpf trotzdem gut. Gold ist Gold.')]] },
+    { ab: 6, t: () => _t('Ein Brief ohne Siegel'), L: () => [['erz', _t('Am Morgen nach dem Sieg liegt ein Brief in Isaures Zelt. Kein Siegel, keine Unterschrift – nur ein Kreis aus violetter Tinte.')], [KR_WHO.isaure(), _t('„Die Sonne wirft den längsten Schatten.“ Mehr steht nicht darin. Wer kommt in mein Zelt, ohne dass meine Wachen ihn sehen? … Behalte das für dich, Söldner.')]] }
+  ],
+  nordmark: [
+    { ab: 1, t: () => _t('Der Schwur am Eis'), L: () => [[KR_WHO.hroald(), _t('Du hast für uns gekämpft, also bist du unser Gast, bis der Schnee taut. Hier oben taut er nie.')], ['erz', _t('Die Eisenkrone ist aus den Ketten des alten Kerkers geschmiedet. Hroald trägt sie, damit niemand vergisst, wer einst darin saß.')]] },
+    { ab: 3, t: () => _t('Ragnas Hammer'), L: () => [[KR_WHO.ragna(), _t('Du schlägst nicht schlecht für einen aus dem Süden. Komm wieder, wenn die Ballisten singen.')], [KR_WHO.hroald(), _t('Sylvara nennt uns Holzfäller. Sollen sie. Wer im Winter friert, fällt Bäume – und wer im Krieg friert, fällt Dornenhecken.')]] },
+    { ab: 6, t: () => _t('Wölfe ohne Spur'), L: () => [['erz', _t('Drei Wolfsreiter kehren nicht von der Grenze zurück. Ihre Spuren enden mitten im Schnee, als hätte die Luft sie verschluckt.')], [KR_WHO.hroald(), _t('Kein Tier und kein Reich, das ich kenne, holt einen Reiter so. Halt die Augen offen, Söldner. Da spielt noch jemand mit.')]] }
+  ],
+  sylvara: [
+    { ab: 1, t: () => _t('Unter den Dornen'), L: () => [[KR_WHO.ilvaine(), _t('Der Wald hat dich gesehen, Söldner. Er sieht alles, was über seine Wurzeln läuft. Heute mochte er, was er sah.')], ['erz', _t('Sylvaras Dornenkrone wächst noch. Jedes Jahr treibt sie einen neuen Trieb – und jedes Jahr sticht sie ihre Trägerin ein wenig tiefer.')]] },
+    { ab: 3, t: () => _t('Die Waldmeisterin'), L: () => [[KR_WHO.eryn(), _t('Die Nordmark schlägt unsere Bäume, Aurelien betet sie an, Karth verbrennt sie. Wir wollen nur, dass sie stehen bleiben.')], ['borin', _t('Klingt vernünftig, {name}. Nur ist im Krieg selten jemand vernünftig, der es sich leisten kann.')]] },
+    { ab: 6, t: () => _t('Das stumme Holz'), L: () => [['erz', _t('Im ältesten Hain ist ein Baum verstummt: keine Vögel, kein Wind in den Blättern. Seine Rinde ist violett geworden.')], [KR_WHO.ilvaine(), _t('Das war kein Feuer und keine Axt. Das ist etwas, das sich versteckt. Wenn du es findest, Söldner – sag es zuerst mir.')]] }
+  ],
+  karth: [
+    { ab: 1, t: () => _t('Eisen statt Ehre'), L: () => [[KR_WHO.nessa(), _t('Pünktlich bezahlt, wie versprochen. Siehst du? Karth lügt nicht. Karth rechnet nur genauer als die anderen.')], [KR_WHO.varn(), _t('Man nennt uns Brandstifter. Gut. Wer die Asche fürchtet, sollte nicht auf ihr bauen.')]] },
+    { ab: 3, t: () => _t('Die Glutschmieden'), L: () => [['erz', _t('Unter Karth brennen die Glutschmieden Tag und Nacht. Aus Asche wird Eisen, aus Eisen werden Meteore.')], [KR_WHO.varn(), _t('Der Thron hat uns hungern lassen, als er noch ganz war. Zerbrochen gefällt er mir besser.')]] },
+    { ab: 6, t: () => _t('Der Gast in Violett'), L: () => [['erz', _t('An Varns Feuer sitzt ein Gast. Niemand hat ihn kommen sehen, seine Maske ist violett, und er trinkt nicht.')], [KR_WHO.varn(), _t('Er bietet mir Aurelien an. Ganz. Für einen Preis, den er nicht nennt. Ich habe abgelehnt – noch. Sag niemandem, dass du ihn gesehen hast.')]] }
+  ]
+};
+
 /* ---------- Seite wählen ---------- */
 function krZielNext() { return KR_ZIELE[krM().n % KR_ZIELE.length]; }
 function kriegEnter(row) {
@@ -164,19 +213,19 @@ function kriegEnter(row) {
 }
 function krWahl(row) {
   setState('menu'); KR.row = row;
-  const z = krZielNext(), Z = KR_ZIEL[z];
+  const z = krZielNext(), Z = KR_ZIEL[z], FR = krFront(row); KR.front = FR;
   const card = s => {
-    const R = REICHE[s], F = REICHE[krGegner(s)], D = krM().r[s];
+    const R = REICHE[s], F = REICHE[FR.find(k => k !== s)], D = krM().r[s], rg = krRang(s);
     return `<div class="krside" style="--c:${R.c}"><div class="hd"><img src="${iconURL(['pa', 'kr_w_' + s])}" alt=""><div><div class="nm">${esc(R.n).toLocaleUpperCase(LOCALE)}</div><div class="kr">${esc(R.krone)} · ${esc(KR_RAENGE[krRang(s)][1])} · ${_t('Kriegsruf {n}', { n: fmt(D.ruf) })}</div></div></div>
-    <p class="q">„${esc(R.ruft)}“</p><p>${esc(R.heer)}</p><p style="color:var(--parch-dim)">${_t('Der Feind schießt mit: {list}', { list: F.masch.map(m => esc(KR_MASCH[m].n)).join(', ') })}</p><p class="lo">${_t('Lohn: {l}', { l: esc(R.lohn) })} · ${esc(R.mk)}</p>
+    <p class="q">„${esc(R.ruft)}“</p><p>${esc(R.heer)}</p><p style="color:var(--parch-dim)">${_t('Der Feind schießt mit: {list}', { list: F.masch.map(m => esc(KR_MASCH[m].n)).join(', ') })}</p><p class="lo">${_t('Lohn: {l}', { l: esc(R.lohn) })} · ${esc(R.mk)}</p>${rg ? `<p class="lo" style="color:${R.c}">${_t('Rang-Vorteil: {v}', { v: KR_VORTEIL.slice(1, rg + 1).map(f => esc(f())).join(' · ') })}</p>` : ''}
     <button class="btn" data-act="kr_seite" data-id="${s}">${_t('Für {reich} kämpfen', { reich: esc(R.n) })}</button></div>`;
   };
   showOverlay(`<div class="head"><h2>${_t('KRIEGSGEBIET')}</h2><div class="hbtns"><button class="btn alt sm" data-act="kr_zurueck">${_t('Zurück')}</button></div></div>
   <div class="krziel"><b>${_t('ZIEL DIESER SCHLACHT')} · ${esc(Z.n).toLocaleUpperCase(LOCALE)}</b>${esc(Z.d)}</div>
-  <p class="sub" style="margin:8px 0 0">${_t('Zwei Heere, eine Front. Du bist Söldner – wähle für diese Schlacht eine Seite.')}</p>
-  <div class="krsides">${KR_AKTIV.map(card).join('')}</div>`, true);
+  <p class="sub" style="margin:8px 0 0">${_t('An dieser Front stehen {a} und {b} gegeneinander. Du bist Söldner – wähle für diese Schlacht eine Seite.', { a: esc(REICHE[FR[0]].n), b: esc(REICHE[FR[1]].n) })} ${_t('Wer gegen ein Reich gewinnt, verliert dort {n} Kriegsruf.', { n: KR_VERRAT })}</p>
+  <div class="krsides">${FR.map(card).join('')}</div>`, true);
 }
-ON.kr_seite = id => { if (!REICHE[id] || !REICHE[id].aktiv) return; krM().seite = id; sfx('spec'); startRoom('krieg', KR.row, { krSeite: id }); };
+ON.kr_seite = id => { if (!REICHE[id] || !REICHE[id].aktiv) return; const FR = KR.front || [id, krGegner(id)]; krM().seite = id; sfx('spec'); startRoom('krieg', KR.row, { krSeite: id, krFeind: FR.includes(id) ? FR.find(k => k !== id) : krGegner(id) }); };
 ON.kr_zurueck = () => { undoRoomEntry(); saveChar(); openMap(); };
 
 /* ---------- Laufende Schlacht ---------- */
@@ -218,6 +267,12 @@ function krMaschSpr(art, r, f) {
       b.rect(4, 20, 24, 3, WOOD[1]); b.rect(4, 20, 24, 1, WOOD[2]); b.disc(8, 24, 3, '#3a3028'); b.disc(24, 24, 3, '#3a3028'); b.rect(6, 8, 20, 12, WOOD[0]); b.rect(6, 8, 20, 1, WOOD[2]);
       for (let y = 0; y < 3; y++) for (let x = 0; x < 6; x++) { b.set(8 + x * 3, 10 + y * 3, f ? '#2a2028' : '#c8c0b0'); if (!f) b.set(8 + x * 3, 11 + y * 3, '#8a5a32'); }
       b.rect(14, 3, 1, 5, WOOD[1]); b.rect(15, 3, 4, 3, R.c); b.rect(15, 3, 4, 1, R.c2);
+    } else if (art === 'ballista') {
+      b.rect(4, 20, 24, 3, WOOD[1]); b.rect(4, 20, 24, 1, WOOD[2]); b.disc(8, 24, 3, '#3a3028'); b.disc(24, 24, 3, '#3a3028'); b.disc(8, 24, 1, '#8a7a5a'); b.disc(24, 24, 1, '#8a7a5a');
+      b.rect(14, 11, 4, 9, WOOD[0]); b.rect(3, 9, 26, 3, WOOD[1]); b.rect(3, 9, 26, 1, WOOD[2]);
+      b.line(9, 10, 5, f ? 3 : 4, '#6a707c'); b.line(23, 10, 27, f ? 3 : 4, '#6a707c'); b.line(5, f ? 3 : 4, f ? 16 : 6, 9, '#c8c0b0'); b.line(27, f ? 3 : 4, f ? 16 : 26, 9, '#c8c0b0');
+      if (!f) { b.rect(6, 8, 22, 1, '#c8d0e0'); b.rect(27, 7, 2, 3, '#6a707c'); }
+      b.rect(14, 14, 4, 4, R.c); b.rect(14, 14, 4, 1, R.c2);
     } else {
       b.line(8, 25, 14, 12, '#3a3440'); b.line(24, 25, 18, 12, '#3a3440'); b.line(16, 26, 16, 14, '#4a4450'); b.rect(6, 25, 5, 2, '#2a2630'); b.rect(21, 25, 5, 2, '#2a2630');
       b.disc(16, 9, 6.4, '#2a2028'); b.disc(16, 9, 5, f ? '#ffe27a' : '#e8401e'); b.disc(16, 9, 3, f ? '#ffffff' : '#ff9a2a'); b.set(14, 7, '#ffe27a'); b.rect(9, 14, 14, 2, '#4a4450'); b.rect(9, 14, 14, 1, R.c);
@@ -286,9 +341,9 @@ function krLeer() { }
 function krStart() {
   krReset();
   const side = G.extra && REICHE[G.extra.krSeite] && REICHE[G.extra.krSeite].aktiv ? G.extra.krSeite : krM().seite || 'aurelien', M = krM();
-  KR.on = true; KR.side = side; KR.foe = krGegner(side); KR.ziel = G.extra && KR_ZIEL[G.extra.krZiel] ? G.extra.krZiel : krZielNext(); KR.moral = 60; KR.log = [];
+  const fe = G.extra && G.extra.krFeind; KR.on = true; KR.side = side; KR.foe = fe && fe !== side && REICHE[fe] && REICHE[fe].aktiv ? fe : krGegner(side); KR.ziel = G.extra && KR_ZIEL[G.extra.krZiel] ? G.extra.krZiel : krZielNext(); KR.moral = 60; KR.log = [];
   if (!(G.extra && G.extra.krProbe)) { M.n++; M.seite = side; }
-  if (G.extra) { G.extra.krSeite = side; G.extra.krZiel = KR.ziel; }   // „Raum wiederholen“ nach dem Tod: gleiche Seite, gleiches Ziel
+  if (G.extra) { G.extra.krSeite = side; G.extra.krFeind = KR.foe; G.extra.krZiel = KR.ziel; }   // „Raum wiederholen“ nach dem Tod: gleiche Seite, gleiches Ziel
   krFeld();
   const p0 = krPos(.16, .5); P.x = p0.x; P.y = p0.y; cam.x = clamp(P.x - VW / 2, 0, Math.max(0, AW - VW)); cam.y = clamp(P.y - VH / 2, 0, Math.max(0, AH - VH));
   // Maschinen: eigene am eigenen Ende, zwei feindliche am anderen (die erste ist das Wahrzeichen)
@@ -318,7 +373,7 @@ function krAlly(type, x, y, o) {
   if (krCount() >= KR_CAP) return null;
   const D = EN[type], S = scaleOf(stageNum());
   const u = { t: type, def: D, sp: D.sp, ai: 'krieg', ally: true, x, y, z: 0, kbx: 0, kby: 0, r: D.r, sc: D.sc || 1, mass: D.mass || 1, st: 'move', stT: 0, cd: rnd(.3, 1), turn: 1, face: 1, phase: 0, squash: 0, flash: 0, stun: 0, freeze: 0, seed: rnd(0, 9), spd: D.spd * rnd(.9, 1.1), reach: D.reach || 14, alpha: null, lean: 0, aim: 0, windDur: .5, moving: false, tint: null, burn: 0, poison: 0, chill: 0, affixes: [], under: 0, fade: 0, strip: krStrip(D), dead: false };
-  u.hp = u.maxHp = Math.round(D.hp * S.hm * 1.1); u.atk = D.atk * S.am;
+  u.hp = u.maxHp = Math.round(D.hp * S.hm * 1.1 * (krRang(KR.side) >= 2 ? 1.2 : 1)); u.atk = D.atk * S.am;
   krInit(u, KR.side, (o && o.rolle) || D.kr[1]); u.di = { y: 0, draw: () => krDrawUnit(u) };
   KR.al.push(u); return u;
 }
@@ -381,7 +436,7 @@ function krAI(u, dt) {
       else {
         const dx = t.x - u.x, dy = t.y - u.y, d = Math.hypot(dx, dy) || 1, tr = t === P ? P.r : t.r * t.sc; k.fx = dx; u.aim = Math.atan2(dy, dx);
         if (k.rolle === 'hauptmann' && !u.ally && (k.mt -= dt) <= 0 && t === P && d < 190) { krSonderStart(u); }
-        else if (k.rolle === 'fern' || k.rolle === 'magier' || (k.rolle === 'hauptmann' && D.kr[0] === 'karth')) {
+        else if (k.rolle === 'fern' || k.rolle === 'magier' || krFernH(D)) {
           if (d < 55) { mvx = -dx / d * spd; mvy = -dy / d * spd; } else if (d > 128) { mvx = dx / d * spd; mvy = dy / d * spd; } else { mvx = -dy / d * spd * .3 * k.str; mvy = dx / d * spd * .3 * k.str; }
           if (u.cd <= 0 && d < 150) { u.st = t === P ? 'wind' : 'kwind'; u.stT = u.windDur = D.wind || .6; k.lock = t; }
         } else {
@@ -401,8 +456,8 @@ function krAI(u, dt) {
 function krStrike(u, t) {
   if (!t || krGone(t)) return;
   const k = u.kr, dx = t.x - u.x, dy = t.y - u.y, d = Math.hypot(dx, dy) || 1, vis = krVis(u.x, u.y);
-  if (k.rolle === 'fern' || k.rolle === 'magier' || (k.rolle === 'hauptmann' && u.def.kr[0] === 'karth')) {
-    const fire = k.rolle !== 'fern', sp = fire ? 135 : 175;
+  if (k.rolle === 'fern' || k.rolle === 'magier' || krFernH(u.def)) {
+    const fire = krFeuer(k, u.def), sp = fire ? 135 : 175;
     if (t === P) {
       const a = Math.atan2(P.y + P.vy * .2 - u.y, P.x + P.vx * .2 - u.x);
       if (fire) projs.push({ k: 'kfeuer', fxn: 'fireball', x: u.x + Math.cos(a) * 8, y: u.y + Math.sin(a) * 6, h: 11 * u.sc, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 2.2, max: 2.2, dmg: u.atk, from: 'e', r: 4, src: u }); else enemyArrow(u, a, sp);
@@ -416,9 +471,11 @@ function krStrike(u, t) {
 
 /* ---------- Hauptleute: Sonderangriffe, immer mit Ankündigung ---------- */
 function krSonderStart(u) {
-  const k = u.kr, A = u.def.kr[0] === 'aurelien'; k.n = (k.n || 0) + 1; k.mt = u.hp < u.maxHp * .5 ? 3.6 : 4.8;
+  const k = u.kr, r = u.def.kr[0], A = r === 'aurelien', N = r === 'nordmark'; k.n = (k.n || 0) + 1; k.mt = u.hp < u.maxHp * .5 ? 3.6 : 4.8;
   const dx = P.x - u.x, dy = P.y - u.y, a = Math.atan2(dy, dx);
-  if (A && k.n % 2) { const s = krShot('bahn', u.x, u.y, { team: k.team, ang: a, src: u, t: .9 }); if (!s) return; k.sp = { art: 'bahn', t: s.max, s, bis: T + s.max + .25 }; u.aim = a; krRuf2(u, _t('Schildstoß!')); }
+  if ((A || N) && k.n % 2) { const s = krShot('bahn', u.x, u.y, { team: k.team, ang: a, src: u, t: .9 }); if (!s) return; k.sp = { art: 'bahn', t: s.max, s, bis: T + s.max + .25 }; u.aim = a; krRuf2(u, A ? _t('Schildstoß!') : _t('Für die Eisenkrone!')); }
+  else if (N) { krShot('ballista', P.x, P.y, { team: k.team, sx: u.x, sy: u.y, src: u }); k.sp = { art: 'ruf', t: .7 }; krRuf2(u, _t('Balliste – zielt!')); }
+  else if (r === 'sylvara') { if (k.n % 2) { krShot('pfeil', P.x, P.y, { team: k.team }); krRuf2(u, _t('Dornenregen!')); } else { krShot('ring', u.x, u.y, { team: k.team, src: u }); krRuf2(u, _t('Dornen!')); } k.sp = { art: 'ruf', t: k.n % 2 ? .7 : 1.1 }; }
   else if (A) { krShot('pfeil', P.x, P.y, { team: k.team }); k.sp = { art: 'ruf', t: .7 }; for (const o of KR.list) if (!o.dead && o.kr.team === k.team && Math.hypot(o.x - u.x, o.y - u.y) < 80) { o.hp = Math.min(o.maxHp, o.hp + o.maxHp * .15); } rings.push({ x: u.x, y: u.y, r: 4, max: 80, life: .5, max2: .5, col: '#ffe08a' }); krRuf2(u, _t('Schützen – Feuer!')); }
   else if (k.n % 2) { krShot('ring', u.x, u.y, { team: k.team, src: u }); k.sp = { art: 'ring', t: 1.1 }; krRuf2(u, _t('Brennt!')); }
   else { krShot('magie', P.x, P.y, { team: k.team, n: u.hp < u.maxHp * .5 ? 4 : 3 }); k.sp = { art: 'ruf', t: .7 }; krRuf2(u, _t('Asche zu Asche!')); }
@@ -467,20 +524,20 @@ function krMaschUpd(dt) {
     }
     if (KR.aus) continue;
     m.cd -= dt; if (m.cd > 0) continue;
-    const C = KR_MASCH[m.art].cd; m.cd = rnd(C[0], C[1]) * (eig ? 1.25 : 1); m.an = 1;
+    const C = KR_MASCH[m.art].cd; m.cd = rnd(C[0], C[1]) * (eig ? (krRang(KR.side) >= 3 ? .95 : 1.25) : 1); m.an = 1;
     let x, y, aufP = false;
     if (eig) { const fs = KR.list.filter(o => !o.ally && !o.dead && !o.mach); const t = fs.length ? pick(fs) : null, p = t || krPos(rnd(.6, .85), rnd(.15, .85)); x = p.x + rnd(-10, 10); y = p.y + rnd(-8, 8); }
     else if (ziel < 2 && state === 'play' && Math.random() < .55) { x = P.x + P.vx * .3 + rnd(-8, 8); y = P.y + P.vy * .3 + rnd(-6, 6); aufP = true; ziel++; }
     else { const t = KR.al.length && Math.random() < .6 ? pick(KR.al) : krPos(rnd(.12, .55), rnd(.1, .9)); x = t.x + rnd(-12, 12); y = t.y + rnd(-10, 10); }
     const s = krShot(m.art, x, y, { team: m.team, from: m }); if (s && aufP) s.aufP = 1;
-    if (krVis(m.x, m.y, 60)) sfx(m.art === 'magie' ? 'cast' : m.art === 'pfeil' ? 'bow' : 'wood');
+    if (krVis(m.x, m.y, 60)) sfx(m.art === 'magie' ? 'cast' : m.art === 'pfeil' || m.art === 'ballista' ? 'bow' : 'wood');
   }
 }
 
 /* ---------- Beschuss: ankündigen, einschlagen ---------- */
 // Trifft nur, wer bei Einschlag in der gezeichneten Fläche steht (Ellipse wie am Boden, Bahn als Streifen)
 function krIn(s, x, y) {
-  if (s.k === 'bahn') { const c = Math.cos(s.ang), n = Math.sin(s.ang), dx = x - s.x, dy = y - s.y, l = dx * c + dy * n, q = -dx * n + dy * c; return l > -4 && l < s.len + 6 && Math.abs(q) < s.w / 2 + 2; }
+  if (s.k === 'bahn' || s.k === 'bolzen') { const c = Math.cos(s.ang), n = Math.sin(s.ang), dx = x - s.x, dy = y - s.y, l = dx * c + dy * n, q = -dx * n + dy * c; return l > -4 && l < s.len + 6 && Math.abs(q) < s.w / 2 + 2; }
   const dx = (x - s.x) / s.r, dy = (y - s.y) / (s.r * .6); return dx * dx + dy * dy < 1;
 }
 function krShot(art, x, y, o) {
@@ -493,6 +550,8 @@ function krShot(art, x, y, o) {
   if (art === 'magie') { let f = null; const n = o.n || 3; for (let i = 0; i < n; i++) { const a = rnd(0, 6.283), d = i ? rnd(24, 60) : 0, s = mkS('meteor', x + Math.cos(a) * d, y + Math.sin(a) * d * .7, 21, 1.2 + i * .3, 1, { from: o.from }); f = f || s; } return f; }
   if (art === 'ring') return mkS('ring', x, y, o.r || 46, o.t || 1, 1.2, { src: o.src });
   if (art === 'bahn') return mkS('bahn', x, y, 0, o.t || .9, 1.3, { ang: o.ang || 0, len: o.len || 150, w: 14, src: o.src });
+  // Balliste: Bolzen von der Maschine (oder sx/sy) bis über das Ziel hinaus, angekündigt als Streifen am Boden
+  if (art === 'ballista') { const sx = o.sx != null ? o.sx : o.from ? o.from.x : x - 120, sy = o.sy != null ? o.sy : o.from ? o.from.y : y, a = Math.atan2(y - sy, x - sx), len = clamp(Math.hypot(x - sx, y - sy) + 50, 60, 260); return mkS('bolzen', sx + Math.cos(a) * 10, sy + Math.sin(a) * 10, 0, 1.1, 1.2, { ang: a, len, w: 12, from: o.from, src: o.src }); }
   return null;
 }
 function krLog(k, warn, cov) { KR.log.push({ k, warn, cov, t: T }); if (KR.log.length > 60) KR.log.shift(); }
@@ -515,6 +574,7 @@ function krImpact(s) {
   // Soldaten der anderen Seite (Lande: alle)
   if (s.k !== 'bahn') for (const u of KR.list) if (!u.dead && u.kr.team !== s.team && !u.mach && krIn(s, u.x, u.y)) { const n = Math.hypot(u.x - x, u.y - y) || 1; krDmg(u, u.maxHp * (s.k === 'katapult' ? .5 : s.k === 'pfeil' ? .22 : .34) * (u.ally && krCover(u.x, u.y) ? .5 : 1), (u.x - x) / n, (u.y - y) / n); }
   if (s.k === 'bahn') return;
+  if (s.k === 'bolzen') { if (vis) { sfx('hit'); for (let i = 0; i < 6; i++) if (Math.random() < q) { const l = rnd(0, s.len); dust(x + Math.cos(s.ang) * l, y + Math.sin(s.ang) * l, 1); } } if (nah < 60) shake(3); return; }
   // Wucht: je näher, desto stärker (Wackeln und Blitzen achten auf „Ruhiges Bild“)
   const w = nah < 60 ? 1 : nah < 150 ? .55 : .25;
   if (s.k === 'katapult') {
@@ -610,11 +670,16 @@ function krEnd(win, grund) {
   const M = krM(), R = M.r[KR.side], S = REICHE[KR.side], st = G.stage || stageNum(), ruf0 = R.ruf, rang0 = krRang(KR.side);
   if (win) { for (const e of enemies) if (e.kr && !e.dead) e.kr.flucht = 1; } else for (const u of KR.al) u.kr.flucht = 1;   // die Verlierer räumen das Feld
   if (win) {
-    const gold = Math.round((12 + st * 9) * 2.2 * (1 + P.st.gold) * (KR.side === 'aurelien' ? 1.3 : 1)), eisen = 2 + ri(0, 2) + (KR.side === 'karth' ? 2 : 0), stoff = 1 + ri(0, 1), mk = 3 + KR.caps, ruf = 25 + KR.caps * 5 + (KR.moral >= 80 ? 5 : 0);
+    // Lohn je Reich: Aurelien Gold, Karth Kriegseisen, Nordmark Kriegsruf, Sylvara Bannerstoff · ab Hauptmann +10 % Gold und Kriegsruf
+    const rv = rang0 >= 1 ? 1.1 : 1, gold = Math.round((12 + st * 9) * 2.2 * (1 + P.st.gold) * (KR.side === 'aurelien' ? 1.3 : 1) * rv), eisen = 2 + ri(0, 2) + (KR.side === 'karth' ? 2 : 0), stoff = 1 + ri(0, 1) + (KR.side === 'sylvara' ? 2 : 0), mk = 3 + KR.caps,
+      ruf = Math.round((25 + KR.caps * 5 + (KR.moral >= 80 ? 5 : 0)) * (KR.side === 'nordmark' ? 1.25 : 1) * rv);
     P.gold += gold; stat('goldTotal', gold); gainMat('kriegseisen', eisen); gainMat('bannerstoff', stoff); krGain(KR.side, ruf, mk);
+    // Wer gegen ein Reich gewinnt, verliert dort etwas Kriegsruf
+    const FD = M.r[KR.foe], verrat = FD ? Math.min(FD.ruf, KR_VERRAT) : 0; if (FD) FD.ruf -= verrat;
     R.sg++; M.sg++; stat('krWin'); stat('krW_' + KR.side); P.stats.rooms++; SAVE.meta.hide.rooms++;
+    const ak = (KR_AKT1[KR.side] || []).findIndex(c => c.ab === R.sg);
     dropLoot(P.x + rnd(-14, 14), P.y + 10, 1); if (KR.ziel === 'hauptmann' || KR.caps) dropLoot(P.x + rnd(-14, 14), P.y + 14, 2);
-    KR.lohn = { win: 1, got: [{ t: 'gold', n: gold }, { t: 'mat', k: 'kriegseisen', n: eisen }, { t: 'mat', k: 'bannerstoff', n: stoff }], mk, ruf, ruf0, rang0 };
+    KR.lohn = { win: 1, got: [{ t: 'gold', n: gold }, { t: 'mat', k: 'kriegseisen', n: eisen }, { t: 'mat', k: 'bannerstoff', n: stoff }], mk, ruf, ruf0, rang0, verrat, akt: ak >= 0 ? ak : -1 };
     banner(_t('SIEG'), _t('{reich} behauptet das Feld', { reich: S.n })); sfx('clear'); slowmo = .5; markNodeDone();
   } else {
     krGain(KR.side, 5, 0); R.nl++;
@@ -633,13 +698,20 @@ function krResult() {
   setState('menu'); showHud(false); $('krhud').hidden = true; KRH.on = false;
   const zeit = Math.floor(KR.t / 60) + ':' + String(Math.floor(KR.t % 60)).padStart(2, '0'), auf = krRang(KR.side) > L.rang0;
   const kopf = `<div class="hd" style="display:flex;gap:10px;align-items:center;justify-content:center;margin-bottom:6px"><img src="${iconURL(['pa', 'kr_w_' + KR.side])}" alt="" style="width:40px;height:40px;image-rendering:pixelated"><h2 style="margin:0;color:${L.win ? S.c : 'var(--blood)'}">${L.win ? _t('SIEG FÜR {reich}', { reich: esc(S.n).toLocaleUpperCase(LOCALE) }) : _t('DIE SCHLACHT IST VERLOREN')}</h2></div>`;
-  const ruf = `<div class="krlohn"><div class="st" style="font-size:17px">${_t('Kriegsruf bei {reich}: +{n}', { reich: esc(S.n), n: L.ruf })}${L.mk ? ' · ' + _t('+{n} {marken}', { n: L.mk, marken: esc(S.mk) }) : ''}</div>${krRufBar(KR.side, L.ruf0)}${auf ? `<p class="sub" style="color:${S.c};margin:6px 0 0">${_t('Neuer Rang: {rang}', { rang: esc(KR_RAENGE[krRang(KR.side)][1]) })}</p>` : ''}</div>`;
+  const rgN = krRang(KR.side), ak = L.akt >= 0 ? KR_AKT1[KR.side][L.akt] : null;
+  const ruf = `<div class="krlohn"><div class="st" style="font-size:17px">${_t('Kriegsruf bei {reich}: +{n}', { reich: esc(S.n), n: L.ruf })}${L.mk ? ' · ' + _t('+{n} {marken}', { n: L.mk, marken: esc(S.mk) }) : ''}</div>${krRufBar(KR.side, L.ruf0)}${auf ? `<p class="sub" style="color:${S.c};margin:6px 0 0">${_t('Neuer Rang: {rang}', { rang: esc(KR_RAENGE[rgN][1]) })}${KR_VORTEIL[rgN] ? ' · ' + esc(KR_VORTEIL[rgN]()) : ''}</p>` : ''}${L.verrat ? `<p class="sub" style="margin:4px 0 0">${_t('Kriegsruf bei {reich}: −{n}', { reich: esc(F.n), n: L.verrat })}</p>` : ''}</div>`
+    + (ak ? `<div class="krziel krlohn" style="box-shadow:inset 3px 0 0 ${S.c}"><b>${_t('NEUES KAPITEL IN DER CHRONIK')}</b>${esc(ak.t())}<div class="krks"><button class="btn" data-act="kr_akt" data-id="${KR.side}:${L.akt}:res">${_t('Jetzt lesen')}</button></div></div>` : '');
   if (L.win) showOverlay(`<div class="center">${kopf}<p class="sub">${_t('{ziel} · {zeit} min · {n} Feinde gefallen', { ziel: esc(KR_ZIEL[KR.ziel].n), zeit, n: KR.gef })}${KR.caps ? ' · ' + (KR.caps === 1 ? _t('1 Maschine erobert') : _t('{n} Maschinen erobert', { n: KR.caps })) : ''}</p>
     <h3>${_t('KRIEGSBEUTE')}</h3><div class="krlohn">${L.got.map((e, i) => rwRow(e, i)).join('')}</div>${ruf}
     <div class="menu foot"><button class="btn" data-act="kr_weiter">${_t('Weiter')}</button></div></div>`);
   else showOverlay(`<div class="center">${kopf}<p class="sub">${KR.grund === 'banner' ? _t('Der Bannerträger ist gefallen – {reich} nimmt das Feld.', { reich: esc(F.n) }) : _t('Die Moral deines Heeres ist gebrochen – {reich} nimmt das Feld.', { reich: esc(F.n) })} ${_t('Für deinen Einsatz gibt es trotzdem etwas Kriegsruf.')}</p>${ruf}
     <div class="menu foot"><button class="btn" data-act="kr_nochmal">${_t('Schlacht wiederholen')}</button><button class="btn alt" data-act="kr_rueckzug">${_t('Rückzug zur Karte')}</button></div></div>`);
 }
+ON.kr_akt = id => {
+  const [r, i, von] = String(id).split(':'), C = KR_AKT1[r] && KR_AKT1[r][+i], M = krM(); if (!C || !M.r[r] || M.r[r].sg < C.ab) { sfx('deny'); return; }
+  M.ch['a1_' + r + '_' + i] = 1; persist(); sfx('click'); setState('menu');
+  dialog(C.L(), () => { if (von === 'res' && KR.lohn) krResult(); else kriegChronik(); }, _t('Chronik der Kronen · Akt 1 · {reich}', { reich: REICHE[r].n }));
+};
 ON.kr_weiter = () => { const h = DIFFS[P.diff].heal; P.hp = Math.min(P.st.hp, P.hp + P.st.hp * h); KR.on = false; saveChar(); openMap(); };
 ON.kr_nochmal = () => { P.hp = Math.max(P.hp, P.st.hp * .7); startRoom('krieg', G.row, { krSeite: KR.side, krZiel: KR.ziel }); };
 ON.kr_rueckzug = () => { P.hp = Math.max(P.hp, P.st.hp * .5); KR.on = false; markNodeDone(); saveChar(); openMap(); };
@@ -699,11 +771,12 @@ function krMaschDrawE(e) {
   else if (m === KR.zm && KR.ziel === 'maschine' && !KR.aus) ptext(_t('ZIEL'), x, y - 40 + Math.round(Math.sin(T * 4) * 1.5), '#ffd24a', 6);
 }
 // Ankündigung am Boden: feste Fläche mit hellem Rand, innen wächst die Füllung bis zum Einschlag. Eigener Beschuss: nur ein dünner Rand.
-const KR_COL = { pfeil: ['#fff3c0', '200,48,30'], katapult: ['#ffc24a', '214,60,28'], meteor: ['#ff8a5a', '226,52,30'], ring: ['#ff8a5a', '226,52,30'], bahn: ['#ff8a5a', '226,52,30'] };
+const KR_COL = { pfeil: ['#fff3c0', '200,48,30'], katapult: ['#ffc24a', '214,60,28'], meteor: ['#ff8a5a', '226,52,30'], ring: ['#ff8a5a', '226,52,30'], bahn: ['#ff8a5a', '226,52,30'], bolzen: ['#bfefff', '200,48,30'] };
 function krDrawShot(s) {
   const x = s.x - CX, y = s.y - CY; if (x < -160 || x > VW + 160 || y < -160 || y > VH + 160 || s.hit) return;
   const k = clamp(1 - s.t / s.max, 0, 1), spaet = s.t < .3, C = KR_COL[s.k], pu = .82 + .18 * Math.sin(T * (spaet ? 36 : 13));
-  if (s.k === 'bahn') {
+  if (s.k === 'bahn' || s.k === 'bolzen') {
+    if (s.own) { ctx.save(); ctx.translate(x, y); ctx.rotate(s.ang); ctx.globalAlpha = .45; ctx.strokeStyle = REICHE[KR.side].c; ctx.setLineDash([3, 3]); ctx.strokeRect(0, -s.w / 2, s.len, s.w); ctx.setLineDash([]); ctx.restore(); ctx.globalAlpha = 1; return; }
     ctx.save(); ctx.translate(x, y); ctx.rotate(s.ang); ctx.globalAlpha = .2 + .14 * k; ctx.fillStyle = `rgb(${C[1]})`; ctx.fillRect(0, -s.w / 2, s.len, s.w); ctx.globalAlpha = .34 + .3 * k; ctx.fillRect(0, -s.w / 2, s.len * k, s.w);
     ctx.globalAlpha = spaet ? 1 : pu; ctx.strokeStyle = spaet ? '#ffffff' : C[0]; ctx.lineWidth = 2; ctx.strokeRect(0, -s.w / 2, s.len, s.w); ctx.restore(); ctx.globalAlpha = 1; ctx.lineWidth = 1; return;
   }
@@ -845,12 +918,20 @@ function kriegChronik(von) {
     const R = REICHE[s], D = M.r[s];
     if (!R.aktiv) return `<div class="row krrow aus" style="cursor:default"><div class="ic"><img src="${iconURL(['pa', 'kr_w_' + s])}" alt=""></div><div><div class="nm" style="color:${R.c}">${esc(R.n)} · ${esc(R.krone)}</div><div class="st">${esc(R.stil)} · ${_t('Ihre Heere sind noch nicht an der Front.')}</div></div></div>`;
     const kasse = KR_KASSE.map(o => { const e = o.e(s), n = K.b[s + ':' + o.id] || 0, ok = n < o.max && D.mk >= o.mk && (!o.m || hasMats(o.m)); return `<button class="btn alt sm" data-act="kr_kasse" data-id="${s}:${o.id}"${ok ? '' : ' disabled'}>${rwChip(e)} ${_t('für {n} Marken', { n: o.mk })}${o.m ? Object.keys(o.m).map(k => ` + ${o.m[k]} ${esc(MATS[k].n)}`).join('') : ''} <small>(${n}/${o.max})</small></button>`; }).join('');
-    return `<div class="row krrow" style="cursor:default;align-items:start"><div class="ic"><img src="${iconURL(['pa', 'kr_w_' + s])}" alt=""></div><div><div class="nm" style="color:${R.c}">${esc(R.n)} · ${esc(R.krone)}</div><div class="st">${esc(R.stil)}</div>${krRufBar(s)}<div class="st" style="margin-top:4px">${_t('{mk}: {n} · Siege {sg} · Niederlagen {nl}', { mk: esc(R.mk), n: D.mk, sg: D.sg, nl: D.nl })}</div><div class="krks">${kasse}</div></div></div>`;
+    const rg = krRang(s), vt = rg ? `<div class="st" style="margin-top:4px;color:${R.c}">${_t('Rang-Vorteil: {v}', { v: KR_VORTEIL.slice(1, rg + 1).map(f => esc(f())).join(' · ') })}</div>` : '';
+    return `<div class="row krrow" style="cursor:default;align-items:start"><div class="ic"><img src="${iconURL(['pa', 'kr_w_' + s])}" alt=""></div><div><div class="nm" style="color:${R.c}">${esc(R.n)} · ${esc(R.krone)}</div><div class="st">${esc(R.stil)}</div>${krRufBar(s)}<div class="st" style="margin-top:4px">${_t('{mk}: {n} · Siege {sg} · Niederlagen {nl}', { mk: esc(R.mk), n: D.mk, sg: D.sg, nl: D.nl })}</div>${vt}<div class="krks">${kasse}</div></div></div>`;
+  };
+  // Akt 1 je Reich: Kapitel nach Siegen für dieses Reich
+  const akt = s => {
+    const R = REICHE[s], D = M.r[s], L = KR_AKT1[s] || []; if (!L.length) return '';
+    const nx = L.find(c => D.sg < c.ab), bt = L.map((c, i) => D.sg >= c.ab ? `<button class="btn ${M.ch['a1_' + s + '_' + i] ? 'alt ' : ''}sm" data-act="kr_akt" data-id="${s}:${i}">${i + 1}. ${esc(c.t())}</button>` : '').join('');
+    return `<div class="row krrow krakt" style="cursor:default;align-items:start"><div class="ic"><img src="${iconURL(['pa', 'kr_w_' + s])}" alt=""></div><div><div class="nm" style="color:${R.c}">${_t('Akt 1 · {reich}', { reich: esc(R.n) })} <small>${L.filter(c => D.sg >= c.ab).length}/${L.length}</small></div><div class="st">${nx ? (nx.ab === 1 ? _t('Das erste Kapitel öffnet sich nach dem ersten Sieg für {reich}.', { reich: esc(R.n) }) : _t('Nächstes Kapitel nach {n} Siegen für {reich}.', { n: nx.ab, reich: esc(R.n) })) : _t('Akt 1 ist vollständig – die Chronik geht im nächsten Kapitel weiter.')}</div>${bt ? `<div class="krks">${bt}</div>` : ''}</div></div>`;
   };
   showOverlay(`<div class="head"><h2>${_t('CHRONIK DER KRONEN')}</h2><div class="hbtns"><button class="btn alt sm" data-act="kr_chrzu">${_t('Zurück')}</button></div></div>
   <p class="sub">${_t('Fünf Kronen streiten um den Splitterthron. Du bist Söldner ohne Krone – jede Schlacht wählst du neu, für wen du kämpfst.')}</p>
   <h3>${_t('DIE GESCHICHTE')}</h3>
   <div class="row" style="cursor:default"><div class="ic"><img src="${iconURL(['pa', 'kr_banner'])}" alt=""></div><div><div class="nm">${_t('Prolog: Der Splitterthron')}</div><div class="st">${M.pro ? _t('Wie der Thron zersprang und zwei Werber um deine Klinge stritten.') : _t('Beginnt, wenn du dein erstes Kriegsgebiet betrittst (Weltkarte ab Akt 3).')}</div></div>${M.pro ? `<button class="btn alt sm" data-act="kr_prolog">${_t('Lesen')}</button>` : '<span></span>'}</div>
+  ${KR_AKTIV.map(akt).join('')}
   <h3>${_t('DIE FÜNF REICHE')}</h3>${REICH_ORDER.map(reich).join('')}
   <p class="sub">${_t('Kriegsruf und Marken bekommst du für Schlachten. Die Kriegskasse jedes Reichs tauscht jede Woche neu.')}</p>`, true);
 }
@@ -870,9 +951,9 @@ if (typeof HB_AI !== 'undefined') { HB_AI.krieg = () => _t('Soldat: kämpft gege
 if (typeof HBGO !== 'undefined') HBGO.krchronik = { l: () => _t('Zur Chronik der Kronen'), c: 'map', f: () => kriegChronik('map') };
 function hbKrieg() {
   hbChap('krieg', _t('Krieg der Kronen'), ['pa', 'kr_banner'], _t('Kriegsgebiete, Beschuss, Deckung, Schlacht-Ziele, die fünf Reiche'));
-  E('krieg:gebiete', _t('Kriegsgebiete'), { ic: ['pa', 'kr_banner'], kw: 'krieg kriegsgebiet schlacht front heer heere soldaten seite wählen söldner akt 3 schildgraben verbrannte mark aschefront', see: ['krieg:beschuss', 'krieg:deckung', 'krieg:ziele', 'krieg:reiche', 'start:karte'], go: ['krchronik'],
+  E('krieg:gebiete', _t('Kriegsgebiete'), { ic: ['pa', 'kr_banner'], kw: 'krieg kriegsgebiet schlacht front heer heere soldaten seite wählen söldner akt 3 schildgraben verbrannte mark aschefront', see: ['krieg:beschuss', 'krieg:deckung', 'krieg:ziele', 'krieg:reiche', 'krieg:raenge', 'start:karte'], go: ['krchronik'],
     s: _t('Zwei Heere kämpfen gegeneinander – du wählst für jede Schlacht eine Seite.'),
-    b: () => hUl([_t('Ab Akt 3 liegen auf jeder Weltkarte Kriegsgebiete: der Ort mit den gekreuzten Bannern.'), _t('Vor der Schlacht wählst du, für wen du kämpfst: Aurelien (Gold und Weiß) oder Karth (Rot und Schwarz). Die Soldaten deiner Seite tragen einen Wimpel über dem Kopf und kämpfen mit dir.'), _t('Feindliche Soldaten greifen dich und deine Verbündeten an. Nur was du selbst besiegst, bringt Erfahrung und Beute.'), _t('Es stehen höchstens {n} Soldaten zugleich auf dem Feld. Verstärkung rückt von beiden Enden nach.', { n: KR_CAP }), _t('Verlierst du die Schlacht, darfst du sie wiederholen oder dich zurückziehen. Stirbst du, gilt wie überall: Raum wiederholen oder zurück zur Karte.')])
+    b: () => hUl([_t('Ab Akt 3 liegen auf jeder Weltkarte Kriegsgebiete: der Ort mit den gekreuzten Bannern.'), _t('Jedes Kriegsgebiet ist eine Front zwischen zwei Reichen. Vor der Schlacht wählst du eine der beiden Seiten. Die Soldaten deiner Seite tragen einen Wimpel in der Farbe ihres Reichs über dem Kopf und kämpfen mit dir.'), _t('Feindliche Soldaten greifen dich und deine Verbündeten an. Nur was du selbst besiegst, bringt Erfahrung und Beute.'), _t('Es stehen höchstens {n} Soldaten zugleich auf dem Feld. Verstärkung rückt von beiden Enden nach.', { n: KR_CAP }), _t('Verlierst du die Schlacht, darfst du sie wiederholen oder dich zurückziehen. Stirbst du, gilt wie überall: Raum wiederholen oder zurück zur Karte.')])
       + hH(_t('IN DEN ENDLOSEN LANDEN')) + hP(_t('Drei Kriegs-Biome liegen in den Landen: Schildgraben (Pfeilhagel), Verbrannte Mark (Katapulte) und Aschefront (Meteore). Dort bekämpfen sich Soldaten beider Reiche – und beide greifen dich an. Beschuss fällt auch dort nur mit Ankündigung.')) });
   E('krieg:beschuss', _t('Beschuss'), { ic: ['fx', 'ring', 10], kw: 'beschuss pfeilhagel pfeile katapult stein krater magiehagel meteor meteore feuer brennender boden ausweichen kreis ankündigung kriegsmaschine glutwerfer pfeilwerfer erobern zerstören', see: ['krieg:deckung', 'krieg:gebiete'],
     s: _t('Jeder Einschlag wird am Boden angekündigt. Raus aus der Fläche, bevor sie sich füllt.'),
@@ -885,13 +966,18 @@ function hbKrieg() {
   E('krieg:ziele', _t('Schlacht-Ziele und Moral'), { ic: ['pa', 'kr_banner'], kw: 'ziel ziele linie halten katapult maschine bannerträger banner hauptmann moral sieg niederlage', see: ['krieg:gebiete', 'krieg:beute'],
     s: _t('Jede Schlacht hat ein Ziel – sie wechseln der Reihe nach.'),
     b: () => hRows(KR_ZIELE.map(k => ({ ic: ['pa', 'kr_banner'], t: esc(KR_ZIEL[k].n), d: esc(KR_ZIEL[k].d) })))
-      + hH(_t('MORAL')) + hUl([_t('Der Balken MORAL zeigt, wie es um dein Heer steht. Fällt er auf null, ist die Schlacht verloren.'), _t('Moral sinkt, wenn Verbündete fallen, wenn dich Beschuss trifft und wenn die Schlacht sich hinzieht. Sie steigt mit jedem besiegten Feind – am meisten, wenn du ihn selbst besiegst.'), _t('Hauptleute kündigen ihre Sonderangriffe an: Aureliens Hauptmann stürmt entlang einer Bahn am Boden und ruft Pfeilhagel, Karths Hauptfrau legt einen Flammenring um sich und ruft Meteore.')]) });
+      + hH(_t('MORAL')) + hUl([_t('Der Balken MORAL zeigt, wie es um dein Heer steht. Fällt er auf null, ist die Schlacht verloren.'), _t('Moral sinkt, wenn Verbündete fallen, wenn dich Beschuss trifft und wenn die Schlacht sich hinzieht. Sie steigt mit jedem besiegten Feind – am meisten, wenn du ihn selbst besiegst.'), _t('Hauptleute kündigen ihre Sonderangriffe an: Aureliens Hauptmann stürmt entlang einer Bahn am Boden und ruft Pfeilhagel, Karths Hauptfrau legt einen Flammenring um sich und ruft Meteore.'), _t('Nordmarks Schildbrecherin stürmt ebenfalls entlang einer Bahn und lässt die Balliste auf dich zielen. Sylvaras Waldmeisterin ruft Pfeilhagel und legt einen Dornenring um sich.')]) });
   E('krieg:reiche', _t('Die fünf Reiche'), { ic: ['pa', 'kr_w_aurelien'], kw: 'reich reiche krone kronen aurelien nordmark sylvara karth schattenkonzil splitterthron sonnenkrone eisenkrone dornenkrone aschekrone hohle krone', see: ['krieg:beute', 'krieg:gebiete'], go: ['krchronik'],
-    s: _t('Fünf Kronen streiten um den Splitterthron. Zwei stehen schon an der Front.'),
+    s: _t('Fünf Kronen streiten um den Splitterthron. Vier stehen an der Front, die fünfte zeigt sich noch nicht.'),
     b: () => hRows(REICH_ORDER.map(k => { const R = REICHE[k]; return { ic: ['pa', 'kr_w_' + k], t: esc(R.n) + ' · ' + esc(R.krone), d: esc(R.stil) + (R.aktiv ? '' : ' · ' + _t('noch nicht an der Front')) }; })) });
   E('krieg:beute', _t('Kriegsbeute, Kriegsruf und Marken'), { ic: ['mat', 'kriegseisen'], kw: 'kriegsbeute kriegseisen bannerstoff kriegsruf marken sonnenmarken aschemarken kriegskasse lohn rang söldner', see: ['krieg:reiche', 'mat:kriegseisen', 'mat:bannerstoff'], go: ['krchronik'],
     s: _t('Für einen Sieg gibt es Gold, Kriegseisen, Bannerstoff, Marken und Kriegsruf.'),
-    b: () => hUl([_t('Kriegseisen und Bannerstoff lassen auch die Soldaten fallen, die du selbst besiegst.'), _t('Kriegsruf zählt je Reich – für das, für das du gekämpft hast. Auch eine Niederlage bringt ein wenig.'), _t('Marken tauschst du in der Kriegskasse des Reichs: Karte → Mehr → Chronik der Kronen. Jede Woche gibt es jedes Angebot nur ein paarmal.'), _t('Aurelien zahlt mehr Gold, Karth legt Kriegseisen drauf.')])
+    b: () => hUl([_t('Kriegseisen und Bannerstoff lassen auch die Soldaten fallen, die du selbst besiegst.'), _t('Kriegsruf zählt je Reich – für das, für das du gekämpft hast. Auch eine Niederlage bringt ein wenig.'), _t('Marken tauschst du in der Kriegskasse des Reichs: Karte → Mehr → Chronik der Kronen. Jede Woche gibt es jedes Angebot nur ein paarmal.'), _t('Aurelien zahlt mehr Gold, Karth legt Kriegseisen drauf, die Nordmark gibt mehr Kriegsruf und Sylvara mehr Bannerstoff.')])
       + hKv(KR_AKTIV.map(k => [esc(REICHE[k].n).toLocaleUpperCase(LOCALE), _t('{rang} · Kriegsruf {n}', { rang: esc(KR_RAENGE[krRang(k)][1]), n: hbNum(krRuf(k)) })])) });
+  E('krieg:raenge', _t('Ränge, Seitenwechsel und Chronik'), { ic: ['pa', 'kr_w_nordmark'], kw: 'rang ränge söldner hauptmann marschall kronfeldherr vorteil seite wechseln verrat front fronten chronik akt kapitel', see: ['krieg:beute', 'krieg:reiche'], go: ['krchronik'],
+    s: _t('Mit Kriegsruf steigst du bei jedem Reich im Rang – jeder Rang bringt einen Vorteil.'),
+    b: () => hRows(KR_RAENGE.map((r, i) => ({ ic: ['pa', 'kr_banner'], t: esc(r[1]) + ' · ' + _t('ab {n} Kriegsruf', { n: hbNum(r[0]) }), d: KR_VORTEIL[i] ? esc(KR_VORTEIL[i]()) : _t('Der Anfang: kein Vorteil.') })))
+      + hH(_t('SEITE WECHSELN')) + hUl([_t('Du kannst in jeder Schlacht neu wählen. Die Vorteile gelten für das Reich, für das du gerade kämpfst.'), _t('Gewinnst du gegen ein Reich, verlierst du dort {n} Kriegsruf – unter null fällt er nie.', { n: KR_VERRAT })])
+      + hH(_t('CHRONIK AKT 1')) + hP(_t('Jedes Reich an der Front erzählt seinen ersten Akt in drei Kapiteln. Ein neues Kapitel öffnet sich nach 1, 3 und 6 Siegen für dieses Reich – nachlesen in der Chronik der Kronen.')) });
 }
 if (typeof HB_BUILD !== 'undefined') HB_BUILD.push(['krieg', hbKrieg]);
