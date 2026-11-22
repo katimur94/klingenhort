@@ -28,4 +28,4 @@
 | 2026-11-20 | Update 6.8 „Krieg der Kronen 2 – Fünf Kronen“ (Nordmark gegen Sylvara, neue Balliste mit Rolle, Waldmeisterin Eryn, Seitenwahl, Chronik: der Gast in Violett) | 6b0093aa4246f0c5b1e2cd0f | 4 | 1 | 0 | 0 | Update-Clip 12 s, nach dem Live-Gang von 6.8 gepostet |
 | 2026-11-21 | Frage „Welches Reich bist du? 1–4“ (Krieg der Kronen 6.8: Aurelien, Nordmark, Sylvara, Karth – je eine echte Schlacht, Zahl kommentieren) | 6b01d7e330d6b8d2cc688f53 | 0 | 0 | 0 | 0 | Tages-Clip 8,6 s, Frage-Format wie „Welche Klasse bist du?“ (07.11.) |
 
-Follower 21.11.: 3 (unverändert) · Gesamt-Likes 29 (vorher 14 – Zernio hat die Zahlen der Posts ab 09.11. nachgeliefert) · 25 Videos · keine Kommentare · Top-Post der Woche: Update 6.8 (4 Aufrufe), insgesamt weiter 5 Min vs. 50 Std (11).
+Follower 22.11.: 3 (unverändert) · Gesamt-Likes 29 (unverändert) · 26 Videos · keine Kommentare · Top-Post der Woche weiter Update 6.8 (4 Aufrufe); „Welches Reich bist du?“ noch ohne Zahlen.
