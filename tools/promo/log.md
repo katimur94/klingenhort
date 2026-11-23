@@ -29,4 +29,4 @@
 | 2026-11-21 | Frage „Welches Reich bist du? 1–4“ (Krieg der Kronen 6.8: Aurelien, Nordmark, Sylvara, Karth – je eine echte Schlacht, Zahl kommentieren) | 6b01d7e330d6b8d2cc688f53 | 0 | 0 | 0 | 0 | Tages-Clip 8,6 s, Frage-Format wie „Welche Klasse bist du?“ (07.11.) |
 | 2026-11-22 | Biom „Wo es vom Himmel regnet“ (die drei Kriegs-Biome der Endlosen Lande: Schildgraben/Pfeile, Verbrannte Mark/Steine, Aschefront/Feuer; Frage „Wo traust du dich hin?“) | 6b0337ec973b0faf60b264c8 | 0 | 0 | 0 | 0 | Tages-Clip 8,1 s, echter Beschuss der Lande, nur der Zeitpunkt festgelegt · wegen Neustart 1,5 h später gepostet |
 
-Follower 22.11.: 3 (unverändert) · Gesamt-Likes 29 (unverändert) · 26 Videos · keine Kommentare · Top-Post der Woche weiter Update 6.8 (4 Aufrufe); „Welches Reich bist du?“ noch ohne Zahlen.
+Follower 23.11.: 3 (unverändert) · Gesamt-Likes 29 (unverändert) · 27 Videos · keine Kommentare · Top-Post der Woche weiter Update 6.8 (4 Aufrufe); die Clips vom 21. und 22.11. noch ohne Zahlen (Zernio liefert neue Posts verzögert).
