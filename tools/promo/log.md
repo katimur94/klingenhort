@@ -30,4 +30,4 @@
 | 2026-11-22 | Biom „Wo es vom Himmel regnet“ (die drei Kriegs-Biome der Endlosen Lande: Schildgraben/Pfeile, Verbrannte Mark/Steine, Aschefront/Feuer; Frage „Wo traust du dich hin?“) | 6b0337ec973b0faf60b264c8 | 0 | 0 | 0 | 0 | Tages-Clip 8,1 s, echter Beschuss der Lande, nur der Zeitpunkt festgelegt · wegen Neustart 1,5 h später gepostet |
 | 2026-11-23 | Meme „Niemand: / Die Balliste der Nordmark:“ (Krieg der Kronen 6.8: Streifen am Boden, Rolle, Einschlag, Zeitlupe, mit Faxen) | 6b04752fba1c33eb185f37f1 | 0 | 0 | 0 | 0 | Tages-Clip 8,1 s, Meme der Woche; Websuche fand keinen aktuellen Gaming-Trend, daher Klassiker „Niemand:“ aus TIKTOK.md |
 
-Follower 23.11.: 3 (unverändert) · Gesamt-Likes 29 (unverändert) · 27 Videos · keine Kommentare · Top-Post der Woche weiter Update 6.8 (4 Aufrufe); die Clips vom 21. und 22.11. noch ohne Zahlen (Zernio liefert neue Posts verzögert).
+Follower 24.11.: 3 (unverändert) · Gesamt-Likes 29 (unverändert) · 28 Videos · keine Kommentare · Top-Post der Woche weiter Update 6.8 (4 Aufrufe); Clips seit 21.11. noch ohne Zahlen (Zernio verzögert).
