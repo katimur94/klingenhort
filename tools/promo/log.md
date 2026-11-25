@@ -31,4 +31,4 @@
 | 2026-11-23 | Meme „Niemand: / Die Balliste der Nordmark:“ (Krieg der Kronen 6.8: Streifen am Boden, Rolle, Einschlag, Zeitlupe, mit Faxen) | 6b04752fba1c33eb185f37f1 | 0 | 0 | 0 | 0 | Tages-Clip 8,1 s, Meme der Woche; Websuche fand keinen aktuellen Gaming-Trend, daher Klassiker „Niemand:“ aus TIKTOK.md |
 | 2026-11-24 | Boss-Challenge „Speedrun: Sturmkönig Aerok in 5,9 s“ (echter Boss-Raum Akt 9, Ritterin LV 100, Stoppuhr ab seinem Auftritt, Frage „Schaffst du es schneller?“) | 6b05cbacdbe5b508cbdb8271 | 0 | 0 | 0 | 0 | Tages-Clip 9,8 s, Zeit aus dem Spiel-Log (Bot spielt, ohne Unverwundbarkeit) · wegen Neustart ~25 min später gepostet |
 
-Follower 24.11.: 3 (unverändert) · Gesamt-Likes 29 (unverändert) · 28 Videos · keine Kommentare · Top-Post der Woche weiter Update 6.8 (4 Aufrufe); Clips seit 21.11. noch ohne Zahlen (Zernio verzögert).
+Follower 25.11.: 3 (unverändert) · Gesamt-Likes 29 (unverändert) · 30 Videos laut TikTok (einer mehr als hier geloggt – vermutlich aus einer anderen Sitzung) · keine Kommentare · Top-Post der Woche weiter Update 6.8 (4 Aufrufe); Clips seit 21.11. noch ohne Zahlen.
