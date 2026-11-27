@@ -48,7 +48,7 @@ NK = 60
 def kampf(k):
     b = gameplay(RAW, 'kampf', 36 + k, k, drift=.05)
     title(b, k, '3 SIEGE = PROVINZ', 64, GOLD, 330)
-    place(b, badge('SIEG %d / 3' % (1 + k * 3 // NK), 34), W / 2, 430)
+    title(b, k + 12, 'FUER EINE SEITE', 44, WHITE, 430, 4)
     if 20 <= k: emoji_face(b, k, 'cool', 860, 1350, t0=20, r=60)
     return b
 def sieg(k):
