@@ -114,6 +114,9 @@ const fails = [], ok = (c, msg) => { if (!c) fails.push(msg); console.log((c ? '
     // Leistungs-Modus (Handy-Feinschliff 6.6): Einstellungen → Knopf, nur jedes dritte Teilchen
     const PF = await ev(() => { showSettings('title'); const b = document.querySelector('[data-act="perf"]'); if (!b) return null; const h = b.getBoundingClientRect().height; parts = []; for (let i = 0; i < 30; i++) part(0, 0, 0, 0, 0, 0, '#fff', 1); const off = parts.length; b.click(); parts = []; for (let i = 0; i < 30; i++) part(0, 0, 0, 0, 0, 0, '#fff', 1); const on = parts.length; const saved = SAVE.meta.settings.perf === true; document.querySelector('[data-act="perf"]').click(); return { h, off, on, saved, back: !SAVE.meta.settings.perf }; });
     ok(PF && PF.h >= 44 && PF.off === 30 && PF.on === 10 && PF.saved && PF.back, nm + ': Leistungs-Modus in den Einstellungen zeichnet nur jedes dritte Teilchen und lässt sich wieder ausschalten');
+    // 6.9: im Leistungs-Modus höchstens 30 Bilder/s – die Schleife zeichnet bei 60 Hz nur jedes zweite Bild
+    const FPS = await ev(() => { const r0 = window.render; let n = 0; window.render = () => { n++; }; const zaehle = perf => { SAVE.meta.settings.perf = perf; n = 0; let t = last + 1; for (let i = 0; i < 60; i++) { t += 1000 / 60; loop(t); } return n; }; const raf = window.requestAnimationFrame; window.requestAnimationFrame = () => 0; const aus = zaehle(false), an = zaehle(true); SAVE.meta.settings.perf = false; window.requestAnimationFrame = raf; window.render = r0; return { aus, an }; });
+    ok(FPS.aus >= 59 && FPS.an >= 29 && FPS.an <= 31, nm + `: Leistungs-Modus zeichnet höchstens 30 Bilder/s (60 Hz: ${FPS.an} statt ${FPS.aus} Bilder in einer Sekunde)`);
     ok(!errs.length, nm + ': keine Skriptfehler' + (errs.length ? ' – ' + errs[0] : ''));
     await page.close();
   }

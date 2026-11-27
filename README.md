@@ -7,7 +7,7 @@ Vier Klassen, frei gestaltbare Helden, **Begleiter, die mit dir wachsen**, sechs
 
 ### ▶ [Jetzt spielen: katimur94.github.io/klingenhort](https://katimur94.github.io/klingenhort/)
 
-Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 6.8 · jede Woche neue Inhalte
+Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Version 6.9 · jede Woche neue Inhalte
 
 🌐 Deutsch · English · Türkçe · Español · Italiano · Français – *the game starts in your device language*
 
@@ -85,6 +85,17 @@ Kostenlos · ohne Anmeldung · als App installierbar · offline spielbar · Vers
 ## Neuigkeiten & Wochenplan
 
 Klingenhort wird jede Woche erweitert. Im Spiel zeigt **Neuigkeiten** (Titelmenü, Einstellungen oder Weltkarte → Mehr) alle Updates und was als Nächstes kommt; nach einem Update öffnet sich die Seite einmal von selbst.
+
+**Neu in 6.9 – Krieg der Kronen 3: Die Kriegskarte**
+
+| System | Was es kann |
+|---|---|
+| **Kriegskarte** | 40 Provinzen auf einem Wabenfeld, jede gehört einem der vier Reiche; jedes Reich hat eine Festung, die nie fällt; in der Mitte zwei Provinzen im Nebel (Schattenkonzil, kommt mit 7.1). Karte → Mehr → Kriegskarte oder in der Chronik der Kronen |
+| **Wandernde Fronten** | Alle drei Stunden ein Kriegstag: an zwei Grenzen wird angegriffen (fester Zufall je Tag, kleinere Reiche wehren sich besser). Läuft auch offline – beim Öffnen werden bis zu einer Woche nachgerechnet; der Kriegsbericht zeigt die letzten Ereignisse |
+| **Feldzüge** | Grenz-Provinz antippen, „erobern“ oder „halten“ wählen; drei Siege für diese Seite (ein Sieg gegen sie zieht einen ab). Erobern: die Provinz wechselt. Halten: 8 Kriegstage befestigt. Lohn: Gold, +60 Kriegsruf, +6 Marken. Schlachten direkt von der Karte verbrauchen keinen Ort der Weltkarte |
+| **Kriegsjahre** | Alle 30 Kriegstage beginnt ein neues Kriegsjahr – der Krieg endet nie |
+| **Fronten der Weltkarte** | Kriegsgebiete liegen an echten Grenzen der Kriegskarte; während eines Feldzugs zeigen sie dessen Front |
+| **Leistungs-Modus** | Höchstens 30 Bilder pro Sekunde |
 
 **Neu in 6.8 – Krieg der Kronen 2: Fünf Kronen**
 

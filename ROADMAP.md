@@ -48,7 +48,7 @@ Ausführlich für den automatischen Lauf: [`tools/WOCHENUPDATE.md`](tools/WOCHEN
 | – | 6.6 | **Krieg der Kronen 1 – Die Front** | Kriegsgebiete mit laufender Schlacht, Pfeil-, Katapult- und Magiehagel, Deckung, zwei Heere, Schlacht-Ziele, Prolog der Chronik, neues Licht und Rauch. Bauplan: docs/KRIEG-DER-KRONEN.md | riesig | ✅ 6.6 |
 | 4 | 6.7 | **Saison 1** | Saison-Helden ab Level 1, Saison-Rangliste (eigene Helden, offline), kostenloser Saison-Pass mit 30 Stufen, Saison-Kosmetik – vorgezogen, weil fertig | groß | ✅ 6.7 |
 | – | 6.8 | **Krieg der Kronen 2 – Fünf Kronen** | Fünf Reiche mit Einheiten und Kriegsmaschinen, Kriegsruf und Ränge, Seite wählen, Chronik Akt 1 – vier Reiche an der Front (Nordmark und Sylvara neu, Balliste), Fronten je Kriegsgebiet, Rang-Vorteile, Chronik Akt 1 je Reich; das Schattenkonzil tritt wie geplant in 7.1 an | riesig | ✅ 6.8 |
-| – | 6.9 | **Krieg der Kronen 3 – Die Kriegskarte** | Provinzen, wandernde Fronten (auch offline), Feldzüge, endlose Kriegsjahre | riesig | offen |
+| – | 6.9 | **Krieg der Kronen 3 – Die Kriegskarte** | Provinzen, wandernde Fronten (auch offline), Feldzüge, endlose Kriegsjahre | riesig | ✅ 6.9 |
 | – | 7.0 | **Krieg der Kronen 4 – Belagerung** | Burgen in drei Phasen, Feldherren als Rivalen | groß | offen |
 | – | 7.1 | **Krieg der Kronen 5 – Verrat** | Schattenkonzil, Entscheidungen mit Folgen, Chronik Akt 2, Wetter | groß | offen |
 | – | 7.2 | **Krieg der Kronen 6 – Dein Banner** | Söldnertrupp, eigenes Banner, Trophäen, Chronik Akt 3 | groß | offen |
@@ -71,7 +71,7 @@ Ausführlich für den automatischen Lauf: [`tools/WOCHENUPDATE.md`](tools/WOCHEN
 Schon erledigt in 4.1: Hochformat, klebende Kopf- und Fußleisten, Liste neben Details, größere Ziele, Neuigkeiten-Seite.
 
 - ✅ **Schriftgröße** in den Einstellungen (normal / groß) – 4.2
-- **Leistungs-Modus:** ✅ weniger Partikel (Einstellungen) – mit Saison 1; ✅ kein Licht-Effekt – 6.8; offen: 30 fps – für ältere Handys und Akku
+- **Leistungs-Modus:** ✅ weniger Partikel (Einstellungen) – mit Saison 1; ✅ kein Licht-Effekt – 6.8; ✅ höchstens 30 fps – 6.9 – für ältere Handys und Akku
 - **Einhand-Modus** im Hochformat: Auto-Angriff, wenn ein Gegner in Reichweite ist; nur Joystick und Fähigkeiten
 - ✅ **Schnell-Ausrüsten:** „Bestes anlegen“-Knopf im Charakter und „Alles Schlechtere verkaufen“ – 6.3
 - ✅ **Beute-Filter:** Gewöhnliche Gegenstände automatisch verkaufen oder liegen lassen – 6.3; bis Episch, Wegwerfen und Grenze nach Marktwert – 6.3.1

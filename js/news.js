@@ -7,6 +7,17 @@
 
 const CHANGELOG = [
   {
+    v: '6.9.0', d: '2026-11-27', t: 'Krieg der Kronen 3 – Die Kriegskarte', items: [
+      ['neu', 'Die Kriegskarte: 40 Provinzen, jede gehört einem der vier Reiche. Zu finden unter Karte → Mehr → Kriegskarte und in der Chronik der Kronen.'],
+      ['neu', 'Die Fronten wandern: Alle drei Stunden ist ein Kriegstag, an dem die Reiche an ihren Grenzen angreifen – auch während du nicht spielst. Der Kriegsbericht erzählt, was passiert ist.'],
+      ['neu', 'Feldzüge: Wähle eine Provinz an der Grenze und kämpfe drei Schlachten, um sie für ein Reich zu erobern oder zu halten. Direkt von der Kriegskarte oder in den Kriegsgebieten der Weltkarte.'],
+      ['neu', 'Jedes Reich hat eine Festung, die nie fällt – der Krieg endet nie. Alle 30 Kriegstage beginnt ein neues Kriegsjahr. In der Mitte der Karte liegt ein Nebel, den noch niemand erklärt hat …'],
+      ['besser', 'Die Kriegsgebiete der Weltkarte liegen jetzt an echten Grenzen der Kriegskarte.'],
+      ['besser', 'Leistungs-Modus: höchstens 30 Bilder pro Sekunde – schont den Akku auf älteren Handys.'],
+      ['fix', 'Eine verlorene Schlacht zu wiederholen behält jetzt immer denselben Gegner.']
+    ]
+  },
+  {
     v: '6.8.0', d: '2026-11-20', t: 'Krieg der Kronen 2 – Fünf Kronen', items: [
       ['neu', 'Zwei neue Reiche ziehen in den Krieg: die Nordmark (Eisenkrone) mit Axtkämpfern, Schildmaiden, Eisjägern und Schildbrecherin Ragna – und Sylvara (Dornenkrone) mit Dornenwächtern, Waldläuferinnen, Druiden und Waldmeisterin Eryn.'],
       ['neu', 'Neue Kriegsmaschine: die Balliste der Nordmark schießt schwere Bolzen entlang einer Linie am Boden – angekündigt wie jeder Beschuss.'],
@@ -249,10 +260,10 @@ const CHANGELOG = [
 
 // Vorschau: was in den nächsten Wochen kommt (Version, Text – siehe ROADMAP.md)
 const COMING = [
-  ['6.9', 'Krieg der Kronen 3 – Die Kriegskarte: Provinzen, Fronten, die auch wandern, während du nicht spielst, Feldzüge und endlose Kriegsjahre'],
   ['7.0', 'Krieg der Kronen 4 – Belagerung: Burgen in drei Phasen, Rammbock und Mauern, Feldherren als wiederkehrende Rivalen'],
   ['7.1', 'Krieg der Kronen 5 – Verrat: das Schattenkonzil, Entscheidungen mit Folgen, Chronik Akt 2, Wetter und Tageszeit auf dem Schlachtfeld'],
-  ['7.2', 'Krieg der Kronen 6 – Dein Banner: ein eigener Söldnertrupp, dein eigenes Banner, Trophäen und Chronik Akt 3']
+  ['7.2', 'Krieg der Kronen 6 – Dein Banner: ein eigener Söldnertrupp, dein eigenes Banner, Trophäen und Chronik Akt 3'],
+  ['7.3', 'Krieg der Kronen 7 – Der Splitterthron: das große Finale der Chronik mit mehreren Enden']
 ];
 
 const NEWS_KIND = { neu: [_t('NEU'), '#79c24e'], besser: [_t('BESSER'), '#57a7d6'], fix: [_t('BEHOBEN'), '#e8b04a'] };

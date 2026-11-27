@@ -1,6 +1,6 @@
 'use strict';
 /* =========================================================
-   KLINGENHORT – Krieg der Kronen, Kapitel 1 „Die Front“ (6.6) und Kapitel 2 „Fünf Kronen“ (6.8). Bauplan: docs/KRIEG-DER-KRONEN.md
+   KLINGENHORT – Krieg der Kronen, Kapitel 1 „Die Front“ (6.6) und Kapitel 2 „Fünf Kronen“ (6.8). Kapitel 3 „Die Kriegskarte“ (6.9) in js/kriegskarte.js. Bauplan: docs/KRIEG-DER-KRONEN.md
    Hängt sich über HOOK/ON (js/core.js) ein.
    - Kriegsgebiet: Raumart 'krieg' auf der Weltkarte ab Akt 3 (kriegMap) und drei Kriegs-Biome in den Endlosen Landen (KR_LANDE, js/lande.js).
    - Zwei Heere kämpfen wirklich: Soldaten sind Gegner mit KI 'krieg' (EN.kr_*, js/data.js) – feindliche stehen in enemies (alle Waffen und
@@ -55,7 +55,8 @@ const KR_FRONT = [['aurelien', 'karth'], ['nordmark', 'sylvara'], ['aurelien', '
 const KR_RIVAL = { aurelien: 'karth', karth: 'aurelien', nordmark: 'sylvara', sylvara: 'nordmark' };
 const krGegner = s => KR_RIVAL[s] || KR_AKTIV.find(k => k !== s);
 // Front des Kriegsgebiets in Reihe row (fest je Held, Akt und Reihe)
-function krFront(row) { return KR_FRONT[((P ? P.act : 3) * 2 + (row >= 3 ? 1 : 0) + (P ? Math.floor(P.created / 1000) % 7 : 0)) % KR_FRONT.length]; }
+// 6.9: echte Grenze der Kriegskarte (js/kriegskarte.js, kkFront) – nur ohne Karte die feste Liste
+function krFront(row) { const kf = typeof kkFront === 'function' ? kkFront(row) : null; if (kf) return kf; return KR_FRONT[((P ? P.act : 3) * 2 + (row >= 3 ? 1 : 0) + (P ? Math.floor(P.created / 1000) % 7 : 0)) % KR_FRONT.length]; }
 const KR_MASCH = {
   katapult: { n: _t('Katapult'), d: _t('Schleudert Steine: großer Kreis, Krater, wirft dich zurück.'), cd: [6.5, 9] },
   pfeil: { n: _t('Pfeilwerfer'), d: _t('Pfeilhagel: viele kleine Schatten in einer Fläche. Deckung hält ihn ganz auf.'), cd: [5, 7.5] },
@@ -121,6 +122,7 @@ function krFix(d) {
   o.n = num(d.n, 1e7); o.sg = num(d.sg, 1e7); o.pro = d.pro ? 1 : 0; o.seite = KR_AKTIV.includes(d.seite) ? d.seite : '';
   const ks = d.kasse && typeof d.kasse === 'object' ? d.kasse : {}; o.kasse.w = num(ks.w, 1e6);
   if (ks.b && typeof ks.b === 'object') for (const k in ks.b) { const [r, id] = String(k).split(':'); if (REICHE[r] && KR_KASSE.some(x => x.id === id)) o.kasse.b[k] = num(ks.b[k], 99); }
+  if (d.karte && typeof d.karte === 'object') o.karte = d.karte;   // Kriegskarte (6.9): geprüft in js/kriegskarte.js (kkFix)
   if (d.ch && typeof d.ch === 'object' && !Array.isArray(d.ch)) for (const k in d.ch) if (/^[a-z0-9_]{1,24}$/.test(k) && Object.keys(o.ch).length < 200) o.ch[k] = num(d.ch[k], 1e6);
   return o;
 }
@@ -223,6 +225,7 @@ function krWahl(row) {
   showOverlay(`<div class="head"><h2>${_t('KRIEGSGEBIET')}</h2><div class="hbtns"><button class="btn alt sm" data-act="kr_zurueck">${_t('Zurück')}</button></div></div>
   <div class="krziel"><b>${_t('ZIEL DIESER SCHLACHT')} · ${esc(Z.n).toLocaleUpperCase(LOCALE)}</b>${esc(Z.d)}</div>
   <p class="sub" style="margin:8px 0 0">${_t('An dieser Front stehen {a} und {b} gegeneinander. Du bist Söldner – wähle für diese Schlacht eine Seite.', { a: esc(REICHE[FR[0]].n), b: esc(REICHE[FR[1]].n) })} ${_t('Wer gegen ein Reich gewinnt, verliert dort {n} Kriegsruf.', { n: KR_VERRAT })}</p>
+  ${typeof kkKarte === 'function' && kkKarte().fz ? `<p class="sub" style="margin:4px 0 0;color:${REICHE[kkKarte().fz.s].c}">${_t('Dein Feldzug: Siege für {reich} zählen ({n} von {m}).', { reich: esc(REICHE[kkKarte().fz.s].n), n: kkKarte().fz.n, m: KK_FZ })}</p>` : ''}
   <div class="krsides">${FR.map(card).join('')}</div>`, true);
 }
 ON.kr_seite = id => { if (!REICHE[id] || !REICHE[id].aktiv) return; const FR = KR.front || [id, krGegner(id)]; krM().seite = id; sfx('spec'); startRoom('krieg', KR.row, { krSeite: id, krFeind: FR.includes(id) ? FR.find(k => k !== id) : krGegner(id) }); };
@@ -680,12 +683,13 @@ function krEnd(win, grund) {
     const ak = (KR_AKT1[KR.side] || []).findIndex(c => c.ab === R.sg);
     dropLoot(P.x + rnd(-14, 14), P.y + 10, 1); if (KR.ziel === 'hauptmann' || KR.caps) dropLoot(P.x + rnd(-14, 14), P.y + 14, 2);
     KR.lohn = { win: 1, got: [{ t: 'gold', n: gold }, { t: 'mat', k: 'kriegseisen', n: eisen }, { t: 'mat', k: 'bannerstoff', n: stoff }], mk, ruf, ruf0, rang0, verrat, akt: ak >= 0 ? ak : -1 };
-    banner(_t('SIEG'), _t('{reich} behauptet das Feld', { reich: S.n })); sfx('clear'); slowmo = .5; markNodeDone();
+    banner(_t('SIEG'), _t('{reich} behauptet das Feld', { reich: S.n })); sfx('clear'); slowmo = .5; if (!(G.extra && G.extra.fz)) markNodeDone();
   } else {
     krGain(KR.side, 5, 0); R.nl++;
     KR.lohn = { win: 0, got: [], mk: 0, ruf: 5, ruf0, rang0 };
     banner(_t('NIEDERLAGE'), grund === 'banner' ? _t('Der Bannerträger ist gefallen') : _t('Die Moral ist gebrochen')); sfx('fail');
   }
+  if (typeof kkSchlacht === 'function') KR.lohn.fz = kkSchlacht(win);   // Feldzug der Kriegskarte (6.9)
   P.buffs = P.buffs.filter(b => b.rooms > 0); computeStats(); setMusic(biomeOf(P.act).root, false);
   saveChar(); persist(); checkAch();
 }
@@ -700,6 +704,7 @@ function krResult() {
   const kopf = `<div class="hd" style="display:flex;gap:10px;align-items:center;justify-content:center;margin-bottom:6px"><img src="${iconURL(['pa', 'kr_w_' + KR.side])}" alt="" style="width:40px;height:40px;image-rendering:pixelated"><h2 style="margin:0;color:${L.win ? S.c : 'var(--blood)'}">${L.win ? _t('SIEG FÜR {reich}', { reich: esc(S.n).toLocaleUpperCase(LOCALE) }) : _t('DIE SCHLACHT IST VERLOREN')}</h2></div>`;
   const rgN = krRang(KR.side), ak = L.akt >= 0 ? KR_AKT1[KR.side][L.akt] : null;
   const ruf = `<div class="krlohn"><div class="st" style="font-size:17px">${_t('Kriegsruf bei {reich}: +{n}', { reich: esc(S.n), n: L.ruf })}${L.mk ? ' · ' + _t('+{n} {marken}', { n: L.mk, marken: esc(S.mk) }) : ''}</div>${krRufBar(KR.side, L.ruf0)}${auf ? `<p class="sub" style="color:${S.c};margin:6px 0 0">${_t('Neuer Rang: {rang}', { rang: esc(KR_RAENGE[rgN][1]) })}${KR_VORTEIL[rgN] ? ' · ' + esc(KR_VORTEIL[rgN]()) : ''}</p>` : ''}${L.verrat ? `<p class="sub" style="margin:4px 0 0">${_t('Kriegsruf bei {reich}: −{n}', { reich: esc(F.n), n: L.verrat })}</p>` : ''}</div>`
+    + (L.fz ? `<div class="krziel krlohn" style="box-shadow:inset 3px 0 0 ${S.c}"><b>${_t('KRIEGSKARTE')}</b>${esc(L.fz.t)}</div>` : '')
     + (ak ? `<div class="krziel krlohn" style="box-shadow:inset 3px 0 0 ${S.c}"><b>${_t('NEUES KAPITEL IN DER CHRONIK')}</b>${esc(ak.t())}<div class="krks"><button class="btn" data-act="kr_akt" data-id="${KR.side}:${L.akt}:res">${_t('Jetzt lesen')}</button></div></div>` : '');
   if (L.win) showOverlay(`<div class="center">${kopf}<p class="sub">${_t('{ziel} · {zeit} min · {n} Feinde gefallen', { ziel: esc(KR_ZIEL[KR.ziel].n), zeit, n: KR.gef })}${KR.caps ? ' · ' + (KR.caps === 1 ? _t('1 Maschine erobert') : _t('{n} Maschinen erobert', { n: KR.caps })) : ''}</p>
     <h3>${_t('KRIEGSBEUTE')}</h3><div class="krlohn">${L.got.map((e, i) => rwRow(e, i)).join('')}</div>${ruf}
@@ -712,9 +717,10 @@ ON.kr_akt = id => {
   M.ch['a1_' + r + '_' + i] = 1; persist(); sfx('click'); setState('menu');
   dialog(C.L(), () => { if (von === 'res' && KR.lohn) krResult(); else kriegChronik(); }, _t('Chronik der Kronen · Akt 1 · {reich}', { reich: REICHE[r].n }));
 };
-ON.kr_weiter = () => { const h = DIFFS[P.diff].heal; P.hp = Math.min(P.st.hp, P.hp + P.st.hp * h); KR.on = false; saveChar(); openMap(); };
-ON.kr_nochmal = () => { P.hp = Math.max(P.hp, P.st.hp * .7); startRoom('krieg', G.row, { krSeite: KR.side, krZiel: KR.ziel }); };
-ON.kr_rueckzug = () => { P.hp = Math.max(P.hp, P.st.hp * .5); KR.on = false; markNodeDone(); saveChar(); openMap(); };
+const krFz = () => !!(G && G.extra && G.extra.fz);   // Schlacht eines Feldzugs, direkt von der Kriegskarte (kein Ort der Weltkarte)
+ON.kr_weiter = () => { const h = DIFFS[P.diff].heal, fz = krFz(); P.hp = Math.min(P.st.hp, P.hp + P.st.hp * h); KR.on = false; saveChar(); if (fz && typeof kkOpen === 'function') { G = null; kkOpen(); } else openMap(); };
+ON.kr_nochmal = () => { P.hp = Math.max(P.hp, P.st.hp * .7); startRoom('krieg', G.row, { krSeite: KR.side, krFeind: KR.foe, krZiel: KR.ziel, fz: krFz() ? 1 : 0 }); };
+ON.kr_rueckzug = () => { const fz = krFz(); P.hp = Math.max(P.hp, P.st.hp * .5); KR.on = false; if (!fz) markNodeDone(); saveChar(); if (fz && typeof kkOpen === 'function') { G = null; kkOpen(); } else openMap(); };
 
 /* ---------- Endlose Lande: Beschuss in den Kriegs-Biomen ---------- */
 function krLande(dt) {
@@ -929,6 +935,7 @@ function kriegChronik(von) {
   };
   showOverlay(`<div class="head"><h2>${_t('CHRONIK DER KRONEN')}</h2><div class="hbtns"><button class="btn alt sm" data-act="kr_chrzu">${_t('Zurück')}</button></div></div>
   <p class="sub">${_t('Fünf Kronen streiten um den Splitterthron. Du bist Söldner ohne Krone – jede Schlacht wählst du neu, für wen du kämpfst.')}</p>
+  ${typeof kkOpen === 'function' && kriegOffen() ? `<div class="krks"><button class="btn" data-act="kk_open" data-id="chr">${_t('Kriegskarte')}</button></div>` : ''}
   <h3>${_t('DIE GESCHICHTE')}</h3>
   <div class="row" style="cursor:default"><div class="ic"><img src="${iconURL(['pa', 'kr_banner'])}" alt=""></div><div><div class="nm">${_t('Prolog: Der Splitterthron')}</div><div class="st">${M.pro ? _t('Wie der Thron zersprang und zwei Werber um deine Klinge stritten.') : _t('Beginnt, wenn du dein erstes Kriegsgebiet betrittst (Weltkarte ab Akt 3).')}</div></div>${M.pro ? `<button class="btn alt sm" data-act="kr_prolog">${_t('Lesen')}</button>` : '<span></span>'}</div>
   ${KR_AKTIV.map(akt).join('')}

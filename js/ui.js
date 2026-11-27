@@ -622,7 +622,7 @@ panel.addEventListener('click', ev => {
     case 'langback': if (langBack === 'settings') showSettings(); else showTitle(); break;
     case 'setlang': if (id === LANG) { b.blur(); break; } try { persist(); } catch (_) { } setLang(id); break;
     case 'calm': SAVE.meta.settings.calm = !SAVE.meta.settings.calm; persist(); showSettings(); break;
-    case 'perf': SAVE.meta.settings.perf = !SAVE.meta.settings.perf; persist(); if (SAVE.meta.settings.perf) toast(_t('Leistungs-Modus: weniger Funken und Splitter, kein Licht-und-Schatten-Effekt – flüssiger auf älteren Handys, schont den Akku.'), '#8ee6ff'); showSettings(); break;
+    case 'perf': SAVE.meta.settings.perf = !SAVE.meta.settings.perf; persist(); if (SAVE.meta.settings.perf) toast(_t('Leistungs-Modus: 30 Bilder pro Sekunde, weniger Funken und Splitter, kein Licht-und-Schatten-Effekt – flüssiger auf älteren Handys, schont den Akku.'), '#8ee6ff'); showSettings(); break;
     case 'lootset': showLootSet(); break;
     case 'lootback': showSettings(); break;
     case 'lootopt': { const [k, v] = String(id).split(':'); if (LOOTSET[v] && (LOOT_K.includes(k) || (k === 'va' && v !== 'take'))) { SAVE.meta.settings.loot[k] = v; persist(); sfx('click'); } showLootSet(); break; }
@@ -863,7 +863,7 @@ let last = performance.now(), achT = 0, lastTf = '', lastCur = null;
    mit 30 Bildern/s) – zurück zu HD, in dieser Sitzung keine weitere Probe. Nur solange der Spieler HD nicht selbst gewählt hat. */
 const GFXW = { a: [], try: false, hd: 0, done: false };
 function gfxWatch(ms) {
-  if (GFXW.done || state !== 'play' || !SAVE || SAVE.meta.settings.gfx || (!HD && !GFXW.try)) { GFXW.a.length = 0; return; }
+  if (GFXW.done || state !== 'play' || !SAVE || SAVE.meta.settings.gfx || SAVE.meta.settings.perf || (!HD && !GFXW.try)) { GFXW.a.length = 0; return; }
   GFXW.a.push(ms); if (GFXW.a.length < 90) return;
   const med = GFXW.a.sort((a, b) => a - b)[45]; GFXW.a.length = 0;
   if (!GFXW.try) { if (med > 24) { GFXW.try = true; GFXW.hd = med; resize(); } return; }
@@ -893,6 +893,8 @@ function camera(dt) {
 function loop(now) {
   requestAnimationFrame(loop);
   if ((devicePixelRatio || 1) !== DPR) onDpr();   // Sicherheitsnetz, falls der Browser beim Bildschirmwechsel kein change meldet
+  // Leistungs-Modus (6.9): höchstens 30 Bilder/s – bei 60 Hz fällt jedes zweite Bild aus (schont Akku und ältere Handys)
+  if (SAVE && SAVE.meta.settings.perf && now - last < 1000 / 30 - 4) return;
   // der rAF-Zeitstempel kann minimal vor performance.now() liegen: nie rückwärts laufen
   gfxWatch(now - last);   // echter Bildabstand (ms) für die HD-Probe
   let dt = clamp((now - last) / 1000, 0, .05); last = Math.max(last, now); T += dt;
